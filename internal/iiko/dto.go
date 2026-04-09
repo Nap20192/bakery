@@ -171,3 +171,166 @@ type TechCardItem struct {
 	MinAmount  int  `json:"minAmount"`
 	MaxAmount  int  `json:"maxAmount"`
 }
+
+
+// ─── StoreSpecification ────────────────────────────────────────────────────
+
+// StoreSpecification задаёт подмножество подразделений, в которых действует
+// строка техкарты.
+// inverse=false — включающий фильтр (только перечисленные).
+// inverse=true  — исключающий фильтр (все, КРОМЕ перечисленных).
+type StoreSpecification struct {
+	Departments []string `json:"departments"` // список UUID подразделений
+	Inverse     bool     `json:"inverse"`
+}
+
+// ─── AssemblyChartItem — строка исходной техкарты ─────────────────────────
+
+type AssemblyChartItem struct {
+	ID   string `json:"id"`
+	SortWeight float64 `json:"sortWeight"`
+
+	ProductID              string               `json:"productId"`
+	ProductSizeSpecification *SizeSpecification `json:"productSizeSpecification"` // nil = общий
+	StoreSpecification       *StoreSpecification `json:"storeSpecification"`       // nil = все подразделения
+
+	// Нормы закладки
+	AmountIn     float64 `json:"amountIn"`     // брутто
+	AmountMiddle float64 `json:"amountMiddle"` // после холодной обработки
+	AmountOut    float64 `json:"amountOut"`    // нетто (выход)
+
+	// Нормы для размеров блюда (1–3)
+	AmountIn1  float64 `json:"amountIn1"`
+	AmountOut1 float64 `json:"amountOut1"`
+	AmountIn2  float64 `json:"amountIn2"`
+	AmountOut2 float64 `json:"amountOut2"`
+	AmountIn3  float64 `json:"amountIn3"`
+	AmountOut3 float64 `json:"amountOut3"`
+
+	PackageCount  float64  `json:"packageCount"`
+	PackageTypeID *string  `json:"packageTypeId"` // UUID или null
+}
+
+// SizeSpecification описывает привязку строки к размеру блюда.
+type SizeSpecification struct {
+	SizeID   string `json:"sizeId"`
+	// При необходимости добавить поля из документации
+}
+
+// ─── AssemblyChartDto — исходная технологическая карта ────────────────────
+
+// ProductWriteoffStrategy — метод списания.
+type ProductWriteoffStrategy string
+
+const (
+	WriteoffAssemble  ProductWriteoffStrategy = "ASSEMBLE"  // списывать ингредиенты
+	WriteoffDirectly  ProductWriteoffStrategy = "DIRECTLY"  // списывать готовое блюдо
+)
+
+// ProductSizeAssemblyStrategy — стратегия по размерам блюда.
+type ProductSizeAssemblyStrategy string
+
+const (
+	SizeAssemblyCommon    ProductSizeAssemblyStrategy = "COMMON"     // общая для всех размеров
+	SizeAssemblySeparate  ProductSizeAssemblyStrategy = "SEPARATE"   // раздельная по размерам
+)
+
+type AssemblyChartDto struct {
+	ID                string `json:"id"` // UUID техкарты
+
+	AssembledProductID string  `json:"assembledProductId"` // UUID блюда/заготовки
+	DateFrom           string  `json:"dateFrom"`            // yyyy-MM-dd
+	DateTo             *string `json:"dateTo"`              // yyyy-MM-dd или null (бессрочно)
+
+	AssembledAmount float64 `json:"assembledAmount"` // выход готового продукта
+
+	ProductWriteoffStrategy             ProductWriteoffStrategy             `json:"productWriteoffStrategy"`
+	EffectiveDirectWriteoffStoreSpecification StoreSpecification            `json:"effectiveDirectWriteoffStoreSpecification"`
+	ProductSizeAssemblyStrategy         ProductSizeAssemblyStrategy         `json:"productSizeAssemblyStrategy"`
+
+	Items []AssemblyChartItem `json:"items"`
+
+	// Описания техкарты
+	TechnologyDescription string `json:"technologyDescription"`
+	Description           string `json:"description"`
+	Appearance            string `json:"appearance"`   // внешний вид
+	Organoleptic          string `json:"organoleptic"` // органолептика
+	OutputComment         string `json:"outputComment"`
+}
+
+// ─── PreparedChartItem — строка разложенной техкарты ──────────────────────
+
+type PreparedChartItem struct {
+	ID         string  `json:"id"`
+	SortWeight float64 `json:"sortWeight"`
+
+	ProductID                string               `json:"productId"`
+	ProductSizeSpecification *SizeSpecification   `json:"productSizeSpecification"`
+	StoreSpecification       *StoreSpecification  `json:"storeSpecification"`
+
+	Amount float64 `json:"amount"` // количество конечного ингредиента
+}
+
+// ─── PreparedChartDto — техкарта, разложенная до конечных ингредиентов ────
+
+type PreparedChartDto struct {
+	ID                string  `json:"id"`
+	AssembledProductID string  `json:"assembledProductId"`
+	DateFrom          string  `json:"dateFrom"`
+	DateTo            *string `json:"dateTo"`
+
+	EffectiveDirectWriteoffStoreSpecification StoreSpecification `json:"effectiveDirectWriteoffStoreSpecification"`
+	ProductSizeAssemblyStrategy              ProductSizeAssemblyStrategy `json:"productSizeAssemblyStrategy"`
+
+	Items []PreparedChartItem `json:"items"`
+}
+
+// ─── ChartResultDto — общий ответ всех методов assemblyCharts ─────────────
+
+type ChartResultDto struct {
+	// Ревизия для инкрементального обновления (getAllUpdate).
+	// -1 означает, что данный ответ не пригоден для getAllUpdate.
+	KnownRevision int `json:"knownRevision"`
+
+	AssemblyCharts []AssemblyChartDto `json:"assemblyCharts"`
+	PreparedCharts []PreparedChartDto `json:"preparedCharts"`
+
+	// Только для getAllUpdate: UUID удалённых карт.
+	DeletedAssemblyChartIDs []string `json:"deletedAssemblyChartIds"`
+	DeletedPreparedChartIDs []string `json:"deletedPreparedChartIds"`
+}
+
+// ─── Save / Delete ─────────────────────────────────────────────────────────
+
+// SaveAssemblyChartRequest — тело POST /assemblyCharts/save
+type SaveAssemblyChartRequest struct {
+	AssembledProductID string  `json:"assembledProductId"`
+	DateFrom           string  `json:"dateFrom"`
+	DateTo             *string `json:"dateTo"`
+
+	AssembledAmount float64 `json:"assembledAmount"`
+
+	ProductWriteoffStrategy             ProductWriteoffStrategy             `json:"productWriteoffStrategy"`
+	EffectiveDirectWriteoffStoreSpecification StoreSpecification            `json:"effectiveDirectWriteoffStoreSpecification"`
+	ProductSizeAssemblyStrategy         ProductSizeAssemblyStrategy         `json:"productSizeAssemblyStrategy"`
+
+	Items []AssemblyChartItem `json:"items"`
+
+	TechnologyDescription string `json:"technologyDescription"`
+	Description           string `json:"description"`
+	Appearance            string `json:"appearance"`
+	Organoleptic          string `json:"organoleptic"`
+	OutputComment         string `json:"outputComment"`
+}
+
+// DeleteAssemblyChartRequest — тело POST /assemblyCharts/delete
+type DeleteAssemblyChartRequest struct {
+	ID string `json:"id"`
+}
+
+// ApiResponse — универсальная обёртка ответа iiko (result/errors/response)
+type ApiResponse[T any] struct {
+	Result   string   `json:"result"`  // "SUCCESS" | "ERROR"
+	Errors   []string `json:"errors"`
+	Response T        `json:"response"`
+}

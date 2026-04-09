@@ -22,7 +22,6 @@ CREATE TABLE clients (
     deleted_at       timestamptz
 );
 
--- Кухни / пекарни (производственные точки)
 CREATE TABLE kitchens (
     id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     name       text NOT NULL,
@@ -33,7 +32,6 @@ CREATE TABLE kitchens (
     deleted_at timestamptz
 );
 
--- Ингредиенты (включая тесто как отдельный ингредиент/полуфабрикат)
 CREATE TABLE ingredients (
     id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     iiko_id    text UNIQUE,
@@ -45,7 +43,6 @@ CREATE TABLE ingredients (
     deleted_at timestamptz
 );
 
--- Готовая продукция (пирожки, хлеб и т.п.)
 CREATE TABLE products (
     id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     iiko_id    text UNIQUE,
@@ -56,9 +53,6 @@ CREATE TABLE products (
     deleted_at timestamptz
 );
 
--- =========================================================
--- ТТК (технико-технологические карты)
--- =========================================================
 
 CREATE TABLE tech_cards (
     id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -93,10 +87,6 @@ CREATE TABLE tech_card_items (
     UNIQUE (tech_card_id, ingredient_id)
 );
 
--- =========================================================
--- Заявки из Telegram
--- =========================================================
-
 CREATE TABLE orders (
     id                   uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     client_id            uuid NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
@@ -104,6 +94,7 @@ CREATE TABLE orders (
     telegram_chat_id     bigint,
     telegram_message_id  bigint,
     order_date           date NOT NULL,            -- дата на которую нужна продукция
+
     status               text NOT NULL DEFAULT 'new'
                                 CHECK (status IN ('new','parsed','confirmed','processed','cancelled')),
     raw_text             text,                     -- исходное сообщение
@@ -130,9 +121,6 @@ CREATE TABLE order_items (
 CREATE INDEX idx_order_items_order ON order_items(order_id);
 CREATE INDEX idx_order_items_product ON order_items(product_id);
 
--- =========================================================
--- Расчёт теста
--- =========================================================
 
 CREATE TABLE dough_calculations (
     id                   uuid PRIMARY KEY DEFAULT gen_random_uuid(),
