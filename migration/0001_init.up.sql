@@ -43,6 +43,8 @@ CREATE TABLE ingredients (
     deleted_at timestamptz
 );
 
+CREATE INDEX idx_ingredients_dough ON ingredients(is_dough) WHERE is_dough = true AND deleted_at IS NULL;
+
 CREATE TABLE products (
     id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     iiko_id    text UNIQUE,
@@ -102,7 +104,7 @@ CREATE TABLE orders (
     created_at           timestamptz NOT NULL DEFAULT now(),
     updated_at           timestamptz NOT NULL DEFAULT now(),
     deleted_at           timestamptz,
-    UNIQUE (telegram_chat_id, telegram_message_id)
+    UNIQUE NULLS NOT DISTINCT (telegram_chat_id, telegram_message_id)
 );
 
 CREATE INDEX idx_orders_date ON orders(order_date);
@@ -134,6 +136,14 @@ CREATE TABLE dough_calculations (
 );
 
 CREATE INDEX idx_dough_calc_date ON dough_calculations(calc_date);
+
+CREATE UNIQUE INDEX idx_dough_calc_unique
+    ON dough_calculations(kitchen_id, calc_date, dough_ingredient_id)
+    WHERE kitchen_id IS NOT NULL;
+
+CREATE UNIQUE INDEX idx_dough_calc_unique_no_kitchen
+    ON dough_calculations(calc_date, dough_ingredient_id)
+    WHERE kitchen_id IS NULL;
 
 -- Детализация: сколько теста ушло на каждую позицию заявки
 CREATE TABLE dough_calculation_items (

@@ -24,11 +24,27 @@ func today() string {
 	return time.Now().Format("2006-01-02")
 }
 
+func testConfig(t *testing.T) (host, port, login, password string) {
+	t.Helper()
+	host = os.Getenv("IIKO_HOST")
+	port = os.Getenv("IIKO_PORT")
+	login = os.Getenv("IIKO_LOGIN")
+	password = os.Getenv("IIKO_PASSWORD")
+	if host == "" || login == "" || password == "" {
+		t.Skip("IIKO_HOST / IIKO_LOGIN / IIKO_PASSWORD not set — skipping integration test")
+	}
+	if port == "" {
+		port = "443"
+	}
+	return
+}
+
 func mustAuth(t *testing.T, log *slog.Logger) *Client {
 	t.Helper()
 
-	api := NewApi(DefaultHost, DefaultPort)
-	client, err := NewClient("Nikolay", "3333", api)
+	host, port, login, password := testConfig(t)
+	api := NewApi(host, port)
+	client, err := NewClient(login, password, api)
 	if err != nil {
 		t.Fatalf("NewClient: %v", err)
 	}
@@ -53,8 +69,9 @@ func TestAuth(t *testing.T) {
 	log := newLogger(t)
 	log.Info("=== TestAuth ===")
 
-	api := NewApi(DefaultHost, DefaultPort)
-	client, err := NewClient("Nikolay", "3333", api)
+	host, port, login, password := testConfig(t)
+	api := NewApi(host, port)
+	client, err := NewClient(login, password, api)
 	if err != nil {
 		t.Fatalf("NewClient: %v", err)
 	}

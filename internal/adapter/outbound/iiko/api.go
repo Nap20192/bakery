@@ -18,7 +18,7 @@ func NewApi(host, port string) *Api {
 }
 
 func (s *Api) base() string {
-	return fmt.Sprintf("%s:%s", s.Host, s.Port)
+	return fmt.Sprintf("https://%s:%s", s.Host, s.Port)
 }
 
 // POST /api/0/auth/access_token

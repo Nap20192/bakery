@@ -1,18 +1,6 @@
 package iiko
 
 const (
-	DefaultScheme = "https"
-	DefaultHost   = "pekarnya-gagarina.iiko.it"
-	DefaultPort   = "443"
-	DefaultPath   = "/resto"
-
-	Login    = "Nikolay"
-	Password = "3333"
-
-	DefaultTimeout = 30 // seconds
-)
-
-const (
 	// Assembly Charts
 	EndpointAssemblyChartsGetAll       = "/resto/api/v2/assemblyCharts/getAll"
 	EndpointAssemblyChartsGetAllUpdate = "/resto/api/v2/assemblyCharts/getAllUpdate"
