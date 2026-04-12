@@ -1,10 +1,9 @@
-package app
+package deps
 
 import "bakery/internal/adapter/outbound/db"
 
-type Client struct {
-}
 
-type KitchenService struct {
+type Deps struct {
 	queries *db.Queries
+
 }

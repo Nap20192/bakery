@@ -1,18 +1,21 @@
 services:
-  postgres:
-    image: postgres:17-alpine
-    restart: unless-stopped
-    env_file: .env
+  db:
+    image: postgres:16-alpine
+    container_name: bakery-db
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bakery}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-bakery}
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./migration/0001_init.up.sql:/docker-entrypoint-initdb.d/0001_init.sql
+      - ./migration/0001_init.up.sql:/docker-entrypoint-initdb.d/0001_init.up.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bakery}"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 3s
-      retries: 5
+      retries: 10
 
 volumes:
   pgdata:

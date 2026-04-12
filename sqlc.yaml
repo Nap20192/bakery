@@ -100,11 +100,11 @@ overrides:
 sql:
   - engine: "postgresql"
     queries: "./queries"
-    schema:  "../../../../migration"
+    schema:  "./migration"
     gen:
       go:
-        package:                "postgres"
-        out:                    "./"
+        package:                "db"
+        out:                    "./internal/adapter/outbound/db"
         emit_json_tags:         true
         emit_interface:         true
         emit_exact_table_names: false

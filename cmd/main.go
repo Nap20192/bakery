@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
 
 	"bakery/internal/adapter/outbound/postgres"
 	httpserver "bakery/internal/adapter/inbound/http"
@@ -18,6 +19,8 @@ import (
 )
 
 func main() {
+	_ = godotenv.Load()
+
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("config: %v", err)
@@ -42,8 +45,9 @@ func main() {
 	kitchenSvc := app.NewKitchenService(queries)
 	clientSvc := app.NewClientService(queries)
 	orderSvc := app.NewOrderService(queries)
+	productSvc := app.NewProductService(queries)
 
-	srv := httpserver.NewServer(kitchenSvc, clientSvc, orderSvc)
+	srv := httpserver.NewServer(kitchenSvc, clientSvc, orderSvc, productSvc)
 
 	addr := fmt.Sprintf(":%s", env("HTTP_PORT", "8080"))
 	httpSrv := &http.Server{Addr: addr, Handler: srv}

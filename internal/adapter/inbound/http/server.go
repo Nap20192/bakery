@@ -8,10 +8,10 @@ import (
 )
 
 type Server struct {
-	mux      *http.ServeMux
-	kitchen  *app.KitchenService
-	client   *app.ClientService
-	order    *app.OrderService
+	mux     *http.ServeMux
+	kitchen *app.KitchenService
+	client  *app.ClientService
+	order   *app.OrderService
 }
 
 func NewServer(kitchen *app.KitchenService, client *app.ClientService, order *app.OrderService) *Server {
@@ -30,6 +30,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) routes() {
+	s.mux.Handle("GET /", http.FileServer(http.Dir("static")))
+
 	s.mux.HandleFunc("GET /kitchens", s.listKitchens)
 	s.mux.HandleFunc("POST /kitchens", s.createKitchen)
 	s.mux.HandleFunc("GET /kitchens/{id}", s.getKitchen)
@@ -41,6 +43,10 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /clients/{id}", s.getClient)
 	s.mux.HandleFunc("PUT /clients/{id}", s.updateClient)
 	s.mux.HandleFunc("DELETE /clients/{id}", s.deleteClient)
+
+	s.mux.HandleFunc("GET /products", s.listProducts)
+	s.mux.HandleFunc("POST /products", s.createProduct)
+	s.mux.HandleFunc("GET /products/{id}", s.getProduct)
 
 	s.mux.HandleFunc("GET /orders", s.listOrders)
 	s.mux.HandleFunc("POST /orders", s.createOrder)
