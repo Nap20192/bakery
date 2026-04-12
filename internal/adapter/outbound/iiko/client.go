@@ -12,6 +12,19 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
+type IikoClient interface {
+    Auth() error
+    Logout() error
+    ListProducts() ([]Product, error)
+    AssemblyChartsGetAll(dateFrom, dateTo string, includeDeleted, includePrepared bool) (*ChartResultDto, error)
+    AssemblyChartsGetAllUpdate(knownRevision int, dateFrom, dateTo string, includeDeleted, includePrepared bool) (*ChartResultDto, error)
+    AssemblyChartByID(id string) (*ChartResultDto, error)
+    AssemblyChartsGetTree(date, productID, departmentID string) (*ChartResultDto, error)
+    AssemblyChartsGetAssembled(date, productID, departmentID string) (*ChartResultDto, error)
+    AssemblyChartsGetPrepared(date, productID, departmentID string) (*ChartResultDto, error)
+    AssemblyChartsGetHistory(productID, departmentID string) (*ChartResultDto, error)
+}
+
 type Client struct {
 	login    string
 	password string

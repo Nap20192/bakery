@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"bakery/internal/app"
-	"bakery/internal/domain"
+	"bakery/internal/domain/order"
 )
 
 func (s *Server) listOrders(w http.ResponseWriter, r *http.Request) {
@@ -22,9 +22,9 @@ func (s *Server) listOrders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	status := r.URL.Query().Get("status")
-	var orders []domain.Order
+	var orders []*order.Order
 	if status != "" {
-		orders, err = s.order.ListByDateAndStatus(r.Context(), date, domain.OrderStatus(status))
+		orders, err = s.order.ListByDateAndStatus(r.Context(), date, order.Status(status))
 	} else {
 		orders, err = s.order.ListByDate(r.Context(), date)
 	}
@@ -32,10 +32,12 @@ func (s *Server) listOrders(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, orders)
+	writeJSON(w, http.StatusOK, orderDTOs(orders))
 }
 
 func (s *Server) createOrder(w http.ResponseWriter, r *http.Request) {
+	claims, _ := ClaimsFromContext(r.Context())
+
 	var body struct {
 		ClientID          uuid.UUID  `json:"client_id"`
 		KitchenID         *uuid.UUID `json:"kitchen_id"`
@@ -47,6 +49,11 @@ func (s *Server) createOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := decodeJSON(r, &body); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid json")
+		return
+	}
+
+	if err := s.auth.CanCreateOrderAs(r.Context(), claims, body.ClientID); err != nil {
+		writeError(w, http.StatusForbidden, err.Error())
 		return
 	}
 
@@ -69,31 +76,41 @@ func (s *Server) createOrder(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusCreated, o)
+	writeJSON(w, http.StatusCreated, orderDTO(o))
 }
 
 func (s *Server) getOrder(w http.ResponseWriter, r *http.Request) {
+	claims, _ := ClaimsFromContext(r.Context())
+
 	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
-
 	o, err := s.order.GetByID(r.Context(), id)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, o)
+	if err := s.auth.CanViewOrder(r.Context(), claims, o); err != nil {
+		writeError(w, http.StatusForbidden, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, orderDTO(o))
 }
 
 func (s *Server) updateOrderStatus(w http.ResponseWriter, r *http.Request) {
+	claims, _ := ClaimsFromContext(r.Context())
+	if err := s.auth.CanChangeOrderStatus(claims); err != nil {
+		writeError(w, http.StatusForbidden, err.Error())
+		return
+	}
+
 	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
-
 	var body struct {
 		Status string `json:"status"`
 	}
@@ -101,13 +118,12 @@ func (s *Server) updateOrderStatus(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid json")
 		return
 	}
-
-	o, err := s.order.UpdateStatus(r.Context(), id, domain.OrderStatus(body.Status))
+	o, err := s.order.UpdateStatus(r.Context(), id, order.Status(body.Status))
 	if err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, o)
+	writeJSON(w, http.StatusOK, orderDTO(o))
 }
 
 func (s *Server) cancelOrder(w http.ResponseWriter, r *http.Request) {
@@ -116,7 +132,6 @@ func (s *Server) cancelOrder(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
-
 	if err := s.order.Cancel(r.Context(), id); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -130,7 +145,6 @@ func (s *Server) addOrderItem(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
-
 	var body struct {
 		ProductID uuid.UUID `json:"product_id"`
 		Quantity  float64   `json:"quantity"`
@@ -140,7 +154,6 @@ func (s *Server) addOrderItem(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid json")
 		return
 	}
-
 	item, err := s.order.AddItem(r.Context(), app.AddOrderItemInput{
 		OrderID:   orderID,
 		ProductID: body.ProductID,
@@ -151,7 +164,7 @@ func (s *Server) addOrderItem(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusCreated, item)
+	writeJSON(w, http.StatusCreated, orderItemDTO(item))
 }
 
 func (s *Server) listOrderItems(w http.ResponseWriter, r *http.Request) {
@@ -160,11 +173,10 @@ func (s *Server) listOrderItems(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
-
 	items, err := s.order.ListItems(r.Context(), orderID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, items)
+	writeJSON(w, http.StatusOK, orderItemDTOs(items))
 }

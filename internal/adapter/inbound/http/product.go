@@ -9,12 +9,12 @@ import (
 )
 
 func (s *Server) listProducts(w http.ResponseWriter, r *http.Request) {
-	items, err := s.product.List(r.Context())
+	ps, err := s.product.List(r.Context())
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, items)
+	writeJSON(w, http.StatusOK, productDTOs(ps))
 }
 
 func (s *Server) createProduct(w http.ResponseWriter, r *http.Request) {
@@ -36,7 +36,7 @@ func (s *Server) createProduct(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusCreated, p)
+	writeJSON(w, http.StatusCreated, productDTO(p))
 }
 
 func (s *Server) getProduct(w http.ResponseWriter, r *http.Request) {
@@ -50,5 +50,5 @@ func (s *Server) getProduct(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, p)
+	writeJSON(w, http.StatusOK, productDTO(p))
 }
