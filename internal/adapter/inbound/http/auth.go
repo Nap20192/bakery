@@ -46,6 +46,30 @@ func (s *Server) registerKitchen(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (s *Server) me(w http.ResponseWriter, r *http.Request) {
+	claims, ok := ClaimsFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "unauthenticated")
+		return
+	}
+	me, err := s.auth.Me(r.Context(), claims)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	resp := map[string]any{
+		"user": userDTO(me.User),
+		"role": string(claims.Role),
+	}
+	if me.Client != nil {
+		resp["client"] = clientDTO(me.Client)
+	}
+	if me.Kitchen != nil {
+		resp["kitchen"] = kitchenDTO(me.Kitchen)
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Login    string `json:"login"`

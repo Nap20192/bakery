@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -25,7 +26,7 @@ type CreateOrderParams struct {
 	KitchenID         *uuid.UUID `json:"kitchen_id"`
 	TelegramChatID    *int64     `json:"telegram_chat_id"`
 	TelegramMessageID *int64     `json:"telegram_message_id"`
-	OrderDate         string     `json:"order_date"`
+	OrderDate         time.Time  `json:"order_date"`
 	RawText           *string    `json:"raw_text"`
 	Note              *string    `json:"note"`
 	Status            *string    `json:"status"`
@@ -259,8 +260,8 @@ ORDER BY created_at DESC
 `
 
 type ListOrdersByDateParams struct {
-	OrderDate string  `json:"order_date"`
-	Status    *string `json:"status"`
+	OrderDate time.Time `json:"order_date"`
+	Status    *string   `json:"status"`
 }
 
 func (q *Queries) ListOrdersByDate(ctx context.Context, arg ListOrdersByDateParams) ([]Order, error) {
@@ -303,9 +304,9 @@ ORDER BY order_date, created_at
 `
 
 type ListOrdersByDateRangeParams struct {
-	OrderDate   string  `json:"order_date"`
-	OrderDate_2 string  `json:"order_date_2"`
-	Status      *string `json:"status"`
+	OrderDate   time.Time `json:"order_date"`
+	OrderDate_2 time.Time `json:"order_date_2"`
+	Status      *string   `json:"status"`
 }
 
 func (q *Queries) ListOrdersByDateRange(ctx context.Context, arg ListOrdersByDateRangeParams) ([]Order, error) {
@@ -398,7 +399,7 @@ RETURNING id, client_id, kitchen_id, telegram_chat_id, telegram_message_id, orde
 type UpdateOrderParams struct {
 	ID        uuid.UUID  `json:"id"`
 	KitchenID *uuid.UUID `json:"kitchen_id"`
-	OrderDate string     `json:"order_date"`
+	OrderDate time.Time  `json:"order_date"`
 	Status    string     `json:"status"`
 	Note      *string    `json:"note"`
 }

@@ -144,6 +144,104 @@ func orderDTO(o *order.Order) OrderDTO {
 	}
 }
 
+type IngredientLineDTO struct {
+	IngredientID   uuid.UUID `json:"ingredient_id"`
+	IngredientName string    `json:"ingredient_name"`
+	Unit           string    `json:"unit"`
+	TotalQty       float64   `json:"total_qty"`
+}
+
+func ingredientLineDTOs(ls []order.IngredientLine) []IngredientLineDTO {
+	out := make([]IngredientLineDTO, 0, len(ls))
+	for _, l := range ls {
+		out = append(out, IngredientLineDTO{
+			IngredientID:   l.IngredientID,
+			IngredientName: l.IngredientName,
+			Unit:           l.Unit,
+			TotalQty:       l.TotalQty,
+		})
+	}
+	return out
+}
+
+type OrderItemOverviewDTO struct {
+	ProductID   uuid.UUID `json:"product_id"`
+	ProductName string    `json:"product_name"`
+	Quantity    float64   `json:"quantity"`
+	Unit        string    `json:"unit"`
+}
+
+type OrderOverviewDTO struct {
+	OrderID          uuid.UUID              `json:"order_id"`
+	OrderDate        string                 `json:"order_date"`
+	Status           string                 `json:"status"`
+	Client           string                 `json:"client"`
+	Kitchen          string                 `json:"kitchen"`
+	Note             string                 `json:"note"`
+	Items            []OrderItemOverviewDTO `json:"items"`
+	TotalIngredients []IngredientLineDTO    `json:"total_ingredients"`
+}
+
+func orderOverviewDTO(o *order.OrderOverview) OrderOverviewDTO {
+	items := make([]OrderItemOverviewDTO, 0, len(o.Items))
+	for _, it := range o.Items {
+		items = append(items, OrderItemOverviewDTO{
+			ProductID:   it.ProductID,
+			ProductName: it.ProductName,
+			Quantity:    it.Quantity,
+			Unit:        it.Unit,
+		})
+	}
+	return OrderOverviewDTO{
+		OrderID:          o.OrderID,
+		OrderDate:        o.OrderDate.Format("2006-01-02"),
+		Status:           string(o.Status),
+		Client:           o.Client,
+		Kitchen:          o.Kitchen,
+		Note:             o.Note,
+		Items:            items,
+		TotalIngredients: ingredientLineDTOs(o.TotalIngredients),
+	}
+}
+
+type DayGroupDTO struct {
+	Date             string              `json:"date"`
+	Orders           []OrderOverviewDTO  `json:"orders"`
+	TotalIngredients []IngredientLineDTO `json:"total_ingredients"`
+}
+
+func dayGroupDTO(d *order.DayGroup) DayGroupDTO {
+	overviews := make([]OrderOverviewDTO, 0, len(d.Orders))
+	for i := range d.Orders {
+		overviews = append(overviews, orderOverviewDTO(&d.Orders[i]))
+	}
+	return DayGroupDTO{
+		Date:             d.Date.Format("2006-01-02"),
+		Orders:           overviews,
+		TotalIngredients: ingredientLineDTOs(d.TotalIngredients),
+	}
+}
+
+type PeriodOverviewDTO struct {
+	From       string              `json:"from"`
+	To         string              `json:"to"`
+	Days       []DayGroupDTO       `json:"days"`
+	GrandTotal []IngredientLineDTO `json:"grand_total"`
+}
+
+func periodOverviewDTO(p *order.PeriodOverview) PeriodOverviewDTO {
+	days := make([]DayGroupDTO, 0, len(p.Days))
+	for i := range p.Days {
+		days = append(days, dayGroupDTO(&p.Days[i]))
+	}
+	return PeriodOverviewDTO{
+		From:       p.From.Format("2006-01-02"),
+		To:         p.To.Format("2006-01-02"),
+		Days:       days,
+		GrandTotal: ingredientLineDTOs(p.GrandTotal),
+	}
+}
+
 func orderDTOs(os []*order.Order) []OrderDTO {
 	out := make([]OrderDTO, 0, len(os))
 	for _, o := range os {

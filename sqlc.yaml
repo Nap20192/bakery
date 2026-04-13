@@ -4,12 +4,14 @@ overrides:
     overrides:
       - db_type: "date"
         go_type:
-          type: string
+          import: "time"
+          type: "Time"
 
       - db_type: "date"
         nullable: true
         go_type:
-          type: string
+          import: "time"
+          type: "Time"
           pointer: true
 
       - db_type: "timestamptz"

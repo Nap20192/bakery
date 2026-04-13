@@ -46,6 +46,11 @@ func (s *Server) createOrder(w http.ResponseWriter, r *http.Request) {
 		OrderDate         string     `json:"order_date"`
 		RawText           string     `json:"raw_text"`
 		Note              string     `json:"note"`
+		Items             []struct {
+			ProductID uuid.UUID `json:"product_id"`
+			Quantity  float64   `json:"quantity"`
+			Unit      string    `json:"unit"`
+		} `json:"items"`
 	}
 	if err := decodeJSON(r, &body); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid json")
@@ -63,6 +68,15 @@ func (s *Server) createOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	items := make([]app.CreateOrderItem, 0, len(body.Items))
+	for _, it := range body.Items {
+		items = append(items, app.CreateOrderItem{
+			ProductID: it.ProductID,
+			Quantity:  it.Quantity,
+			Unit:      it.Unit,
+		})
+	}
+
 	o, err := s.order.Create(r.Context(), app.CreateOrderInput{
 		ClientID:          body.ClientID,
 		KitchenID:         body.KitchenID,
@@ -71,6 +85,7 @@ func (s *Server) createOrder(w http.ResponseWriter, r *http.Request) {
 		OrderDate:         orderDate,
 		RawText:           body.RawText,
 		Note:              body.Note,
+		Items:             items,
 	})
 	if err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err.Error())
@@ -165,6 +180,69 @@ func (s *Server) addOrderItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusCreated, orderItemDTO(item))
+}
+
+func (s *Server) getOrderOverview(w http.ResponseWriter, r *http.Request) {
+	claims, _ := ClaimsFromContext(r.Context())
+	id, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid id")
+		return
+	}
+	o, err := s.order.GetByID(r.Context(), id)
+	if err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	if err := s.auth.CanViewOrder(r.Context(), claims, o); err != nil {
+		writeError(w, http.StatusForbidden, err.Error())
+		return
+	}
+	ov, err := s.order.GetOrderOverview(r.Context(), id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, orderOverviewDTO(ov))
+}
+
+func (s *Server) getDayOverview(w http.ResponseWriter, r *http.Request) {
+	dateStr := r.URL.Query().Get("date")
+	if dateStr == "" {
+		dateStr = time.Now().Format("2006-01-02")
+	}
+	date, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid date, use YYYY-MM-DD")
+		return
+	}
+	dg, err := s.order.GetDailyOverview(r.Context(), date)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, dayGroupDTO(dg))
+}
+
+func (s *Server) getPeriodOverview(w http.ResponseWriter, r *http.Request) {
+	fromStr := r.URL.Query().Get("from")
+	toStr := r.URL.Query().Get("to")
+	from, err := time.Parse("2006-01-02", fromStr)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid from, use YYYY-MM-DD")
+		return
+	}
+	to, err := time.Parse("2006-01-02", toStr)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid to, use YYYY-MM-DD")
+		return
+	}
+	po, err := s.order.GetPeriodOverview(r.Context(), from, to)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, periodOverviewDTO(po))
 }
 
 func (s *Server) listOrderItems(w http.ResponseWriter, r *http.Request) {

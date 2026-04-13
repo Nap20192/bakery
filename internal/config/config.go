@@ -28,6 +28,7 @@ type Iiko struct {
 type Config struct {
 	Postgres Postgres
 	Iiko     Iiko
+	AuthSecret string
 }
 
 func Load() (*Config, error) {
@@ -45,6 +46,7 @@ func Load() (*Config, error) {
 			Login:    env("IIKO_LOGIN", ""),
 			Password: env("IIKO_PASSWORD", ""),
 		},
+		AuthSecret: env("AUTH_SECRET", ""),
 	}
 
 	if cfg.Iiko.Host == "" {
@@ -56,6 +58,10 @@ func Load() (*Config, error) {
 	if cfg.Iiko.Password == "" {
 		return nil, fmt.Errorf("config: IIKO_PASSWORD is required")
 	}
+	if len(cfg.AuthSecret) == 0 {
+		return nil, fmt.Errorf("config: AUTH_SECRET is required")
+	}
+
 
 	return cfg, nil
 }

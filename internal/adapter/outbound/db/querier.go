@@ -38,6 +38,7 @@ type Querier interface {
 	GetKitchenByID(ctx context.Context, id uuid.UUID) (Kitchen, error)
 	GetKitchenByUserID(ctx context.Context, userID *uuid.UUID) (Kitchen, error)
 	GetOrderByID(ctx context.Context, id uuid.UUID) (Order, error)
+	GetOrderIngredients(ctx context.Context, orderID uuid.UUID) ([]GetOrderIngredientsRow, error)
 	GetProductByID(ctx context.Context, id uuid.UUID) (Product, error)
 	GetProductByIikoID(ctx context.Context, iikoID *string) (Product, error)
 	GetProductByName(ctx context.Context, name string) (Product, error)

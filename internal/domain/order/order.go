@@ -15,37 +15,9 @@ import (
 type ID = uuid.UUID
 type ItemID = uuid.UUID
 
-type Status string
-
-const (
-	StatusNew       Status = "new"
-	StatusParsed    Status = "parsed"
-	StatusConfirmed Status = "confirmed"
-	StatusProcessed Status = "processed"
-	StatusCancelled Status = "cancelled"
-)
-
-var allowedTransitions = map[Status][]Status{
-	StatusNew:       {StatusParsed, StatusCancelled},
-	StatusParsed:    {StatusConfirmed, StatusCancelled},
-	StatusConfirmed: {StatusProcessed, StatusCancelled},
-	StatusProcessed: {},
-	StatusCancelled: {},
-}
-
-func (s Status) CanTransitionTo(next Status) bool {
-	for _, a := range allowedTransitions[s] {
-		if a == next {
-			return true
-		}
-	}
-	return false
-}
-
 var (
 	ErrOrderDateRequired = errors.New("order: order_date is required")
 	ErrInvalidQty        = errors.New("order: quantity must be > 0")
-	ErrInvalidStatus     = errors.New("order: invalid status transition")
 	ErrLocked            = errors.New("order: cannot modify confirmed or processed order")
 	ErrItemNotFound      = errors.New("order: item not found")
 	ErrNotFound          = errors.New("order: not found")
@@ -145,7 +117,7 @@ func (o *Order) UpdatedAt() time.Time    { return o.updatedAt }
 
 func (o *Order) Transition(next Status) error {
 	if !o.status.CanTransitionTo(next) {
-		return ErrInvalidStatus
+		return &InvalidTransitionError{From: o.status, To: next, Allowed: o.status.AllowedNext()}
 	}
 	o.status = next
 	o.updatedAt = time.Now()
@@ -202,4 +174,5 @@ type Repository interface {
 	GetByTelegram(ctx context.Context, chatID, messageID int64) (*Order, error)
 	List(ctx context.Context, f Filter) ([]*Order, error)
 	Delete(ctx context.Context, id ID) error
+	GetOrderIngredients(ctx context.Context, id ID) ([]IngredientLine, error)
 }

@@ -43,7 +43,7 @@ type Order struct {
 	KitchenID         *uuid.UUID `json:"kitchen_id"`
 	TelegramChatID    *int64     `json:"telegram_chat_id"`
 	TelegramMessageID *int64     `json:"telegram_message_id"`
-	OrderDate         string     `json:"order_date"`
+	OrderDate         time.Time  `json:"order_date"`
 	Status            string     `json:"status"`
 	RawText           *string    `json:"raw_text"`
 	Note              *string    `json:"note"`

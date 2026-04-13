@@ -226,3 +226,32 @@ func (s *AuthService) CanManageCatalog(c Claims) error {
 	}
 	return ErrForbidden
 }
+
+type Me struct {
+	User    *user.User
+	Client  *client.Client
+	Kitchen *kitchen.Kitchen
+}
+
+func (s *AuthService) Me(ctx context.Context, c Claims) (*Me, error) {
+	u, err := s.users.GetByID(ctx, c.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("auth: me: user: %w", err)
+	}
+	me := &Me{User: u}
+	switch c.Role {
+	case user.RoleClient:
+		cl, err := s.clients.GetByUserID(ctx, c.UserID)
+		if err != nil {
+			return nil, fmt.Errorf("auth: me: client: %w", err)
+		}
+		me.Client = cl
+	case user.RoleKitchen:
+		k, err := s.kitchens.GetByUserID(ctx, c.UserID)
+		if err != nil {
+			return nil, fmt.Errorf("auth: me: kitchen: %w", err)
+		}
+		me.Kitchen = k
+	}
+	return me, nil
+}

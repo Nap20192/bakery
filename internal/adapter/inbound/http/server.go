@@ -37,7 +37,7 @@ func NewServer(
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.mux.ServeHTTP(w, r)
+	LogMiddleware(s.mux).ServeHTTP(w, r)
 }
 
 func (s *Server) routes() {
@@ -55,6 +55,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /auth/register/client", s.registerClient)
 	s.mux.HandleFunc("POST /auth/register/kitchen", s.registerKitchen)
 	s.mux.HandleFunc("POST /auth/login", s.login)
+	s.mux.Handle("GET /auth/me", protect(s.me))
 
 	// kitchens
 	s.mux.Handle("GET /kitchens", role(s.listKitchens, user.RoleAdmin, user.RoleKitchen))
@@ -83,6 +84,9 @@ func (s *Server) routes() {
 	s.mux.Handle("DELETE /orders/{id}", protect(s.cancelOrder))
 	s.mux.Handle("POST /orders/{id}/items", protect(s.addOrderItem))
 	s.mux.Handle("GET /orders/{id}/items", protect(s.listOrderItems))
+	s.mux.Handle("GET /orders/{id}/overview", protect(s.getOrderOverview))
+	s.mux.Handle("GET /overview/day", role(s.getDayOverview, user.RoleAdmin, user.RoleKitchen))
+	s.mux.Handle("GET /overview/period", role(s.getPeriodOverview, user.RoleAdmin, user.RoleKitchen))
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
