@@ -48,6 +48,9 @@ type Product struct {
 }
 type ProductRepository interface {
 	Save(p Product) error
+	// Get возвращает продукт, масштабированный на quantity кг.
 	Get(name string, quantity float64) (Product, error)
+	// GetBase возвращает базовый рецепт продукта (на 1 штуку) без масштабирования.
+	GetBase(name string) (Product, error)
 	List() ([]string, error)
 }
