@@ -4,3 +4,8 @@ cookies.txt
 *.test
 *.out
 *_test.go
+*.db
+*.db-wal
+*.db-shm
+cmd/iiko
+bakery

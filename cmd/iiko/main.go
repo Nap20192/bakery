@@ -1,11 +1,12 @@
 package main
 
 import (
-	"bakery/internal/iiko"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
+
+	"bakery/internal/iiko"
 )
 
 var (
@@ -35,6 +36,11 @@ func main() {
 	}()
 	dateFrom := "2024-01-01"
 	dateTo := "2026-12-31" // Укажи актуальный диапазон
+	products, err := client.ListProducts()
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(products)
 
 	charts, err := client.AssemblyChartsGetAll(dateFrom, dateTo, false, true)
 	if err != nil {
@@ -49,11 +55,10 @@ func main() {
 
 	// 5. Сохраняем в файл
 	fileName := "all_charts.json"
-	err = os.WriteFile(fileName, jsonData, 0644)
+	err = os.WriteFile(fileName, jsonData, 0o644)
 	if err != nil {
 		log.Fatalf("Ошибка записи в файл: %v", err)
 	}
 
 	fmt.Printf("Успешно! Все техкарты (%d шт.) сохранены в файл %s\n", len(charts.AssemblyCharts), fileName)
-
 }

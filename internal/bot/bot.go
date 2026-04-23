@@ -87,6 +87,10 @@ func (b *Bot) Start() {
 	b.tele.Start()
 }
 
+func (b *Bot) Stop() {
+	b.tele.Stop()
+}
+
 // updateSession атомарно изменяет сессию пользователя под мьютексом.
 func (b *Bot) updateSession(uid int64, fn func(*session)) {
 	b.mu.Lock()
@@ -144,6 +148,7 @@ func (b *Bot) register() {
 
 	bt.Handle("/start", b.handleStart)
 	bt.Handle("/new", b.handleNew)
+	bt.Handle("/current", b.handleCurrent)
 	bt.Handle("/orders", b.handleOrders)
 	bt.Handle("/cancel", b.handleCancel)
 	bt.Handle("/search", b.handleSearchCmd)
@@ -197,11 +202,44 @@ func (b *Bot) handleStart(c tele.Context) error {
 	return c.Send(
 		"🍞 *Пекарня — расчёт теста*\n\n"+
 			"/new — создать новую заявку\n"+
+			"/current — текущая незавершённая заявка\n"+
 			"/search — поиск продукта по названию\n"+
 			"/orders — последние заказы\n"+
 			"/cancel — отменить текущую заявку",
 		tele.ModeMarkdown,
 	)
+}
+
+func (b *Bot) handleCurrent(c tele.Context) error {
+	snap := b.readSession(c.Sender().ID)
+
+	if snap.state == stateIdle || len(snap.items) == 0 {
+		return c.Send("Нет активной заявки. Используйте /new чтобы начать.")
+	}
+
+	var sb strings.Builder
+	stateLabel := map[string]string{
+		stateAdding:   "добавление позиций",
+		stateQuantity: fmt.Sprintf("ожидание количества для «%s»", snap.selected),
+		stateSearch:   "поиск продукта",
+	}[snap.state]
+
+	sb.WriteString(fmt.Sprintf("📋 *Текущая заявка* _(состояние: %s)_\n\n", stateLabel))
+	for _, it := range snap.items {
+		sb.WriteString(fmt.Sprintf("• %s — %d шт.\n", it.Product, it.Quantity))
+	}
+
+	markup := &tele.ReplyMarkup{}
+	markup.Inline(
+		markup.Row(
+			markup.Data("➕ Добавить ещё", "add_more"),
+			markup.Data("✅ Подтвердить", "confirm"),
+		),
+		markup.Row(
+			markup.Data("❌ Отменить", "cancel_cb"),
+		),
+	)
+	return c.Send(sb.String(), tele.ModeMarkdown, markup)
 }
 
 func (b *Bot) handleCancel(c tele.Context) error {
@@ -390,6 +428,9 @@ func (b *Bot) handleText(c tele.Context) error {
 		return b.sendCurrentOrder(c, snap)
 
 	default:
+		if isBulkOrder(text) {
+			return b.handleBulkOrder(c, text)
+		}
 		if len(splitNumbers(text)) > 0 {
 			return b.handleOrderLookup(c, text)
 		}
@@ -553,6 +594,66 @@ func (b *Bot) handleOrders(c tele.Context) error {
 	}
 	sb.WriteString("_Отправьте номер заказа чтобы увидеть расчёт теста._")
 	return c.Send(sb.String(), tele.ModeMarkdown)
+}
+
+func (b *Bot) handleBulkOrder(c tele.Context, text string) error {
+	location, date, parsed := parseBulkOrder(text)
+
+	if len(parsed) == 0 {
+		return c.Send("Не удалось распознать позиции в сообщении.")
+	}
+
+	// Индекс каталога в нижнем регистре для регистронезависимого поиска
+	catalog := make(map[string]string, len(b.productNames))
+	for _, name := range b.productNames {
+		catalog[strings.ToLower(name)] = name
+	}
+
+	var items []domain.OrderItem
+	var unknown []string
+
+	for _, line := range parsed {
+		if canonical, ok := catalog[strings.ToLower(line.Name)]; ok {
+			items = append(items, domain.OrderItem{Product: canonical, Quantity: line.Quantity})
+		} else {
+			unknown = append(unknown, line.Name)
+		}
+	}
+
+	if len(items) == 0 {
+		return c.Send("Ни один продукт не найден в каталоге.\n\nПроверьте правильность названий.")
+	}
+
+	// Сохраняем позиции в сессию — handleConfirm создаст заказ без изменений
+	b.updateSession(c.Sender().ID, func(s *session) {
+		s.state = stateAdding
+		s.items = items
+	})
+
+	var sb strings.Builder
+	sb.WriteString("📋 *Предпросмотр заявки*")
+	if location != "" || date != "" {
+		sb.WriteString(fmt.Sprintf("\n🏪 _%s | %s_", location, date))
+	}
+	sb.WriteString(fmt.Sprintf("\n\n*Распознано позиций: %d*\n", len(items)))
+	for _, it := range items {
+		sb.WriteString(fmt.Sprintf("• %s — %d шт.\n", it.Product, it.Quantity))
+	}
+	if len(unknown) > 0 {
+		sb.WriteString(fmt.Sprintf("\n⚠️ *Не найдены в каталоге (%d):*\n", len(unknown)))
+		for _, name := range unknown {
+			sb.WriteString(fmt.Sprintf("— %s\n", name))
+		}
+	}
+
+	markup := &tele.ReplyMarkup{}
+	markup.Inline(
+		markup.Row(
+			markup.Data("✅ Создать заказ", "confirm"),
+			markup.Data("❌ Отмена", "cancel_cb"),
+		),
+	)
+	return c.Send(sb.String(), tele.ModeMarkdown, markup)
 }
 
 func (b *Bot) filtered(filter string) []string {
