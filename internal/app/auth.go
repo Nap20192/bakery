@@ -18,12 +18,17 @@ import (
 )
 
 const (
-	defaultAuthRole       = "user"
+	defaultAuthRole       = domain.RoleClient
 	passwordHashAlgorithm = "pbkdf2-sha256"
 	passwordHashVersion   = "v1"
 	passwordSaltSize      = 16
 	passwordKeySize       = 32
 	passwordIterations    = 210000
+)
+
+var (
+	ErrAuthUserNotFound = errors.New("auth user not found")
+	ErrInvalidRole      = errors.New("invalid auth role")
 )
 
 type AuthService struct {
@@ -40,6 +45,10 @@ func (s *AuthService) CreateOrUpdateUser(ctx context.Context, input domain.AuthU
 	}
 	if input.Role == "" {
 		input.Role = defaultAuthRole
+	}
+	input.Role = domain.NormalizeRole(input.Role)
+	if !domain.IsValidRole(input.Role) {
+		return domain.AuthUser{}, fmt.Errorf("%w: %s", ErrInvalidRole, input.Role)
 	}
 	if input.MetadataJSON == "" {
 		input.MetadataJSON = "{}"
@@ -72,6 +81,10 @@ func (s *AuthService) CreateUserWithPassword(ctx context.Context, input domain.P
 	if input.Role == "" {
 		input.Role = defaultAuthRole
 	}
+	input.Role = domain.NormalizeRole(input.Role)
+	if !domain.IsValidRole(input.Role) {
+		return domain.AuthUser{}, fmt.Errorf("%w: %s", ErrInvalidRole, input.Role)
+	}
 	if input.MetadataJSON == "" {
 		input.MetadataJSON = "{}"
 	}
@@ -100,7 +113,7 @@ func (s *AuthService) VerifyPassword(ctx context.Context, username string, passw
 	user, err := s.queries.GetAuthUserByUsername(ctx, strings.TrimSpace(username))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return domain.AuthUser{}, fmt.Errorf("auth user not found")
+			return domain.AuthUser{}, ErrAuthUserNotFound
 		}
 		return domain.AuthUser{}, fmt.Errorf("get auth user: %w", err)
 	}
@@ -114,7 +127,7 @@ func (s *AuthService) GetUserByTelegramID(ctx context.Context, telegramID int64)
 	user, err := s.queries.GetAuthUserByTelegramID(ctx, &telegramID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return domain.AuthUser{}, fmt.Errorf("auth user not found")
+			return domain.AuthUser{}, ErrAuthUserNotFound
 		}
 		return domain.AuthUser{}, fmt.Errorf("get auth user: %w", err)
 	}
@@ -124,12 +137,16 @@ func (s *AuthService) GetUserByTelegramID(ctx context.Context, telegramID int64)
 func authUserToDomain(user sqlc.AuthUser) domain.AuthUser {
 	createdAt, _ := time.Parse(time.RFC3339Nano, user.CreatedAt)
 	updatedAt, _ := time.Parse(time.RFC3339Nano, user.UpdatedAt)
+	role := domain.NormalizeRole(user.Role)
+	if role == "user" {
+		role = domain.RoleClient
+	}
 	return domain.AuthUser{
 		ID:           user.ID,
 		TelegramID:   user.TelegramID,
 		Username:     user.Username,
 		MetadataJSON: user.MetadataJson,
-		Role:         user.Role,
+		Role:         role,
 		CreatedAt:    createdAt,
 		UpdatedAt:    updatedAt,
 	}

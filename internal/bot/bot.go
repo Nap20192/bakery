@@ -2,79 +2,43 @@ package bot
 
 import (
 	"fmt"
-	"sort"
 	"sync"
 	"time"
 
 	"bakery/internal/app"
-	"bakery/internal/domain"
 
 	tele "gopkg.in/telebot.v3"
 )
 
 type baseBot struct {
-	tele      *tele.Bot
-	orderSvc  *app.OrderService
+	tele     *tele.Bot
+	orderSvc *app.OrderService
+	authSvc  *app.AuthService
 }
 
 type OrderBot struct {
 	*baseBot
-	mu           sync.Mutex
-	sessions     map[int64]*session
-	productNames []string
-}
-
-type AdminBot struct {
-	*baseBot
+	mu       sync.Mutex
+	sessions map[int64]*session
 }
 
 func NewOrderBot(
 	token string,
 	orderSvc *app.OrderService,
-	doughRepo domain.DoughRepository,
+	authSvc *app.AuthService,
 ) (*OrderBot, error) {
 	b, err := newTelegramBot(token)
 	if err != nil {
 		return nil, fmt.Errorf("orderbot: new: %w", err)
 	}
 
-	names, err := productRepo.List()
-	if err != nil {
-		return nil, fmt.Errorf("orderbot: load products: %w", err)
-	}
-	sort.Strings(names)
-
 	bot := &OrderBot{
 		baseBot: &baseBot{
-			tele:      b,
-			orderSvc:  orderSvc,
-			orderRepo: orderRepo,
-			doughRepo: doughRepo,
+			tele:     b,
+			orderSvc: orderSvc,
+			authSvc:  authSvc,
 		},
-		sessions:     make(map[int64]*session),
-		productNames: names,
-	}
-	bot.register()
-	return bot, nil
-}
-
-func NewAdminBot(
-	token string,
-	orderSvc *app.OrderService,
-	orderRepo domain.OrderRepository,
-	doughRepo domain.DoughRepository,
-) (*AdminBot, error) {
-	b, err := newTelegramBot(token)
-	if err != nil {
-		return nil, fmt.Errorf("adminbot: new: %w", err)
-	}
-	bot := &AdminBot{
-		baseBot: &baseBot{
-			tele:      b,
-			orderSvc:  orderSvc,
-			orderRepo: orderRepo,
-			doughRepo: doughRepo,
-		},
+		sessions: make(map[int64]*session),
 	}
 	bot.register()
 	return bot, nil
@@ -93,13 +57,5 @@ func (b *OrderBot) Start() {
 }
 
 func (b *OrderBot) Stop() {
-	b.tele.Stop()
-}
-
-func (b *AdminBot) Start() {
-	b.tele.Start()
-}
-
-func (b *AdminBot) Stop() {
 	b.tele.Stop()
 }

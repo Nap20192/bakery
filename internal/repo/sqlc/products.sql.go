@@ -9,6 +9,22 @@ import (
 	"context"
 )
 
+const dishExistsByCode = `-- name: DishExistsByCode :one
+SELECT EXISTS (
+    SELECT 1
+    FROM iiko_products
+    WHERE code = ?1
+      AND type = 'DISH'
+)
+`
+
+func (q *Queries) DishExistsByCode(ctx context.Context, code string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, dishExistsByCode, code)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const getIikoProductByCode = `-- name: GetIikoProductByCode :one
 SELECT
     id,
@@ -44,6 +60,92 @@ func (q *Queries) GetIikoProductByCode(ctx context.Context, code string) (GetIik
 	return i, err
 }
 
+const getIikoProductByID = `-- name: GetIikoProductByID :one
+SELECT
+    id,
+    code,
+    name,
+    type,
+    measure_unit,
+    raw_json
+FROM iiko_products
+WHERE id = ?1
+`
+
+type GetIikoProductByIDRow struct {
+	ID          string  `json:"id"`
+	Code        string  `json:"code"`
+	Name        string  `json:"name"`
+	Type        *string `json:"type"`
+	MeasureUnit string  `json:"measure_unit"`
+	RawJson     string  `json:"raw_json"`
+}
+
+func (q *Queries) GetIikoProductByID(ctx context.Context, id string) (GetIikoProductByIDRow, error) {
+	row := q.db.QueryRowContext(ctx, getIikoProductByID, id)
+	var i GetIikoProductByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.Code,
+		&i.Name,
+		&i.Type,
+		&i.MeasureUnit,
+		&i.RawJson,
+	)
+	return i, err
+}
+
+const getIikoProductsByName = `-- name: GetIikoProductsByName :many
+SELECT
+    id,
+    code,
+    name,
+    type,
+    measure_unit,
+    raw_json
+FROM iiko_products
+WHERE lower(name) = lower(?1)
+`
+
+type GetIikoProductsByNameRow struct {
+	ID          string  `json:"id"`
+	Code        string  `json:"code"`
+	Name        string  `json:"name"`
+	Type        *string `json:"type"`
+	MeasureUnit string  `json:"measure_unit"`
+	RawJson     string  `json:"raw_json"`
+}
+
+func (q *Queries) GetIikoProductsByName(ctx context.Context, name string) ([]GetIikoProductsByNameRow, error) {
+	rows, err := q.db.QueryContext(ctx, getIikoProductsByName, name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetIikoProductsByNameRow
+	for rows.Next() {
+		var i GetIikoProductsByNameRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Code,
+			&i.Name,
+			&i.Type,
+			&i.MeasureUnit,
+			&i.RawJson,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getProducts = `-- name: GetProducts :many
 SELECT
     id,
@@ -74,6 +176,57 @@ func (q *Queries) GetProducts(ctx context.Context, type_ *string) ([]GetProducts
 	var items []GetProductsRow
 	for rows.Next() {
 		var i GetProductsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Code,
+			&i.Name,
+			&i.Type,
+			&i.MeasureUnit,
+			&i.RawJson,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listIikoProductsByGroupID = `-- name: ListIikoProductsByGroupID :many
+SELECT
+    id,
+    code,
+    name,
+    type,
+    measure_unit,
+    raw_json
+FROM iiko_products
+WHERE lower(json_extract(raw_json, '$.groupId')) = lower(?1)
+`
+
+type ListIikoProductsByGroupIDRow struct {
+	ID          string  `json:"id"`
+	Code        string  `json:"code"`
+	Name        string  `json:"name"`
+	Type        *string `json:"type"`
+	MeasureUnit string  `json:"measure_unit"`
+	RawJson     string  `json:"raw_json"`
+}
+
+func (q *Queries) ListIikoProductsByGroupID(ctx context.Context, groupID string) ([]ListIikoProductsByGroupIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, listIikoProductsByGroupID, groupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListIikoProductsByGroupIDRow
+	for rows.Next() {
+		var i ListIikoProductsByGroupIDRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Code,
