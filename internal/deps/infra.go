@@ -6,18 +6,13 @@ import (
 	"strconv"
 
 	"bakery/internal/config"
-	"bakery/internal/domain"
 	"bakery/internal/iiko"
-	"bakery/internal/repo"
 	sqlcrepo "bakery/internal/repo/sqlc"
 )
 
 type InfraDeps struct {
 	Config      *config.Config
 	DB          *sql.DB
-	ProductRepo domain.ProductRepository
-	DoughRepo   domain.DoughRepository
-	OrderRepo   domain.OrderRepository
 	IikoClient  *iiko.Client
 	IikoQueries *sqlcrepo.Queries
 }

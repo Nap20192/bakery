@@ -69,6 +69,7 @@ func isCategoryHeader(line string) bool {
 
 // parseProductLine выделяет название и количество из строки вида "Круассан с шоколадом 25".
 // Если число в конце отсутствует — количество = 1.
+
 func parseProductLine(line string) (name string, qty int) {
 	fields := strings.Fields(line)
 	if len(fields) == 0 {

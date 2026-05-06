@@ -15,8 +15,6 @@ import (
 type baseBot struct {
 	tele      *tele.Bot
 	orderSvc  *app.OrderService
-	orderRepo domain.OrderRepository
-	doughRepo domain.DoughRepository
 }
 
 type OrderBot struct {
@@ -33,8 +31,6 @@ type AdminBot struct {
 func NewOrderBot(
 	token string,
 	orderSvc *app.OrderService,
-	orderRepo domain.OrderRepository,
-	productRepo domain.ProductRepository,
 	doughRepo domain.DoughRepository,
 ) (*OrderBot, error) {
 	b, err := newTelegramBot(token)
