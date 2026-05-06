@@ -141,6 +141,17 @@ func (s *AuthService) LoginTelegramUser(ctx context.Context, telegramID int64, u
 	return authUserToDomain(row), nil
 }
 
+func (s *AuthService) LogoutTelegramUser(ctx context.Context, telegramID int64) error {
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	if err := s.queries.UnlinkTelegramAuthUser(ctx, sqlc.UnlinkTelegramAuthUserParams{
+		TelegramID: &telegramID,
+		UpdatedAt:  now,
+	}); err != nil {
+		return fmt.Errorf("unlink telegram auth user: %w", err)
+	}
+	return nil
+}
+
 func (s *AuthService) GetUserByTelegramID(ctx context.Context, telegramID int64) (domain.AuthUser, error) {
 	user, err := s.queries.GetAuthUserByTelegramID(ctx, &telegramID)
 	if err != nil {

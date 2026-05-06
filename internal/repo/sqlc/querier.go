@@ -39,6 +39,7 @@ type Querier interface {
 	ListOrderItemsByOrderIDs(ctx context.Context, orderIds []int64) ([]OrderItem, error)
 	ListOrders(ctx context.Context, limit int64) ([]Order, error)
 	NextOrderCounter(ctx context.Context, day string) (int64, error)
+	UnlinkTelegramAuthUser(ctx context.Context, arg UnlinkTelegramAuthUserParams) error
 	UpsertGroup(ctx context.Context, arg UpsertGroupParams) (Group, error)
 	UpsertIikoAssemblyChart(ctx context.Context, arg UpsertIikoAssemblyChartParams) (IikoAssemblyChart, error)
 	UpsertIikoPreparedChart(ctx context.Context, arg UpsertIikoPreparedChartParams) (IikoPreparedChart, error)

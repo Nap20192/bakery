@@ -64,6 +64,13 @@ SET
 WHERE id = sqlc.arg(id)
 RETURNING *;
 
+-- name: UnlinkTelegramAuthUser :exec
+UPDATE auth_users
+SET
+    telegram_id = NULL,
+    updated_at = sqlc.arg(updated_at)
+WHERE telegram_id = sqlc.arg(telegram_id);
+
 -- name: GetUserByID :one
 SELECT *
 FROM auth_users
