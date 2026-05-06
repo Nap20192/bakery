@@ -5,17 +5,24 @@
 package repo
 
 type AuthUser struct {
-	ID         int64  `json:"id"`
-	TelegramID int64  `json:"telegram_id"`
-	Username   string `json:"username"`
-	Role       string `json:"role"`
-	CreatedAt  string `json:"created_at"`
-	UpdatedAt  string `json:"updated_at"`
+	ID           int64  `json:"id"`
+	TelegramID   *int64 `json:"telegram_id"`
+	Username     string `json:"username"`
+	PasswordHash string `json:"password_hash"`
+	MetadataJson string `json:"metadata_json"`
+	Role         string `json:"role"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
 }
 
 type ChatsMetadatum struct {
 	ChatID       interface{} `json:"chat_id"`
 	MetadataJson string      `json:"metadata_json"`
+}
+
+type Group struct {
+	Code string `json:"code"`
+	Name string `json:"name"`
 }
 
 type IikoAssemblyChart struct {
@@ -27,11 +34,6 @@ type IikoAssemblyChart struct {
 	ProductWriteoffStrategy              string  `json:"product_writeoff_strategy"`
 	ProductSizeAssemblyStrategy          string  `json:"product_size_assembly_strategy"`
 	EffectiveDirectWriteoffStoreSpecJson string  `json:"effective_direct_writeoff_store_spec_json"`
-	TechnologyDescription                string  `json:"technology_description"`
-	Description                          string  `json:"description"`
-	Appearance                           string  `json:"appearance"`
-	Organoleptic                         string  `json:"organoleptic"`
-	OutputComment                        string  `json:"output_comment"`
 	RawJson                              string  `json:"raw_json"`
 	UpdatedAt                            string  `json:"updated_at"`
 }
@@ -80,18 +82,13 @@ type IikoPreparedChartItem struct {
 }
 
 type IikoProduct struct {
-	ID                string  `json:"id"`
-	Code              string  `json:"code"`
-	Name              string  `json:"name"`
-	Type              *string `json:"type"`
-	OrderItemType     string  `json:"order_item_type"`
-	MeasureUnit       string  `json:"measure_unit"`
-	ProductCategoryID string  `json:"product_category_id"`
-	GroupID           string  `json:"group_id"`
-	ParentGroup       string  `json:"parent_group"`
-	IsDeleted         int64   `json:"is_deleted"`
-	RawJson           string  `json:"raw_json"`
-	UpdatedAt         string  `json:"updated_at"`
+	ID          string  `json:"id"`
+	Code        string  `json:"code"`
+	Name        string  `json:"name"`
+	Type        *string `json:"type"`
+	MeasureUnit string  `json:"measure_unit"`
+	RawJson     string  `json:"raw_json"`
+	UpdatedAt   string  `json:"updated_at"`
 }
 
 type IikoSyncRun struct {
@@ -119,8 +116,9 @@ type OrderCounter struct {
 }
 
 type OrderItem struct {
-	ID          int64  `json:"id"`
-	OrderID     int64  `json:"order_id"`
-	ProductName string `json:"product_name"`
-	Quantity    int64  `json:"quantity"`
+	ID            int64   `json:"id"`
+	OrderID       int64   `json:"order_id"`
+	IikoProductID *string `json:"iiko_product_id"`
+	ProductName   string  `json:"product_name"`
+	Quantity      int64   `json:"quantity"`
 }

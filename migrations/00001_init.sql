@@ -1,6 +1,10 @@
 -- +goose Up
 PRAGMA foreign_keys = ON;
 
+CREATE TABLE IF NOT EXISTS groups (
+    code TEXT PRIMARY KEY,
+    name TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS chats_metadata(
     chat_id string PRIMARY KEY,
     metadata_json TEXT NOT NULL
@@ -8,8 +12,10 @@ CREATE TABLE IF NOT EXISTS chats_metadata(
 
 CREATE TABLE IF NOT EXISTS auth_users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    telegram_id INTEGER NOT NULL UNIQUE,
+    telegram_id INTEGER UNIQUE,
     username TEXT NOT NULL DEFAULT '',
+    password_hash TEXT NOT NULL DEFAULT '',
+    metadata_json TEXT NOT NULL DEFAULT '{}',
     role TEXT NOT NULL DEFAULT 'user',
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -30,6 +36,7 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE TABLE IF NOT EXISTS order_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    iiko_product_id TEXT REFERENCES iiko_products(id) ON DELETE SET NULL,
     product_name TEXT NOT NULL,
     quantity INTEGER NOT NULL
 );
@@ -51,12 +58,7 @@ CREATE TABLE IF NOT EXISTS iiko_products (
     code TEXT NOT NULL DEFAULT '',
     name TEXT NOT NULL,
     type TEXT,
-    order_item_type TEXT NOT NULL DEFAULT '',
     measure_unit TEXT NOT NULL DEFAULT '',
-    product_category_id TEXT NOT NULL DEFAULT '',
-    group_id TEXT NOT NULL DEFAULT '',
-    parent_group TEXT NOT NULL DEFAULT '',
-    is_deleted INTEGER NOT NULL DEFAULT 0,
     raw_json TEXT NOT NULL,
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -70,11 +72,6 @@ CREATE TABLE IF NOT EXISTS iiko_assembly_charts (
     product_writeoff_strategy TEXT NOT NULL DEFAULT '',
     product_size_assembly_strategy TEXT NOT NULL DEFAULT '',
     effective_direct_writeoff_store_spec_json TEXT NOT NULL DEFAULT '',
-    technology_description TEXT NOT NULL DEFAULT '',
-    description TEXT NOT NULL DEFAULT '',
-    appearance TEXT NOT NULL DEFAULT '',
-    organoleptic TEXT NOT NULL DEFAULT '',
-    output_comment TEXT NOT NULL DEFAULT '',
     raw_json TEXT NOT NULL,
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -123,10 +120,11 @@ CREATE TABLE IF NOT EXISTS iiko_prepared_chart_items (
 );
 
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_iiko_product_id ON order_items(iiko_product_id);
 CREATE INDEX IF NOT EXISTS idx_auth_users_role ON auth_users(role);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_auth_users_username ON auth_users(username) WHERE username <> '';
 CREATE INDEX IF NOT EXISTS idx_iiko_products_name ON iiko_products(name);
 CREATE INDEX IF NOT EXISTS idx_iiko_products_type ON iiko_products(type);
-CREATE INDEX IF NOT EXISTS idx_iiko_products_category ON iiko_products(product_category_id);
 CREATE INDEX IF NOT EXISTS idx_iiko_assembly_charts_product ON iiko_assembly_charts(assembled_product_id);
 CREATE INDEX IF NOT EXISTS idx_iiko_assembly_charts_period ON iiko_assembly_charts(date_from, date_to);
 CREATE INDEX IF NOT EXISTS idx_iiko_assembly_chart_items_chart ON iiko_assembly_chart_items(chart_id);
@@ -147,10 +145,11 @@ DROP INDEX IF EXISTS idx_iiko_assembly_chart_items_product;
 DROP INDEX IF EXISTS idx_iiko_assembly_chart_items_chart;
 DROP INDEX IF EXISTS idx_iiko_assembly_charts_period;
 DROP INDEX IF EXISTS idx_iiko_assembly_charts_product;
-DROP INDEX IF EXISTS idx_iiko_products_category;
 DROP INDEX IF EXISTS idx_iiko_products_type;
 DROP INDEX IF EXISTS idx_iiko_products_name;
 DROP INDEX IF EXISTS idx_auth_users_role;
+DROP INDEX IF EXISTS idx_auth_users_username;
+DROP INDEX IF EXISTS idx_order_items_iiko_product_id;
 DROP INDEX IF EXISTS idx_order_items_order_id;
 
 DROP TABLE IF EXISTS iiko_prepared_chart_items;
