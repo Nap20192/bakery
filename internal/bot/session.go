@@ -1,7 +1,7 @@
 package bot
 
 import (
-	"log"
+	"log/slog"
 	"time"
 
 	"bakery/internal/domain"
@@ -13,7 +13,6 @@ const (
 )
 
 type session struct {
-	location  string
 	items     []domain.OrderItem
 	updatedAt time.Time // время последнего изменения
 }
@@ -33,7 +32,6 @@ func (b *OrderBot) updateSession(uid int64, fn func(*session)) {
 
 func (b *OrderBot) clearSession(uid int64) {
 	b.updateSession(uid, func(s *session) {
-		s.location = ""
 		s.items = nil
 	})
 }
@@ -56,7 +54,7 @@ func (b *OrderBot) cleanupLoop() {
 		}
 		b.mu.Unlock()
 		if len(expired) > 0 {
-			log.Printf("SESSION cleanup: удалено %d истёкших сессий", len(expired))
+			slog.Info("session cleanup", "expired", len(expired))
 		}
 	}
 }

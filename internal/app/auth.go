@@ -123,6 +123,24 @@ func (s *AuthService) VerifyPassword(ctx context.Context, username string, passw
 	return authUserToDomain(user), nil
 }
 
+func (s *AuthService) LoginTelegramUser(ctx context.Context, telegramID int64, username string, password string) (domain.AuthUser, error) {
+	user, err := s.VerifyPassword(ctx, username, password)
+	if err != nil {
+		return domain.AuthUser{}, err
+	}
+
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	row, err := s.queries.LinkTelegramAuthUser(ctx, sqlc.LinkTelegramAuthUserParams{
+		TelegramID: &telegramID,
+		UpdatedAt:  now,
+		ID:         user.ID,
+	})
+	if err != nil {
+		return domain.AuthUser{}, fmt.Errorf("link telegram auth user: %w", err)
+	}
+	return authUserToDomain(row), nil
+}
+
 func (s *AuthService) GetUserByTelegramID(ctx context.Context, telegramID int64) (domain.AuthUser, error) {
 	user, err := s.queries.GetAuthUserByTelegramID(ctx, &telegramID)
 	if err != nil {

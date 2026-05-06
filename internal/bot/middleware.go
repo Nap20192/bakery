@@ -16,13 +16,10 @@ const authUserContextKey = "auth_user"
 
 const (
 	permCreateOrder  = "order:create"
-	permViewOrders   = "order:view"
-	permAcceptOrder  = "order:accept"
-	permDeleteOrder  = "order:delete"
-	permCloseOrder   = "order:close"
-	permViewReports  = "report:view"
 	permManageGroups = "group:manage"
 	permManageUsers  = "user:manage"
+	permMonitor      = "monitor:view"
+	permViewOrders   = "order:view"
 )
 
 var rolePermissions = map[string]map[string]struct{}{
@@ -30,21 +27,15 @@ var rolePermissions = map[string]map[string]struct{}{
 		permCreateOrder: {},
 	},
 	domain.RoleBaker: {
-		permViewOrders:  {},
-		permAcceptOrder: {},
-		permDeleteOrder: {},
-		permCloseOrder:  {},
-		permViewReports: {},
+		permMonitor:    {},
+		permViewOrders: {},
 	},
 	domain.RoleAdmin: {
 		permCreateOrder:  {},
-		permViewOrders:   {},
-		permAcceptOrder:  {},
-		permDeleteOrder:  {},
-		permCloseOrder:   {},
-		permViewReports:  {},
 		permManageGroups: {},
 		permManageUsers:  {},
+		permMonitor:      {},
+		permViewOrders:   {},
 	},
 }
 

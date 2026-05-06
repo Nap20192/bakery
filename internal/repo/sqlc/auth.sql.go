@@ -188,3 +188,34 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (AuthUser, error) {
 	)
 	return i, err
 }
+
+const linkTelegramAuthUser = `-- name: LinkTelegramAuthUser :one
+UPDATE auth_users
+SET
+    telegram_id = ?1,
+    updated_at = ?2
+WHERE id = ?3
+RETURNING id, telegram_id, username, password_hash, metadata_json, role, created_at, updated_at
+`
+
+type LinkTelegramAuthUserParams struct {
+	TelegramID *int64 `json:"telegram_id"`
+	UpdatedAt  string `json:"updated_at"`
+	ID         int64  `json:"id"`
+}
+
+func (q *Queries) LinkTelegramAuthUser(ctx context.Context, arg LinkTelegramAuthUserParams) (AuthUser, error) {
+	row := q.db.QueryRowContext(ctx, linkTelegramAuthUser, arg.TelegramID, arg.UpdatedAt, arg.ID)
+	var i AuthUser
+	err := row.Scan(
+		&i.ID,
+		&i.TelegramID,
+		&i.Username,
+		&i.PasswordHash,
+		&i.MetadataJson,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}

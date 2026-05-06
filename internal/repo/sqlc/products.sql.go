@@ -104,7 +104,7 @@ SELECT
     measure_unit,
     raw_json
 FROM iiko_products
-WHERE lower(name) = lower(?1)
+WHERE trim(name) = trim(?1)
 `
 
 type GetIikoProductsByNameRow struct {

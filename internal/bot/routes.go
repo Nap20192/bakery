@@ -1,7 +1,7 @@
 package bot
 
 import (
-	"log"
+	"log/slog"
 	"time"
 
 	tele "gopkg.in/telebot.v3"
@@ -12,19 +12,18 @@ func (b *OrderBot) register() {
 	bt.Use(b.logMiddleware)
 
 	bt.Handle("/start", b.handleStart)
+	bt.Handle("/login", b.handleLogin)
+	bt.Handle("/adduser", b.handleAddUser, b.requirePermissions(permManageUsers))
+	bt.Handle("/addgroup", b.handleAddGroup, b.requirePermissions(permManageGroups))
+	bt.Handle("/groups", b.handleGroups, b.requirePermissions(permMonitor))
+	bt.Handle("/orders", b.handleOrders, b.requirePermissions(permViewOrders))
+	bt.Handle("/monitor", b.handleMonitor, b.requirePermissions(permMonitor))
 	bt.Handle("/template", b.handleTemplate, b.requirePermissions(permCreateOrder))
 	bt.Handle("/cancel", b.handleCancel, b.requirePermissions(permCreateOrder))
 
 	bt.Handle("\fconfirm", b.handleConfirm, b.requirePermissions(permCreateOrder))
 	bt.Handle("\fcancel_cb", b.handleCancelCallback, b.requirePermissions(permCreateOrder))
 
-	bt.Handle("/orders", b.handleOrders, b.requirePermissions(permViewOrders))
-	bt.Handle("/accept", b.handleAcceptOrder, b.requirePermissions(permAcceptOrder))
-	bt.Handle("/delete", b.handleDeleteOrder, b.requirePermissions(permDeleteOrder))
-	bt.Handle("/close", b.handleCloseOrder, b.requirePermissions(permCloseOrder))
-	bt.Handle("/reports", b.handleReports, b.requirePermissions(permViewReports))
-	bt.Handle("/groups_add", b.handleAddGroup, b.requirePermissions(permManageGroups))
-	bt.Handle("/users_add", b.handleAddUser, b.requirePermissions(permManageUsers))
 	bt.Handle(tele.OnText, b.handleText)
 }
 
@@ -53,9 +52,13 @@ func (b *baseBot) logMiddleware(next tele.HandlerFunc) tele.HandlerFunc {
 		if err != nil {
 			status = "err: " + err.Error()
 		}
-		log.Printf("[%s] uid=%d @%s %q → %s (%s)",
-			kind, sender.ID, sender.Username, payload, status,
-			time.Since(start).Round(time.Millisecond),
+		slog.Info("telegram update",
+			"kind", kind,
+			"user_id", sender.ID,
+			"username", sender.Username,
+			"payload", payload,
+			"status", status,
+			"duration", time.Since(start).Round(time.Millisecond).String(),
 		)
 		return err
 	}
