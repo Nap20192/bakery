@@ -12,21 +12,19 @@ func (b *OrderBot) register() {
 	bt.Use(b.logMiddleware)
 
 	bt.Handle("/start", b.handleStart)
-	bt.Handle("/template", b.handleTemplate)
-	bt.Handle("/cancel", b.handleCancel)
+	bt.Handle("/template", b.handleTemplate, b.requirePermissions(permCreateOrder))
+	bt.Handle("/cancel", b.handleCancel, b.requirePermissions(permCreateOrder))
 
-	bt.Handle("\fconfirm", b.handleConfirm)
-	bt.Handle("\fcancel_cb", b.handleCancelCallback)
+	bt.Handle("\fconfirm", b.handleConfirm, b.requirePermissions(permCreateOrder))
+	bt.Handle("\fcancel_cb", b.handleCancelCallback, b.requirePermissions(permCreateOrder))
 
-	bt.Handle(tele.OnText, b.handleText)
-}
-
-func (b *AdminBot) register() {
-	bt := b.tele
-	bt.Use(b.logMiddleware)
-
-	bt.Handle("/start", b.handleStart)
-	bt.Handle("/orders", b.handleOrders)
+	bt.Handle("/orders", b.handleOrders, b.requirePermissions(permViewOrders))
+	bt.Handle("/accept", b.handleAcceptOrder, b.requirePermissions(permAcceptOrder))
+	bt.Handle("/delete", b.handleDeleteOrder, b.requirePermissions(permDeleteOrder))
+	bt.Handle("/close", b.handleCloseOrder, b.requirePermissions(permCloseOrder))
+	bt.Handle("/reports", b.handleReports, b.requirePermissions(permViewReports))
+	bt.Handle("/groups_add", b.handleAddGroup, b.requirePermissions(permManageGroups))
+	bt.Handle("/users_add", b.handleAddUser, b.requirePermissions(permManageUsers))
 	bt.Handle(tele.OnText, b.handleText)
 }
 

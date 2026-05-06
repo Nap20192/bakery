@@ -1,7 +1,6 @@
 package bot
 
-const defaultOrderTemplate = `На Сарыарка
-
+const defaultOrderTemplate = `
 КОКРОКИ
 Кокрок с картофелем 3
 Кокрок с творогом 3

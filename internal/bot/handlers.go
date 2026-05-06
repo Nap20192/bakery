@@ -1,10 +1,10 @@
 package bot
 
 import (
+	"context"
 	"fmt"
 	"html"
 	"log"
-	"sort"
 	"strings"
 
 	"bakery/internal/domain"
@@ -14,28 +14,23 @@ import (
 
 func (b *OrderBot) handleStart(c tele.Context) error {
 	return c.Send(
-		"🍞 *orderbot — batch-заявки*\n\n"+
+		"🍞 *bakery bot*\n\n"+
+			"*Клиент:*\n"+
 			"Отправьте заявку одним сообщением в формате:\n\n"+
 			"`Локация`\n"+
 			"`Категория`\n"+
 			"`Продукт количество`\n\n"+
 			"/template — отправить стандартный шаблон\n"+
-			"/cancel — отменить неподтверждённую заявку",
+			"/cancel — отменить неподтверждённую заявку\n\n"+
+			"*Пекарь/Админ:*\n"+
+			"/orders — последние заказы\n"+
+			"Можно отправить один или несколько номеров заказа, чтобы посмотреть детали.",
 		tele.ModeMarkdown,
 	)
 }
 
 func (b *OrderBot) handleTemplate(c tele.Context) error {
 	return c.Send("<pre>"+html.EscapeString(defaultOrderTemplate)+"</pre>", tele.ModeHTML)
-}
-
-func (b *AdminBot) handleStart(c tele.Context) error {
-	return c.Send(
-		"📦 *adminbot — просмотр заказов*\n\n"+
-			"/orders — последние заказы\n"+
-			"Отправьте один или несколько номеров заказов, чтобы увидеть расчёт теста.",
-		tele.ModeMarkdown,
-	)
 }
 
 func (b *OrderBot) handleCancel(c tele.Context) error {
@@ -45,31 +40,25 @@ func (b *OrderBot) handleCancel(c tele.Context) error {
 
 func (b *OrderBot) handleText(c tele.Context) error {
 	text := strings.TrimSpace(c.Text())
-
-	if isBulkOrder(text) {
-		return b.handleBulkOrder(c, text)
-	}
 	if len(splitNumbers(text)) > 0 {
-		return c.Send("Этот бот создаёт batch-заявки. Для просмотра заказов используйте adminbot.")
-	}
-	if strings.HasPrefix(text, "/") {
-		return c.Send("Неизвестная команда.\n\n/start — формат batch-заявки")
-	}
-	return c.Send("Отправьте batch-заявку одним сообщением. /start — формат заявки.")
-}
-
-func (b *AdminBot) handleText(c tele.Context) error {
-	text := strings.TrimSpace(c.Text())
-	if len(splitNumbers(text)) > 0 {
+		if err := b.ensurePermission(c, permViewOrders); err != nil {
+			return err
+		}
 		return b.handleOrderLookup(c, text)
 	}
-	if strings.HasPrefix(text, "/") {
-		return c.Send("Неизвестная команда.\n\n/start — показать меню")
+	if isBulkOrder(text) {
+		if err := b.ensurePermission(c, permCreateOrder); err != nil {
+			return err
+		}
+		return b.handleBulkOrder(c, text)
 	}
-	return c.Send("Отправьте номер заказа (например `15042026_ORDER_0001`) или /orders.", tele.ModeMarkdown)
+	if strings.HasPrefix(text, "/") {
+		return c.Send("Неизвестная команда.\n\n/start — показать список команд")
+	}
+	return c.Send("Отправьте batch-заявку или номер заказа. /start — список форматов.", tele.ModeMarkdown)
 }
 
-func (b *AdminBot) handleOrderLookup(c tele.Context, text string) error {
+func (b *OrderBot) handleOrderLookup(c tele.Context, text string) error {
 	numbers := splitNumbers(text)
 
 	if len(numbers) == 1 {
@@ -78,26 +67,22 @@ func (b *AdminBot) handleOrderLookup(c tele.Context, text string) error {
 	return b.showMultipleOrders(c, numbers)
 }
 
-func (b *AdminBot) showSingleOrder(c tele.Context, number string) error {
-	order, err := b.orderRepo.GetByNumber(number)
+func (b *OrderBot) showSingleOrder(c tele.Context, number string) error {
+	order, err := b.orderSvc.GetOrderByNumber(context.Background(), number)
 	if err != nil {
 		return c.Send(fmt.Sprintf("Заказ %q не найден.", number))
 	}
-	dough, err := b.orderSvc.CalculateDough(order, b.doughRepo)
-	if err != nil {
-		return c.Send(fmt.Sprintf("Ошибка расчёта теста: %v", err))
-	}
-	return c.Send(formatOrderSummary(order, dough), tele.ModeMarkdown)
+	return c.Send(formatOrderSummary(order), tele.ModeMarkdown)
 }
 
-func (b *AdminBot) showMultipleOrders(c tele.Context, numbers []string) error {
+func (b *OrderBot) showMultipleOrders(c tele.Context, numbers []string) error {
 	var (
 		found    []domain.Order
 		notFound []string
 	)
 
 	for _, num := range numbers {
-		order, err := b.orderRepo.GetByNumber(num)
+		order, err := b.orderSvc.GetOrderByNumber(context.Background(), num)
 		if err != nil {
 			notFound = append(notFound, num)
 			continue
@@ -109,13 +94,7 @@ func (b *AdminBot) showMultipleOrders(c tele.Context, numbers []string) error {
 		return c.Send("Ни один из указанных заказов не найден.")
 	}
 
-	combined := b.orderSvc.CombineOrders(found)
-	dough, err := b.orderSvc.CalculateDough(combined, b.doughRepo)
-	if err != nil {
-		return c.Send(fmt.Sprintf("Ошибка расчёта теста: %v", err))
-	}
-
-	return c.Send(formatMultiOrderSummary(found, notFound, dough), tele.ModeMarkdown)
+	return c.Send(formatMultiOrderSummary(found, notFound), tele.ModeMarkdown)
 }
 
 func splitNumbers(text string) []string {
@@ -146,7 +125,7 @@ func (b *OrderBot) handleConfirm(c tele.Context) error {
 		return c.Send("Заявка пустая.")
 	}
 
-	order, err := b.orderRepo.Create(domain.CreateOrderInput{
+	order, err := b.orderSvc.CreateOrder(context.Background(), domain.CreateOrderInput{
 		Items:    items,
 		Location: location,
 	})
@@ -156,16 +135,7 @@ func (b *OrderBot) handleConfirm(c tele.Context) error {
 	}
 	log.Printf("ORDER created %s uid=%d items=%d", order.Number, c.Sender().ID, len(items))
 
-	doughSummary, err := b.orderSvc.CalculateDough(order, b.doughRepo)
-	if err != nil {
-		log.Printf("ERR dough calc order=%s: %v", order.Number, err)
-		return c.Send(fmt.Sprintf("Заказ %s создан, ошибка расчёта теста: %v", order.Number, err))
-	}
-	for _, d := range doughSummary {
-		log.Printf("DOUGH order=%s %s=%.3f кг", order.Number, d.DoughName, d.TotalKg)
-	}
-
-	return c.Send(formatOrderSummary(order, doughSummary), tele.ModeMarkdown)
+	return c.Send(formatOrderSummary(order), tele.ModeMarkdown)
 }
 
 func (b *OrderBot) handleCancelCallback(c tele.Context) error {
@@ -174,8 +144,8 @@ func (b *OrderBot) handleCancelCallback(c tele.Context) error {
 	return c.Send("Заявка отменена.")
 }
 
-func (b *AdminBot) handleOrders(c tele.Context) error {
-	orders, err := b.orderRepo.List(10)
+func (b *OrderBot) handleOrders(c tele.Context) error {
+	orders, err := b.orderSvc.ListOrders(context.Background(), 10)
 	if err != nil {
 		return c.Send(fmt.Sprintf("Ошибка: %v", err))
 	}
@@ -190,12 +160,47 @@ func (b *AdminBot) handleOrders(c tele.Context) error {
 			o.Number, o.CreatedAt.Local().Format("02.01.2006 15:04"),
 		))
 		for _, it := range o.Items {
-			sb.WriteString(fmt.Sprintf("  • %s × %s\n", it.Product, formatQuantity(it.Quantity)))
+			sb.WriteString(fmt.Sprintf("  • %s × %s\n", it.ProductName, formatQuantity(it.Quantity)))
 		}
 		sb.WriteString("\n")
 	}
 	sb.WriteString("_Отправьте номер заказа чтобы увидеть расчёт теста._")
 	return c.Send(sb.String(), tele.ModeMarkdown)
+}
+
+func (b *OrderBot) handleAcceptOrder(c tele.Context) error {
+	return c.Send("Команда принятия заказа принята. Детальная реализация операции будет добавлена отдельно.")
+}
+
+func (b *OrderBot) handleDeleteOrder(c tele.Context) error {
+	return c.Send("Команда удаления заказа принята. Детальная реализация операции будет добавлена отдельно.")
+}
+
+func (b *OrderBot) handleCloseOrder(c tele.Context) error {
+	return c.Send("Команда закрытия заказа принята. Детальная реализация операции будет добавлена отдельно.")
+}
+
+func (b *OrderBot) handleReports(c tele.Context) error {
+	return c.Send("Раздел отчётов доступен для пекаря и администратора. Детальный отчёт будет добавлен отдельной командой.")
+}
+
+func (b *OrderBot) handleAddGroup(c tele.Context) error {
+	return c.Send("Команда добавления группы принята. Управление группами доступно только администратору.")
+}
+
+func (b *OrderBot) handleAddUser(c tele.Context) error {
+	return c.Send("Команда добавления пользователя принята. Управление пользователями доступно только администратору.")
+}
+
+func (b *OrderBot) ensurePermission(c tele.Context, permission string) error {
+	user, err := b.authUserFromContext(c)
+	if err != nil {
+		return err
+	}
+	if !userHasPermission(user.Role, permission) {
+		return c.Send(fmt.Sprintf("Доступ запрещён: недостаточно прав (%s).", permission))
+	}
+	return nil
 }
 
 func (b *OrderBot) handleBulkOrder(c tele.Context, text string) error {
@@ -205,20 +210,17 @@ func (b *OrderBot) handleBulkOrder(c tele.Context, text string) error {
 		return c.Send("Не удалось распознать позиции в сообщении.")
 	}
 
-	catalog := make(map[string]string, len(b.productNames))
-	for _, name := range b.productNames {
-		catalog[strings.ToLower(name)] = name
-	}
-
 	var items []domain.OrderItem
 	var unknown []string
 
 	for _, line := range parsed {
-		if canonical, ok := catalog[strings.ToLower(line.Name)]; ok {
-			items = append(items, domain.OrderItem{Product: canonical, Quantity: line.Quantity})
-		} else {
+		dish, err := b.orderSvc.ResolveDishByName(context.Background(), line.Name)
+		if err != nil {
 			unknown = append(unknown, line.Name)
+			continue
 		}
+		dish.Quantity = line.Quantity
+		items = append(items, dish)
 	}
 
 	if len(items) == 0 {
@@ -237,7 +239,7 @@ func (b *OrderBot) handleBulkOrder(c tele.Context, text string) error {
 	}
 	sb.WriteString(fmt.Sprintf("\n\n<b>Распознано позиций: %d</b>\n", len(items)))
 	for _, it := range items {
-		sb.WriteString(fmt.Sprintf("• %s — %s шт.\n", html.EscapeString(it.Product), formatQuantity(it.Quantity)))
+		sb.WriteString(fmt.Sprintf("• %s — %s шт.\n", html.EscapeString(it.ProductName), formatQuantity(it.Quantity)))
 	}
 	if len(unknown) > 0 {
 		sb.WriteString(fmt.Sprintf("\n<b>Ошибки: не найдены в каталоге (%d)</b>\n", len(unknown)))
@@ -273,7 +275,7 @@ func formatCopyableOrder(location string, items []domain.OrderItem, unknown []st
 		sb.WriteString("\n")
 	}
 	for _, it := range items {
-		sb.WriteString(fmt.Sprintf("%s %s\n", it.Product, formatQuantity(it.Quantity)))
+		sb.WriteString(fmt.Sprintf("%s %s\n", it.ProductName, formatQuantity(it.Quantity)))
 	}
 	if len(unknown) > 0 {
 		sb.WriteString("\nНЕ НАЙДЕНЫ В КАТАЛОГЕ:\n")
@@ -285,7 +287,7 @@ func formatCopyableOrder(location string, items []domain.OrderItem, unknown []st
 	return strings.TrimSpace(sb.String())
 }
 
-func formatMultiOrderSummary(orders []domain.Order, notFound []string, dough []domain.DoughSummary) string {
+func formatMultiOrderSummary(orders []domain.Order, notFound []string) string {
 	var sb strings.Builder
 
 	sb.WriteString(fmt.Sprintf("📦 *Сводка по %d заказам*\n\n", len(orders)))
@@ -293,7 +295,7 @@ func formatMultiOrderSummary(orders []domain.Order, notFound []string, dough []d
 	for _, o := range orders {
 		sb.WriteString(fmt.Sprintf("`%s` (%s)\n", o.Number, o.CreatedAt.Local().Format("02.01 15:04")))
 		for _, it := range o.Items {
-			sb.WriteString(fmt.Sprintf("  • %s × %s\n", it.Product, formatQuantity(it.Quantity)))
+			sb.WriteString(fmt.Sprintf("  • %s × %s\n", it.ProductName, formatQuantity(it.Quantity)))
 		}
 	}
 
@@ -304,34 +306,16 @@ func formatMultiOrderSummary(orders []domain.Order, notFound []string, dough []d
 		}
 	}
 
-	if len(dough) > 0 {
-		sort.Slice(dough, func(i, j int) bool { return dough[i].DoughName < dough[j].DoughName })
-		sb.WriteString("\n*Итого тесто:*\n")
-		for _, d := range dough {
-			sb.WriteString(fmt.Sprintf("🧁 %s: *%.3f кг*\n", d.DoughName, d.TotalKg))
-		}
-	} else {
-		sb.WriteString("\nТесто по заявкам не требуется.")
-	}
 	return sb.String()
 }
 
-func formatOrderSummary(order domain.Order, dough []domain.DoughSummary) string {
+func formatOrderSummary(order domain.Order) string {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("✅ *Заказ %s*\n", order.Number))
 	sb.WriteString(fmt.Sprintf("🕐 %s\n\n", order.CreatedAt.Local().Format("02.01.2006 15:04")))
 	sb.WriteString("*Состав заявки:*\n")
 	for _, it := range order.Items {
-		sb.WriteString(fmt.Sprintf("• %s — %s шт.\n", it.Product, formatQuantity(it.Quantity)))
-	}
-	if len(dough) > 0 {
-		sort.Slice(dough, func(i, j int) bool { return dough[i].DoughName < dough[j].DoughName })
-		sb.WriteString("\n*Потребность в тесте:*\n")
-		for _, d := range dough {
-			sb.WriteString(fmt.Sprintf("🧁 %s: *%.3f кг*\n", d.DoughName, d.TotalKg))
-		}
-	} else {
-		sb.WriteString("\nТесто по заявке не требуется.")
+		sb.WriteString(fmt.Sprintf("• %s — %s шт.\n", it.ProductName, formatQuantity(it.Quantity)))
 	}
 	return sb.String()
 }

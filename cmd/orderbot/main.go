@@ -35,6 +35,7 @@ func main() {
 	defer closeDB(infra)
 
 	appDeps, err := deps.NewAppDeps(
+		deps.WithAuthService(infra),
 		deps.WithOrderService(infra),
 		deps.WithSyncService(infra),
 		deps.WithOrderBot(infra),
