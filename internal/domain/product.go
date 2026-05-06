@@ -42,6 +42,7 @@ func (s SubProduct) Ingredients() []Ingredient { return s.IIngredients }
 
 type Product struct {
 	Name        string       `json:"name"`
+	Type        string       `json:"type,omitempty"`
 	Quantity    float64      `json:"quantity"`
 	Unit        string       `json:"unit"`
 	Ingredients []Ingredient `json:"ingredients,omitempty"`

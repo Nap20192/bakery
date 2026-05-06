@@ -61,23 +61,14 @@ func (o *OrderService) countRecursive(ingredients []domain.Ingredient, target st
 	return total
 }
 
-// CalculateDough возвращает суммарное количество теста каждого вида по заявке.
-//
-// Формула: тесто_кг = количество_на_1шт_по_рецепту × заказано_штук
-//
-// product.Quantity в JSON — вес готового изделия (например 0.5418 кг для булочки),
-// а не количество штук в рецепте. Поэтому мы берём базовый рецепт (1 шт)
-// и умножаем ингредиент-тесто на количество штук в заказе.
 func (o *OrderService) CalculateDough(order domain.Order, doughRepo domain.DoughRepository) ([]domain.DoughSummary, error) {
 	totals := make(map[string]float64)
 
 	for _, item := range order.Items {
-		// Берём базовый рецепт на 1 штуку без масштабирования
 		product, err := o.repo.GetBase(item.Product)
 		if err != nil {
 			return nil, fmt.Errorf("продукт %q: %w", item.Product, err)
 		}
-		// тесто_итого = тесто_на_1шт × кол-во_штук
 		for _, ing := range product.Ingredients {
 			if doughRepo.IsDough(ing.Name()) {
 				totals[ing.Name()] += ing.Quantity() * float64(item.Quantity)

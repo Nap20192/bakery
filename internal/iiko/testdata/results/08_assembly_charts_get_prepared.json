@@ -1,0 +1,20 @@
+{
+  "knownRevision": -1,
+  "assemblyCharts": null,
+  "preparedCharts": [
+    {
+      "id": "",
+      "assembledProductId": "",
+      "dateFrom": "",
+      "dateTo": null,
+      "effectiveDirectWriteoffStoreSpecification": {
+        "departments": null,
+        "inverse": false
+      },
+      "productSizeAssemblyStrategy": "",
+      "items": null
+    }
+  ],
+  "deletedAssemblyChartIds": null,
+  "deletedPreparedChartIds": null
+}

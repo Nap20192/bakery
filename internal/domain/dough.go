@@ -21,7 +21,7 @@ type DoughRepository interface {
 }
 
 type OrderRepository interface {
-	Create(items []OrderItem) (Order, error)
+	Create(input CreateOrderInput) (Order, error)
 	GetByNumber(number string) (Order, error)
 	List(limit int) ([]Order, error)
 }

@@ -1,0 +1,3 @@
+{
+  "error": "iiko: unexpected status 400: java.lang.IllegalArgumentException: knownRevision is not specified\n"
+}

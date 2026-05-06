@@ -7,8 +7,15 @@ import (
 type Order struct {
 	ID        string      `json:"id"`
 	Number    string      `json:"number"`
+	Location  string      `json:"location"`
 	Items     []OrderItem `json:"items"`
 	CreatedAt time.Time   `json:"created_at"`
+}
+
+type CreateOrderInput struct {
+	Items    []OrderItem
+	Location string
+	Date     time.Time // если zero — используется time.Now()
 }
 
 type OrderItem struct {
@@ -29,6 +36,7 @@ func CountIngredient(items []Ingredient, targetName string) float64 {
 	}
 	return total
 }
+
 func FindIngredientsRecursive(items []Ingredient, target string) (float64, []Ingredient) {
 	var total float64
 	var found []Ingredient
