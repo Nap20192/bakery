@@ -463,8 +463,7 @@ INSERT INTO iiko_products (
     ?6,
     ?7
 )
-ON CONFLICT(id) DO UPDATE SET
-    code = excluded.code,
+ON CONFLICT(code) DO UPDATE SET
     name = excluded.name,
     type = excluded.type,
     measure_unit = excluded.measure_unit,

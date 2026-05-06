@@ -8,10 +8,12 @@ import (
 )
 
 type AppDeps struct {
-	AuthService  *app.AuthService
-	OrderService *app.OrderService
-	SyncService  *app.SyncService
-	OrderBot     *bot.OrderBot
+	AuthService    *app.AuthService
+	GroupService   *app.GroupService
+	MonitorService *app.MonitorService
+	OrderService   *app.OrderService
+	SyncService    *app.SyncService
+	OrderBot       *bot.OrderBot
 }
 
 type appOption func(*AppDeps) error
@@ -46,6 +48,26 @@ func WithOrderService(infra *InfraDeps) appOption {
 	}
 }
 
+func WithGroupService(infra *InfraDeps) appOption {
+	return func(deps *AppDeps) error {
+		if infra == nil || infra.queries == nil {
+			return fmt.Errorf("missing dependencies for GroupService")
+		}
+		deps.GroupService = app.NewGroupService(infra.queries)
+		return nil
+	}
+}
+
+func WithMonitorService(infra *InfraDeps) appOption {
+	return func(deps *AppDeps) error {
+		if infra == nil || infra.queries == nil {
+			return fmt.Errorf("missing dependencies for MonitorService")
+		}
+		deps.MonitorService = app.NewMonitorService(infra.queries)
+		return nil
+	}
+}
+
 func WithSyncService(infra *InfraDeps) appOption {
 	return func(deps *AppDeps) error {
 		if infra == nil || infra.config == nil || infra.DB == nil || infra.iikoClient == nil || infra.queries == nil {
@@ -65,13 +87,13 @@ func WithSyncService(infra *InfraDeps) appOption {
 
 func WithOrderBot(infra *InfraDeps) appOption {
 	return func(deps *AppDeps) error {
-		if infra == nil || infra.config == nil || deps.OrderService == nil || deps.AuthService == nil {
+		if infra == nil || infra.config == nil || deps.OrderService == nil || deps.AuthService == nil || deps.GroupService == nil || deps.MonitorService == nil {
 			return fmt.Errorf("missing dependencies for OrderBot")
 		}
 		if infra.config.Telegram.OrderBotToken == "" {
 			return fmt.Errorf("ORDER_BOT_TOKEN не задан")
 		}
-		orderBot, err := bot.NewOrderBot(infra.config.Telegram.OrderBotToken, deps.OrderService, deps.AuthService)
+		orderBot, err := bot.NewOrderBot(infra.config.Telegram.OrderBotToken, deps.OrderService, deps.AuthService, deps.GroupService, deps.MonitorService)
 		if err != nil {
 			return err
 		}

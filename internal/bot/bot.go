@@ -11,9 +11,11 @@ import (
 )
 
 type baseBot struct {
-	tele     *tele.Bot
-	orderSvc *app.OrderService
-	authSvc  *app.AuthService
+	tele       *tele.Bot
+	orderSvc   *app.OrderService
+	authSvc    *app.AuthService
+	groupSvc   *app.GroupService
+	monitorSvc *app.MonitorService
 }
 
 type OrderBot struct {
@@ -26,6 +28,8 @@ func NewOrderBot(
 	token string,
 	orderSvc *app.OrderService,
 	authSvc *app.AuthService,
+	groupSvc *app.GroupService,
+	monitorSvc *app.MonitorService,
 ) (*OrderBot, error) {
 	b, err := newTelegramBot(token)
 	if err != nil {
@@ -34,9 +38,11 @@ func NewOrderBot(
 
 	bot := &OrderBot{
 		baseBot: &baseBot{
-			tele:     b,
-			orderSvc: orderSvc,
-			authSvc:  authSvc,
+			tele:       b,
+			orderSvc:   orderSvc,
+			authSvc:    authSvc,
+			groupSvc:   groupSvc,
+			monitorSvc: monitorSvc,
 		},
 		sessions: make(map[int64]*session),
 	}

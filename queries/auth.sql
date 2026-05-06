@@ -56,6 +56,14 @@ SELECT *
 FROM auth_users
 WHERE username = sqlc.arg(username);
 
+-- name: LinkTelegramAuthUser :one
+UPDATE auth_users
+SET
+    telegram_id = sqlc.arg(telegram_id),
+    updated_at = sqlc.arg(updated_at)
+WHERE id = sqlc.arg(id)
+RETURNING *;
+
 -- name: GetUserByID :one
 SELECT *
 FROM auth_users

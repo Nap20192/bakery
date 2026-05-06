@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"bakery/internal/app/spec"
 	"bakery/internal/domain"
@@ -155,7 +156,7 @@ type BulkOrderValidationResult struct {
 	Errors     []string
 }
 
-var lineRe = regexp.MustCompile(`^(\d+)\s+([a-z\s]+)\s+(\d+(?:\.\d+)?)$`)
+var lineRe = regexp.MustCompile(`^(\S+)\s+(.+?)\s+(\d+(?:[.,]\d+)?)$`)
 var singleWordRe = regexp.MustCompile(`^\p{L}+$`)
 
 func (s *OrderService) ValidateBulkOrder(ctx context.Context, order string) BulkOrderValidationResult {
@@ -184,7 +185,7 @@ func (s *OrderService) ValidateBulkOrder(ctx context.Context, order string) Bulk
 		name := matches[2]
 		qtyStr := matches[3]
 
-		qty, err := strconv.ParseFloat(qtyStr, 64)
+		qty, err := strconv.ParseFloat(strings.ReplaceAll(qtyStr, ",", "."), 64)
 
 		if err != nil || qty < 0 {
 			result.Errors = append(result.Errors,
@@ -235,4 +236,64 @@ func parseRFC3339(value string) time.Time {
 		return time.Time{}
 	}
 	return t
+}
+
+func (s *OrderService) GetTemplate(ctx context.Context) (string, error) {
+	lines := strings.Split(defaultOrderTemplate, "\n")
+	result := make([]string, 0, len(lines))
+	var missing []string
+
+	for _, line := range lines {
+		name := strings.TrimSpace(line)
+		if name == "" {
+			if len(result) > 0 && result[len(result)-1] != "" {
+				result = append(result, "")
+			}
+			continue
+		}
+		if isTemplateHeader(name) {
+			result = append(result, name)
+			continue
+		}
+
+		products, err := s.queries.GetIikoProductsByName(ctx, name)
+		if err != nil {
+			return "", fmt.Errorf("get product %q: %w", name, err)
+		}
+
+		dishes := make([]sqlc.GetIikoProductsByNameRow, 0, len(products))
+		for _, product := range products {
+			if product.Type != nil && strings.EqualFold(*product.Type, "DISH") {
+				dishes = append(dishes, product)
+			}
+		}
+		if len(dishes) == 0 {
+			missing = append(missing, name)
+			continue
+		}
+		sort.Slice(dishes, func(i, j int) bool {
+			return dishes[i].Code < dishes[j].Code
+		})
+
+		result = append(result, fmt.Sprintf("%s %s 0", dishes[0].Code, dishes[0].Name))
+	}
+	if len(missing) > 0 {
+		return "", fmt.Errorf("template dishes not found: %s", strings.Join(missing, ", "))
+	}
+
+	return strings.TrimSpace(strings.Join(result, "\n")), nil
+}
+
+func isTemplateHeader(line string) bool {
+	hasLetter := false
+	for _, r := range line {
+		if !unicode.IsLetter(r) {
+			continue
+		}
+		hasLetter = true
+		if unicode.IsLower(r) {
+			return false
+		}
+	}
+	return hasLetter
 }

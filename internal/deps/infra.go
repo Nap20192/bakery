@@ -44,7 +44,20 @@ func WithSQLite(db *sql.DB) infraOption {
 		if deps.config == nil {
 			return fmt.Errorf("missing dependencies for SQLite")
 		}
+		if db == nil {
+			return fmt.Errorf("missing sqlite db")
+		}
 		deps.DB = db
+		return nil
+	}
+}
+
+func WithRepositories() infraOption {
+	return func(deps *InfraDeps) error {
+		if deps.DB == nil {
+			return fmt.Errorf("missing dependencies for repositories")
+		}
+		deps.queries = sqlc.New(deps.DB)
 		return nil
 	}
 }

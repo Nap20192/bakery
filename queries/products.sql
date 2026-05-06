@@ -48,7 +48,7 @@ SELECT
     measure_unit,
     raw_json
 FROM iiko_products
-WHERE lower(name) = lower(sqlc.arg(name));
+WHERE trim(name) = trim(sqlc.arg(name));
 
 -- name: ListIikoProductsByGroupID :many
 SELECT

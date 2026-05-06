@@ -2,51 +2,68 @@ package main
 
 import (
 	"context"
-	"log"
+	"database/sql"
+	"fmt"
+	"log/slog"
+	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/joho/godotenv"
 	"golang.org/x/sync/errgroup"
+	_ "modernc.org/sqlite"
 
 	"bakery/internal/config"
 	"bakery/internal/deps"
+	"bakery/pkg/logger"
 )
 
-func init() {
-	if err := godotenv.Load(); err != nil {
-		log.Print("No .env file found")
-	}
-}
-
 func main() {
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
+	_ = godotenv.Load()
+
+	log, err := logger.InitLogger(getEnv("LOG_LEVEL", "INFO"), getEnvBool("LOG_PRETTY", true), getEnv("LOG_DIR", ""))
+	if err != nil {
+		panic(err)
+	}
+	slog.SetDefault(log)
+
+	cfg := config.New()
+	db, err := openSQLite(cfg.DBPath)
+	if err != nil {
+		log.Error("open db failed", "error", err)
+		os.Exit(1)
+	}
+	defer closeDB(log, db)
 
 	infra, err := deps.NewInfraDeps(
-		deps.WithConfig(config.New()),
-		deps.WithSQLite(),
+		deps.WithConfig(cfg),
+		deps.WithSQLite(db),
 		deps.WithRepositories(),
-		deps.WithIikoClient(),
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Error("build infra deps failed", "error", err)
+		os.Exit(1)
 	}
-	defer closeDB(infra)
 
 	appDeps, err := deps.NewAppDeps(
 		deps.WithAuthService(infra),
 		deps.WithOrderService(infra),
-		deps.WithSyncService(infra),
+		deps.WithGroupService(infra),
+		deps.WithMonitorService(infra),
 		deps.WithOrderBot(infra),
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Error("build app deps failed", "error", err)
+		os.Exit(1)
 	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
 	group, groupCtx := errgroup.WithContext(ctx)
 	group.Go(func() error {
-		log.Println("orderbot запущен")
+		log.Info("orderbot started")
 		appDeps.OrderBot.Start()
 		return nil
 	})
@@ -55,22 +72,52 @@ func main() {
 		appDeps.OrderBot.Stop()
 		return nil
 	})
-	group.Go(func() error {
-		return appDeps.SyncService.Run(groupCtx)
-	})
 
 	if err := group.Wait(); err != nil {
-		log.Fatal(err)
+		log.Error("orderbot stopped with error", "error", err)
+		os.Exit(1)
+	}
+	log.Info("orderbot stopped")
+}
+
+func openSQLite(path string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite", fmt.Sprintf("file:%s?cache=shared&mode=rwc", path))
+	if err != nil {
+		return nil, err
+	}
+	db.SetMaxOpenConns(1)
+
+	if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	return db, nil
+}
+
+func closeDB(log *slog.Logger, db *sql.DB) {
+	if db == nil {
+		return
+	}
+	if err := db.Close(); err != nil {
+		log.Error("close db failed", "error", err)
 	}
 }
 
-func closeDB(infra *deps.InfraDeps) {
-	if infra == nil || infra.DB == nil {
-		return
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
 	}
-	log.Println("Закрываем БД...")
-	if err := infra.DB.Close(); err != nil {
-		log.Printf("db.Close: %v", err)
+	return fallback
+}
+
+func getEnvBool(key string, fallback bool) bool {
+	value, ok := os.LookupEnv(key)
+	if !ok {
+		return fallback
 	}
-	log.Println("Остановлен.")
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }

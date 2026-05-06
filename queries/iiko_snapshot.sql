@@ -48,8 +48,7 @@ INSERT INTO iiko_products (
     sqlc.arg(raw_json),
     sqlc.arg(updated_at)
 )
-ON CONFLICT(id) DO UPDATE SET
-    code = excluded.code,
+ON CONFLICT(code) DO UPDATE SET
     name = excluded.name,
     type = excluded.type,
     measure_unit = excluded.measure_unit,
