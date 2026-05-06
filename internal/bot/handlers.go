@@ -190,7 +190,7 @@ func (b *AdminBot) handleOrders(c tele.Context) error {
 			o.Number, o.CreatedAt.Local().Format("02.01.2006 15:04"),
 		))
 		for _, it := range o.Items {
-			sb.WriteString(fmt.Sprintf("  • %s × %d\n", it.Product, it.Quantity))
+			sb.WriteString(fmt.Sprintf("  • %s × %s\n", it.Product, formatQuantity(it.Quantity)))
 		}
 		sb.WriteString("\n")
 	}
@@ -237,7 +237,7 @@ func (b *OrderBot) handleBulkOrder(c tele.Context, text string) error {
 	}
 	sb.WriteString(fmt.Sprintf("\n\n<b>Распознано позиций: %d</b>\n", len(items)))
 	for _, it := range items {
-		sb.WriteString(fmt.Sprintf("• %s — %d шт.\n", html.EscapeString(it.Product), it.Quantity))
+		sb.WriteString(fmt.Sprintf("• %s — %s шт.\n", html.EscapeString(it.Product), formatQuantity(it.Quantity)))
 	}
 	if len(unknown) > 0 {
 		sb.WriteString(fmt.Sprintf("\n<b>Ошибки: не найдены в каталоге (%d)</b>\n", len(unknown)))
@@ -273,7 +273,7 @@ func formatCopyableOrder(location string, items []domain.OrderItem, unknown []st
 		sb.WriteString("\n")
 	}
 	for _, it := range items {
-		sb.WriteString(fmt.Sprintf("%s %d\n", it.Product, it.Quantity))
+		sb.WriteString(fmt.Sprintf("%s %s\n", it.Product, formatQuantity(it.Quantity)))
 	}
 	if len(unknown) > 0 {
 		sb.WriteString("\nНЕ НАЙДЕНЫ В КАТАЛОГЕ:\n")
@@ -293,7 +293,7 @@ func formatMultiOrderSummary(orders []domain.Order, notFound []string, dough []d
 	for _, o := range orders {
 		sb.WriteString(fmt.Sprintf("`%s` (%s)\n", o.Number, o.CreatedAt.Local().Format("02.01 15:04")))
 		for _, it := range o.Items {
-			sb.WriteString(fmt.Sprintf("  • %s × %d\n", it.Product, it.Quantity))
+			sb.WriteString(fmt.Sprintf("  • %s × %s\n", it.Product, formatQuantity(it.Quantity)))
 		}
 	}
 
@@ -322,7 +322,7 @@ func formatOrderSummary(order domain.Order, dough []domain.DoughSummary) string 
 	sb.WriteString(fmt.Sprintf("🕐 %s\n\n", order.CreatedAt.Local().Format("02.01.2006 15:04")))
 	sb.WriteString("*Состав заявки:*\n")
 	for _, it := range order.Items {
-		sb.WriteString(fmt.Sprintf("• %s — %d шт.\n", it.Product, it.Quantity))
+		sb.WriteString(fmt.Sprintf("• %s — %s шт.\n", it.Product, formatQuantity(it.Quantity)))
 	}
 	if len(dough) > 0 {
 		sort.Slice(dough, func(i, j int) bool { return dough[i].DoughName < dough[j].DoughName })
@@ -334,4 +334,14 @@ func formatOrderSummary(order domain.Order, dough []domain.DoughSummary) string 
 		sb.WriteString("\nТесто по заявке не требуется.")
 	}
 	return sb.String()
+}
+
+func formatQuantity(quantity float64) string {
+	result := fmt.Sprintf("%.3f", quantity)
+	result = strings.TrimRight(result, "0")
+	result = strings.TrimRight(result, ".")
+	if result == "" {
+		return "0"
+	}
+	return result
 }

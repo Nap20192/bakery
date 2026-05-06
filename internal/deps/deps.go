@@ -29,10 +29,10 @@ func NewAppDeps(opts ...appOption) (*AppDeps, error) {
 
 func WithAuthService(infra *InfraDeps) appOption {
 	return func(deps *AppDeps) error {
-		if infra == nil || infra.IikoQueries == nil {
+		if infra == nil || infra.queries == nil {
 			return fmt.Errorf("missing dependencies for AuthService")
 		}
-		deps.AuthService = app.NewAuthService(infra.IikoQueries)
+		deps.AuthService = app.NewAuthService(infra.queries)
 		return nil
 	}
 }
@@ -49,16 +49,16 @@ func WithOrderService(infra *InfraDeps) appOption {
 
 func WithSyncService(infra *InfraDeps) appOption {
 	return func(deps *AppDeps) error {
-		if infra == nil || infra.Config == nil || infra.DB == nil || infra.IikoClient == nil || infra.IikoQueries == nil {
+		if infra == nil || infra.config == nil || infra.DB == nil || infra.iikoClient == nil || infra.queries == nil {
 			return fmt.Errorf("missing dependencies for SyncService")
 		}
 		deps.SyncService = app.NewSyncService(
-			infra.IikoClient,
+			infra.iikoClient,
 			infra.DB,
-			infra.IikoQueries,
-			infra.Config.Sync.Interval,
-			infra.Config.Sync.DateFrom,
-			infra.Config.Sync.DateTo,
+			infra.queries,
+			infra.config.Sync.Interval,
+			infra.config.Sync.DateFrom,
+			infra.config.Sync.DateTo,
 		)
 		return nil
 	}
@@ -66,13 +66,13 @@ func WithSyncService(infra *InfraDeps) appOption {
 
 func WithOrderBot(infra *InfraDeps) appOption {
 	return func(deps *AppDeps) error {
-		if infra == nil || infra.Config == nil || infra.ProductRepo == nil || infra.OrderRepo == nil || infra.DoughRepo == nil || deps.OrderService == nil {
+		if infra == nil || infra.config == nil || infra.ProductRepo == nil || infra.OrderRepo == nil || infra.DoughRepo == nil || deps.OrderService == nil {
 			return fmt.Errorf("missing dependencies for OrderBot")
 		}
-		if infra.Config.Telegram.OrderBotToken == "" {
+		if infra.config.Telegram.OrderBotToken == "" {
 			return fmt.Errorf("ORDER_BOT_TOKEN не задан")
 		}
-		orderBot, err := bot.NewOrderBot(infra.Config.Telegram.OrderBotToken, deps.OrderService, infra.OrderRepo, infra.ProductRepo, infra.DoughRepo)
+		orderBot, err := bot.NewOrderBot(infra.config.Telegram.OrderBotToken, deps.OrderService, infra.OrderRepo, infra.ProductRepo, infra.DoughRepo)
 		if err != nil {
 			return err
 		}
@@ -83,13 +83,13 @@ func WithOrderBot(infra *InfraDeps) appOption {
 
 func WithAdminBot(infra *InfraDeps) appOption {
 	return func(deps *AppDeps) error {
-		if infra == nil || infra.Config == nil || infra.OrderRepo == nil || infra.DoughRepo == nil || deps.OrderService == nil {
+		if infra == nil || infra.config == nil || infra.OrderRepo == nil || infra.DoughRepo == nil || deps.OrderService == nil {
 			return fmt.Errorf("missing dependencies for AdminBot")
 		}
-		if infra.Config.Telegram.AdminBotToken == "" {
+		if infra.config.Telegram.AdminBotToken == "" {
 			return fmt.Errorf("ADMIN_BOT_TOKEN не задан")
 		}
-		adminBot, err := bot.NewAdminBot(infra.Config.Telegram.AdminBotToken, deps.OrderService, infra.OrderRepo, infra.DoughRepo)
+		adminBot, err := bot.NewAdminBot(infra.config.Telegram.AdminBotToken, deps.OrderService, infra.OrderRepo, infra.DoughRepo)
 		if err != nil {
 			return err
 		}

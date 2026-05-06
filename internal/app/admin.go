@@ -1,10 +1,11 @@
 package app
 
-import (
-	"bakery/internal/domain"
-)
+import "bakery/internal/repo/sqlc"
 
-type AdminService struct{
-	repo domain.OrderRepository
+type AdminService struct {
+	queries *sqlc.Queries
 }
 
+func NewAdminService(queries *sqlc.Queries) *AdminService {
+	return &AdminService{queries: queries}
+}

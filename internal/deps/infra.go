@@ -7,14 +7,14 @@ import (
 
 	"bakery/internal/config"
 	"bakery/internal/iiko"
-	sqlcrepo "bakery/internal/repo/sqlc"
+	"bakery/internal/repo/sqlc"
 )
 
 type InfraDeps struct {
-	Config      *config.Config
-	DB          *sql.DB
-	IikoClient  *iiko.Client
-	IikoQueries *sqlcrepo.Queries
+	config     *config.Config
+	DB         *sql.DB
+	iikoClient *iiko.Client
+	queries    *sqlc.Queries
 }
 
 type infraOption func(*InfraDeps) error
@@ -34,49 +34,27 @@ func WithConfig(cfg *config.Config) infraOption {
 		if cfg == nil {
 			return fmt.Errorf("missing config")
 		}
-		deps.Config = cfg
+		deps.config = cfg
 		return nil
 	}
 }
 
-func WithSQLite() infraOption {
+func WithSQLite(db *sql.DB) infraOption {
 	return func(deps *InfraDeps) error {
-		if deps.Config == nil {
+		if deps.config == nil {
 			return fmt.Errorf("missing dependencies for SQLite")
-		}
-		db, err := repo.OpenSQLite(deps.Config.DBPath)
-		if err != nil {
-			return err
 		}
 		deps.DB = db
 		return nil
 	}
 }
 
-func WithRepositories() infraOption {
-	return func(deps *InfraDeps) error {
-		if deps.Config == nil || deps.DB == nil {
-			return fmt.Errorf("missing dependencies for repositories")
-		}
-		productRepo := repo.NewJsonProductRepository("all.json")
-		doughRepo, err := repo.NewJsonDoughRepository("daugh.json")
-		if err != nil {
-			return err
-		}
-		deps.ProductRepo = productRepo
-		deps.DoughRepo = doughRepo
-		deps.OrderRepo = repo.NewSQLiteOrderRepo(deps.DB)
-		deps.IikoQueries = sqlcrepo.New(deps.DB)
-		return nil
-	}
-}
-
 func WithIikoClient() infraOption {
 	return func(deps *InfraDeps) error {
-		if deps.Config == nil {
+		if deps.config == nil {
 			return fmt.Errorf("missing dependencies for iiko client")
 		}
-		cfg := deps.Config.Iiko
+		cfg := deps.config.Iiko
 		if cfg.Host == "" || cfg.Login == "" || cfg.Password == "" {
 			return fmt.Errorf("IIKO_HOST, IIKO_LOGIN and IIKO_PASSWORD must be set")
 		}
@@ -84,7 +62,7 @@ func WithIikoClient() infraOption {
 		if err != nil {
 			return err
 		}
-		deps.IikoClient = client
+		deps.iikoClient = client
 		return nil
 	}
 }
