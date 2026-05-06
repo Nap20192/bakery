@@ -13,6 +13,7 @@ func (b *OrderBot) register() {
 
 	bt.Handle("/start", b.handleStart)
 	bt.Handle("/login", b.handleLogin)
+	bt.Handle("/logout", b.handleLogout)
 	bt.Handle("/adduser", b.handleAddUser, b.requirePermissions(permManageUsers))
 	bt.Handle("/addgroup", b.handleAddGroup, b.requirePermissions(permManageGroups))
 	bt.Handle("/groups", b.handleGroups, b.requirePermissions(permMonitor))

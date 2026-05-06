@@ -19,11 +19,13 @@ func (b *OrderBot) handleStart(c tele.Context) error {
 			"<code>код название количество</code>\n\n"+
 			"После проверки бот покажет найденные позиции, ошибки и кнопку отправки.\n\n"+
 			"/login username password - войти\n"+
+			"/logout - выйти\n"+
 			"/adduser username password role - добавить пользователя\n"+
 			"/addgroup product_code - добавить группу\n"+
 			"/groups - посмотреть группы\n"+
 			"/orders - посмотреть заказы\n"+
-			"/monitor order_number group_code - мониторинг заказа\n"+
+			"/monitor order_number - мониторинг по всем группам\n"+
+			"/monitor order_number group_code - мониторинг по группе\n"+
 			"/template - стандартный шаблон\n"+
 			"/cancel - отменить неподтвержденный заказ",
 		tele.ModeHTML,
@@ -44,6 +46,17 @@ func (b *OrderBot) handleLogin(c tele.Context) error {
 
 	c.Set(authUserContextKey, user)
 	return c.Send(fmt.Sprintf("Вход выполнен. Роль: %s", user.Role))
+}
+
+func (b *OrderBot) handleLogout(c tele.Context) error {
+	if c.Sender() == nil {
+		return c.Send("Не удалось определить пользователя.")
+	}
+	if err := b.authSvc.LogoutTelegramUser(context.Background(), c.Sender().ID); err != nil {
+		return c.Send(fmt.Sprintf("Ошибка выхода: %v", err))
+	}
+	c.Set(authUserContextKey, nil)
+	return c.Send("Вы вышли.")
 }
 
 func (b *OrderBot) handleAddUser(c tele.Context) error {
@@ -120,24 +133,43 @@ func (b *OrderBot) handleOrders(c tele.Context) error {
 
 func (b *OrderBot) handleMonitor(c tele.Context) error {
 	args := strings.Fields(c.Message().Payload)
-	if len(args) != 2 {
-		return c.Send("Формат: /monitor order_number group_code")
+	if len(args) != 1 && len(args) != 2 {
+		return c.Send("Формат: /monitor order_number [group_code]")
 	}
 
 	order, err := b.orderSvc.GetOrderByNumber(context.Background(), args[0])
 	if err != nil {
 		return c.Send(fmt.Sprintf("Заказ %s не найден.", args[0]))
 	}
+
+	if len(args) == 1 {
+		groups, err := b.groupSvc.ListGroups(context.Background())
+		if err != nil {
+			return c.Send(fmt.Sprintf("Ошибка получения групп: %v", err))
+		}
+		if len(groups) == 0 {
+			return c.Send("Групп пока нет.")
+		}
+		return b.sendMonitorReports(c, order, groups)
+	}
+
 	group, err := b.groupSvc.GetGroupByCode(context.Background(), args[1])
 	if err != nil {
 		return c.Send(fmt.Sprintf("Группа %s не найдена.", args[1]))
 	}
+	return b.sendMonitorReports(c, order, []domain.Group{group})
+}
 
-	report, err := b.monitorSvc.GetIngredientsByGroup(context.Background(), group, order)
-	if err != nil {
-		return c.Send(fmt.Sprintf("Ошибка мониторинга: %v", err))
+func (b *OrderBot) sendMonitorReports(c tele.Context, order domain.Order, groups []domain.Group) error {
+	var reports []domain.GroupIngredientsReport
+	for _, group := range groups {
+		report, err := b.monitorSvc.GetIngredientsByGroup(context.Background(), group, order)
+		if err != nil {
+			return c.Send(fmt.Sprintf("Ошибка мониторинга группы %s: %v", group.Code, err))
+		}
+		reports = append(reports, report)
 	}
-	return c.Send(formatMonitorReport(report), tele.ModeHTML)
+	return c.Send(formatMonitorReports(order, reports), tele.ModeHTML)
 }
 
 func (b *OrderBot) handleTemplate(c tele.Context) error {
@@ -291,19 +323,19 @@ func formatOrderSummary(order domain.Order) string {
 	return sb.String()
 }
 
-func formatMonitorReport(report domain.GroupIngredientsReport) string {
+func formatMonitorReports(order domain.Order, reports []domain.GroupIngredientsReport) string {
 	var sb strings.Builder
 	sb.WriteString("<b>Мониторинг</b>\n\n")
-	sb.WriteString(fmt.Sprintf("Группа: <code>%s</code> %s\n", html.EscapeString(report.Group.Code), html.EscapeString(report.Group.Name)))
-	sb.WriteString(fmt.Sprintf(
-		"Продукт: <code>%s</code> %s\n",
-		html.EscapeString(report.Ingredient.ProductCode),
-		html.EscapeString(report.Ingredient.ProductName),
-	))
-	sb.WriteString(fmt.Sprintf("Итого: %s %s\n\n", formatQuantity(report.Ingredient.Quantity), html.EscapeString(report.Ingredient.Unit)))
+	sb.WriteString(fmt.Sprintf("Заказ: <code>%s</code>\n\n", html.EscapeString(order.Number)))
 
-	if len(report.Breakdown) > 0 {
-		sb.WriteString("<b>По блюдам</b>\n")
+	for _, report := range reports {
+		sb.WriteString(fmt.Sprintf("<b><code>%s</code> %s</b>\n", html.EscapeString(report.Group.Code), html.EscapeString(report.Group.Name)))
+		sb.WriteString(fmt.Sprintf(
+			"Итого: %s %s\n",
+			formatQuantity(report.Ingredient.Quantity),
+			html.EscapeString(report.Ingredient.Unit),
+		))
+
 		for _, item := range report.Breakdown {
 			sb.WriteString(fmt.Sprintf(
 				"• <code>%s</code> %s: %s %s\n",
@@ -313,15 +345,7 @@ func formatMonitorReport(report domain.GroupIngredientsReport) string {
 				html.EscapeString(report.Ingredient.Unit),
 			))
 		}
-	}
-
-	if len(report.Warnings) > 0 {
-		sb.WriteString("\n<b>Предупреждения</b>\n")
-		for _, warning := range report.Warnings {
-			sb.WriteString("— ")
-			sb.WriteString(html.EscapeString(warning))
-			sb.WriteString("\n")
-		}
+		sb.WriteString("\n")
 	}
 
 	return sb.String()

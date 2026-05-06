@@ -219,3 +219,21 @@ func (q *Queries) LinkTelegramAuthUser(ctx context.Context, arg LinkTelegramAuth
 	)
 	return i, err
 }
+
+const unlinkTelegramAuthUser = `-- name: UnlinkTelegramAuthUser :exec
+UPDATE auth_users
+SET
+    telegram_id = NULL,
+    updated_at = ?1
+WHERE telegram_id = ?2
+`
+
+type UnlinkTelegramAuthUserParams struct {
+	UpdatedAt  string `json:"updated_at"`
+	TelegramID *int64 `json:"telegram_id"`
+}
+
+func (q *Queries) UnlinkTelegramAuthUser(ctx context.Context, arg UnlinkTelegramAuthUserParams) error {
+	_, err := q.db.ExecContext(ctx, unlinkTelegramAuthUser, arg.UpdatedAt, arg.TelegramID)
+	return err
+}
