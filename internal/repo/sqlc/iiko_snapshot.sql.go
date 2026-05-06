@@ -309,11 +309,6 @@ INSERT INTO iiko_assembly_charts (
     product_writeoff_strategy,
     product_size_assembly_strategy,
     effective_direct_writeoff_store_spec_json,
-    technology_description,
-    description,
-    appearance,
-    organoleptic,
-    output_comment,
     raw_json,
     updated_at
 ) VALUES (
@@ -326,12 +321,7 @@ INSERT INTO iiko_assembly_charts (
     ?7,
     ?8,
     ?9,
-    ?10,
-    ?11,
-    ?12,
-    ?13,
-    ?14,
-    ?15
+    ?10
 )
 ON CONFLICT(id) DO UPDATE SET
     assembled_product_id = excluded.assembled_product_id,
@@ -341,14 +331,9 @@ ON CONFLICT(id) DO UPDATE SET
     product_writeoff_strategy = excluded.product_writeoff_strategy,
     product_size_assembly_strategy = excluded.product_size_assembly_strategy,
     effective_direct_writeoff_store_spec_json = excluded.effective_direct_writeoff_store_spec_json,
-    technology_description = excluded.technology_description,
-    description = excluded.description,
-    appearance = excluded.appearance,
-    organoleptic = excluded.organoleptic,
-    output_comment = excluded.output_comment,
     raw_json = excluded.raw_json,
     updated_at = excluded.updated_at
-RETURNING id, assembled_product_id, date_from, date_to, assembled_amount, product_writeoff_strategy, product_size_assembly_strategy, effective_direct_writeoff_store_spec_json, technology_description, description, appearance, organoleptic, output_comment, raw_json, updated_at
+RETURNING id, assembled_product_id, date_from, date_to, assembled_amount, product_writeoff_strategy, product_size_assembly_strategy, effective_direct_writeoff_store_spec_json, raw_json, updated_at
 `
 
 type UpsertIikoAssemblyChartParams struct {
@@ -360,11 +345,6 @@ type UpsertIikoAssemblyChartParams struct {
 	ProductWriteoffStrategy              string  `json:"product_writeoff_strategy"`
 	ProductSizeAssemblyStrategy          string  `json:"product_size_assembly_strategy"`
 	EffectiveDirectWriteoffStoreSpecJson string  `json:"effective_direct_writeoff_store_spec_json"`
-	TechnologyDescription                string  `json:"technology_description"`
-	Description                          string  `json:"description"`
-	Appearance                           string  `json:"appearance"`
-	Organoleptic                         string  `json:"organoleptic"`
-	OutputComment                        string  `json:"output_comment"`
 	RawJson                              string  `json:"raw_json"`
 	UpdatedAt                            string  `json:"updated_at"`
 }
@@ -379,11 +359,6 @@ func (q *Queries) UpsertIikoAssemblyChart(ctx context.Context, arg UpsertIikoAss
 		arg.ProductWriteoffStrategy,
 		arg.ProductSizeAssemblyStrategy,
 		arg.EffectiveDirectWriteoffStoreSpecJson,
-		arg.TechnologyDescription,
-		arg.Description,
-		arg.Appearance,
-		arg.Organoleptic,
-		arg.OutputComment,
 		arg.RawJson,
 		arg.UpdatedAt,
 	)
@@ -397,11 +372,6 @@ func (q *Queries) UpsertIikoAssemblyChart(ctx context.Context, arg UpsertIikoAss
 		&i.ProductWriteoffStrategy,
 		&i.ProductSizeAssemblyStrategy,
 		&i.EffectiveDirectWriteoffStoreSpecJson,
-		&i.TechnologyDescription,
-		&i.Description,
-		&i.Appearance,
-		&i.Organoleptic,
-		&i.OutputComment,
 		&i.RawJson,
 		&i.UpdatedAt,
 	)
@@ -481,12 +451,7 @@ INSERT INTO iiko_products (
     code,
     name,
     type,
-    order_item_type,
     measure_unit,
-    product_category_id,
-    group_id,
-    parent_group,
-    is_deleted,
     raw_json,
     updated_at
 ) VALUES (
@@ -496,41 +461,26 @@ INSERT INTO iiko_products (
     ?4,
     ?5,
     ?6,
-    ?7,
-    ?8,
-    ?9,
-    ?10,
-    ?11,
-    ?12
+    ?7
 )
 ON CONFLICT(id) DO UPDATE SET
     code = excluded.code,
     name = excluded.name,
     type = excluded.type,
-    order_item_type = excluded.order_item_type,
     measure_unit = excluded.measure_unit,
-    product_category_id = excluded.product_category_id,
-    group_id = excluded.group_id,
-    parent_group = excluded.parent_group,
-    is_deleted = excluded.is_deleted,
     raw_json = excluded.raw_json,
     updated_at = excluded.updated_at
-RETURNING id, code, name, type, order_item_type, measure_unit, product_category_id, group_id, parent_group, is_deleted, raw_json, updated_at
+RETURNING id, code, name, type, measure_unit, raw_json, updated_at
 `
 
 type UpsertIikoProductParams struct {
-	ID                string  `json:"id"`
-	Code              string  `json:"code"`
-	Name              string  `json:"name"`
-	Type              *string `json:"type"`
-	OrderItemType     string  `json:"order_item_type"`
-	MeasureUnit       string  `json:"measure_unit"`
-	ProductCategoryID string  `json:"product_category_id"`
-	GroupID           string  `json:"group_id"`
-	ParentGroup       string  `json:"parent_group"`
-	IsDeleted         int64   `json:"is_deleted"`
-	RawJson           string  `json:"raw_json"`
-	UpdatedAt         string  `json:"updated_at"`
+	ID          string  `json:"id"`
+	Code        string  `json:"code"`
+	Name        string  `json:"name"`
+	Type        *string `json:"type"`
+	MeasureUnit string  `json:"measure_unit"`
+	RawJson     string  `json:"raw_json"`
+	UpdatedAt   string  `json:"updated_at"`
 }
 
 func (q *Queries) UpsertIikoProduct(ctx context.Context, arg UpsertIikoProductParams) (IikoProduct, error) {
@@ -539,12 +489,7 @@ func (q *Queries) UpsertIikoProduct(ctx context.Context, arg UpsertIikoProductPa
 		arg.Code,
 		arg.Name,
 		arg.Type,
-		arg.OrderItemType,
 		arg.MeasureUnit,
-		arg.ProductCategoryID,
-		arg.GroupID,
-		arg.ParentGroup,
-		arg.IsDeleted,
 		arg.RawJson,
 		arg.UpdatedAt,
 	)
@@ -554,12 +499,7 @@ func (q *Queries) UpsertIikoProduct(ctx context.Context, arg UpsertIikoProductPa
 		&i.Code,
 		&i.Name,
 		&i.Type,
-		&i.OrderItemType,
 		&i.MeasureUnit,
-		&i.ProductCategoryID,
-		&i.GroupID,
-		&i.ParentGroup,
-		&i.IsDeleted,
 		&i.RawJson,
 		&i.UpdatedAt,
 	)

@@ -9,10 +9,11 @@ import (
 	"context"
 )
 
-const createAuthUser = `-- name: CreateAuthUser :one
+const createPasswordAuthUser = `-- name: CreatePasswordAuthUser :one
 INSERT INTO auth_users (
-    telegram_id,
     username,
+    password_hash,
+    metadata_json,
     role,
     created_at,
     updated_at
@@ -21,27 +22,31 @@ INSERT INTO auth_users (
     ?2,
     ?3,
     ?4,
-    ?5
+    ?5,
+    ?6
 )
-ON CONFLICT(telegram_id) DO UPDATE SET
-    username = excluded.username,
+ON CONFLICT(username) WHERE username <> '' DO UPDATE SET
+    password_hash = excluded.password_hash,
+    metadata_json = excluded.metadata_json,
     role = excluded.role,
     updated_at = excluded.updated_at
-RETURNING id, telegram_id, username, role, created_at, updated_at
+RETURNING id, telegram_id, username, password_hash, metadata_json, role, created_at, updated_at
 `
 
-type CreateAuthUserParams struct {
-	TelegramID int64  `json:"telegram_id"`
-	Username   string `json:"username"`
-	Role       string `json:"role"`
-	CreatedAt  string `json:"created_at"`
-	UpdatedAt  string `json:"updated_at"`
+type CreatePasswordAuthUserParams struct {
+	Username     string `json:"username"`
+	PasswordHash string `json:"password_hash"`
+	MetadataJson string `json:"metadata_json"`
+	Role         string `json:"role"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
 }
 
-func (q *Queries) CreateAuthUser(ctx context.Context, arg CreateAuthUserParams) (AuthUser, error) {
-	row := q.db.QueryRowContext(ctx, createAuthUser,
-		arg.TelegramID,
+func (q *Queries) CreatePasswordAuthUser(ctx context.Context, arg CreatePasswordAuthUserParams) (AuthUser, error) {
+	row := q.db.QueryRowContext(ctx, createPasswordAuthUser,
 		arg.Username,
+		arg.PasswordHash,
+		arg.MetadataJson,
 		arg.Role,
 		arg.CreatedAt,
 		arg.UpdatedAt,
@@ -51,6 +56,66 @@ func (q *Queries) CreateAuthUser(ctx context.Context, arg CreateAuthUserParams) 
 		&i.ID,
 		&i.TelegramID,
 		&i.Username,
+		&i.PasswordHash,
+		&i.MetadataJson,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createTelegramAuthUser = `-- name: CreateTelegramAuthUser :one
+INSERT INTO auth_users (
+    telegram_id,
+    username,
+    password_hash,
+    metadata_json,
+    role,
+    created_at,
+    updated_at
+) VALUES (
+    ?1,
+    ?2,
+    '',
+    ?3,
+    ?4,
+    ?5,
+    ?6
+)
+ON CONFLICT(telegram_id) DO UPDATE SET
+    username = excluded.username,
+    metadata_json = excluded.metadata_json,
+    role = excluded.role,
+    updated_at = excluded.updated_at
+RETURNING id, telegram_id, username, password_hash, metadata_json, role, created_at, updated_at
+`
+
+type CreateTelegramAuthUserParams struct {
+	TelegramID   *int64 `json:"telegram_id"`
+	Username     string `json:"username"`
+	MetadataJson string `json:"metadata_json"`
+	Role         string `json:"role"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
+}
+
+func (q *Queries) CreateTelegramAuthUser(ctx context.Context, arg CreateTelegramAuthUserParams) (AuthUser, error) {
+	row := q.db.QueryRowContext(ctx, createTelegramAuthUser,
+		arg.TelegramID,
+		arg.Username,
+		arg.MetadataJson,
+		arg.Role,
+		arg.CreatedAt,
+		arg.UpdatedAt,
+	)
+	var i AuthUser
+	err := row.Scan(
+		&i.ID,
+		&i.TelegramID,
+		&i.Username,
+		&i.PasswordHash,
+		&i.MetadataJson,
 		&i.Role,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -59,18 +124,64 @@ func (q *Queries) CreateAuthUser(ctx context.Context, arg CreateAuthUserParams) 
 }
 
 const getAuthUserByTelegramID = `-- name: GetAuthUserByTelegramID :one
-SELECT id, telegram_id, username, role, created_at, updated_at
+SELECT id, telegram_id, username, password_hash, metadata_json, role, created_at, updated_at
 FROM auth_users
 WHERE telegram_id = ?1
 `
 
-func (q *Queries) GetAuthUserByTelegramID(ctx context.Context, telegramID int64) (AuthUser, error) {
+func (q *Queries) GetAuthUserByTelegramID(ctx context.Context, telegramID *int64) (AuthUser, error) {
 	row := q.db.QueryRowContext(ctx, getAuthUserByTelegramID, telegramID)
 	var i AuthUser
 	err := row.Scan(
 		&i.ID,
 		&i.TelegramID,
 		&i.Username,
+		&i.PasswordHash,
+		&i.MetadataJson,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getAuthUserByUsername = `-- name: GetAuthUserByUsername :one
+SELECT id, telegram_id, username, password_hash, metadata_json, role, created_at, updated_at
+FROM auth_users
+WHERE username = ?1
+`
+
+func (q *Queries) GetAuthUserByUsername(ctx context.Context, username string) (AuthUser, error) {
+	row := q.db.QueryRowContext(ctx, getAuthUserByUsername, username)
+	var i AuthUser
+	err := row.Scan(
+		&i.ID,
+		&i.TelegramID,
+		&i.Username,
+		&i.PasswordHash,
+		&i.MetadataJson,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUserByID = `-- name: GetUserByID :one
+SELECT id, telegram_id, username, password_hash, metadata_json, role, created_at, updated_at
+FROM auth_users
+WHERE id = ?1
+`
+
+func (q *Queries) GetUserByID(ctx context.Context, id int64) (AuthUser, error) {
+	row := q.db.QueryRowContext(ctx, getUserByID, id)
+	var i AuthUser
+	err := row.Scan(
+		&i.ID,
+		&i.TelegramID,
+		&i.Username,
+		&i.PasswordHash,
+		&i.MetadataJson,
 		&i.Role,
 		&i.CreatedAt,
 		&i.UpdatedAt,

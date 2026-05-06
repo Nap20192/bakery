@@ -19,8 +19,10 @@ type CreateOrderInput struct {
 }
 
 type OrderItem struct {
-	Quantity int    `json:"quantity"`
-	Product  string `json:"product"`
+	Quantity      int     `json:"quantity"`
+	Product       string  `json:"product"`
+	Code          string  `json:"code"`
+	IikoProductID *string `json:"iiko_product_id,omitempty"`
 }
 
 func CountIngredient(items []Ingredient, targetName string) float64 {

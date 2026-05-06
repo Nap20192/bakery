@@ -36,12 +36,7 @@ INSERT INTO iiko_products (
     code,
     name,
     type,
-    order_item_type,
     measure_unit,
-    product_category_id,
-    group_id,
-    parent_group,
-    is_deleted,
     raw_json,
     updated_at
 ) VALUES (
@@ -49,12 +44,7 @@ INSERT INTO iiko_products (
     sqlc.arg(code),
     sqlc.arg(name),
     sqlc.narg(type),
-    sqlc.arg(order_item_type),
     sqlc.arg(measure_unit),
-    sqlc.arg(product_category_id),
-    sqlc.arg(group_id),
-    sqlc.arg(parent_group),
-    sqlc.arg(is_deleted),
     sqlc.arg(raw_json),
     sqlc.arg(updated_at)
 )
@@ -62,12 +52,7 @@ ON CONFLICT(id) DO UPDATE SET
     code = excluded.code,
     name = excluded.name,
     type = excluded.type,
-    order_item_type = excluded.order_item_type,
     measure_unit = excluded.measure_unit,
-    product_category_id = excluded.product_category_id,
-    group_id = excluded.group_id,
-    parent_group = excluded.parent_group,
-    is_deleted = excluded.is_deleted,
     raw_json = excluded.raw_json,
     updated_at = excluded.updated_at
 RETURNING *;
@@ -82,11 +67,6 @@ INSERT INTO iiko_assembly_charts (
     product_writeoff_strategy,
     product_size_assembly_strategy,
     effective_direct_writeoff_store_spec_json,
-    technology_description,
-    description,
-    appearance,
-    organoleptic,
-    output_comment,
     raw_json,
     updated_at
 ) VALUES (
@@ -98,11 +78,6 @@ INSERT INTO iiko_assembly_charts (
     sqlc.arg(product_writeoff_strategy),
     sqlc.arg(product_size_assembly_strategy),
     sqlc.arg(effective_direct_writeoff_store_spec_json),
-    sqlc.arg(technology_description),
-    sqlc.arg(description),
-    sqlc.arg(appearance),
-    sqlc.arg(organoleptic),
-    sqlc.arg(output_comment),
     sqlc.arg(raw_json),
     sqlc.arg(updated_at)
 )
@@ -114,11 +89,6 @@ ON CONFLICT(id) DO UPDATE SET
     product_writeoff_strategy = excluded.product_writeoff_strategy,
     product_size_assembly_strategy = excluded.product_size_assembly_strategy,
     effective_direct_writeoff_store_spec_json = excluded.effective_direct_writeoff_store_spec_json,
-    technology_description = excluded.technology_description,
-    description = excluded.description,
-    appearance = excluded.appearance,
-    organoleptic = excluded.organoleptic,
-    output_comment = excluded.output_comment,
     raw_json = excluded.raw_json,
     updated_at = excluded.updated_at
 RETURNING *;

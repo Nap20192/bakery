@@ -208,18 +208,13 @@ func (s *SyncService) saveSnapshotData(ctx context.Context, catalog *iiko.Nomenc
 
 func upsertIikoProduct(ctx context.Context, q *sqlcrepo.Queries, product iiko.Product, updatedAt string) error {
 	_, err := q.UpsertIikoProduct(ctx, sqlcrepo.UpsertIikoProductParams{
-		ID:                product.ID.String(),
-		Code:              product.Code,
-		Name:              product.Name,
-		Type:              optionalString(product.Type),
-		OrderItemType:     product.OrderItemType,
-		MeasureUnit:       product.MeasureUnit,
-		ProductCategoryID: product.ProductCategoryID.String(),
-		GroupID:           product.GroupID.String(),
-		ParentGroup:       product.ParentGroup,
-		IsDeleted:         boolInt(product.IsDeleted),
-		RawJson:           encodeJSON(product),
-		UpdatedAt:         updatedAt,
+		ID:          product.ID.String(),
+		Code:        product.Code,
+		Name:        product.Name,
+		Type:        optionalString(product.Type),
+		MeasureUnit: product.MeasureUnit,
+		RawJson:     encodeJSON(product),
+		UpdatedAt:   updatedAt,
 	})
 	if err != nil {
 		return fmt.Errorf("upsert product %s: %w", product.ID.String(), err)
@@ -237,11 +232,6 @@ func upsertIikoAssemblyChart(ctx context.Context, q *sqlcrepo.Queries, chart iik
 		ProductWriteoffStrategy:              string(chart.ProductWriteoffStrategy),
 		ProductSizeAssemblyStrategy:          string(chart.ProductSizeAssemblyStrategy),
 		EffectiveDirectWriteoffStoreSpecJson: encodeJSON(chart.EffectiveDirectWriteoffStoreSpecification),
-		TechnologyDescription:                chart.TechnologyDescription,
-		Description:                          chart.Description,
-		Appearance:                           chart.Appearance,
-		Organoleptic:                         chart.Organoleptic,
-		OutputComment:                        chart.OutputComment,
 		RawJson:                              encodeJSON(chart),
 		UpdatedAt:                            updatedAt,
 	})
@@ -328,11 +318,4 @@ func optionalString(value string) *string {
 		return nil
 	}
 	return &value
-}
-
-func boolInt(value bool) int64 {
-	if value {
-		return 1
-	}
-	return 0
 }

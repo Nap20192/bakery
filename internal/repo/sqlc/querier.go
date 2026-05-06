@@ -9,15 +9,26 @@ import (
 )
 
 type Querier interface {
-	CreateAuthUser(ctx context.Context, arg CreateAuthUserParams) (AuthUser, error)
 	CreateIikoSyncRun(ctx context.Context, arg CreateIikoSyncRunParams) (IikoSyncRun, error)
+	CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error)
+	CreateOrderCounterDay(ctx context.Context, day string) error
+	CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) (OrderItem, error)
+	CreatePasswordAuthUser(ctx context.Context, arg CreatePasswordAuthUserParams) (AuthUser, error)
+	CreateTelegramAuthUser(ctx context.Context, arg CreateTelegramAuthUserParams) (AuthUser, error)
 	DeleteIikoAssemblyChartItemsByChartID(ctx context.Context, chartID string) error
 	DeleteIikoPreparedChartItemsByChartID(ctx context.Context, preparedChartID string) error
 	FinishIikoSyncRun(ctx context.Context, arg FinishIikoSyncRunParams) (IikoSyncRun, error)
-	GetAuthUserByTelegramID(ctx context.Context, telegramID int64) (AuthUser, error)
+	GetAuthUserByTelegramID(ctx context.Context, telegramID *int64) (AuthUser, error)
+	GetAuthUserByUsername(ctx context.Context, username string) (AuthUser, error)
+	GetOrderByNumber(ctx context.Context, number string) (Order, error)
+	GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]OrderItem, error)
 	GetProducts(ctx context.Context, type_ *string) ([]GetProductsRow, error)
+	GetUserByID(ctx context.Context, id int64) (AuthUser, error)
 	InsertIikoAssemblyChartItem(ctx context.Context, arg InsertIikoAssemblyChartItemParams) (IikoAssemblyChartItem, error)
 	InsertIikoPreparedChartItem(ctx context.Context, arg InsertIikoPreparedChartItemParams) (IikoPreparedChartItem, error)
+	ListOrderItemsByOrderIDs(ctx context.Context, orderIds []int64) ([]OrderItem, error)
+	ListOrders(ctx context.Context, limit int64) ([]Order, error)
+	NextOrderCounter(ctx context.Context, day string) (int64, error)
 	UpsertIikoAssemblyChart(ctx context.Context, arg UpsertIikoAssemblyChartParams) (IikoAssemblyChart, error)
 	UpsertIikoPreparedChart(ctx context.Context, arg UpsertIikoPreparedChartParams) (IikoPreparedChart, error)
 	UpsertIikoProduct(ctx context.Context, arg UpsertIikoProductParams) (IikoProduct, error)
