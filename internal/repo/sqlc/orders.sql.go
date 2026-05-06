@@ -3,7 +3,7 @@
 //   sqlc v1.30.0
 // source: orders.sql
 
-package repo
+package sqlc
 
 import (
 	"context"
@@ -71,7 +71,7 @@ type CreateOrderItemParams struct {
 	OrderID       int64   `json:"order_id"`
 	IikoProductID *string `json:"iiko_product_id"`
 	ProductName   string  `json:"product_name"`
-	Quantity      int64   `json:"quantity"`
+	Quantity      float64 `json:"quantity"`
 }
 
 func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) (OrderItem, error) {

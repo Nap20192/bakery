@@ -18,12 +18,8 @@ type IikoClient interface {
 	ListProducts() ([]Product, error)
 	ListProductsWithCategories() (*NomenclatureResponse, error)
 	AssemblyChartsGetAll(dateFrom, dateTo string, includeDeleted, includePrepared bool) (*ChartResultDto, error)
-	AssemblyChartsGetAllUpdate(knownRevision int, dateFrom, dateTo string, includeDeleted, includePrepared bool) (*ChartResultDto, error)
 	AssemblyChartByID(id string) (*ChartResultDto, error)
-	AssemblyChartsGetTree(date, productID, departmentID string) (*ChartResultDto, error)
-	AssemblyChartsGetAssembled(date, productID, departmentID string) (*ChartResultDto, error)
 	AssemblyChartsGetPrepared(date, productID, departmentID string) (*ChartResultDto, error)
-	AssemblyChartsGetHistory(productID, departmentID string) (*ChartResultDto, error)
 }
 
 type Client struct {
@@ -199,15 +195,6 @@ func (c *Client) AssemblyChartsGetAll(dateFrom, dateTo string, includeDeleted, i
 	return &r, nil
 }
 
-// AssemblyChartsGetAllUpdate — GET /resto/api/v2/assemblyCharts/getAllUpdate.
-// Инкрементальное обновление по knownRevision.
-func (c *Client) AssemblyChartsGetAllUpdate(knownRevision int, dateFrom, dateTo string, includeDeleted, includePrepared bool) (*ChartResultDto, error) {
-	r, err := getJSON[ChartResultDto](c, c.api.AssemblyChartsGetAllUpdateURL(knownRevision, dateFrom, dateTo, includeDeleted, includePrepared))
-	if err != nil {
-		return nil, err
-	}
-	return &r, nil
-}
 
 // AssemblyChartByID — GET /resto/api/v2/assemblyCharts/byId.
 func (c *Client) AssemblyChartByID(id string) (*ChartResultDto, error) {
@@ -215,15 +202,6 @@ func (c *Client) AssemblyChartByID(id string) (*ChartResultDto, error) {
 		return nil, fmt.Errorf("iiko: assemblyCharts/byId: empty id")
 	}
 	r, err := getJSON[ChartResultDto](c, c.api.AssemblyChartsByIDURL(id))
-	if err != nil {
-		return nil, err
-	}
-	return &r, nil
-}
-
-// AssemblyChartsGetTree — GET /resto/api/v2/assemblyCharts/getTree.
-func (c *Client) AssemblyChartsGetTree(date, productID, departmentID string) (*ChartResultDto, error) {
-	r, err := getJSON[ChartResultDto](c, c.api.AssemblyChartsGetTreeURL(date, productID, departmentID))
 	if err != nil {
 		return nil, err
 	}
@@ -245,16 +223,6 @@ func (c *Client) AssemblyChartsGetAssembled(date, productID, departmentID string
 // нужно для расчёта теста по заявке.
 func (c *Client) AssemblyChartsGetPrepared(date, productID, departmentID string) (*ChartResultDto, error) {
 	r, err := getJSON[ChartResultDto](c, c.api.AssemblyChartsGetPreparedURL(date, productID, departmentID))
-	if err != nil {
-		return nil, err
-	}
-	return &r, nil
-}
-
-// AssemblyChartsGetHistory — GET /resto/api/v2/assemblyCharts/getHistory.
-// История версий техкарты для блюда/подразделения.
-func (c *Client) AssemblyChartsGetHistory(productID, departmentID string) (*ChartResultDto, error) {
-	r, err := getJSON[ChartResultDto](c, c.api.AssemblyChartsGetHistoryURL(productID, departmentID))
 	if err != nil {
 		return nil, err
 	}

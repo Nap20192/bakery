@@ -2,7 +2,7 @@
 // versions:
 //   sqlc v1.30.0
 
-package repo
+package sqlc
 
 import (
 	"context"
@@ -20,6 +20,7 @@ type Querier interface {
 	FinishIikoSyncRun(ctx context.Context, arg FinishIikoSyncRunParams) (IikoSyncRun, error)
 	GetAuthUserByTelegramID(ctx context.Context, telegramID *int64) (AuthUser, error)
 	GetAuthUserByUsername(ctx context.Context, username string) (AuthUser, error)
+	GetIikoProductByCode(ctx context.Context, code string) (GetIikoProductByCodeRow, error)
 	GetOrderByNumber(ctx context.Context, number string) (Order, error)
 	GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]OrderItem, error)
 	GetProducts(ctx context.Context, type_ *string) ([]GetProductsRow, error)

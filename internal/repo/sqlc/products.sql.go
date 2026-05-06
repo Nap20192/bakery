@@ -3,11 +3,46 @@
 //   sqlc v1.30.0
 // source: products.sql
 
-package repo
+package sqlc
 
 import (
 	"context"
 )
+
+const getIikoProductByCode = `-- name: GetIikoProductByCode :one
+SELECT
+    id,
+    code,
+    name,
+    type,
+    measure_unit,
+    raw_json
+FROM iiko_products
+WHERE code = ?1
+`
+
+type GetIikoProductByCodeRow struct {
+	ID          string  `json:"id"`
+	Code        string  `json:"code"`
+	Name        string  `json:"name"`
+	Type        *string `json:"type"`
+	MeasureUnit string  `json:"measure_unit"`
+	RawJson     string  `json:"raw_json"`
+}
+
+func (q *Queries) GetIikoProductByCode(ctx context.Context, code string) (GetIikoProductByCodeRow, error) {
+	row := q.db.QueryRowContext(ctx, getIikoProductByCode, code)
+	var i GetIikoProductByCodeRow
+	err := row.Scan(
+		&i.ID,
+		&i.Code,
+		&i.Name,
+		&i.Type,
+		&i.MeasureUnit,
+		&i.RawJson,
+	)
+	return i, err
+}
 
 const getProducts = `-- name: GetProducts :many
 SELECT

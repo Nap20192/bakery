@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS order_items (
     order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
     iiko_product_id TEXT REFERENCES iiko_products(id) ON DELETE SET NULL,
     product_name TEXT NOT NULL,
-    quantity INTEGER NOT NULL
+    quantity REAL NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS iiko_sync_runs (
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS iiko_sync_runs (
 
 CREATE TABLE IF NOT EXISTS iiko_products (
     id TEXT PRIMARY KEY,
-    code TEXT NOT NULL DEFAULT '',
+    code TEXT NOT NULL UNIQUE DEFAULT '',
     name TEXT NOT NULL,
     type TEXT,
     measure_unit TEXT NOT NULL DEFAULT '',

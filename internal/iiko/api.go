@@ -50,17 +50,6 @@ func (s *Api) AssemblyChartsGetAllURL(dateFrom, dateTo string, includeDeleted, i
 		s.base(), EndpointAssemblyChartsGetAll, dateFrom, dateTo, includeDeleted, includePrepared)
 }
 
-// GET /assemblyCharts/getAllUpdate
-func (s *Api) AssemblyChartsGetAllUpdateURL(knownRevision int, dateFrom, dateTo string, includeDeleted, includePrepared bool) string {
-	return fmt.Sprintf("%s%s?knownRevision=%d&dateFrom=%s&dateTo=%s&includeDeletedProducts=%t&includePreparedCharts=%t",
-		s.base(), EndpointAssemblyChartsGetAllUpdate, knownRevision, dateFrom, dateTo, includeDeleted, includePrepared)
-}
-
-// GET /assemblyCharts/getTree
-func (s *Api) AssemblyChartsGetTreeURL(date, productID, departmentID string) string {
-	return fmt.Sprintf("%s%s?date=%s&productId=%s&departmentId=%s",
-		s.base(), EndpointAssemblyChartsGetTree, date, productID, departmentID)
-}
 
 // GET /assemblyCharts/getAssembled
 func (s *Api) AssemblyChartsGetAssembledURL(date, productID, departmentID string) string {
@@ -77,10 +66,4 @@ func (s *Api) AssemblyChartsGetPreparedURL(date, productID, departmentID string)
 // GET /assemblyCharts/byId
 func (s *Api) AssemblyChartsByIDURL(id string) string {
 	return fmt.Sprintf("%s%s?id=%s", s.base(), EndpointAssemblyChartsByID, id)
-}
-
-// GET /assemblyCharts/getHistory
-func (s *Api) AssemblyChartsGetHistoryURL(productID, departmentID string) string {
-	return fmt.Sprintf("%s%s?productId=%s&departmentId=%s",
-		s.base(), EndpointAssemblyChartsGetHistory, productID, departmentID)
 }

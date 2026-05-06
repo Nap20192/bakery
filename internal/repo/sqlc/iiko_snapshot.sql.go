@@ -3,7 +3,7 @@
 //   sqlc v1.30.0
 // source: iiko_snapshot.sql
 
-package repo
+package sqlc
 
 import (
 	"context"

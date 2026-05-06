@@ -2,7 +2,7 @@
 // versions:
 //   sqlc v1.30.0
 
-package repo
+package sqlc
 
 type AuthUser struct {
 	ID           int64  `json:"id"`
@@ -120,5 +120,5 @@ type OrderItem struct {
 	OrderID       int64   `json:"order_id"`
 	IikoProductID *string `json:"iiko_product_id"`
 	ProductName   string  `json:"product_name"`
-	Quantity      int64   `json:"quantity"`
+	Quantity      float64 `json:"quantity"`
 }

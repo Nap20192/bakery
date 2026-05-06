@@ -6,7 +6,7 @@ sql:
     queries: "queries"
     gen:
       go:
-        package: "repo"
+        package: "sqlc"
         out: "internal/repo/sqlc"
         sql_package: "database/sql"
         emit_json_tags: true

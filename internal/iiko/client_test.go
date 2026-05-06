@@ -84,22 +84,6 @@ func TestClient_AllMethods(t *testing.T) {
 		t.Log("AssemblyChartsGetAll: OK")
 	}
 
-	// 4. AssemblyChartsGetAllUpdate
-	knownRev := 0
-	if resAll != nil {
-		knownRev = resAll.KnownRevision
-		if knownRev < 0 {
-			knownRev = 0
-		}
-	}
-	resUpdate, err := client.AssemblyChartsGetAllUpdate(knownRev, today, today, false, true)
-	if err != nil {
-		writeJSON(t, resultsDir, "04_assembly_charts_get_all_update.json", map[string]string{"error": err.Error()})
-		t.Errorf("AssemblyChartsGetAllUpdate failed: %v", err)
-	} else {
-		writeJSON(t, resultsDir, "04_assembly_charts_get_all_update.json", resUpdate)
-		t.Log("AssemblyChartsGetAllUpdate: OK")
-	}
 
 	// 5. AssemblyChartByID (если есть данные в resAll)
 	if resAll != nil && len(resAll.AssemblyCharts) > 0 {
@@ -113,15 +97,6 @@ func TestClient_AllMethods(t *testing.T) {
 		}
 	}
 
-	// 6. AssemblyChartsGetTree
-	resTree, err := client.AssemblyChartsGetTree(today, testID, depID)
-	if err != nil {
-		writeJSON(t, resultsDir, "06_assembly_charts_get_tree.json", map[string]string{"error": err.Error()})
-		t.Errorf("AssemblyChartsGetTree failed: %v", err)
-	} else {
-		writeJSON(t, resultsDir, "06_assembly_charts_get_tree.json", resTree)
-		t.Log("AssemblyChartsGetTree: OK")
-	}
 
 	// 7. AssemblyChartsGetAssembled
 	resAssembled, err := client.AssemblyChartsGetAssembled(today, testID, depID)
@@ -141,16 +116,6 @@ func TestClient_AllMethods(t *testing.T) {
 	} else {
 		writeJSON(t, resultsDir, "08_assembly_charts_get_prepared.json", resPrepared)
 		t.Log("AssemblyChartsGetPrepared: OK")
-	}
-
-	// 9. AssemblyChartsGetHistory
-	resHistory, err := client.AssemblyChartsGetHistory(testID, depID)
-	if err != nil {
-		writeJSON(t, resultsDir, "09_assembly_charts_get_history.json", map[string]string{"error": err.Error()})
-		t.Errorf("AssemblyChartsGetHistory failed: %v", err)
-	} else {
-		writeJSON(t, resultsDir, "09_assembly_charts_get_history.json", resHistory)
-		t.Log("AssemblyChartsGetHistory: OK")
 	}
 
 	// Logout вызовется через defer.
