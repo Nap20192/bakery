@@ -13,16 +13,17 @@ import (
 )
 
 type IikoClient interface {
-    Auth() error
-    Logout() error
-    ListProducts() ([]Product, error)
-    AssemblyChartsGetAll(dateFrom, dateTo string, includeDeleted, includePrepared bool) (*ChartResultDto, error)
-    AssemblyChartsGetAllUpdate(knownRevision int, dateFrom, dateTo string, includeDeleted, includePrepared bool) (*ChartResultDto, error)
-    AssemblyChartByID(id string) (*ChartResultDto, error)
-    AssemblyChartsGetTree(date, productID, departmentID string) (*ChartResultDto, error)
-    AssemblyChartsGetAssembled(date, productID, departmentID string) (*ChartResultDto, error)
-    AssemblyChartsGetPrepared(date, productID, departmentID string) (*ChartResultDto, error)
-    AssemblyChartsGetHistory(productID, departmentID string) (*ChartResultDto, error)
+	Auth() error
+	Logout() error
+	ListProducts() ([]Product, error)
+	ListProductsWithCategories() (*NomenclatureResponse, error)
+	AssemblyChartsGetAll(dateFrom, dateTo string, includeDeleted, includePrepared bool) (*ChartResultDto, error)
+	AssemblyChartsGetAllUpdate(knownRevision int, dateFrom, dateTo string, includeDeleted, includePrepared bool) (*ChartResultDto, error)
+	AssemblyChartByID(id string) (*ChartResultDto, error)
+	AssemblyChartsGetTree(date, productID, departmentID string) (*ChartResultDto, error)
+	AssemblyChartsGetAssembled(date, productID, departmentID string) (*ChartResultDto, error)
+	AssemblyChartsGetPrepared(date, productID, departmentID string) (*ChartResultDto, error)
+	AssemblyChartsGetHistory(productID, departmentID string) (*ChartResultDto, error)
 }
 
 type Client struct {
@@ -147,6 +148,44 @@ func getJSON[T any](c *Client, url string) (T, error) {
 // ListProducts — GET /resto/api/v2/entities/products/list.
 func (c *Client) ListProducts() ([]Product, error) {
 	return getJSON[[]Product](c, c.api.ProductsListURL())
+}
+
+// ListProductsWithCategories — GET /resto/api/v2/entities/products/list.
+// Возвращает продукты и категории.
+// Поддерживает оба формата ответа iiko:
+// 1) NomenclatureResponse (products + productCategories)
+// 2) []Product (без productCategories)
+func (c *Client) ListProductsWithCategories() (*NomenclatureResponse, error) {
+	body, err := c.get(c.api.ProductsListURL())
+	if err != nil {
+		return nil, err
+	}
+
+	var full NomenclatureResponse
+	if err := json.Unmarshal(body, &full); err == nil && (full.Products != nil || full.ProductCategories != nil) {
+		return &full, nil
+	}
+
+	var products []Product
+	if err := json.Unmarshal(body, &products); err == nil {
+		return &NomenclatureResponse{
+			Products: products,
+		}, nil
+	}
+
+	var wrappedFull ApiResponse[NomenclatureResponse]
+	if err := json.Unmarshal(body, &wrappedFull); err == nil && (wrappedFull.Response.Products != nil || wrappedFull.Response.ProductCategories != nil) {
+		return &wrappedFull.Response, nil
+	}
+
+	var wrappedProducts ApiResponse[[]Product]
+	if err := json.Unmarshal(body, &wrappedProducts); err == nil && wrappedProducts.Response != nil {
+		return &NomenclatureResponse{
+			Products: wrappedProducts.Response,
+		}, nil
+	}
+
+	return nil, fmt.Errorf("iiko: unmarshal products with categories: unsupported payload")
 }
 
 // AssemblyChartsGetAll — GET /resto/api/v2/assemblyCharts/getAll.

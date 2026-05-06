@@ -1,0 +1,3 @@
+{
+  "error": "iiko: unmarshal: json: cannot unmarshal array into Go value of type iiko.ChartResultDto"
+}

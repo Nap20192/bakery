@@ -14,27 +14,20 @@ type parsedLine struct {
 	Quantity int
 }
 
-// isBulkOrder возвращает true, если текст выглядит как многострочная заявка с датой.
+// isBulkOrder возвращает true, если текст выглядит как многострочная заявка.
 func isBulkOrder(text string) bool {
-	if !strings.Contains(text, "\n") {
-		return false
-	}
-	for _, line := range strings.Split(text, "\n") {
-		if dateLineRe.MatchString(strings.TrimSpace(line)) {
-			return true
-		}
-	}
-	return false
+	return strings.Contains(strings.TrimSpace(text), "\n")
 }
 
 // parseBulkOrder разбирает текст заявки формата:
 //
 //	Локация
-//	ДД.ММ.ГГГГ
 //
 //	КАТЕГОРИЯ
 //	Продукт количество
 //	Продукт (количество = 1 если не указано)
+//
+// Старый формат со строкой ДД.ММ.ГГГГ тоже поддерживается, но дата не обязательна.
 func parseBulkOrder(text string) (location, date string, lines []parsedLine) {
 	for _, raw := range strings.Split(text, "\n") {
 		line := strings.TrimSpace(raw)

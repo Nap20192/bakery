@@ -16,9 +16,7 @@ type JsonProductRepository struct {
 }
 
 func NewJsonProductRepository(path string) domain.ProductRepository {
-	r := &JsonProductRepository{
-		filePath: path,
-	}
+	r := &JsonProductRepository{filePath: path}
 	_ = r.load()
 	return r
 }
@@ -43,9 +41,9 @@ func (dto ingredientDTO) toDomain() domain.Ingredient {
 		}
 	}
 
-	var children []domain.Ingredient
-	for _, c := range dto.Ingredients {
-		children = append(children, c.toDomain())
+	children := make([]domain.Ingredient, 0, len(dto.Ingredients))
+	for _, child := range dto.Ingredients {
+		children = append(children, child.toDomain())
 	}
 
 	return domain.SubProduct{
@@ -57,6 +55,7 @@ func (dto ingredientDTO) toDomain() domain.Ingredient {
 		IIngredients: children,
 	}
 }
+
 func (r *JsonProductRepository) load() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -73,167 +72,119 @@ func (r *JsonProductRepository) load() error {
 
 	var raw []struct {
 		Name        string          `json:"name"`
+		Type        string          `json:"type"`
 		Quantity    float64         `json:"quantity"`
 		Unit        string          `json:"unit"`
 		Ingredients []ingredientDTO `json:"ingredients"`
 	}
-
 	if err := json.NewDecoder(file).Decode(&raw); err != nil {
 		return err
 	}
 
-	var result []domain.Product
-
-	for _, p := range raw {
-		var ingredients []domain.Ingredient
-		for _, ing := range p.Ingredients {
-			ingredients = append(ingredients, ing.toDomain())
+	products := make([]domain.Product, 0, len(raw))
+	for _, product := range raw {
+		ingredients := make([]domain.Ingredient, 0, len(product.Ingredients))
+		for _, ingredient := range product.Ingredients {
+			ingredients = append(ingredients, ingredient.toDomain())
 		}
-
-		result = append(result, domain.Product{
-			Name:        p.Name,
-			Quantity:    p.Quantity,
-			Unit:        p.Unit,
+		products = append(products, domain.Product{
+			Name:        product.Name,
+			Type:        product.Type,
+			Quantity:    product.Quantity,
+			Unit:        product.Unit,
 			Ingredients: ingredients,
 		})
 	}
 
-	r.products = result
+	r.products = products
 	return nil
 }
-func ingredientToDTO(i domain.Ingredient) ingredientDTO {
-	dto := ingredientDTO{
-		Name:     i.Name(),
-		Quantity: i.Quantity(),
-		Unit:     i.Unit(),
-		Gross:    i.Gross(),
-		Net:      i.Net(),
-	}
 
-	for _, child := range i.Ingredients() {
-		dto.Ingredients = append(dto.Ingredients, ingredientToDTO(child))
-	}
-
-	return dto
-}
-func (r *JsonProductRepository) save() error {
-	file, err := os.Create(r.filePath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	var raw []interface{}
-
-	for _, p := range r.products {
-		var ingredients []ingredientDTO
-		for _, ing := range p.Ingredients {
-			ingredients = append(ingredients, ingredientToDTO(ing))
-		}
-
-		raw = append(raw, map[string]interface{}{
-			"name":        p.Name,
-			"quantity":    p.Quantity,
-			"unit":        p.Unit,
-			"ingredients": ingredients,
-		})
-	}
-
-	enc := json.NewEncoder(file)
-	enc.SetIndent("", "  ")
-
-	return enc.Encode(raw)
-}
-func (r *JsonProductRepository) Save(p domain.Product) error {
+func (r *JsonProductRepository) Save(product domain.Product) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	for i, prod := range r.products {
-		if prod.Name == p.Name {
-			r.products[i] = p
-			return r.save()
+	for i, existing := range r.products {
+		if existing.Name == product.Name {
+			r.products[i] = product
+			return nil
 		}
 	}
-
-	r.products = append(r.products, p)
-	return r.save()
+	r.products = append(r.products, product)
+	return nil
 }
 
 func (r *JsonProductRepository) Get(name string, quantity float64) (domain.Product, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	for _, p := range r.products {
-		if p.Name == name {
-			return scaleProduct(p, quantity), nil
+	for _, product := range r.products {
+		if product.Name == name {
+			return scaleProduct(product, quantity), nil
 		}
 	}
-
-	return domain.Product{}, fmt.Errorf("продукт %s не найден", name)
+	return domain.Product{}, fmt.Errorf("продукт %s: %w", name, domain.ErrNotFound)
 }
 
-// GetBase возвращает базовый рецепт на 1 штуку без масштабирования.
 func (r *JsonProductRepository) GetBase(name string) (domain.Product, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	for _, p := range r.products {
-		if p.Name == name {
-			return p, nil
+	for _, product := range r.products {
+		if product.Name == name {
+			return product, nil
 		}
 	}
-
-	return domain.Product{}, fmt.Errorf("продукт %s не найден", name)
+	return domain.Product{}, fmt.Errorf("продукт %s: %w", name, domain.ErrNotFound)
 }
 
 func (r *JsonProductRepository) List() ([]string, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	var names []string
-	for _, p := range r.products {
-		names = append(names, p.Name)
+	names := make([]string, 0, len(r.products))
+	for _, product := range r.products {
+		names = append(names, product.Name)
 	}
-
 	return names, nil
 }
-func scaleProduct(p domain.Product, quantity float64) domain.Product {
-	factor := quantity / p.Quantity
 
+func scaleProduct(product domain.Product, quantity float64) domain.Product {
+	if product.Quantity == 0 {
+		return product
+	}
+	factor := quantity / product.Quantity
 	return domain.Product{
-		Name:        p.Name,
+		Name:        product.Name,
+		Type:        product.Type,
 		Quantity:    quantity,
-		Unit:        p.Unit,
-		Ingredients: scaleIngredients(p.Ingredients, factor),
+		Unit:        product.Unit,
+		Ingredients: scaleIngredients(product.Ingredients, factor),
 	}
 }
 
-func scaleIngredients(ings []domain.Ingredient, factor float64) []domain.Ingredient {
-	var result []domain.Ingredient
-
-	for _, ing := range ings {
-		switch v := ing.(type) {
-
+func scaleIngredients(ingredients []domain.Ingredient, factor float64) []domain.Ingredient {
+	scaled := make([]domain.Ingredient, 0, len(ingredients))
+	for _, ingredient := range ingredients {
+		switch value := ingredient.(type) {
 		case domain.RawIngredient:
-			result = append(result, domain.RawIngredient{
-				IName:     v.IName,
-				IQuantity: v.IQuantity * factor,
-				IUnit:     v.IUnit,
-				IGross:    v.IGross * factor,
-				INet:      v.INet * factor,
+			scaled = append(scaled, domain.RawIngredient{
+				IName:     value.IName,
+				IQuantity: value.IQuantity * factor,
+				IUnit:     value.IUnit,
+				IGross:    value.IGross * factor,
+				INet:      value.INet * factor,
 			})
-
 		case domain.SubProduct:
-			result = append(result, domain.SubProduct{
-				IName:        v.IName,
-				IQuantity:    v.IQuantity * factor,
-				IUnit:        v.IUnit,
-				IGross:       v.IGross * factor,
-				INet:         v.INet * factor,
-				IIngredients: scaleIngredients(v.IIngredients, factor),
+			scaled = append(scaled, domain.SubProduct{
+				IName:        value.IName,
+				IQuantity:    value.IQuantity * factor,
+				IUnit:        value.IUnit,
+				IGross:       value.IGross * factor,
+				INet:         value.INet * factor,
+				IIngredients: scaleIngredients(value.IIngredients, factor),
 			})
 		}
 	}
-
-	return result
+	return scaled
 }
