@@ -2,36 +2,34 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"flag"
-	"fmt"
 	"log/slog"
 	"os"
-	"strconv"
 
 	"github.com/joho/godotenv"
-	_ "modernc.org/sqlite"
 
 	"bakery/internal/app"
 	"bakery/internal/config"
-	"bakery/internal/dbmigrate"
-	"bakery/internal/domain"
-	"bakery/internal/repo/sqlc"
+	accessdomain "bakery/internal/domain/access"
+	outbounddb "bakery/internal/outbound/db"
+	"bakery/internal/outbound/db/sqlc"
+	"bakery/internal/pkg/dbmigrate"
+	"bakery/internal/pkg/helpers"
 	"bakery/pkg/logger"
 )
 
 func main() {
 	_ = godotenv.Load()
 
-	log, err := logger.InitLogger(getEnv("LOG_LEVEL", "INFO"), getEnvBool("LOG_PRETTY", true), getEnv("LOG_DIR", ""))
+	log, err := logger.InitLogger(helpers.Env("LOG_LEVEL", "INFO"), helpers.EnvBool("LOG_PRETTY", true), helpers.Env("LOG_DIR", ""))
 	if err != nil {
 		panic(err)
 	}
 	slog.SetDefault(log)
 
 	cfg := config.New()
-	username := flag.String("username", getEnv("ADMIN_USERNAME", "admin"), "admin username")
-	password := flag.String("password", getEnv("ADMIN_PASSWORD", ""), "admin password")
+	username := flag.String("username", helpers.Env("ADMIN_USERNAME", "admin"), "admin username")
+	password := flag.String("password", helpers.Env("ADMIN_PASSWORD", ""), "admin password")
 	flag.Parse()
 
 	if *password == "" {
@@ -39,22 +37,23 @@ func main() {
 		os.Exit(1)
 	}
 
-	db, err := openSQLite(cfg.DBPath)
+	ctx := context.Background()
+	db, err := outbounddb.OpenPostgres(ctx, cfg.DatabaseURL)
 	if err != nil {
 		log.Error("open db failed", "error", err)
 		os.Exit(1)
 	}
-	defer closeDB(log, db)
-	if err := dbmigrate.ApplyInitialSchema(db, log); err != nil {
+	defer helpers.ClosePool(db)
+	if err := dbmigrate.ApplyInitialSchema(ctx, db, log); err != nil {
 		log.Error("apply db schema failed", "error", err)
 		os.Exit(1)
 	}
 
 	authSvc := app.NewAuthService(sqlc.New(db))
-	user, err := authSvc.CreateUserWithPassword(context.Background(), domain.PasswordAuthUserInput{
+	user, err := authSvc.CreateUserWithPassword(ctx, accessdomain.PasswordAuthUserInput{
 		Username: *username,
 		Password: *password,
-		Role:     domain.RoleAdmin,
+		Role:     accessdomain.RoleAdmin,
 	})
 	if err != nil {
 		log.Error("create admin failed", "username", *username, "error", err)
@@ -62,46 +61,4 @@ func main() {
 	}
 
 	log.Info("admin created", "username", user.Username, "role", user.Role)
-}
-
-func openSQLite(path string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite", fmt.Sprintf("file:%s?cache=shared&mode=rwc", path))
-	if err != nil {
-		return nil, err
-	}
-	db.SetMaxOpenConns(1)
-
-	if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil {
-		_ = db.Close()
-		return nil, err
-	}
-	return db, nil
-}
-
-func closeDB(log *slog.Logger, db *sql.DB) {
-	if db == nil {
-		return
-	}
-	if err := db.Close(); err != nil {
-		log.Error("close db failed", "error", err)
-	}
-}
-
-func getEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
-	}
-	return fallback
-}
-
-func getEnvBool(key string, fallback bool) bool {
-	value, ok := os.LookupEnv(key)
-	if !ok {
-		return fallback
-	}
-	parsed, err := strconv.ParseBool(value)
-	if err != nil {
-		return fallback
-	}
-	return parsed
 }

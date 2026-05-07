@@ -1,10 +1,8 @@
 -- name: DishExistsByCode :one
-SELECT EXISTS (
-    SELECT 1
-    FROM iiko_products
-    WHERE code = sqlc.arg(code)
-      AND type = 'DISH'
-);
+SELECT COUNT(*)::bigint
+FROM iiko_products
+WHERE code = sqlc.arg(code)
+  AND type = 'DISH';
 
 -- name: GetIikoProductByCode :one
 SELECT

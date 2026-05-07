@@ -1,28 +1,3 @@
--- name: CreateTelegramAuthUser :one
-INSERT INTO auth_users (
-    telegram_id,
-    username,
-    password_hash,
-    metadata_json,
-    role,
-    created_at,
-    updated_at
-) VALUES (
-    sqlc.arg(telegram_id),
-    sqlc.arg(username),
-    '',
-    sqlc.arg(metadata_json),
-    sqlc.arg(role),
-    sqlc.arg(created_at),
-    sqlc.arg(updated_at)
-)
-ON CONFLICT(telegram_id) DO UPDATE SET
-    username = excluded.username,
-    metadata_json = excluded.metadata_json,
-    role = excluded.role,
-    updated_at = excluded.updated_at
-RETURNING *;
-
 -- name: CreatePasswordAuthUser :one
 INSERT INTO auth_users (
     username,
@@ -70,8 +45,3 @@ SET
     telegram_id = NULL,
     updated_at = sqlc.arg(updated_at)
 WHERE telegram_id = sqlc.arg(telegram_id);
-
--- name: GetUserByID :one
-SELECT *
-FROM auth_users
-WHERE id = sqlc.arg(id);

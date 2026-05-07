@@ -1,14 +1,13 @@
 package config
 
 import (
-	"os"
-	"strconv"
 	"time"
+
+	"bakery/internal/pkg/helpers"
 )
 
 type TelegramConfig struct {
 	OrderBotToken string
-	AdminBotToken string
 }
 
 type IikoConfig struct {
@@ -19,11 +18,10 @@ type IikoConfig struct {
 }
 
 type Config struct {
-	Telegram TelegramConfig
-	Iiko     IikoConfig
-	DBPath   string
-	HTTPPort int
-	Sync     SyncConfig
+	Telegram    TelegramConfig
+	Iiko        IikoConfig
+	DatabaseURL string
+	Sync        SyncConfig
 }
 
 type SyncConfig struct {
@@ -35,47 +33,19 @@ type SyncConfig struct {
 func New() *Config {
 	return &Config{
 		Telegram: TelegramConfig{
-			OrderBotToken: getEnv("ORDER_BOT_TOKEN", getEnv("BOT_TOKEN", "")),
-			AdminBotToken: getEnv("ADMIN_BOT_TOKEN", getEnv("VIEW_BOT_TOKEN", "")),
+			OrderBotToken: helpers.Env("ORDER_BOT_TOKEN", helpers.Env("BOT_TOKEN", "")),
 		},
 		Iiko: IikoConfig{
-			Host:     getEnv("IIKO_HOST", ""),
-			Port:     getEnvAsInt("IIKO_PORT", 443),
-			Login:    getEnv("IIKO_LOGIN", ""),
-			Password: getEnv("IIKO_PASSWORD", ""),
+			Host:     helpers.Env("IIKO_HOST", ""),
+			Port:     helpers.EnvInt("IIKO_PORT", 443),
+			Login:    helpers.Env("IIKO_LOGIN", ""),
+			Password: helpers.Env("IIKO_PASSWORD", ""),
 		},
-		DBPath:   getEnv("DB_PATH", "bakery.db"),
-		HTTPPort: getEnvAsInt("HTTP_PORT", 8080),
+		DatabaseURL: helpers.Env("DATABASE_URL", helpers.Env("DB_DSN", "postgres://postgres:postgres@localhost:5432/bakery?sslmode=disable")),
 		Sync: SyncConfig{
-			Interval: getEnvAsDuration("SYNC_INTERVAL", 6*time.Hour),
-			DateFrom: getEnv("SYNC_DATE_FROM", time.Now().Format("2006-01-02")),
-			DateTo:   getEnv("SYNC_DATE_TO", time.Now().Format("2006-01-02")),
+			Interval: helpers.EnvDuration("SYNC_INTERVAL", 6*time.Hour),
+			DateFrom: helpers.Env("SYNC_DATE_FROM", time.Now().Format("2006-01-02")),
+			DateTo:   helpers.Env("SYNC_DATE_TO", time.Now().Format("2006-01-02")),
 		},
 	}
-}
-
-func getEnv(key, defaultVal string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
-	}
-	return defaultVal
-}
-
-func getEnvAsInt(name string, defaultVal int) int {
-	valueStr := getEnv(name, "")
-	if value, err := strconv.Atoi(valueStr); err == nil {
-		return value
-	}
-	return defaultVal
-}
-
-func getEnvAsDuration(name string, defaultVal time.Duration) time.Duration {
-	valueStr := getEnv(name, "")
-	if valueStr == "" {
-		return defaultVal
-	}
-	if value, err := time.ParseDuration(valueStr); err == nil {
-		return value
-	}
-	return defaultVal
 }

@@ -7,18 +7,18 @@ SELECT
     date_to
 FROM iiko_assembly_charts
 WHERE assembled_product_id = sqlc.arg(assembled_product_id)
-  AND date(date_from) <= date(sqlc.arg(order_date))
-  AND (date_to IS NULL OR date(date_to) >= date(sqlc.arg(order_date)))
-ORDER BY date(date_from) DESC
+  AND date_from::date <= sqlc.arg(order_date)::date
+  AND (date_to IS NULL OR date_to::date >= sqlc.arg(order_date)::date)
+ORDER BY date_from::date DESC
 LIMIT 1;
 
 -- name: GetActiveAssemblyChartFullByProductID :one
 SELECT *
 FROM iiko_assembly_charts
 WHERE assembled_product_id = sqlc.arg(assembled_product_id)
-  AND date(date_from) <= date(sqlc.arg(order_date))
-  AND (date_to IS NULL OR date(date_to) >= date(sqlc.arg(order_date)))
-ORDER BY date(date_from) DESC
+  AND date_from::date <= sqlc.arg(order_date)::date
+  AND (date_to IS NULL OR date_to::date >= sqlc.arg(order_date)::date)
+ORDER BY date_from::date DESC
 LIMIT 1;
 
 -- name: ListAssemblyChartItemsByChartID :many
@@ -39,7 +39,7 @@ ORDER BY i.sort_weight, i.id;
 SELECT *
 FROM iiko_prepared_charts
 WHERE assembled_product_id = sqlc.arg(assembled_product_id)
-  AND date(date_from) <= date(sqlc.arg(order_date))
-  AND (date_to IS NULL OR date(date_to) >= date(sqlc.arg(order_date)))
-ORDER BY date(date_from) DESC
+  AND date_from::date <= sqlc.arg(order_date)::date
+  AND (date_to IS NULL OR date_to::date >= sqlc.arg(order_date)::date)
+ORDER BY date_from::date DESC
 LIMIT 1;
