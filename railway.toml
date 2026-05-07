@@ -1,0 +1,6 @@
+[build]
+builder = "RAILPACK"
+
+[deploy]
+startCommand = "go run ./cmd/orderbot"
+restartPolicyType = "ALWAYS"

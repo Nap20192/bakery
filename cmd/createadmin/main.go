@@ -14,6 +14,7 @@ import (
 
 	"bakery/internal/app"
 	"bakery/internal/config"
+	"bakery/internal/dbmigrate"
 	"bakery/internal/domain"
 	"bakery/internal/repo/sqlc"
 	"bakery/pkg/logger"
@@ -44,6 +45,10 @@ func main() {
 		os.Exit(1)
 	}
 	defer closeDB(log, db)
+	if err := dbmigrate.ApplyInitialSchema(db, log); err != nil {
+		log.Error("apply db schema failed", "error", err)
+		os.Exit(1)
+	}
 
 	authSvc := app.NewAuthService(sqlc.New(db))
 	user, err := authSvc.CreateUserWithPassword(context.Background(), domain.PasswordAuthUserInput{
