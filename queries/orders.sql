@@ -41,10 +41,17 @@ FROM orders
 WHERE number = sqlc.arg(number);
 
 -- name: GetOrderItemsByOrderID :many
-SELECT *
-FROM order_items
-WHERE order_id = sqlc.arg(order_id)
-ORDER BY id;
+SELECT
+    oi.id,
+    oi.order_id,
+    oi.iiko_product_id,
+    oi.product_name,
+    oi.quantity,
+    COALESCE(p.code, '') AS product_code
+FROM order_items AS oi
+LEFT JOIN iiko_products AS p ON p.id = oi.iiko_product_id
+WHERE oi.order_id = sqlc.arg(order_id)
+ORDER BY oi.id;
 
 -- name: ListOrders :many
 SELECT *
@@ -53,7 +60,14 @@ ORDER BY id DESC
 LIMIT sqlc.arg(limit);
 
 -- name: ListOrderItemsByOrderIDs :many
-SELECT *
-FROM order_items
-WHERE order_id IN (sqlc.slice(order_ids))
-ORDER BY order_id, id;
+SELECT
+    oi.id,
+    oi.order_id,
+    oi.iiko_product_id,
+    oi.product_name,
+    oi.quantity,
+    COALESCE(p.code, '') AS product_code
+FROM order_items AS oi
+LEFT JOIN iiko_products AS p ON p.id = oi.iiko_product_id
+WHERE oi.order_id IN (sqlc.slice(order_ids))
+ORDER BY oi.order_id, oi.id;

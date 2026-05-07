@@ -15,10 +15,9 @@ func (b *OrderBot) register() {
 	bt.Handle("/login", b.handleLogin)
 	bt.Handle("/logout", b.handleLogout)
 	bt.Handle("/adduser", b.handleAddUser, b.requirePermissions(permManageUsers))
-	bt.Handle("/addgroup", b.handleAddGroup, b.requirePermissions(permManageGroups))
-	bt.Handle("/groups", b.handleGroups, b.requirePermissions(permMonitor))
 	bt.Handle("/orders", b.handleOrders, b.requirePermissions(permViewOrders))
 	bt.Handle("/monitor", b.handleMonitor, b.requirePermissions(permMonitor))
+	bt.Handle("/techcard", b.handleTechCard, b.requirePermissions(permTechCard))
 	bt.Handle("/template", b.handleTemplate, b.requirePermissions(permCreateOrder))
 	bt.Handle("/cancel", b.handleCancel, b.requirePermissions(permCreateOrder))
 

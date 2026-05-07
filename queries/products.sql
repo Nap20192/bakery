@@ -1,14 +1,3 @@
--- name: GetProducts :many
-SELECT
-    id,
-    code,
-    name,
-    type,
-    measure_unit,
-    raw_json
-FROM iiko_products
-WHERE type = COALESCE(sqlc.narg(type), type);
-
 -- name: DishExistsByCode :one
 SELECT EXISTS (
     SELECT 1
@@ -26,7 +15,12 @@ SELECT
     measure_unit,
     raw_json
 FROM iiko_products
-WHERE code = sqlc.arg(code);
+WHERE code = sqlc.arg(code)
+ORDER BY
+    CASE WHEN type = 'DISH' THEN 0 ELSE 1 END,
+    updated_at DESC,
+    id
+LIMIT 1;
 
 -- name: GetIikoProductByID :one
 SELECT
@@ -49,14 +43,3 @@ SELECT
     raw_json
 FROM iiko_products
 WHERE trim(name) = trim(sqlc.arg(name));
-
--- name: ListIikoProductsByGroupID :many
-SELECT
-    id,
-    code,
-    name,
-    type,
-    measure_unit,
-    raw_json
-FROM iiko_products
-WHERE lower(json_extract(raw_json, '$.groupId')) = lower(sqlc.arg(group_id));

@@ -153,7 +153,15 @@ func (s *OrderService) ResolveDishByName(ctx context.Context, name string) (doma
 
 type BulkOrderValidationResult struct {
 	ValidItems []domain.OrderItem
-	Errors     []string
+	Errors     []BulkOrderValidationError
+}
+
+type BulkOrderValidationError struct {
+	Line    int
+	Raw     string
+	Code    string
+	Name    string
+	Message string
 }
 
 var lineRe = regexp.MustCompile(`^(\S+)\s+(.+?)\s+(\d+(?:[.,]\d+)?)$`)
@@ -176,8 +184,11 @@ func (s *OrderService) ValidateBulkOrder(ctx context.Context, order string) Bulk
 
 		matches := lineRe.FindStringSubmatch(line)
 		if matches == nil {
-			result.Errors = append(result.Errors,
-				fmt.Sprintf("line %d: invalid format", i+1))
+			result.Errors = append(result.Errors, BulkOrderValidationError{
+				Line:    i + 1,
+				Raw:     line,
+				Message: "invalid format",
+			})
 			continue
 		}
 
@@ -188,19 +199,31 @@ func (s *OrderService) ValidateBulkOrder(ctx context.Context, order string) Bulk
 		qty, err := strconv.ParseFloat(strings.ReplaceAll(qtyStr, ",", "."), 64)
 
 		if err != nil || qty < 0 {
-			result.Errors = append(result.Errors,
-				fmt.Sprintf("product %s: invalid quantity '%s'", name, qtyStr))
+			result.Errors = append(result.Errors, BulkOrderValidationError{
+				Line:    i + 1,
+				Code:    number,
+				Name:    name,
+				Message: fmt.Sprintf("invalid quantity %q", qtyStr),
+			})
 			continue
 		}
 		exists, err := s.queries.DishExistsByCode(ctx, number)
 		if err != nil {
-			result.Errors = append(result.Errors,
-				fmt.Sprintf("product %s: failed to validate code '%s': %v", name, number, err))
+			result.Errors = append(result.Errors, BulkOrderValidationError{
+				Line:    i + 1,
+				Code:    number,
+				Name:    name,
+				Message: fmt.Sprintf("failed to validate code: %v", err),
+			})
 			continue
 		}
 		if exists == 0 {
-			result.Errors = append(result.Errors,
-				fmt.Sprintf("product %s: code '%s' not found", name, number))
+			result.Errors = append(result.Errors, BulkOrderValidationError{
+				Line:    i + 1,
+				Code:    number,
+				Name:    name,
+				Message: "product code not found",
+			})
 			continue
 		}
 
@@ -213,16 +236,19 @@ func (s *OrderService) ValidateBulkOrder(ctx context.Context, order string) Bulk
 
 	_, err := s.orderSpec.ValidateBulkOrderUnique(ctx, result.ValidItems)
 	if err != nil {
-		result.Errors = append(result.Errors, fmt.Sprintf("validation error: %v", err))
+		result.Errors = append(result.Errors, BulkOrderValidationError{
+			Message: err.Error(),
+		})
 	}
 
 	return result
 }
 
-func mapOrderItems(items []sqlc.OrderItem) []domain.OrderItem {
+func mapOrderItems(items []sqlc.GetOrderItemsByOrderIDRow) []domain.OrderItem {
 	result := make([]domain.OrderItem, 0, len(items))
 	for _, item := range items {
 		result = append(result, domain.OrderItem{
+			Code:        item.ProductCode,
 			ProductName: item.ProductName,
 			Quantity:    item.Quantity,
 		})
