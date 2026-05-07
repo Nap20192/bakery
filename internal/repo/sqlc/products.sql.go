@@ -35,6 +35,11 @@ SELECT
     raw_json
 FROM iiko_products
 WHERE code = ?1
+ORDER BY
+    CASE WHEN type = 'DISH' THEN 0 ELSE 1 END,
+    updated_at DESC,
+    id
+LIMIT 1
 `
 
 type GetIikoProductByCodeRow struct {
@@ -125,108 +130,6 @@ func (q *Queries) GetIikoProductsByName(ctx context.Context, name string) ([]Get
 	var items []GetIikoProductsByNameRow
 	for rows.Next() {
 		var i GetIikoProductsByNameRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Code,
-			&i.Name,
-			&i.Type,
-			&i.MeasureUnit,
-			&i.RawJson,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getProducts = `-- name: GetProducts :many
-SELECT
-    id,
-    code,
-    name,
-    type,
-    measure_unit,
-    raw_json
-FROM iiko_products
-WHERE type = COALESCE(?1, type)
-`
-
-type GetProductsRow struct {
-	ID          string  `json:"id"`
-	Code        string  `json:"code"`
-	Name        string  `json:"name"`
-	Type        *string `json:"type"`
-	MeasureUnit string  `json:"measure_unit"`
-	RawJson     string  `json:"raw_json"`
-}
-
-func (q *Queries) GetProducts(ctx context.Context, type_ *string) ([]GetProductsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getProducts, type_)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetProductsRow
-	for rows.Next() {
-		var i GetProductsRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Code,
-			&i.Name,
-			&i.Type,
-			&i.MeasureUnit,
-			&i.RawJson,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listIikoProductsByGroupID = `-- name: ListIikoProductsByGroupID :many
-SELECT
-    id,
-    code,
-    name,
-    type,
-    measure_unit,
-    raw_json
-FROM iiko_products
-WHERE lower(json_extract(raw_json, '$.groupId')) = lower(?1)
-`
-
-type ListIikoProductsByGroupIDRow struct {
-	ID          string  `json:"id"`
-	Code        string  `json:"code"`
-	Name        string  `json:"name"`
-	Type        *string `json:"type"`
-	MeasureUnit string  `json:"measure_unit"`
-	RawJson     string  `json:"raw_json"`
-}
-
-func (q *Queries) ListIikoProductsByGroupID(ctx context.Context, groupID string) ([]ListIikoProductsByGroupIDRow, error) {
-	rows, err := q.db.QueryContext(ctx, listIikoProductsByGroupID, groupID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListIikoProductsByGroupIDRow
-	for rows.Next() {
-		var i ListIikoProductsByGroupIDRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Code,

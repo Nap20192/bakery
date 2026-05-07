@@ -3,13 +3,18 @@ package app
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"bakery/internal/domain"
+	"bakery/internal/iiko"
 	"bakery/internal/repo/sqlc"
 )
+
+const maxMonitorDepth = 12
 
 type MonitorService struct {
 	queries *sqlc.Queries
@@ -19,16 +24,16 @@ func NewMonitorService(queries *sqlc.Queries) *MonitorService {
 	return &MonitorService{queries: queries}
 }
 
-func (s *MonitorService) GetIngredientsByGroup(ctx context.Context, group domain.Group, order domain.Order) (domain.GroupIngredientsReport, error) {
-	report := domain.GroupIngredientsReport{Group: group}
+func (s *MonitorService) GetIngredientsByCode(ctx context.Context, code string, order domain.Order) (domain.IngredientReport, error) {
+	report := domain.IngredientReport{}
 	if s == nil || s.queries == nil {
 		return report, fmt.Errorf("monitor service is not initialized")
 	}
-	ingredient, err := s.resolveIngredient(ctx, group)
+	ingredient, err := s.resolveIngredient(ctx, code)
 	if err != nil {
 		return report, err
 	}
-	report.Ingredient = domain.GroupIngredientUsage{
+	report.Ingredient = domain.IngredientUsage{
 		ProductID:   ingredient.ID,
 		ProductCode: ingredient.Code,
 		ProductName: ingredient.Name,
@@ -42,6 +47,12 @@ func (s *MonitorService) GetIngredientsByGroup(ctx context.Context, group domain
 	orderDateText := orderDate.Format("2006-01-02")
 
 	for _, orderItem := range order.Items {
+		breakdown := domain.IngredientDishBreakdown{
+			OrderItemCode:     orderItem.Code,
+			OrderItemName:     orderItem.ProductName,
+			OrderItemQuantity: orderItem.Quantity,
+		}
+
 		product, err := s.queries.GetIikoProductByCode(ctx, orderItem.Code)
 		if err != nil {
 			if err == sql.ErrNoRows {
@@ -51,43 +62,12 @@ func (s *MonitorService) GetIngredientsByGroup(ctx context.Context, group domain
 			return report, fmt.Errorf("get product by code %s: %w", orderItem.Code, err)
 		}
 
-		chart, err := s.queries.GetActiveAssemblyChartByProductID(ctx, sqlc.GetActiveAssemblyChartByProductIDParams{
-			AssembledProductID: product.ID,
-			OrderDate:          orderDateText,
-		})
+		used, err := s.ingredientUsageForProduct(ctx, product.ID, ingredient.ID, orderItem.Quantity, orderDateText, map[string]bool{})
 		if err != nil {
-			if err == sql.ErrNoRows {
-				report.Warnings = append(report.Warnings, fmt.Sprintf("assembly chart for product %s (%s) not found", orderItem.ProductName, orderItem.Code))
-				continue
-			}
-			return report, fmt.Errorf("get assembly chart for product %s: %w", orderItem.Code, err)
+			return report, fmt.Errorf("calculate ingredient usage for product %s: %w", orderItem.Code, err)
 		}
-
-		chartItems, err := s.queries.ListAssemblyChartItemsByChartID(ctx, chart.ID)
-		if err != nil {
-			return report, fmt.Errorf("list chart items for chart %s: %w", chart.ID, err)
-		}
-
-		scale := orderItem.Quantity
-		if chart.AssembledAmount > 0 {
-			scale = orderItem.Quantity / chart.AssembledAmount
-		}
-
-		breakdown := domain.GroupIngredientDishBreakdown{
-			OrderItemCode:     orderItem.Code,
-			OrderItemName:     orderItem.ProductName,
-			OrderItemQuantity: orderItem.Quantity,
-		}
-
-		for _, chartItem := range chartItems {
-			if chartItem.ProductID != ingredient.ID {
-				continue
-			}
-
-			used := chartItem.AmountOut * scale
-			breakdown.IngredientQuantity += used
-			report.Ingredient.Quantity += used
-		}
+		breakdown.IngredientQuantity = used
+		report.Ingredient.Quantity += used
 
 		if breakdown.IngredientQuantity > 0 {
 			report.Breakdown = append(report.Breakdown, breakdown)
@@ -106,36 +86,95 @@ func (s *MonitorService) GetIngredientsByGroup(ctx context.Context, group domain
 	return report, nil
 }
 
-func (s *MonitorService) resolveIngredient(ctx context.Context, group domain.Group) (sqlc.GetIikoProductByIDRow, error) {
-	if group.ID != "" {
-		product, err := s.queries.GetIikoProductByID(ctx, group.ID)
-		if err == nil {
-			return product, nil
-		}
-		if err != sql.ErrNoRows {
-			return sqlc.GetIikoProductByIDRow{}, fmt.Errorf("get ingredient by id %s: %w", group.ID, err)
-		}
+func (s *MonitorService) ingredientUsageForProduct(
+	ctx context.Context,
+	productID string,
+	ingredientID string,
+	amount float64,
+	orderDate string,
+	path map[string]bool,
+) (float64, error) {
+	if productID == "" || amount == 0 {
+		return 0, nil
 	}
-	if group.Code != "" {
-		product, err := s.queries.GetIikoProductByCode(ctx, group.Code)
-		if err == nil {
-			return sqlc.GetIikoProductByIDRow(product), nil
-		}
-		if err != sql.ErrNoRows {
-			return sqlc.GetIikoProductByIDRow{}, fmt.Errorf("get ingredient by code %s: %w", group.Code, err)
-		}
+	if productID == ingredientID {
+		return amount, nil
 	}
-	if group.Name != "" {
-		products, err := s.queries.GetIikoProductsByName(ctx, group.Name)
+	if path[productID] || len(path) >= maxMonitorDepth {
+		return 0, nil
+	}
+
+	nextPath := make(map[string]bool, len(path)+1)
+	for key, value := range path {
+		nextPath[key] = value
+	}
+	nextPath[productID] = true
+
+	assembly, err := s.queries.GetActiveAssemblyChartByProductID(ctx, sqlc.GetActiveAssemblyChartByProductIDParams{
+		AssembledProductID: productID,
+		OrderDate:          orderDate,
+	})
+	if err == nil {
+		items, err := s.queries.ListAssemblyChartItemsByChartID(ctx, assembly.ID)
 		if err != nil {
-			return sqlc.GetIikoProductByIDRow{}, fmt.Errorf("get ingredient by name %s: %w", group.Name, err)
+			return 0, fmt.Errorf("list assembly chart items %s: %w", assembly.ID, err)
 		}
-		if len(products) == 1 {
-			return sqlc.GetIikoProductByIDRow(products[0]), nil
+		scale := amount
+		if assembly.AssembledAmount > 0 {
+			scale = amount / assembly.AssembledAmount
 		}
-		if len(products) > 1 {
-			return sqlc.GetIikoProductByIDRow{}, fmt.Errorf("ingredient name %q is ambiguous: %d products matched", group.Name, len(products))
+
+		var total float64
+		for _, item := range items {
+			childAmount := item.AmountOut * scale
+			used, err := s.ingredientUsageForProduct(ctx, item.ProductID, ingredientID, childAmount, orderDate, nextPath)
+			if err != nil {
+				return 0, err
+			}
+			total += used
 		}
+		return total, nil
 	}
-	return sqlc.GetIikoProductByIDRow{}, fmt.Errorf("ingredient not found by group.id/group.code/group.name")
+	if err != sql.ErrNoRows {
+		return 0, fmt.Errorf("get active assembly chart: %w", err)
+	}
+
+	prepared, err := s.queries.GetActivePreparedChartFullByProductID(ctx, sqlc.GetActivePreparedChartFullByProductIDParams{
+		AssembledProductID: productID,
+		OrderDate:          orderDate,
+	})
+	if err == sql.ErrNoRows {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, fmt.Errorf("get active prepared chart: %w", err)
+	}
+
+	var dto iiko.PreparedChartDto
+	if err := json.Unmarshal([]byte(prepared.RawJson), &dto); err != nil {
+		return 0, fmt.Errorf("decode prepared chart raw json: %w", err)
+	}
+
+	var total float64
+	for _, item := range dto.Items {
+		childAmount := item.Amount * amount
+		used, err := s.ingredientUsageForProduct(ctx, item.ProductID, ingredientID, childAmount, orderDate, nextPath)
+		if err != nil {
+			return 0, err
+		}
+		total += used
+	}
+	return total, nil
+}
+
+func (s *MonitorService) resolveIngredient(ctx context.Context, code string) (sqlc.GetIikoProductByIDRow, error) {
+	code = strings.TrimSpace(code)
+	product, err := s.queries.GetIikoProductByCode(ctx, code)
+	if err == nil {
+		return sqlc.GetIikoProductByIDRow(product), nil
+	}
+	if err != sql.ErrNoRows {
+		return sqlc.GetIikoProductByIDRow{}, fmt.Errorf("get ingredient by code %s: %w", code, err)
+	}
+	return sqlc.GetIikoProductByIDRow{}, fmt.Errorf("ingredient not found by code %s", code)
 }

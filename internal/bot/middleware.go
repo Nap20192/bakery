@@ -15,11 +15,11 @@ import (
 const authUserContextKey = "auth_user"
 
 const (
-	permCreateOrder  = "order:create"
-	permManageGroups = "group:manage"
-	permManageUsers  = "user:manage"
-	permMonitor      = "monitor:view"
-	permViewOrders   = "order:view"
+	permCreateOrder = "order:create"
+	permManageUsers = "user:manage"
+	permMonitor     = "monitor:view"
+	permTechCard    = "techcard:view"
+	permViewOrders  = "order:view"
 )
 
 var rolePermissions = map[string]map[string]struct{}{
@@ -31,11 +31,11 @@ var rolePermissions = map[string]map[string]struct{}{
 		permViewOrders: {},
 	},
 	domain.RoleAdmin: {
-		permCreateOrder:  {},
-		permManageGroups: {},
-		permManageUsers:  {},
-		permMonitor:      {},
-		permViewOrders:   {},
+		permCreateOrder: {},
+		permManageUsers: {},
+		permMonitor:     {},
+		permTechCard:    {},
+		permViewOrders:  {},
 	},
 }
 

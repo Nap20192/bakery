@@ -49,8 +49,8 @@ func main() {
 	appDeps, err := deps.NewAppDeps(
 		deps.WithAuthService(infra),
 		deps.WithOrderService(infra),
-		deps.WithGroupService(infra),
 		deps.WithMonitorService(infra),
+		deps.WithTechCardService(infra),
 		deps.WithOrderBot(infra),
 	)
 	if err != nil {

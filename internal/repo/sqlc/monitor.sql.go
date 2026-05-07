@@ -50,6 +50,70 @@ func (q *Queries) GetActiveAssemblyChartByProductID(ctx context.Context, arg Get
 	return i, err
 }
 
+const getActiveAssemblyChartFullByProductID = `-- name: GetActiveAssemblyChartFullByProductID :one
+SELECT id, assembled_product_id, date_from, date_to, assembled_amount, product_writeoff_strategy, product_size_assembly_strategy, effective_direct_writeoff_store_spec_json, raw_json, updated_at
+FROM iiko_assembly_charts
+WHERE assembled_product_id = ?1
+  AND date(date_from) <= date(?2)
+  AND (date_to IS NULL OR date(date_to) >= date(?2))
+ORDER BY date(date_from) DESC
+LIMIT 1
+`
+
+type GetActiveAssemblyChartFullByProductIDParams struct {
+	AssembledProductID string      `json:"assembled_product_id"`
+	OrderDate          interface{} `json:"order_date"`
+}
+
+func (q *Queries) GetActiveAssemblyChartFullByProductID(ctx context.Context, arg GetActiveAssemblyChartFullByProductIDParams) (IikoAssemblyChart, error) {
+	row := q.db.QueryRowContext(ctx, getActiveAssemblyChartFullByProductID, arg.AssembledProductID, arg.OrderDate)
+	var i IikoAssemblyChart
+	err := row.Scan(
+		&i.ID,
+		&i.AssembledProductID,
+		&i.DateFrom,
+		&i.DateTo,
+		&i.AssembledAmount,
+		&i.ProductWriteoffStrategy,
+		&i.ProductSizeAssemblyStrategy,
+		&i.EffectiveDirectWriteoffStoreSpecJson,
+		&i.RawJson,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getActivePreparedChartFullByProductID = `-- name: GetActivePreparedChartFullByProductID :one
+SELECT id, assembled_product_id, date_from, date_to, product_size_assembly_strategy, effective_direct_writeoff_store_spec_json, raw_json, updated_at
+FROM iiko_prepared_charts
+WHERE assembled_product_id = ?1
+  AND date(date_from) <= date(?2)
+  AND (date_to IS NULL OR date(date_to) >= date(?2))
+ORDER BY date(date_from) DESC
+LIMIT 1
+`
+
+type GetActivePreparedChartFullByProductIDParams struct {
+	AssembledProductID string      `json:"assembled_product_id"`
+	OrderDate          interface{} `json:"order_date"`
+}
+
+func (q *Queries) GetActivePreparedChartFullByProductID(ctx context.Context, arg GetActivePreparedChartFullByProductIDParams) (IikoPreparedChart, error) {
+	row := q.db.QueryRowContext(ctx, getActivePreparedChartFullByProductID, arg.AssembledProductID, arg.OrderDate)
+	var i IikoPreparedChart
+	err := row.Scan(
+		&i.ID,
+		&i.AssembledProductID,
+		&i.DateFrom,
+		&i.DateTo,
+		&i.ProductSizeAssemblyStrategy,
+		&i.EffectiveDirectWriteoffStoreSpecJson,
+		&i.RawJson,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listAssemblyChartItemsByChartID = `-- name: ListAssemblyChartItemsByChartID :many
 SELECT
     i.id AS item_id,

@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS iiko_sync_runs (
 
 CREATE TABLE IF NOT EXISTS iiko_products (
     id TEXT PRIMARY KEY,
-    code TEXT NOT NULL UNIQUE DEFAULT '',
+    code TEXT NOT NULL DEFAULT '',
     name TEXT NOT NULL,
     type TEXT,
     measure_unit TEXT NOT NULL DEFAULT '',
@@ -124,6 +124,7 @@ CREATE INDEX IF NOT EXISTS idx_order_items_iiko_product_id ON order_items(iiko_p
 CREATE INDEX IF NOT EXISTS idx_auth_users_role ON auth_users(role);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_auth_users_username ON auth_users(username) WHERE username <> '';
 CREATE INDEX IF NOT EXISTS idx_iiko_products_name ON iiko_products(name);
+CREATE INDEX IF NOT EXISTS idx_iiko_products_code ON iiko_products(code);
 CREATE INDEX IF NOT EXISTS idx_iiko_products_type ON iiko_products(type);
 CREATE INDEX IF NOT EXISTS idx_iiko_assembly_charts_product ON iiko_assembly_charts(assembled_product_id);
 CREATE INDEX IF NOT EXISTS idx_iiko_assembly_charts_period ON iiko_assembly_charts(date_from, date_to);
@@ -146,6 +147,7 @@ DROP INDEX IF EXISTS idx_iiko_assembly_chart_items_chart;
 DROP INDEX IF EXISTS idx_iiko_assembly_charts_period;
 DROP INDEX IF EXISTS idx_iiko_assembly_charts_product;
 DROP INDEX IF EXISTS idx_iiko_products_type;
+DROP INDEX IF EXISTS idx_iiko_products_code;
 DROP INDEX IF EXISTS idx_iiko_products_name;
 DROP INDEX IF EXISTS idx_auth_users_role;
 DROP INDEX IF EXISTS idx_auth_users_username;

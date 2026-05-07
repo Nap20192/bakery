@@ -111,27 +111,44 @@ func (q *Queries) GetOrderByNumber(ctx context.Context, number string) (Order, e
 }
 
 const getOrderItemsByOrderID = `-- name: GetOrderItemsByOrderID :many
-SELECT id, order_id, iiko_product_id, product_name, quantity
-FROM order_items
-WHERE order_id = ?1
-ORDER BY id
+SELECT
+    oi.id,
+    oi.order_id,
+    oi.iiko_product_id,
+    oi.product_name,
+    oi.quantity,
+    COALESCE(p.code, '') AS product_code
+FROM order_items AS oi
+LEFT JOIN iiko_products AS p ON p.id = oi.iiko_product_id
+WHERE oi.order_id = ?1
+ORDER BY oi.id
 `
 
-func (q *Queries) GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]OrderItem, error) {
+type GetOrderItemsByOrderIDRow struct {
+	ID            int64   `json:"id"`
+	OrderID       int64   `json:"order_id"`
+	IikoProductID *string `json:"iiko_product_id"`
+	ProductName   string  `json:"product_name"`
+	Quantity      float64 `json:"quantity"`
+	ProductCode   string  `json:"product_code"`
+}
+
+func (q *Queries) GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]GetOrderItemsByOrderIDRow, error) {
 	rows, err := q.db.QueryContext(ctx, getOrderItemsByOrderID, orderID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []OrderItem
+	var items []GetOrderItemsByOrderIDRow
 	for rows.Next() {
-		var i OrderItem
+		var i GetOrderItemsByOrderIDRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.OrderID,
 			&i.IikoProductID,
 			&i.ProductName,
 			&i.Quantity,
+			&i.ProductCode,
 		); err != nil {
 			return nil, err
 		}
@@ -147,13 +164,29 @@ func (q *Queries) GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]
 }
 
 const listOrderItemsByOrderIDs = `-- name: ListOrderItemsByOrderIDs :many
-SELECT id, order_id, iiko_product_id, product_name, quantity
-FROM order_items
-WHERE order_id IN (/*SLICE:order_ids*/?)
-ORDER BY order_id, id
+SELECT
+    oi.id,
+    oi.order_id,
+    oi.iiko_product_id,
+    oi.product_name,
+    oi.quantity,
+    COALESCE(p.code, '') AS product_code
+FROM order_items AS oi
+LEFT JOIN iiko_products AS p ON p.id = oi.iiko_product_id
+WHERE oi.order_id IN (/*SLICE:order_ids*/?)
+ORDER BY oi.order_id, oi.id
 `
 
-func (q *Queries) ListOrderItemsByOrderIDs(ctx context.Context, orderIds []int64) ([]OrderItem, error) {
+type ListOrderItemsByOrderIDsRow struct {
+	ID            int64   `json:"id"`
+	OrderID       int64   `json:"order_id"`
+	IikoProductID *string `json:"iiko_product_id"`
+	ProductName   string  `json:"product_name"`
+	Quantity      float64 `json:"quantity"`
+	ProductCode   string  `json:"product_code"`
+}
+
+func (q *Queries) ListOrderItemsByOrderIDs(ctx context.Context, orderIds []int64) ([]ListOrderItemsByOrderIDsRow, error) {
 	query := listOrderItemsByOrderIDs
 	var queryParams []interface{}
 	if len(orderIds) > 0 {
@@ -169,15 +202,16 @@ func (q *Queries) ListOrderItemsByOrderIDs(ctx context.Context, orderIds []int64
 		return nil, err
 	}
 	defer rows.Close()
-	var items []OrderItem
+	var items []ListOrderItemsByOrderIDsRow
 	for rows.Next() {
-		var i OrderItem
+		var i ListOrderItemsByOrderIDsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.OrderID,
 			&i.IikoProductID,
 			&i.ProductName,
 			&i.Quantity,
+			&i.ProductCode,
 		); err != nil {
 			return nil, err
 		}

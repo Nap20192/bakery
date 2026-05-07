@@ -6,11 +6,20 @@ import (
 	"html"
 	"log/slog"
 	"strings"
+	"time"
 
+	"bakery/internal/app"
 	"bakery/internal/domain"
 
 	tele "gopkg.in/telebot.v3"
 )
+
+var defaultMonitorCodes = []string{
+	"17642",
+	"17644",
+	"17650",
+	"19694",
+}
 
 func (b *OrderBot) handleStart(c tele.Context) error {
 	return c.Send(
@@ -21,11 +30,10 @@ func (b *OrderBot) handleStart(c tele.Context) error {
 			"/login username password - войти\n"+
 			"/logout - выйти\n"+
 			"/adduser username password role - добавить пользователя\n"+
-			"/addgroup product_code - добавить группу\n"+
-			"/groups - посмотреть группы\n"+
 			"/orders - посмотреть заказы\n"+
-			"/monitor order_number - мониторинг по всем группам\n"+
-			"/monitor order_number group_code - мониторинг по группе\n"+
+			"/monitor order_number - мониторинг по дефолтным кодам\n"+
+			"/monitor order_number code - мониторинг по коду\n"+
+			"/techcard code - техкарта\n"+
 			"/template - стандартный шаблон\n"+
 			"/cancel - отменить неподтвержденный заказ",
 		tele.ModeHTML,
@@ -77,39 +85,6 @@ func (b *OrderBot) handleAddUser(c tele.Context) error {
 	return c.Send(fmt.Sprintf("Пользователь %s создан. Роль: %s", user.Username, user.Role))
 }
 
-func (b *OrderBot) handleAddGroup(c tele.Context) error {
-	args := strings.Fields(c.Message().Payload)
-	if len(args) != 1 {
-		return c.Send("Формат: /addgroup product_code")
-	}
-
-	group, err := b.groupSvc.AddGroupByProductCode(context.Background(), domain.GroupInput{
-		Code: args[0],
-	})
-	if err != nil {
-		return c.Send(fmt.Sprintf("Ошибка создания группы: %v", err))
-	}
-
-	return c.Send(fmt.Sprintf("Группа %s создана", group.Name))
-}
-
-func (b *OrderBot) handleGroups(c tele.Context) error {
-	groups, err := b.groupSvc.ListGroups(context.Background())
-	if err != nil {
-		return c.Send(fmt.Sprintf("Ошибка получения групп: %v", err))
-	}
-	if len(groups) == 0 {
-		return c.Send("Групп пока нет.")
-	}
-
-	var sb strings.Builder
-	sb.WriteString("<b>Группы</b>\n\n")
-	for _, group := range groups {
-		sb.WriteString(fmt.Sprintf("<code>%s</code> %s\n", html.EscapeString(group.Code), html.EscapeString(group.Name)))
-	}
-	return c.Send(sb.String(), tele.ModeHTML)
-}
-
 func (b *OrderBot) handleOrders(c tele.Context) error {
 	orders, err := b.orderSvc.ListOrders(context.Background(), 10)
 	if err != nil {
@@ -134,7 +109,7 @@ func (b *OrderBot) handleOrders(c tele.Context) error {
 func (b *OrderBot) handleMonitor(c tele.Context) error {
 	args := strings.Fields(c.Message().Payload)
 	if len(args) != 1 && len(args) != 2 {
-		return c.Send("Формат: /monitor order_number [group_code]")
+		return c.Send("Формат: /monitor order_number [code]")
 	}
 
 	order, err := b.orderSvc.GetOrderByNumber(context.Background(), args[0])
@@ -143,29 +118,30 @@ func (b *OrderBot) handleMonitor(c tele.Context) error {
 	}
 
 	if len(args) == 1 {
-		groups, err := b.groupSvc.ListGroups(context.Background())
-		if err != nil {
-			return c.Send(fmt.Sprintf("Ошибка получения групп: %v", err))
-		}
-		if len(groups) == 0 {
-			return c.Send("Групп пока нет.")
-		}
-		return b.sendMonitorReports(c, order, groups)
+		return b.sendMonitorReports(c, order, defaultMonitorCodes)
 	}
-
-	group, err := b.groupSvc.GetGroupByCode(context.Background(), args[1])
-	if err != nil {
-		return c.Send(fmt.Sprintf("Группа %s не найдена.", args[1]))
-	}
-	return b.sendMonitorReports(c, order, []domain.Group{group})
+	return b.sendMonitorReports(c, order, []string{args[1]})
 }
 
-func (b *OrderBot) sendMonitorReports(c tele.Context, order domain.Order, groups []domain.Group) error {
-	var reports []domain.GroupIngredientsReport
-	for _, group := range groups {
-		report, err := b.monitorSvc.GetIngredientsByGroup(context.Background(), group, order)
+func (b *OrderBot) handleTechCard(c tele.Context) error {
+	args := strings.Fields(c.Message().Payload)
+	if len(args) != 1 {
+		return c.Send("Формат: /techcard code")
+	}
+	card, err := b.techCardSvc.GetByCode(context.Background(), args[0], time.Now().UTC())
+	if err != nil {
+		return c.Send(fmt.Sprintf("Ошибка получения техкарты: %v", err))
+	}
+	return c.Send(formatTechCard(card), tele.ModeHTML)
+}
+
+func (b *OrderBot) sendMonitorReports(c tele.Context, order domain.Order, codes []string) error {
+	var reports []domain.IngredientReport
+	for _, code := range codes {
+		code = strings.TrimSpace(code)
+		report, err := b.monitorSvc.GetIngredientsByCode(context.Background(), code, order)
 		if err != nil {
-			return c.Send(fmt.Sprintf("Ошибка мониторинга группы %s: %v", group.Code, err))
+			return c.Send(fmt.Sprintf("Ошибка мониторинга кода %s: %v", code, err))
 		}
 		reports = append(reports, report)
 	}
@@ -252,11 +228,11 @@ func (b *OrderBot) handleBulkOrder(c tele.Context, text string) error {
 	})
 
 	var sb strings.Builder
-	sb.WriteString("<b>Предпросмотр batch-заказа</b>")
-	sb.WriteString(fmt.Sprintf("\n\n<b>Распознано позиций: %d</b>\n", len(result.ValidItems)))
+	sb.WriteString("Проверка заказа\n\n")
+	sb.WriteString(fmt.Sprintf("Распознано: %d\n", len(result.ValidItems)))
 	for _, it := range result.ValidItems {
 		sb.WriteString(fmt.Sprintf(
-			"• %s %s - %s\n",
+			"%s %s %s\n",
 			html.EscapeString(it.Code),
 			html.EscapeString(it.ProductName),
 			formatQuantity(it.Quantity),
@@ -264,20 +240,12 @@ func (b *OrderBot) handleBulkOrder(c tele.Context, text string) error {
 	}
 
 	if len(result.Errors) > 0 {
-		sb.WriteString(fmt.Sprintf("\n<b>Ошибки: %d</b>\n", len(result.Errors)))
-		for _, errText := range result.Errors {
-			sb.WriteString("— ")
-			sb.WriteString(html.EscapeString(errText))
-			sb.WriteString("\n")
-		}
-		sb.WriteString("\nБудут отправлены только корректные позиции. Чтобы исправить заказ, отправьте новый текст целиком.")
+		sb.WriteString(fmt.Sprintf("\nОшибки: %d\n", len(result.Errors)))
+		writeValidationErrors(&sb, result.Errors)
+		sb.WriteString("\nБудут отправлены только корректные позиции.")
 	} else {
 		sb.WriteString("\nОшибок нет.")
 	}
-
-	sb.WriteString("\n\n<blockquote expandable>")
-	sb.WriteString(html.EscapeString(formatCopyableOrder(result.ValidItems)))
-	sb.WriteString("</blockquote>")
 
 	markup := &tele.ReplyMarkup{}
 	markup.Inline(
@@ -289,28 +257,40 @@ func (b *OrderBot) handleBulkOrder(c tele.Context, text string) error {
 	return c.Send(sb.String(), tele.ModeHTML, markup)
 }
 
-func formatValidationErrors(errors []string) string {
+func formatValidationErrors(errors []app.BulkOrderValidationError) string {
 	if len(errors) == 0 {
 		return "Не удалось распознать позиции в сообщении."
 	}
 
 	var sb strings.Builder
-	sb.WriteString("<b>Заказ не распознан</b>\n\n")
-	for _, errText := range errors {
-		sb.WriteString("— ")
-		sb.WriteString(html.EscapeString(errText))
-		sb.WriteString("\n")
-	}
+	sb.WriteString("Заказ не распознан\n\n")
+	writeValidationErrors(&sb, errors)
 	sb.WriteString("\nОтправьте новый заказ целиком.")
 	return sb.String()
 }
 
-func formatCopyableOrder(items []domain.OrderItem) string {
-	var sb strings.Builder
-	for _, it := range items {
-		sb.WriteString(fmt.Sprintf("%s %s %s\n", it.Code, it.ProductName, formatQuantity(it.Quantity)))
+func writeValidationErrors(sb *strings.Builder, errors []app.BulkOrderValidationError) {
+	for _, errItem := range errors {
+		if errItem.Line > 0 {
+			sb.WriteString(fmt.Sprintf("line %d: ", errItem.Line))
+		}
+		if errItem.Raw != "" {
+			sb.WriteString("\"")
+			sb.WriteString(html.EscapeString(errItem.Raw))
+			sb.WriteString("\" ")
+		}
+		if errItem.Code != "" {
+			sb.WriteString(html.EscapeString(errItem.Code))
+			sb.WriteString(" ")
+		}
+		if errItem.Name != "" {
+			sb.WriteString(html.EscapeString(errItem.Name))
+			sb.WriteString(" ")
+		}
+		sb.WriteString("- ")
+		sb.WriteString(html.EscapeString(errItem.Message))
+		sb.WriteString("\n")
 	}
-	return strings.TrimSpace(sb.String())
 }
 
 func formatOrderSummary(order domain.Order) string {
@@ -323,13 +303,17 @@ func formatOrderSummary(order domain.Order) string {
 	return sb.String()
 }
 
-func formatMonitorReports(order domain.Order, reports []domain.GroupIngredientsReport) string {
+func formatMonitorReports(order domain.Order, reports []domain.IngredientReport) string {
 	var sb strings.Builder
 	sb.WriteString("<b>Мониторинг</b>\n\n")
 	sb.WriteString(fmt.Sprintf("Заказ: <code>%s</code>\n\n", html.EscapeString(order.Number)))
 
 	for _, report := range reports {
-		sb.WriteString(fmt.Sprintf("<b><code>%s</code> %s</b>\n", html.EscapeString(report.Group.Code), html.EscapeString(report.Group.Name)))
+		sb.WriteString(fmt.Sprintf(
+			"<b><code>%s</code> %s</b>\n",
+			html.EscapeString(report.Ingredient.ProductCode),
+			html.EscapeString(report.Ingredient.ProductName),
+		))
 		sb.WriteString(fmt.Sprintf(
 			"Итого: %s %s\n",
 			formatQuantity(report.Ingredient.Quantity),
@@ -349,6 +333,68 @@ func formatMonitorReports(order domain.Order, reports []domain.GroupIngredientsR
 	}
 
 	return sb.String()
+}
+
+func formatTechCard(card domain.TechCard) string {
+	var sb strings.Builder
+	sb.WriteString("<b>Техкарта</b>\n\n")
+	sb.WriteString(fmt.Sprintf("<b><code>%s</code> %s</b>\n", html.EscapeString(card.Code), html.EscapeString(card.Name)))
+	if card.Assembly != nil {
+		sb.WriteString(fmt.Sprintf("Выход: %s %s\n\n", formatQuantity(card.Assembly.AssembledAmount), html.EscapeString(card.Unit)))
+		for _, item := range card.Assembly.Items {
+			product := card.Products[item.ProductID]
+			writeTechCardItem(&sb, product, item.AmountIn, item.AmountMiddle, item.AmountOut)
+		}
+		return sb.String()
+	}
+	if card.Prepared != nil {
+		sb.WriteString("\n")
+		for _, item := range card.Prepared.Items {
+			product := card.Products[item.ProductID]
+			writePreparedTechCardItem(&sb, product, item.Amount)
+		}
+		return sb.String()
+	}
+	sb.WriteString("Техкарта не найдена.")
+	return sb.String()
+}
+
+func writeTechCardItem(sb *strings.Builder, product domain.TechCardProduct, amountIn, amountMiddle, amountOut float64) {
+	identifier := product.Code
+	if identifier == "" {
+		identifier = product.ID
+	}
+	sb.WriteString(fmt.Sprintf(
+		"• <code>%s</code> %s: in %s, middle %s, out %s",
+		html.EscapeString(identifier),
+		html.EscapeString(product.Name),
+		formatQuantity(amountIn),
+		formatQuantity(amountMiddle),
+		formatQuantity(amountOut),
+	))
+	if product.Unit != "" {
+		sb.WriteString(" ")
+		sb.WriteString(html.EscapeString(product.Unit))
+	}
+	sb.WriteString("\n")
+}
+
+func writePreparedTechCardItem(sb *strings.Builder, product domain.TechCardProduct, amount float64) {
+	identifier := product.Code
+	if identifier == "" {
+		identifier = product.ID
+	}
+	sb.WriteString(fmt.Sprintf(
+		"• <code>%s</code> %s: %s",
+		html.EscapeString(identifier),
+		html.EscapeString(product.Name),
+		formatQuantity(amount),
+	))
+	if product.Unit != "" {
+		sb.WriteString(" ")
+		sb.WriteString(html.EscapeString(product.Unit))
+	}
+	sb.WriteString("\n")
 }
 
 func formatQuantity(quantity float64) string {
