@@ -6,19 +6,20 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
-	"database/sql"
 	"encoding/base64"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	"bakery/internal/domain"
-	sqlc "bakery/internal/repo/sqlc"
+	accessdomain "bakery/internal/domain/access"
+	sqlc "bakery/internal/outbound/db/sqlc"
+
+	"github.com/jackc/pgx/v5"
 )
 
 const (
-	defaultAuthRole       = domain.RoleClient
+	defaultAuthRole       = accessdomain.RoleClient
 	passwordHashAlgorithm = "pbkdf2-sha256"
 	passwordHashVersion   = "v1"
 	passwordSaltSize      = 16
@@ -39,51 +40,20 @@ func NewAuthService(queries *sqlc.Queries) *AuthService {
 	return &AuthService{queries: queries}
 }
 
-func (s *AuthService) CreateOrUpdateUser(ctx context.Context, input domain.AuthUserInput) (domain.AuthUser, error) {
-	if input.TelegramID == 0 {
-		return domain.AuthUser{}, fmt.Errorf("telegram id is required")
-	}
-	if input.Role == "" {
-		input.Role = defaultAuthRole
-	}
-	input.Role = domain.NormalizeRole(input.Role)
-	if !domain.IsValidRole(input.Role) {
-		return domain.AuthUser{}, fmt.Errorf("%w: %s", ErrInvalidRole, input.Role)
-	}
-	if input.MetadataJSON == "" {
-		input.MetadataJSON = "{}"
-	}
-
-	now := time.Now().UTC().Format(time.RFC3339Nano)
-	telegramID := input.TelegramID
-	user, err := s.queries.CreateTelegramAuthUser(ctx, sqlc.CreateTelegramAuthUserParams{
-		TelegramID:   &telegramID,
-		Username:     input.Username,
-		MetadataJson: input.MetadataJSON,
-		Role:         input.Role,
-		CreatedAt:    now,
-		UpdatedAt:    now,
-	})
-	if err != nil {
-		return domain.AuthUser{}, fmt.Errorf("create auth user: %w", err)
-	}
-	return authUserToDomain(user), nil
-}
-
-func (s *AuthService) CreateUserWithPassword(ctx context.Context, input domain.PasswordAuthUserInput) (domain.AuthUser, error) {
+func (s *AuthService) CreateUserWithPassword(ctx context.Context, input accessdomain.PasswordAuthUserInput) (accessdomain.AuthUser, error) {
 	input.Username = strings.TrimSpace(input.Username)
 	if input.Username == "" {
-		return domain.AuthUser{}, fmt.Errorf("username is required")
+		return accessdomain.AuthUser{}, fmt.Errorf("username is required")
 	}
 	if input.Password == "" {
-		return domain.AuthUser{}, fmt.Errorf("password is required")
+		return accessdomain.AuthUser{}, fmt.Errorf("password is required")
 	}
 	if input.Role == "" {
 		input.Role = defaultAuthRole
 	}
-	input.Role = domain.NormalizeRole(input.Role)
-	if !domain.IsValidRole(input.Role) {
-		return domain.AuthUser{}, fmt.Errorf("%w: %s", ErrInvalidRole, input.Role)
+	input.Role = accessdomain.NormalizeRole(input.Role)
+	if !accessdomain.IsValidRole(input.Role) {
+		return accessdomain.AuthUser{}, fmt.Errorf("%w: %s", ErrInvalidRole, input.Role)
 	}
 	if input.MetadataJSON == "" {
 		input.MetadataJSON = "{}"
@@ -91,7 +61,7 @@ func (s *AuthService) CreateUserWithPassword(ctx context.Context, input domain.P
 
 	hash, err := hashPassword(input.Password)
 	if err != nil {
-		return domain.AuthUser{}, err
+		return accessdomain.AuthUser{}, err
 	}
 
 	now := time.Now().UTC().Format(time.RFC3339Nano)
@@ -104,29 +74,29 @@ func (s *AuthService) CreateUserWithPassword(ctx context.Context, input domain.P
 		UpdatedAt:    now,
 	})
 	if err != nil {
-		return domain.AuthUser{}, fmt.Errorf("create password auth user: %w", err)
+		return accessdomain.AuthUser{}, fmt.Errorf("create password auth user: %w", err)
 	}
 	return authUserToDomain(user), nil
 }
 
-func (s *AuthService) VerifyPassword(ctx context.Context, username string, password string) (domain.AuthUser, error) {
+func (s *AuthService) VerifyPassword(ctx context.Context, username string, password string) (accessdomain.AuthUser, error) {
 	user, err := s.queries.GetAuthUserByUsername(ctx, strings.TrimSpace(username))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return domain.AuthUser{}, ErrAuthUserNotFound
+		if errors.Is(err, pgx.ErrNoRows) {
+			return accessdomain.AuthUser{}, ErrAuthUserNotFound
 		}
-		return domain.AuthUser{}, fmt.Errorf("get auth user: %w", err)
+		return accessdomain.AuthUser{}, fmt.Errorf("get auth user: %w", err)
 	}
 	if user.PasswordHash == "" || !verifyPassword(password, user.PasswordHash) {
-		return domain.AuthUser{}, fmt.Errorf("invalid credentials")
+		return accessdomain.AuthUser{}, fmt.Errorf("invalid credentials")
 	}
 	return authUserToDomain(user), nil
 }
 
-func (s *AuthService) LoginTelegramUser(ctx context.Context, telegramID int64, username string, password string) (domain.AuthUser, error) {
+func (s *AuthService) LoginTelegramUser(ctx context.Context, telegramID int64, username string, password string) (accessdomain.AuthUser, error) {
 	user, err := s.VerifyPassword(ctx, username, password)
 	if err != nil {
-		return domain.AuthUser{}, err
+		return accessdomain.AuthUser{}, err
 	}
 
 	now := time.Now().UTC().Format(time.RFC3339Nano)
@@ -136,7 +106,7 @@ func (s *AuthService) LoginTelegramUser(ctx context.Context, telegramID int64, u
 		ID:         user.ID,
 	})
 	if err != nil {
-		return domain.AuthUser{}, fmt.Errorf("link telegram auth user: %w", err)
+		return accessdomain.AuthUser{}, fmt.Errorf("link telegram auth user: %w", err)
 	}
 	return authUserToDomain(row), nil
 }
@@ -152,25 +122,25 @@ func (s *AuthService) LogoutTelegramUser(ctx context.Context, telegramID int64) 
 	return nil
 }
 
-func (s *AuthService) GetUserByTelegramID(ctx context.Context, telegramID int64) (domain.AuthUser, error) {
+func (s *AuthService) GetUserByTelegramID(ctx context.Context, telegramID int64) (accessdomain.AuthUser, error) {
 	user, err := s.queries.GetAuthUserByTelegramID(ctx, &telegramID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return domain.AuthUser{}, ErrAuthUserNotFound
+		if errors.Is(err, pgx.ErrNoRows) {
+			return accessdomain.AuthUser{}, ErrAuthUserNotFound
 		}
-		return domain.AuthUser{}, fmt.Errorf("get auth user: %w", err)
+		return accessdomain.AuthUser{}, fmt.Errorf("get auth user: %w", err)
 	}
 	return authUserToDomain(user), nil
 }
 
-func authUserToDomain(user sqlc.AuthUser) domain.AuthUser {
+func authUserToDomain(user sqlc.AuthUser) accessdomain.AuthUser {
 	createdAt, _ := time.Parse(time.RFC3339Nano, user.CreatedAt)
 	updatedAt, _ := time.Parse(time.RFC3339Nano, user.UpdatedAt)
-	role := domain.NormalizeRole(user.Role)
+	role := accessdomain.NormalizeRole(user.Role)
 	if role == "user" {
-		role = domain.RoleClient
+		role = accessdomain.RoleClient
 	}
-	return domain.AuthUser{
+	return accessdomain.AuthUser{
 		ID:           user.ID,
 		TelegramID:   user.TelegramID,
 		Username:     user.Username,

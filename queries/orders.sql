@@ -57,17 +57,4 @@ ORDER BY oi.id;
 SELECT *
 FROM orders
 ORDER BY id DESC
-LIMIT sqlc.arg(limit);
-
--- name: ListOrderItemsByOrderIDs :many
-SELECT
-    oi.id,
-    oi.order_id,
-    oi.iiko_product_id,
-    oi.product_name,
-    oi.quantity,
-    COALESCE(p.code, '') AS product_code
-FROM order_items AS oi
-LEFT JOIN iiko_products AS p ON p.id = oi.iiko_product_id
-WHERE oi.order_id IN (sqlc.slice(order_ids))
-ORDER BY oi.order_id, oi.id;
+LIMIT sqlc.arg(order_limit);

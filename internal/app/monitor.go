@@ -2,16 +2,19 @@ package app
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
 	"time"
 
-	"bakery/internal/domain"
-	"bakery/internal/iiko"
-	"bakery/internal/repo/sqlc"
+	monitoringdomain "bakery/internal/domain/monitoring"
+	orderdomain "bakery/internal/domain/order"
+	"bakery/internal/outbound/db/sqlc"
+	"bakery/internal/outbound/iiko"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const maxMonitorDepth = 12
@@ -24,8 +27,8 @@ func NewMonitorService(queries *sqlc.Queries) *MonitorService {
 	return &MonitorService{queries: queries}
 }
 
-func (s *MonitorService) GetIngredientsByCode(ctx context.Context, code string, order domain.Order) (domain.IngredientReport, error) {
-	report := domain.IngredientReport{}
+func (s *MonitorService) GetIngredientsByCode(ctx context.Context, code string, order orderdomain.Order) (monitoringdomain.IngredientReport, error) {
+	report := monitoringdomain.IngredientReport{}
 	if s == nil || s.queries == nil {
 		return report, fmt.Errorf("monitor service is not initialized")
 	}
@@ -33,8 +36,7 @@ func (s *MonitorService) GetIngredientsByCode(ctx context.Context, code string, 
 	if err != nil {
 		return report, err
 	}
-	report.Ingredient = domain.IngredientUsage{
-		ProductID:   ingredient.ID,
+	report.Ingredient = monitoringdomain.IngredientUsage{
 		ProductCode: ingredient.Code,
 		ProductName: ingredient.Name,
 		Unit:        monitorUnit(ingredient),
@@ -44,10 +46,10 @@ func (s *MonitorService) GetIngredientsByCode(ctx context.Context, code string, 
 	if orderDate.IsZero() {
 		orderDate = time.Now().UTC()
 	}
-	orderDateText := orderDate.Format("2006-01-02")
+	orderDateParam := pgDate(orderDate)
 
 	for _, orderItem := range order.Items {
-		breakdown := domain.IngredientDishBreakdown{
+		breakdown := monitoringdomain.IngredientDishBreakdown{
 			OrderItemCode:     orderItem.Code,
 			OrderItemName:     orderItem.ProductName,
 			OrderItemQuantity: orderItem.Quantity,
@@ -55,14 +57,13 @@ func (s *MonitorService) GetIngredientsByCode(ctx context.Context, code string, 
 
 		product, err := s.queries.GetIikoProductByCode(ctx, orderItem.Code)
 		if err != nil {
-			if err == sql.ErrNoRows {
-				report.Warnings = append(report.Warnings, fmt.Sprintf("product with code %s not found", orderItem.Code))
+			if err == pgx.ErrNoRows {
 				continue
 			}
 			return report, fmt.Errorf("get product by code %s: %w", orderItem.Code, err)
 		}
 
-		used, err := s.ingredientUsageForProduct(ctx, product.ID, ingredient.ID, orderItem.Quantity, orderDateText, map[string]bool{})
+		used, err := s.ingredientUsageForProduct(ctx, product.ID, ingredient.ID, orderItem.Quantity, orderDateParam, map[string]bool{})
 		if err != nil {
 			return report, fmt.Errorf("calculate ingredient usage for product %s: %w", orderItem.Code, err)
 		}
@@ -74,11 +75,6 @@ func (s *MonitorService) GetIngredientsByCode(ctx context.Context, code string, 
 		}
 	}
 
-	if report.Ingredient.Quantity > 0 {
-		for i := range report.Breakdown {
-			report.Breakdown[i].ProportionOfTotal = report.Breakdown[i].IngredientQuantity / report.Ingredient.Quantity
-		}
-	}
 	sort.Slice(report.Breakdown, func(i, j int) bool {
 		return report.Breakdown[i].IngredientQuantity > report.Breakdown[j].IngredientQuantity
 	})
@@ -97,12 +93,16 @@ func monitorUnit(product sqlc.GetIikoProductByIDRow) string {
 	return ""
 }
 
+func pgDate(t time.Time) pgtype.Date {
+	return pgtype.Date{Time: t, Valid: true}
+}
+
 func (s *MonitorService) ingredientUsageForProduct(
 	ctx context.Context,
 	productID string,
 	ingredientID string,
 	amount float64,
-	orderDate string,
+	orderDate pgtype.Date,
 	path map[string]bool,
 ) (float64, error) {
 	if productID == "" || amount == 0 {
@@ -146,7 +146,7 @@ func (s *MonitorService) ingredientUsageForProduct(
 		}
 		return total, nil
 	}
-	if err != sql.ErrNoRows {
+	if err != pgx.ErrNoRows {
 		return 0, fmt.Errorf("get active assembly chart: %w", err)
 	}
 
@@ -154,7 +154,7 @@ func (s *MonitorService) ingredientUsageForProduct(
 		AssembledProductID: productID,
 		OrderDate:          orderDate,
 	})
-	if err == sql.ErrNoRows {
+	if err == pgx.ErrNoRows {
 		return 0, nil
 	}
 	if err != nil {
@@ -184,7 +184,7 @@ func (s *MonitorService) resolveIngredient(ctx context.Context, code string) (sq
 	if err == nil {
 		return sqlc.GetIikoProductByIDRow(product), nil
 	}
-	if err != sql.ErrNoRows {
+	if err != pgx.ErrNoRows {
 		return sqlc.GetIikoProductByIDRow{}, fmt.Errorf("get ingredient by code %s: %w", code, err)
 	}
 	return sqlc.GetIikoProductByIDRow{}, fmt.Errorf("ingredient not found by code %s", code)

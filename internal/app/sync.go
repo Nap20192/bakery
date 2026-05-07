@@ -2,25 +2,24 @@ package app
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
-	"bakery/internal/iiko"
-	sqlcrepo "bakery/internal/repo/sqlc"
+	sqlcrepo "bakery/internal/outbound/db/sqlc"
+	"bakery/internal/outbound/iiko"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type SyncService struct {
-	client          *iiko.Client
-	db              *sql.DB
-	queries         *sqlcrepo.Queries
-	interval        time.Duration
-	dateFrom        string
-	dateTo          string
-	includeDeleted  bool
-	includePrepared bool
+	client   *iiko.Client
+	db       *pgxpool.Pool
+	queries  *sqlcrepo.Queries
+	interval time.Duration
+	dateFrom string
+	dateTo   string
 }
 
 const (
@@ -30,15 +29,14 @@ const (
 	syncStatusError = "error"
 )
 
-func NewSyncService(client *iiko.Client, db *sql.DB, queries *sqlcrepo.Queries, interval time.Duration, dateFrom, dateTo string) *SyncService {
+func NewSyncService(client *iiko.Client, db *pgxpool.Pool, queries *sqlcrepo.Queries, interval time.Duration, dateFrom, dateTo string) *SyncService {
 	return &SyncService{
-		client:          client,
-		db:              db,
-		queries:         queries,
-		interval:        interval,
-		dateFrom:        dateFrom,
-		dateTo:          dateTo,
-		includePrepared: true,
+		client:   client,
+		db:       db,
+		queries:  queries,
+		interval: interval,
+		dateFrom: dateFrom,
+		dateTo:   dateTo,
 	}
 }
 
@@ -68,10 +66,10 @@ func (s *SyncService) Run(ctx context.Context) error {
 func (s *SyncService) syncOnce(ctx context.Context) {
 	start := time.Now()
 	if err := s.SyncOnce(ctx); err != nil {
-		log.Printf("iiko sync failed: %v", err)
+		slog.Error("iiko sync failed", "error", err)
 		return
 	}
-	log.Printf("iiko sync completed in %s", time.Since(start).Round(time.Millisecond))
+	slog.Info("iiko sync completed", "duration", time.Since(start).Round(time.Millisecond).String())
 }
 
 func (s *SyncService) SyncOnce(ctx context.Context) error {
@@ -83,7 +81,7 @@ func (s *SyncService) SyncOnce(ctx context.Context) error {
 	}
 	defer func() {
 		if err := s.client.Logout(); err != nil {
-			log.Printf("iiko logout failed: %v", err)
+			slog.Warn("iiko logout failed", "error", err)
 		}
 	}()
 
@@ -91,7 +89,7 @@ func (s *SyncService) SyncOnce(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("list products: %w", err)
 	}
-	charts, err := s.client.AssemblyChartsGetAll(s.dateFrom, s.dateTo, s.includeDeleted, s.includePrepared)
+	charts, err := s.client.AssemblyChartsGetAll(s.dateFrom, s.dateTo, false, true)
 	if err != nil {
 		return fmt.Errorf("get assembly charts: %w", err)
 	}
@@ -129,7 +127,7 @@ func (s *SyncService) SaveSnapshot(ctx context.Context, catalog *iiko.Nomenclatu
 
 	if err := s.saveSnapshotData(ctx, catalog, charts); err != nil {
 		if finishErr := s.finishSyncRun(ctx, run.ID, int64(charts.KnownRevision), syncStatusError, err.Error()); finishErr != nil {
-			log.Printf("finish failed sync run: %v", finishErr)
+			slog.Warn("finish sync run failed", "error", finishErr)
 		}
 		return err
 	}
@@ -150,7 +148,7 @@ func (s *SyncService) finishSyncRun(ctx context.Context, runID int64, revision i
 }
 
 func (s *SyncService) saveSnapshotData(ctx context.Context, catalog *iiko.NomenclatureResponse, charts *iiko.ChartResultDto) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
 	}
@@ -158,8 +156,8 @@ func (s *SyncService) saveSnapshotData(ctx context.Context, catalog *iiko.Nomenc
 	committed := false
 	defer func() {
 		if !committed {
-			if err := tx.Rollback(); err != nil {
-				log.Printf("rollback iiko sync tx: %v", err)
+			if err := tx.Rollback(ctx); err != nil {
+				slog.Warn("rollback iiko sync tx failed", "error", err)
 			}
 		}
 	}()
@@ -199,7 +197,7 @@ func (s *SyncService) saveSnapshotData(ctx context.Context, catalog *iiko.Nomenc
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit tx: %w", err)
 	}
 	committed = true

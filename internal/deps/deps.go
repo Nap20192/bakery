@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"bakery/internal/app"
-	"bakery/internal/bot"
+	"bakery/internal/inbound/bot"
 )
 
 type AppDeps struct {
@@ -87,13 +87,13 @@ func WithSyncService(infra *InfraDeps) appOption {
 
 func WithOrderBot(infra *InfraDeps) appOption {
 	return func(deps *AppDeps) error {
-		if infra == nil || infra.config == nil || deps.OrderService == nil || deps.AuthService == nil || deps.MonitorService == nil || deps.TechCardService == nil {
+		if infra == nil || infra.config == nil || deps.OrderService == nil || deps.AuthService == nil || deps.MonitorService == nil || deps.SyncService == nil || deps.TechCardService == nil {
 			return fmt.Errorf("missing dependencies for OrderBot")
 		}
 		if infra.config.Telegram.OrderBotToken == "" {
 			return fmt.Errorf("ORDER_BOT_TOKEN не задан")
 		}
-		orderBot, err := bot.NewOrderBot(infra.config.Telegram.OrderBotToken, deps.OrderService, deps.AuthService, deps.MonitorService, deps.TechCardService)
+		orderBot, err := bot.NewOrderBot(infra.config.Telegram.OrderBotToken, deps.OrderService, deps.AuthService, deps.MonitorService, deps.SyncService, deps.TechCardService)
 		if err != nil {
 			return err
 		}
