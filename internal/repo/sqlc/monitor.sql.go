@@ -118,6 +118,7 @@ const listAssemblyChartItemsByChartID = `-- name: ListAssemblyChartItemsByChartI
 SELECT
     i.id AS item_id,
     i.product_id,
+    i.amount_in,
     i.amount_out,
     COALESCE(p.name, '') AS product_name,
     COALESCE(p.code, '') AS product_code,
@@ -131,6 +132,7 @@ ORDER BY i.sort_weight, i.id
 type ListAssemblyChartItemsByChartIDRow struct {
 	ItemID      string  `json:"item_id"`
 	ProductID   string  `json:"product_id"`
+	AmountIn    float64 `json:"amount_in"`
 	AmountOut   float64 `json:"amount_out"`
 	ProductName string  `json:"product_name"`
 	ProductCode string  `json:"product_code"`
@@ -149,6 +151,7 @@ func (q *Queries) ListAssemblyChartItemsByChartID(ctx context.Context, chartID s
 		if err := rows.Scan(
 			&i.ItemID,
 			&i.ProductID,
+			&i.AmountIn,
 			&i.AmountOut,
 			&i.ProductName,
 			&i.ProductCode,

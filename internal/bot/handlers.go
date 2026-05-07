@@ -322,9 +322,10 @@ func formatMonitorReports(order domain.Order, reports []domain.IngredientReport)
 
 		for _, item := range report.Breakdown {
 			sb.WriteString(fmt.Sprintf(
-				"• <code>%s</code> %s: %s %s\n",
+				"• <code>%s</code> %s: %s / %s %s\n",
 				html.EscapeString(item.OrderItemCode),
 				html.EscapeString(item.OrderItemName),
+				formatQuantity(item.OrderItemQuantity),
 				formatQuantity(item.IngredientQuantity),
 				html.EscapeString(report.Ingredient.Unit),
 			))
