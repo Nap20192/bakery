@@ -97,11 +97,7 @@ func (b *OrderBot) handleOrders(c tele.Context) error {
 	var sb strings.Builder
 	sb.WriteString("<b>Последние заказы</b>\n\n")
 	for _, order := range orders {
-		sb.WriteString(fmt.Sprintf("<code>%s</code>\n", html.EscapeString(order.Number)))
-		for _, item := range order.Items {
-			sb.WriteString(fmt.Sprintf("• %s - %s\n", html.EscapeString(item.ProductName), formatQuantity(item.Quantity)))
-		}
-		sb.WriteString("\n")
+		sb.WriteString(fmt.Sprintf("<code>%s</code> · %d поз.\n", html.EscapeString(order.Number), len(order.Items)))
 	}
 	return c.Send(sb.String(), tele.ModeHTML)
 }
