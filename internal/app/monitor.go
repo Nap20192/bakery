@@ -37,7 +37,7 @@ func (s *MonitorService) GetIngredientsByCode(ctx context.Context, code string, 
 		ProductID:   ingredient.ID,
 		ProductCode: ingredient.Code,
 		ProductName: ingredient.Name,
-		Unit:        ingredient.MeasureUnit,
+		Unit:        monitorUnit(ingredient),
 	}
 
 	orderDate := order.CreatedAt
@@ -86,6 +86,17 @@ func (s *MonitorService) GetIngredientsByCode(ctx context.Context, code string, 
 	return report, nil
 }
 
+func monitorUnit(product sqlc.GetIikoProductByIDRow) string {
+	unit := strings.TrimSpace(product.MeasureUnit)
+	if unit != "" {
+		return unit
+	}
+	if product.Type != nil && strings.EqualFold(*product.Type, "PREPARED") {
+		return "кг"
+	}
+	return ""
+}
+
 func (s *MonitorService) ingredientUsageForProduct(
 	ctx context.Context,
 	productID string,
@@ -126,7 +137,7 @@ func (s *MonitorService) ingredientUsageForProduct(
 
 		var total float64
 		for _, item := range items {
-			childAmount := item.AmountOut * scale
+			childAmount := item.AmountIn * scale
 			used, err := s.ingredientUsageForProduct(ctx, item.ProductID, ingredientID, childAmount, orderDate, nextPath)
 			if err != nil {
 				return 0, err

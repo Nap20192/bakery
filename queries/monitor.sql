@@ -25,6 +25,7 @@ LIMIT 1;
 SELECT
     i.id AS item_id,
     i.product_id,
+    i.amount_in,
     i.amount_out,
     COALESCE(p.name, '') AS product_name,
     COALESCE(p.code, '') AS product_code,
