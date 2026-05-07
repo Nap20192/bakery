@@ -1,28 +1,45 @@
--- name: CreateProduct :one
-INSERT INTO products (id, iiko_id, name, unit)
-VALUES ($1, $2, $3, $4)
-RETURNING *;
+-- name: DishExistsByCode :one
+SELECT EXISTS (
+    SELECT 1
+    FROM iiko_products
+    WHERE code = sqlc.arg(code)
+      AND type = 'DISH'
+);
 
--- name: UpsertProductByIikoID :one
-INSERT INTO products (id, iiko_id, name, unit)
-VALUES ($1, $2, $3, $4)
-ON CONFLICT (iiko_id) DO UPDATE
-SET name = EXCLUDED.name,
-    unit = EXCLUDED.unit,
-    updated_at = now()
-RETURNING *;
+-- name: GetIikoProductByCode :one
+SELECT
+    id,
+    code,
+    name,
+    type,
+    measure_unit,
+    raw_json
+FROM iiko_products
+WHERE code = sqlc.arg(code)
+ORDER BY
+    CASE WHEN type = 'DISH' THEN 0 ELSE 1 END,
+    updated_at DESC,
+    id
+LIMIT 1;
 
--- name: GetProductByID :one
-SELECT * FROM products WHERE id = $1;
+-- name: GetIikoProductByID :one
+SELECT
+    id,
+    code,
+    name,
+    type,
+    measure_unit,
+    raw_json
+FROM iiko_products
+WHERE id = sqlc.arg(id);
 
--- name: GetProductByIikoID :one
-SELECT * FROM products WHERE iiko_id = $1;
-
--- name: GetProductByName :one
-SELECT * FROM products WHERE name = $1;
-
--- name: ListProducts :many
-SELECT * FROM products ORDER BY name;
-
--- name: DeleteProduct :exec
-DELETE FROM products WHERE id = $1;
+-- name: GetIikoProductsByName :many
+SELECT
+    id,
+    code,
+    name,
+    type,
+    measure_unit,
+    raw_json
+FROM iiko_products
+WHERE trim(name) = trim(sqlc.arg(name));

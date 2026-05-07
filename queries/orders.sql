@@ -1,70 +1,73 @@
+-- name: CreateOrderCounterDay :exec
+INSERT INTO order_counters(day, counter)
+VALUES (sqlc.arg(day), 0)
+ON CONFLICT(day) DO NOTHING;
+
+-- name: NextOrderCounter :one
+UPDATE order_counters
+SET counter = counter + 1
+WHERE day = sqlc.arg(day)
+RETURNING counter;
+
 -- name: CreateOrder :one
 INSERT INTO orders (
-    id, client_id, kitchen_id, telegram_chat_id, telegram_message_id,
-    order_date, status, raw_text, note
-) VALUES ($1, $2, $3, $4, $5, $6, COALESCE(sqlc.narg('status')::text, 'new'), $7, $8)
+    number,
+    location,
+    created_at
+) VALUES (
+    sqlc.arg(number),
+    sqlc.arg(location),
+    sqlc.arg(created_at)
+)
 RETURNING *;
-
--- name: GetOrderByID :one
-SELECT * FROM orders WHERE id = $1;
-
--- name: ListOrders :many
-SELECT * FROM orders
-WHERE (sqlc.narg('status')::text IS NULL OR status = sqlc.narg('status')::text)
-ORDER BY order_date DESC, created_at DESC;
-
--- name: ListOrdersByClient :many
-SELECT * FROM orders
-WHERE client_id = $1
-  AND (sqlc.narg('status')::text IS NULL OR status = sqlc.narg('status')::text)
-ORDER BY order_date DESC, created_at DESC;
-
--- name: ListOrdersByKitchen :many
-SELECT * FROM orders
-WHERE kitchen_id = $1
-  AND (sqlc.narg('status')::text IS NULL OR status = sqlc.narg('status')::text)
-ORDER BY order_date DESC, created_at DESC;
-
--- name: ListOrdersByDate :many
-SELECT * FROM orders
-WHERE order_date = $1
-  AND (sqlc.narg('status')::text IS NULL OR status = sqlc.narg('status')::text)
-ORDER BY created_at DESC;
-
--- name: ListOrdersByDateRange :many
-SELECT * FROM orders
-WHERE order_date BETWEEN $1 AND $2
-  AND (sqlc.narg('status')::text IS NULL OR status = sqlc.narg('status')::text)
-ORDER BY order_date, created_at;
-
--- name: UpdateOrderStatus :one
-UPDATE orders
-SET status = $2,
-    updated_at = now()
-WHERE id = $1
-RETURNING *;
-
--- name: UpdateOrder :one
-UPDATE orders
-SET kitchen_id = $2,
-    order_date = $3,
-    status = $4,
-    note = $5,
-    updated_at = now()
-WHERE id = $1
-RETURNING *;
-
--- name: DeleteOrder :exec
-DELETE FROM orders WHERE id = $1;
 
 -- name: CreateOrderItem :one
-INSERT INTO order_items (id, order_id, product_id, quantity, unit)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO order_items (
+    order_id,
+    iiko_product_id,
+    product_name,
+    quantity
+) VALUES (
+    sqlc.arg(order_id),
+    sqlc.narg(iiko_product_id),
+    sqlc.arg(product_name),
+    sqlc.arg(quantity)
+)
 RETURNING *;
 
--- name: ListOrderItems :many
-SELECT * FROM order_items
-WHERE order_id = $1;
+-- name: GetOrderByNumber :one
+SELECT *
+FROM orders
+WHERE number = sqlc.arg(number);
 
--- name: DeleteOrderItems :exec
-DELETE FROM order_items WHERE order_id = $1;
+-- name: GetOrderItemsByOrderID :many
+SELECT
+    oi.id,
+    oi.order_id,
+    oi.iiko_product_id,
+    oi.product_name,
+    oi.quantity,
+    COALESCE(p.code, '') AS product_code
+FROM order_items AS oi
+LEFT JOIN iiko_products AS p ON p.id = oi.iiko_product_id
+WHERE oi.order_id = sqlc.arg(order_id)
+ORDER BY oi.id;
+
+-- name: ListOrders :many
+SELECT *
+FROM orders
+ORDER BY id DESC
+LIMIT sqlc.arg(limit);
+
+-- name: ListOrderItemsByOrderIDs :many
+SELECT
+    oi.id,
+    oi.order_id,
+    oi.iiko_product_id,
+    oi.product_name,
+    oi.quantity,
+    COALESCE(p.code, '') AS product_code
+FROM order_items AS oi
+LEFT JOIN iiko_products AS p ON p.id = oi.iiko_product_id
+WHERE oi.order_id IN (sqlc.slice(order_ids))
+ORDER BY oi.order_id, oi.id;

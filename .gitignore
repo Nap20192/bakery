@@ -1,6 +1,22 @@
 .env
+.env.*
+!.env.example
 cookies.txt
+
+# Go
 *.exe
 *.test
 *.out
-*_test.go
+bin/
+dist/
+
+# SQLite/runtime data
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# Local binaries
+cmd/iiko
+bakery

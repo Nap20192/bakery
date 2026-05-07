@@ -1,74 +1,103 @@
 package deps
 
 import (
-	"time"
+	"fmt"
 
-	"bakery/internal/adapter/inbound/http"
-	"bakery/internal/adapter/outbound/db"
-	"bakery/internal/adapter/outbound/postgres"
 	"bakery/internal/app"
-	"bakery/internal/config"
-
-	"github.com/jackc/pgx/v5/pgxpool"
+	"bakery/internal/bot"
 )
 
-type Deps struct {
-	queries        *db.Queries
-	clientRepo     *postgres.ClientRepository
-	kitchenRepo    *postgres.KitchenRepository
-	userRepo       *postgres.UserRepository
-	orderRepo      *postgres.OrderRepository
-	productRepo    *postgres.ProductRepository
-	authService    *app.AuthService
-	kitchenService *app.KitchenService
-	clientService  *app.ClientService
-	orderService   *app.OrderService
-	productService *app.ProductService
-	server         *http.Server
+type AppDeps struct {
+	AuthService     *app.AuthService
+	MonitorService  *app.MonitorService
+	OrderService    *app.OrderService
+	SyncService     *app.SyncService
+	TechCardService *app.TechCardService
+	OrderBot        *bot.OrderBot
 }
 
-type opt func(*Deps) error
+type appOption func(*AppDeps) error
 
-func New(opts ...opt) (*Deps, error) {
-	d := &Deps{}
+func NewAppDeps(opts ...appOption) (*AppDeps, error) {
+	deps := &AppDeps{}
 	for _, opt := range opts {
-		if err := opt(d); err != nil {
+		if err := opt(deps); err != nil {
 			return nil, err
 		}
 	}
-	return d, nil
+	return deps, nil
 }
 
-func WithRepos(pool *pgxpool.Pool) opt {
-	return func(d *Deps) error {
-		d.queries = db.New(pool)
-		d.clientRepo = postgres.NewClientRepository(d.queries)
-		d.kitchenRepo = postgres.NewKitchenRepository(d.queries)
-		d.userRepo = postgres.NewUserRepository(d.queries)
-		d.orderRepo = postgres.NewOrderRepository(d.queries)
-		d.productRepo = postgres.NewProductRepository(d.queries)
+func WithAuthService(infra *InfraDeps) appOption {
+	return func(deps *AppDeps) error {
+		if infra == nil || infra.queries == nil {
+			return fmt.Errorf("missing dependencies for AuthService")
+		}
+		deps.AuthService = app.NewAuthService(infra.queries)
 		return nil
 	}
 }
 
-func WithServices(config *config.Config) opt {
-	return func(d *Deps) error {
-		d.authService = app.NewAuthService(d.userRepo, d.clientRepo, d.kitchenRepo, config.AuthSecret, 24*time.Hour)
-		d.kitchenService = app.NewKitchenService(d.kitchenRepo)
-		d.clientService = app.NewClientService(d.clientRepo)
-		d.orderService = app.NewOrderService(d.orderRepo, d.productRepo, d.clientRepo, d.kitchenRepo)
-		d.productService = app.NewProductService(d.productRepo)
+func WithOrderService(infra *InfraDeps) appOption {
+	return func(deps *AppDeps) error {
+		if infra == nil || infra.queries == nil {
+			return fmt.Errorf("missing dependencies for OrderService")
+		}
+		deps.OrderService = app.NewOrderService(infra.queries)
 		return nil
 	}
 }
 
-func WithServer() opt {
-	return func(d *Deps) error {
-		d.server = http.NewServer(d.authService, d.kitchenService, d.clientService, d.orderService, d.productService)
+func WithMonitorService(infra *InfraDeps) appOption {
+	return func(deps *AppDeps) error {
+		if infra == nil || infra.queries == nil {
+			return fmt.Errorf("missing dependencies for MonitorService")
+		}
+		deps.MonitorService = app.NewMonitorService(infra.queries)
 		return nil
 	}
 }
 
-func (d *Deps) Server() *http.Server {
-	return d.server
+func WithTechCardService(infra *InfraDeps) appOption {
+	return func(deps *AppDeps) error {
+		if infra == nil || infra.queries == nil {
+			return fmt.Errorf("missing dependencies for TechCardService")
+		}
+		deps.TechCardService = app.NewTechCardService(infra.queries)
+		return nil
+	}
+}
+
+func WithSyncService(infra *InfraDeps) appOption {
+	return func(deps *AppDeps) error {
+		if infra == nil || infra.config == nil || infra.DB == nil || infra.iikoClient == nil || infra.queries == nil {
+			return fmt.Errorf("missing dependencies for SyncService")
+		}
+		deps.SyncService = app.NewSyncService(
+			infra.iikoClient,
+			infra.DB,
+			infra.queries,
+			infra.config.Sync.Interval,
+			infra.config.Sync.DateFrom,
+			infra.config.Sync.DateTo,
+		)
+		return nil
+	}
+}
+
+func WithOrderBot(infra *InfraDeps) appOption {
+	return func(deps *AppDeps) error {
+		if infra == nil || infra.config == nil || deps.OrderService == nil || deps.AuthService == nil || deps.MonitorService == nil || deps.TechCardService == nil {
+			return fmt.Errorf("missing dependencies for OrderBot")
+		}
+		if infra.config.Telegram.OrderBotToken == "" {
+			return fmt.Errorf("ORDER_BOT_TOKEN не задан")
+		}
+		orderBot, err := bot.NewOrderBot(infra.config.Telegram.OrderBotToken, deps.OrderService, deps.AuthService, deps.MonitorService, deps.TechCardService)
+		if err != nil {
+			return err
+		}
+		deps.OrderBot = orderBot
+		return nil
+	}
 }
