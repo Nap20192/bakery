@@ -15,6 +15,7 @@ import (
 	_ "modernc.org/sqlite"
 
 	"bakery/internal/config"
+	"bakery/internal/dbmigrate"
 	"bakery/internal/deps"
 	"bakery/pkg/logger"
 )
@@ -35,6 +36,10 @@ func main() {
 		os.Exit(1)
 	}
 	defer closeDB(log, db)
+	if err := dbmigrate.ApplyInitialSchema(db, log); err != nil {
+		log.Error("apply db schema failed", "error", err)
+		os.Exit(1)
+	}
 
 	infra, err := deps.NewInfraDeps(
 		deps.WithConfig(cfg),
