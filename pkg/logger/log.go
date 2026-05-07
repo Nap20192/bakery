@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -48,9 +49,51 @@ func InitLogger(level string, pretty bool, logDir string) (*slog.Logger, error) 
 		}
 		fileHandler = slog.NewJSONHandler(f, opts)
 	} else {
-		fileHandler = slog.NewJSONHandler(os.Stdout, opts)
+		return slog.New(TerminalHandler), nil
 	}
-	log := slog.NewMultiHandler(TerminalHandler, fileHandler)
+	log := newMultiHandler(TerminalHandler, fileHandler)
 
 	return slog.New(log), nil
+}
+
+type multiHandler struct {
+	handlers []slog.Handler
+}
+
+func newMultiHandler(handlers ...slog.Handler) slog.Handler {
+	return multiHandler{handlers: handlers}
+}
+
+func (h multiHandler) Enabled(ctx context.Context, level slog.Level) bool {
+	for _, handler := range h.handlers {
+		if handler.Enabled(ctx, level) {
+			return true
+		}
+	}
+	return false
+}
+
+func (h multiHandler) Handle(ctx context.Context, record slog.Record) error {
+	for _, handler := range h.handlers {
+		if err := handler.Handle(ctx, record.Clone()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (h multiHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	handlers := make([]slog.Handler, 0, len(h.handlers))
+	for _, handler := range h.handlers {
+		handlers = append(handlers, handler.WithAttrs(attrs))
+	}
+	return multiHandler{handlers: handlers}
+}
+
+func (h multiHandler) WithGroup(name string) slog.Handler {
+	handlers := make([]slog.Handler, 0, len(h.handlers))
+	for _, handler := range h.handlers {
+		handlers = append(handlers, handler.WithGroup(name))
+	}
+	return multiHandler{handlers: handlers}
 }

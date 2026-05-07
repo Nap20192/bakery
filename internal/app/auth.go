@@ -2,256 +2,222 @@ package app
 
 import (
 	"context"
-	"crypto/hmac"
+	"crypto/pbkdf2"
+	"crypto/rand"
 	"crypto/sha256"
+	"crypto/subtle"
+	"database/sql"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
+	"bakery/internal/domain"
+	sqlc "bakery/internal/repo/sqlc"
+)
 
-	"bakery/internal/domain/client"
-	"bakery/internal/domain/kitchen"
-	"bakery/internal/domain/order"
-	"bakery/internal/domain/user"
+const (
+	defaultAuthRole       = domain.RoleClient
+	passwordHashAlgorithm = "pbkdf2-sha256"
+	passwordHashVersion   = "v1"
+	passwordSaltSize      = 16
+	passwordKeySize       = 32
+	passwordIterations    = 210000
 )
 
 var (
-	ErrInvalidCredentials = errors.New("auth: invalid credentials")
-	ErrForbidden          = errors.New("auth: forbidden")
-	ErrInvalidToken       = errors.New("auth: invalid token")
-	ErrLoginTaken         = errors.New("auth: login already taken")
+	ErrAuthUserNotFound = errors.New("auth user not found")
+	ErrInvalidRole      = errors.New("invalid auth role")
 )
 
-// Claims — то, что подписывается и кладётся в контекст запроса.
-type Claims struct {
-	UserID uuid.UUID `json:"sub"`
-	Role   user.Role `json:"role"`
-	Exp    int64     `json:"exp"`
-}
-
-// AuthService — прикладной сервис.
-// Использует внешние зависимости (bcrypt, HMAC-JWT) напрямую,
-// а с доменом работает только через репозитории-порты.
 type AuthService struct {
-	users    user.Repository
-	clients  client.Repository
-	kitchens kitchen.Repository
-	secret   []byte
-	ttl      time.Duration
+	queries *sqlc.Queries
 }
 
-func NewAuthService(
-	users user.Repository,
-	clients client.Repository,
-	kitchens kitchen.Repository,
-	secret string,
-	ttl time.Duration,
-) *AuthService {
-	return &AuthService{
-		users:    users,
-		clients:  clients,
-		kitchens: kitchens,
-		secret:   []byte(secret),
-		ttl:      ttl,
-	}
+func NewAuthService(queries *sqlc.Queries) *AuthService {
+	return &AuthService{queries: queries}
 }
 
-// RegisterClient создаёт user + client в один прикладной вызов.
-// Доменные инварианты проверяет домен (user.New, client.New).
-func (s *AuthService) RegisterClient(ctx context.Context, login, password, name string) (*user.User, *client.Client, error) {
-	u, err := s.createUser(ctx, login, password, user.RoleClient)
+func (s *AuthService) CreateOrUpdateUser(ctx context.Context, input domain.AuthUserInput) (domain.AuthUser, error) {
+	if input.TelegramID == 0 {
+		return domain.AuthUser{}, fmt.Errorf("telegram id is required")
+	}
+	if input.Role == "" {
+		input.Role = defaultAuthRole
+	}
+	input.Role = domain.NormalizeRole(input.Role)
+	if !domain.IsValidRole(input.Role) {
+		return domain.AuthUser{}, fmt.Errorf("%w: %s", ErrInvalidRole, input.Role)
+	}
+	if input.MetadataJSON == "" {
+		input.MetadataJSON = "{}"
+	}
+
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	telegramID := input.TelegramID
+	user, err := s.queries.CreateTelegramAuthUser(ctx, sqlc.CreateTelegramAuthUserParams{
+		TelegramID:   &telegramID,
+		Username:     input.Username,
+		MetadataJson: input.MetadataJSON,
+		Role:         input.Role,
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	})
 	if err != nil {
-		return nil, nil, err
+		return domain.AuthUser{}, fmt.Errorf("create auth user: %w", err)
 	}
-	uid := u.ID()
-	c, err := client.New(name, &uid, nil, "")
-	if err != nil {
-		return nil, nil, fmt.Errorf("auth: build client: %w", err)
-	}
-	if err := s.clients.Save(ctx, c); err != nil {
-		return nil, nil, fmt.Errorf("auth: save client: %w", err)
-	}
-	return u, c, nil
+	return authUserToDomain(user), nil
 }
 
-// RegisterKitchen создаёт user + kitchen.
-func (s *AuthService) RegisterKitchen(ctx context.Context, login, password, name string) (*user.User, *kitchen.Kitchen, error) {
-	u, err := s.createUser(ctx, login, password, user.RoleKitchen)
+func (s *AuthService) CreateUserWithPassword(ctx context.Context, input domain.PasswordAuthUserInput) (domain.AuthUser, error) {
+	input.Username = strings.TrimSpace(input.Username)
+	if input.Username == "" {
+		return domain.AuthUser{}, fmt.Errorf("username is required")
+	}
+	if input.Password == "" {
+		return domain.AuthUser{}, fmt.Errorf("password is required")
+	}
+	if input.Role == "" {
+		input.Role = defaultAuthRole
+	}
+	input.Role = domain.NormalizeRole(input.Role)
+	if !domain.IsValidRole(input.Role) {
+		return domain.AuthUser{}, fmt.Errorf("%w: %s", ErrInvalidRole, input.Role)
+	}
+	if input.MetadataJSON == "" {
+		input.MetadataJSON = "{}"
+	}
+
+	hash, err := hashPassword(input.Password)
 	if err != nil {
-		return nil, nil, err
+		return domain.AuthUser{}, err
 	}
-	uid := u.ID()
-	k, err := kitchen.New(name, &uid)
+
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	user, err := s.queries.CreatePasswordAuthUser(ctx, sqlc.CreatePasswordAuthUserParams{
+		Username:     input.Username,
+		PasswordHash: hash,
+		MetadataJson: input.MetadataJSON,
+		Role:         input.Role,
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("auth: build kitchen: %w", err)
+		return domain.AuthUser{}, fmt.Errorf("create password auth user: %w", err)
 	}
-	if err := s.kitchens.Save(ctx, k); err != nil {
-		return nil, nil, fmt.Errorf("auth: save kitchen: %w", err)
-	}
-	return u, k, nil
+	return authUserToDomain(user), nil
 }
 
-func (s *AuthService) createUser(ctx context.Context, login, password string, role user.Role) (*user.User, error) {
-	if _, err := s.users.GetByLogin(ctx, login); err == nil {
-		return nil, ErrLoginTaken
-	} else if !errors.Is(err, user.ErrNotFound) {
-		return nil, fmt.Errorf("auth: lookup login: %w", err)
-	}
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+func (s *AuthService) VerifyPassword(ctx context.Context, username string, password string) (domain.AuthUser, error) {
+	user, err := s.queries.GetAuthUserByUsername(ctx, strings.TrimSpace(username))
 	if err != nil {
-		return nil, fmt.Errorf("auth: hash password: %w", err)
-	}
-	u, err := user.New(login, string(hash), role)
-	if err != nil {
-		return nil, fmt.Errorf("auth: build user: %w", err)
-	}
-	if err := s.users.Save(ctx, u); err != nil {
-		return nil, fmt.Errorf("auth: save user: %w", err)
-	}
-	return u, nil
-}
-
-// Login — проверка пароля и выдача токена.
-func (s *AuthService) Login(ctx context.Context, login, password string) (string, Claims, error) {
-	u, err := s.users.GetByLogin(ctx, login)
-	if err != nil {
-		return "", Claims{}, ErrInvalidCredentials
-	}
-	if err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash()), []byte(password)); err != nil {
-		return "", Claims{}, ErrInvalidCredentials
-	}
-	claims := Claims{
-		UserID: u.ID(),
-		Role:   u.Role(),
-		Exp:    time.Now().Add(s.ttl).Unix(),
-	}
-	token, err := s.sign(claims)
-	if err != nil {
-		return "", Claims{}, fmt.Errorf("auth: sign token: %w", err)
-	}
-	return token, claims, nil
-}
-
-// Verify — парсинг и проверка токена.
-func (s *AuthService) Verify(token string) (Claims, error) {
-	parts := strings.Split(token, ".")
-	if len(parts) != 2 {
-		return Claims{}, ErrInvalidToken
-	}
-	payload, err := base64.RawURLEncoding.DecodeString(parts[0])
-	if err != nil {
-		return Claims{}, ErrInvalidToken
-	}
-	sig, err := base64.RawURLEncoding.DecodeString(parts[1])
-	if err != nil {
-		return Claims{}, ErrInvalidToken
-	}
-	mac := hmac.New(sha256.New, s.secret)
-	mac.Write([]byte(parts[0]))
-	if !hmac.Equal(sig, mac.Sum(nil)) {
-		return Claims{}, ErrInvalidToken
-	}
-	var c Claims
-	if err := json.Unmarshal(payload, &c); err != nil {
-		return Claims{}, ErrInvalidToken
-	}
-	if time.Now().Unix() > c.Exp {
-		return Claims{}, ErrInvalidToken
-	}
-	return c, nil
-}
-
-func (s *AuthService) sign(c Claims) (string, error) {
-	payload, err := json.Marshal(c)
-	if err != nil {
-		return "", err
-	}
-	head := base64.RawURLEncoding.EncodeToString(payload)
-	mac := hmac.New(sha256.New, s.secret)
-	mac.Write([]byte(head))
-	sig := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
-	return head + "." + sig, nil
-}
-
-// --- Authorization policies ---
-// Политики живут в app-слое: они комбинируют несколько агрегатов (user + client/kitchen + order)
-// и поэтому не относятся ни к одному доменному модулю.
-
-func (s *AuthService) CanViewOrder(ctx context.Context, c Claims, o *order.Order) error {
-	switch c.Role {
-	case user.RoleAdmin, user.RoleKitchen:
-		return nil
-	case user.RoleClient:
-		cl, err := s.clients.GetByUserID(ctx, c.UserID)
-		if err != nil {
-			return ErrForbidden
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.AuthUser{}, ErrAuthUserNotFound
 		}
-		if cl.ID() != o.ClientID() {
-			return ErrForbidden
-		}
-		return nil
+		return domain.AuthUser{}, fmt.Errorf("get auth user: %w", err)
 	}
-	return ErrForbidden
+	if user.PasswordHash == "" || !verifyPassword(password, user.PasswordHash) {
+		return domain.AuthUser{}, fmt.Errorf("invalid credentials")
+	}
+	return authUserToDomain(user), nil
 }
 
-func (s *AuthService) CanCreateOrderAs(ctx context.Context, c Claims, asClientID client.ID) error {
-	if c.Role == user.RoleAdmin {
-		return nil
+func (s *AuthService) LoginTelegramUser(ctx context.Context, telegramID int64, username string, password string) (domain.AuthUser, error) {
+	user, err := s.VerifyPassword(ctx, username, password)
+	if err != nil {
+		return domain.AuthUser{}, err
 	}
-	if c.Role != user.RoleClient {
-		return ErrForbidden
+
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	row, err := s.queries.LinkTelegramAuthUser(ctx, sqlc.LinkTelegramAuthUserParams{
+		TelegramID: &telegramID,
+		UpdatedAt:  now,
+		ID:         user.ID,
+	})
+	if err != nil {
+		return domain.AuthUser{}, fmt.Errorf("link telegram auth user: %w", err)
 	}
-	cl, err := s.clients.GetByUserID(ctx, c.UserID)
-	if err != nil || cl.ID() != asClientID {
-		return ErrForbidden
+	return authUserToDomain(row), nil
+}
+
+func (s *AuthService) LogoutTelegramUser(ctx context.Context, telegramID int64) error {
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	if err := s.queries.UnlinkTelegramAuthUser(ctx, sqlc.UnlinkTelegramAuthUserParams{
+		TelegramID: &telegramID,
+		UpdatedAt:  now,
+	}); err != nil {
+		return fmt.Errorf("unlink telegram auth user: %w", err)
 	}
 	return nil
 }
 
-func (s *AuthService) CanChangeOrderStatus(c Claims) error {
-	if c.Role == user.RoleAdmin || c.Role == user.RoleKitchen {
-		return nil
-	}
-	return ErrForbidden
-}
-
-func (s *AuthService) CanManageCatalog(c Claims) error {
-	if c.Role == user.RoleAdmin {
-		return nil
-	}
-	return ErrForbidden
-}
-
-type Me struct {
-	User    *user.User
-	Client  *client.Client
-	Kitchen *kitchen.Kitchen
-}
-
-func (s *AuthService) Me(ctx context.Context, c Claims) (*Me, error) {
-	u, err := s.users.GetByID(ctx, c.UserID)
+func (s *AuthService) GetUserByTelegramID(ctx context.Context, telegramID int64) (domain.AuthUser, error) {
+	user, err := s.queries.GetAuthUserByTelegramID(ctx, &telegramID)
 	if err != nil {
-		return nil, fmt.Errorf("auth: me: user: %w", err)
-	}
-	me := &Me{User: u}
-	switch c.Role {
-	case user.RoleClient:
-		cl, err := s.clients.GetByUserID(ctx, c.UserID)
-		if err != nil {
-			return nil, fmt.Errorf("auth: me: client: %w", err)
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.AuthUser{}, ErrAuthUserNotFound
 		}
-		me.Client = cl
-	case user.RoleKitchen:
-		k, err := s.kitchens.GetByUserID(ctx, c.UserID)
-		if err != nil {
-			return nil, fmt.Errorf("auth: me: kitchen: %w", err)
-		}
-		me.Kitchen = k
+		return domain.AuthUser{}, fmt.Errorf("get auth user: %w", err)
 	}
-	return me, nil
+	return authUserToDomain(user), nil
+}
+
+func authUserToDomain(user sqlc.AuthUser) domain.AuthUser {
+	createdAt, _ := time.Parse(time.RFC3339Nano, user.CreatedAt)
+	updatedAt, _ := time.Parse(time.RFC3339Nano, user.UpdatedAt)
+	role := domain.NormalizeRole(user.Role)
+	if role == "user" {
+		role = domain.RoleClient
+	}
+	return domain.AuthUser{
+		ID:           user.ID,
+		TelegramID:   user.TelegramID,
+		Username:     user.Username,
+		MetadataJSON: user.MetadataJson,
+		Role:         role,
+		CreatedAt:    createdAt,
+		UpdatedAt:    updatedAt,
+	}
+}
+
+func hashPassword(password string) (string, error) {
+	salt := make([]byte, passwordSaltSize)
+	if _, err := rand.Read(salt); err != nil {
+		return "", fmt.Errorf("generate password salt: %w", err)
+	}
+	key, err := pbkdf2.Key(sha256.New, password, salt, passwordIterations, passwordKeySize)
+	if err != nil {
+		return "", fmt.Errorf("hash password: %w", err)
+	}
+	return strings.Join([]string{
+		passwordHashAlgorithm,
+		passwordHashVersion,
+		fmt.Sprintf("%d", passwordIterations),
+		base64.RawStdEncoding.EncodeToString(salt),
+		base64.RawStdEncoding.EncodeToString(key),
+	}, "$"), nil
+}
+
+func verifyPassword(password string, encoded string) bool {
+	parts := strings.Split(encoded, "$")
+	if len(parts) != 5 || parts[0] != passwordHashAlgorithm || parts[1] != passwordHashVersion {
+		return false
+	}
+	if parts[2] != fmt.Sprintf("%d", passwordIterations) {
+		return false
+	}
+	salt, err := base64.RawStdEncoding.DecodeString(parts[3])
+	if err != nil {
+		return false
+	}
+	expected, err := base64.RawStdEncoding.DecodeString(parts[4])
+	if err != nil {
+		return false
+	}
+	actual, err := pbkdf2.Key(sha256.New, password, salt, passwordIterations, len(expected))
+	if err != nil {
+		return false
+	}
+	return subtle.ConstantTimeCompare(actual, expected) == 1
 }
