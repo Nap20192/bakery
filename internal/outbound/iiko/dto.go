@@ -327,9 +327,16 @@ type DeleteAssemblyChartRequest struct {
 	ID string `json:"id"`
 }
 
-// ApiResponse — универсальная обёртка ответа iiko (result/errors/response)
-type ApiResponse[T any] struct {
-	Result   string   `json:"result"` // "SUCCESS" | "ERROR"
-	Errors   []string `json:"errors"`
-	Response T        `json:"response"`
+// NomenclatureAPIResponse — обёртка ответа iiko для номенклатуры.
+type NomenclatureAPIResponse struct {
+	Result   string               `json:"result"` // "SUCCESS" | "ERROR"
+	Errors   []string             `json:"errors"`
+	Response NomenclatureResponse `json:"response"`
+}
+
+// ProductsAPIResponse — обёртка ответа iiko для списка продуктов.
+type ProductsAPIResponse struct {
+	Result   string    `json:"result"` // "SUCCESS" | "ERROR"
+	Errors   []string  `json:"errors"`
+	Response []Product `json:"response"`
 }

@@ -128,22 +128,24 @@ func (c *Client) get(url string) ([]byte, error) {
 	return body, nil
 }
 
-// getJSON — дженерик-хелпер: GET + JSON-декод.
-func getJSON[T any](c *Client, url string) (T, error) {
-	var out T
+func (c *Client) getJSON(url string, out any) error {
 	body, err := c.get(url)
 	if err != nil {
-		return out, err
+		return err
 	}
-	if err := json.Unmarshal(body, &out); err != nil {
-		return out, fmt.Errorf("iiko: unmarshal: %w", err)
+	if err := json.Unmarshal(body, out); err != nil {
+		return fmt.Errorf("iiko: unmarshal: %w", err)
 	}
-	return out, nil
+	return nil
 }
 
 // ListProducts — GET /resto/api/v2/entities/products/list.
 func (c *Client) ListProducts() ([]Product, error) {
-	return getJSON[[]Product](c, c.api.ProductsListURL())
+	var products []Product
+	if err := c.getJSON(c.api.ProductsListURL(), &products); err != nil {
+		return nil, err
+	}
+	return products, nil
 }
 
 // ListProductsWithCategories — GET /resto/api/v2/entities/products/list.
@@ -169,12 +171,12 @@ func (c *Client) ListProductsWithCategories() (*NomenclatureResponse, error) {
 		}, nil
 	}
 
-	var wrappedFull ApiResponse[NomenclatureResponse]
+	var wrappedFull NomenclatureAPIResponse
 	if err := json.Unmarshal(body, &wrappedFull); err == nil && (wrappedFull.Response.Products != nil || wrappedFull.Response.ProductCategories != nil) {
 		return &wrappedFull.Response, nil
 	}
 
-	var wrappedProducts ApiResponse[[]Product]
+	var wrappedProducts ProductsAPIResponse
 	if err := json.Unmarshal(body, &wrappedProducts); err == nil && wrappedProducts.Response != nil {
 		return &NomenclatureResponse{
 			Products: wrappedProducts.Response,
@@ -188,11 +190,11 @@ func (c *Client) ListProductsWithCategories() (*NomenclatureResponse, error) {
 // Возвращает все техкарты, действующие в диапазоне дат.
 // dateFrom/dateTo в формате yyyy-MM-dd.
 func (c *Client) AssemblyChartsGetAll(dateFrom, dateTo string, includeDeleted, includePrepared bool) (*ChartResultDto, error) {
-	r, err := getJSON[ChartResultDto](c, c.api.AssemblyChartsGetAllURL(dateFrom, dateTo, includeDeleted, includePrepared))
-	if err != nil {
+	var result ChartResultDto
+	if err := c.getJSON(c.api.AssemblyChartsGetAllURL(dateFrom, dateTo, includeDeleted, includePrepared), &result); err != nil {
 		return nil, err
 	}
-	return &r, nil
+	return &result, nil
 }
 
 // AssemblyChartByID — GET /resto/api/v2/assemblyCharts/byId.
@@ -200,30 +202,30 @@ func (c *Client) AssemblyChartByID(id string) (*ChartResultDto, error) {
 	if id == "" {
 		return nil, fmt.Errorf("iiko: assemblyCharts/byId: empty id")
 	}
-	r, err := getJSON[ChartResultDto](c, c.api.AssemblyChartsByIDURL(id))
-	if err != nil {
+	var result ChartResultDto
+	if err := c.getJSON(c.api.AssemblyChartsByIDURL(id), &result); err != nil {
 		return nil, err
 	}
-	return &r, nil
+	return &result, nil
 }
 
 // AssemblyChartsGetAssembled — GET /resto/api/v2/assemblyCharts/getAssembled.
 // Возвращает исходную техкарту блюда на дату.
 func (c *Client) AssemblyChartsGetAssembled(date, productID, departmentID string) (*ChartResultDto, error) {
-	r, err := getJSON[ChartResultDto](c, c.api.AssemblyChartsGetAssembledURL(date, productID, departmentID))
-	if err != nil {
+	var result ChartResultDto
+	if err := c.getJSON(c.api.AssemblyChartsGetAssembledURL(date, productID, departmentID), &result); err != nil {
 		return nil, err
 	}
-	return &r, nil
+	return &result, nil
 }
 
 // AssemblyChartsGetPrepared — GET /resto/api/v2/assemblyCharts/getPrepared.
 // Возвращает техкарту, разложенную до конечных ингредиентов — это то, что
 // нужно для расчёта теста по заявке.
 func (c *Client) AssemblyChartsGetPrepared(date, productID, departmentID string) (*ChartResultDto, error) {
-	r, err := getJSON[ChartResultDto](c, c.api.AssemblyChartsGetPreparedURL(date, productID, departmentID))
-	if err != nil {
+	var result ChartResultDto
+	if err := c.getJSON(c.api.AssemblyChartsGetPreparedURL(date, productID, departmentID), &result); err != nil {
 		return nil, err
 	}
-	return &r, nil
+	return &result, nil
 }

@@ -30,7 +30,7 @@ SET
 WHERE id = sqlc.arg(id)
 RETURNING *;
 
--- name: UpsertIikoProduct :one
+-- name: UpsertIikoProduct :exec
 INSERT INTO iiko_products (
     id,
     code,
@@ -54,10 +54,9 @@ ON CONFLICT(id) DO UPDATE SET
     type = excluded.type,
     measure_unit = excluded.measure_unit,
     raw_json = excluded.raw_json,
-    updated_at = excluded.updated_at
-RETURNING *;
+    updated_at = excluded.updated_at;
 
--- name: UpsertIikoAssemblyChart :one
+-- name: UpsertIikoAssemblyChart :exec
 INSERT INTO iiko_assembly_charts (
     id,
     assembled_product_id,
@@ -90,14 +89,13 @@ ON CONFLICT(id) DO UPDATE SET
     product_size_assembly_strategy = excluded.product_size_assembly_strategy,
     effective_direct_writeoff_store_spec_json = excluded.effective_direct_writeoff_store_spec_json,
     raw_json = excluded.raw_json,
-    updated_at = excluded.updated_at
-RETURNING *;
+    updated_at = excluded.updated_at;
 
 -- name: DeleteIikoAssemblyChartItemsByChartID :exec
 DELETE FROM iiko_assembly_chart_items
 WHERE chart_id = sqlc.arg(chart_id);
 
--- name: InsertIikoAssemblyChartItem :one
+-- name: InsertIikoAssemblyChartItem :exec
 INSERT INTO iiko_assembly_chart_items (
     id,
     chart_id,
@@ -136,10 +134,9 @@ INSERT INTO iiko_assembly_chart_items (
     sqlc.arg(package_count),
     sqlc.narg(package_type_id),
     sqlc.arg(raw_json)
-)
-RETURNING *;
+);
 
--- name: UpsertIikoPreparedChart :one
+-- name: UpsertIikoPreparedChart :exec
 INSERT INTO iiko_prepared_charts (
     id,
     assembled_product_id,
@@ -166,14 +163,13 @@ ON CONFLICT(id) DO UPDATE SET
     product_size_assembly_strategy = excluded.product_size_assembly_strategy,
     effective_direct_writeoff_store_spec_json = excluded.effective_direct_writeoff_store_spec_json,
     raw_json = excluded.raw_json,
-    updated_at = excluded.updated_at
-RETURNING *;
+    updated_at = excluded.updated_at;
 
 -- name: DeleteIikoPreparedChartItemsByChartID :exec
 DELETE FROM iiko_prepared_chart_items
 WHERE prepared_chart_id = sqlc.arg(prepared_chart_id);
 
--- name: InsertIikoPreparedChartItem :one
+-- name: InsertIikoPreparedChartItem :exec
 INSERT INTO iiko_prepared_chart_items (
     id,
     prepared_chart_id,
@@ -192,5 +188,4 @@ INSERT INTO iiko_prepared_chart_items (
     sqlc.arg(store_spec_json),
     sqlc.arg(amount),
     sqlc.arg(raw_json)
-)
-RETURNING *;
+);
