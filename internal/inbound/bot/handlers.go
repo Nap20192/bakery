@@ -13,6 +13,7 @@ import (
 	orderdomain "bakery/internal/domain/order"
 	techcarddomain "bakery/internal/domain/techcard"
 	"bakery/internal/pkg/helpers"
+	applog "bakery/pkg/logger"
 
 	tele "gopkg.in/telebot.v3"
 )
@@ -45,14 +46,15 @@ func (b *OrderBot) handleStart(c tele.Context) error {
 }
 
 func (b *OrderBot) handleLogin(c tele.Context) error {
+	ctx := requestContext(c)
 	args := strings.Fields(c.Message().Payload)
 	if len(args) != 2 {
 		return c.Send("Формат: /login username password")
 	}
 
-	user, err := b.authSvc.LoginTelegramUser(context.Background(), c.Sender().ID, args[0], args[1])
+	user, err := b.authSvc.LoginTelegramUser(ctx, c.Sender().ID, args[0], args[1])
 	if err != nil {
-		slog.Warn("login failed", "user_id", c.Sender().ID, "username", args[0], "error", err)
+		slog.WarnContext(ctx, "login failed", "username", args[0], "error", err)
 		return c.Send("Не удалось войти: проверьте username и password.")
 	}
 
@@ -61,11 +63,12 @@ func (b *OrderBot) handleLogin(c tele.Context) error {
 }
 
 func (b *OrderBot) handleLogout(c tele.Context) error {
+	ctx := requestContext(c)
 	if c.Sender() == nil {
 		return c.Send("Не удалось определить пользователя.")
 	}
-	if err := b.authSvc.LogoutTelegramUser(context.Background(), c.Sender().ID); err != nil {
-		slog.Error("logout failed", "user_id", c.Sender().ID, "error", err)
+	if err := b.authSvc.LogoutTelegramUser(ctx, c.Sender().ID); err != nil {
+		slog.ErrorContext(ctx, "logout failed", "error", err)
 		return c.Send("Не удалось выполнить выход. Попробуйте позже.")
 	}
 	c.Set(authUserContextKey, nil)
@@ -73,18 +76,19 @@ func (b *OrderBot) handleLogout(c tele.Context) error {
 }
 
 func (b *OrderBot) handleAddUser(c tele.Context) error {
+	ctx := requestContext(c)
 	args := strings.Fields(c.Message().Payload)
 	if len(args) != 3 {
 		return c.Send("Формат: /adduser username password role\nРоли: admin, baker, client")
 	}
 
-	user, err := b.authSvc.CreateUserWithPassword(context.Background(), accessdomain.PasswordAuthUserInput{
+	user, err := b.authSvc.CreateUserWithPassword(ctx, accessdomain.PasswordAuthUserInput{
 		Username: args[0],
 		Password: args[1],
 		Role:     args[2],
 	})
 	if err != nil {
-		slog.Error("create user failed", "username", args[0], "role", args[2], "error", err)
+		slog.ErrorContext(ctx, "create user failed", "username", args[0], "role", args[2], "error", err)
 		return c.Send("Не удалось создать пользователя. Проверьте данные и попробуйте снова.")
 	}
 
@@ -92,9 +96,10 @@ func (b *OrderBot) handleAddUser(c tele.Context) error {
 }
 
 func (b *OrderBot) handleOrders(c tele.Context) error {
-	orders, err := b.orderSvc.ListOrders(context.Background(), 10)
+	ctx := requestContext(c)
+	orders, err := b.orderSvc.ListOrders(ctx, 10)
 	if err != nil {
-		slog.Error("list orders failed", "error", err)
+		slog.ErrorContext(ctx, "list orders failed", "error", err)
 		return c.Send("Не удалось получить заказы. Попробуйте позже.")
 	}
 	if len(orders) == 0 {
@@ -110,21 +115,23 @@ func (b *OrderBot) handleOrders(c tele.Context) error {
 }
 
 func (b *OrderBot) handleMonitor(c tele.Context) error {
+	ctx := requestContext(c)
 	args := strings.Fields(c.Message().Payload)
 	if len(args) != 1 && len(args) != 2 {
 		return c.Send("Формат: /monitor order_number [code]")
 	}
 
-	order, err := b.orderSvc.GetOrderByNumber(context.Background(), args[0])
+	ctx = applog.WithOrderNumber(ctx, args[0])
+	order, err := b.orderSvc.GetOrderByNumber(ctx, args[0])
 	if err != nil {
-		slog.Warn("order lookup failed", "order_number", args[0], "error", err)
+		slog.WarnContext(ctx, "order lookup failed", "error", err)
 		return c.Send(fmt.Sprintf("Заказ %s не найден.", args[0]))
 	}
 
 	if len(args) == 1 {
-		return b.sendMonitorReports(c, order, defaultMonitorCodes)
+		return b.sendMonitorReports(ctx, c, order, defaultMonitorCodes)
 	}
-	return b.sendMonitorReports(c, order, []string{args[1]})
+	return b.sendMonitorReports(ctx, c, order, []string{args[1]})
 }
 
 func (b *OrderBot) handleSync(c tele.Context) error {
@@ -137,11 +144,11 @@ func (b *OrderBot) handleSync(c tele.Context) error {
 	}
 
 	start := time.Now()
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	ctx, cancel := context.WithTimeout(requestContext(c), 15*time.Minute)
 	defer cancel()
 
 	if err := b.syncSvc.SyncOnce(ctx); err != nil {
-		slog.Error("manual iiko sync failed", "error", err)
+		slog.ErrorContext(ctx, "manual iiko sync failed", "error", err)
 		return c.Send("Синхронизация с iiko не выполнена. Подробности записаны в лог.")
 	}
 
@@ -149,25 +156,28 @@ func (b *OrderBot) handleSync(c tele.Context) error {
 }
 
 func (b *OrderBot) handleTechCard(c tele.Context) error {
+	ctx := requestContext(c)
 	args := strings.Fields(c.Message().Payload)
 	if len(args) != 1 {
 		return c.Send("Формат: /techcard code")
 	}
-	card, err := b.techCardSvc.GetByCode(context.Background(), args[0], time.Now().UTC())
+	ctx = applog.WithProductCode(ctx, args[0])
+	card, err := b.techCardSvc.GetByCode(ctx, args[0], time.Now().UTC())
 	if err != nil {
-		slog.Warn("get tech card failed", "code", args[0], "error", err)
+		slog.WarnContext(ctx, "get tech card failed", "error", err)
 		return c.Send("Не удалось получить техкарту по этому коду.")
 	}
 	return c.Send(formatTechCard(card), tele.ModeHTML)
 }
 
-func (b *OrderBot) sendMonitorReports(c tele.Context, order orderdomain.Order, codes []string) error {
+func (b *OrderBot) sendMonitorReports(ctx context.Context, c tele.Context, order orderdomain.Order, codes []string) error {
 	var reports []monitoringdomain.IngredientReport
 	for _, code := range codes {
 		code = strings.TrimSpace(code)
-		report, err := b.monitorSvc.GetIngredientsByCode(context.Background(), code, order)
+		reportCtx := applog.WithProductCode(ctx, code)
+		report, err := b.monitorSvc.GetIngredientsByCode(reportCtx, code, order)
 		if err != nil {
-			slog.Warn("monitor report failed", "order_number", order.Number, "code", code, "error", err)
+			slog.WarnContext(reportCtx, "monitor report failed", "error", err)
 			return c.Send(fmt.Sprintf("Не удалось посчитать мониторинг по коду %s.", code))
 		}
 		reports = append(reports, report)
@@ -176,9 +186,10 @@ func (b *OrderBot) sendMonitorReports(c tele.Context, order orderdomain.Order, c
 }
 
 func (b *OrderBot) handleTemplate(c tele.Context) error {
-	template, err := b.orderSvc.GetTemplate(context.Background())
+	ctx := requestContext(c)
+	template, err := b.orderSvc.GetTemplate(ctx)
 	if err != nil {
-		slog.Error("get order template failed", "error", err)
+		slog.ErrorContext(ctx, "get order template failed", "error", err)
 		return c.Send("Не удалось получить шаблон заказа.")
 	}
 	return c.Send("<pre>"+html.EscapeString(template)+"</pre>", tele.ModeHTML)
@@ -204,6 +215,7 @@ func (b *OrderBot) handleText(c tele.Context) error {
 }
 
 func (b *OrderBot) handleConfirm(c tele.Context) error {
+	ctx := requestContext(c)
 	var items []orderdomain.OrderItem
 	b.updateSession(c.Sender().ID, func(s *session) {
 		items = make([]orderdomain.OrderItem, len(s.items))
@@ -216,15 +228,15 @@ func (b *OrderBot) handleConfirm(c tele.Context) error {
 		return c.Send("Заказ пустой или уже отправлен.")
 	}
 
-	order, err := b.orderSvc.CreateOrder(context.Background(), orderdomain.CreateOrderInput{
+	order, err := b.orderSvc.CreateOrder(ctx, orderdomain.CreateOrderInput{
 		Items: items,
 	})
 	if err != nil {
-		slog.Error("create order failed", "user_id", c.Sender().ID, "error", err)
+		slog.ErrorContext(ctx, "create order failed", "error", err)
 		return c.Send("Не удалось создать заказ. Проверьте заказ и попробуйте снова.")
 	}
 
-	slog.Info("order created", "number", order.Number, "user_id", c.Sender().ID, "items", len(items))
+	slog.InfoContext(applog.WithOrderNumber(ctx, order.Number), "order created", "items", len(items))
 	return c.Send(formatOrderSummary(order), tele.ModeMarkdown)
 }
 
@@ -246,7 +258,8 @@ func (b *OrderBot) ensurePermission(c tele.Context, permission string) error {
 }
 
 func (b *OrderBot) handleBulkOrder(c tele.Context, text string) error {
-	result := b.orderSvc.ValidateBulkOrder(context.Background(), text)
+	ctx := requestContext(c)
+	result := b.orderSvc.ValidateBulkOrder(ctx, text)
 	if len(result.ValidItems) == 0 {
 		return c.Send(formatValidationErrors(result.Errors), tele.ModeHTML)
 	}

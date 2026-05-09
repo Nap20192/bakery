@@ -78,8 +78,6 @@ func WithSyncService(infra *InfraDeps) appOption {
 			infra.DB,
 			infra.queries,
 			infra.config.Sync.Interval,
-			infra.config.Sync.DateFrom,
-			infra.config.Sync.DateTo,
 		)
 		return nil
 	}
@@ -90,10 +88,15 @@ func WithOrderBot(infra *InfraDeps) appOption {
 		if infra == nil || infra.config == nil || deps.OrderService == nil || deps.AuthService == nil || deps.MonitorService == nil || deps.SyncService == nil || deps.TechCardService == nil {
 			return fmt.Errorf("missing dependencies for OrderBot")
 		}
-		if infra.config.Telegram.OrderBotToken == "" {
-			return fmt.Errorf("ORDER_BOT_TOKEN не задан")
+		if infra.config.Telegram.BotToken == "" {
+			switch infra.config.Telegram.BotEnv {
+			case "prod", "production":
+				return fmt.Errorf("PROD_BOT_TOKEN не задан")
+			default:
+				return fmt.Errorf("TEST_BOT_TOKEN не задан")
+			}
 		}
-		orderBot, err := bot.NewOrderBot(infra.config.Telegram.OrderBotToken, deps.OrderService, deps.AuthService, deps.MonitorService, deps.SyncService, deps.TechCardService)
+		orderBot, err := bot.NewOrderBot(infra.config.Telegram.BotToken, deps.OrderService, deps.AuthService, deps.MonitorService, deps.SyncService, deps.TechCardService)
 		if err != nil {
 			return err
 		}

@@ -3,7 +3,7 @@ GOOSE ?= goose
 GOOSE_DRIVER ?= postgres
 MIGRATIONS_DIR ?= migrations
 
-.PHONY: migrate-up migrate-down migrate-status migrate-reset
+.PHONY: migrate-up migrate-down migrate-status migrate-reset docker-build docker-up docker-down docker-logs docker-create-admin
 
 migrate-up:
 	$(GOOSE) -dir $(MIGRATIONS_DIR) $(GOOSE_DRIVER) "$(DATABASE_URL)" up
@@ -16,3 +16,18 @@ migrate-status:
 
 migrate-reset:
 	$(GOOSE) -dir $(MIGRATIONS_DIR) $(GOOSE_DRIVER) "$(DATABASE_URL)" reset
+
+docker-build:
+	docker compose build
+
+docker-up:
+	docker compose up -d db orderbot sync
+
+docker-down:
+	docker compose down
+
+docker-logs:
+	docker compose logs -f orderbot sync
+
+docker-create-admin:
+	docker compose --profile tools run --rm createadmin

@@ -1,11 +1,16 @@
 package bot
 
 import (
+	"context"
 	"log/slog"
 	"time"
 
+	applog "bakery/pkg/logger"
+
 	tele "gopkg.in/telebot.v3"
 )
+
+const requestContextKey = "request_context"
 
 func (b *OrderBot) register() {
 	bt := b.tele
@@ -31,36 +36,43 @@ func (b *OrderBot) register() {
 func (b *baseBot) logMiddleware(next tele.HandlerFunc) tele.HandlerFunc {
 	return func(c tele.Context) error {
 		start := time.Now()
-		sender := c.Sender()
-
-		var kind, payload string
-		if cb := c.Callback(); cb != nil {
-			kind = "callback"
-			payload = cb.Unique + " data=" + cb.Data
-		} else if c.Message() != nil {
-			kind = "message"
-			payload = c.Text()
-			if len(payload) > 80 {
-				payload = payload[:80] + "…"
-			}
-		} else {
-			kind = "update"
+		ctx := context.Background()
+		if sender := c.Sender(); sender != nil {
+			ctx = applog.WithTelegramUser(ctx, sender.ID, sender.Username)
 		}
+
+		if cb := c.Callback(); cb != nil {
+			ctx = applog.WithPayload(ctx, applog.CallbackPayload(cb.Unique, cb.Data))
+		} else if c.Message() != nil {
+			ctx = applog.WithPayload(ctx, applog.MessagePayload(c.Text()))
+		} else {
+			ctx = applog.WithPayload(ctx, applog.UpdatePayload())
+		}
+		c.Set(requestContextKey, ctx)
 
 		err := next(c)
 
-		status := "ok"
 		if err != nil {
-			status = "err: " + err.Error()
+			slog.ErrorContext(applog.ErrorContext(ctx, err), "telegram update failed",
+				"error", err,
+				"duration", time.Since(start).Round(time.Millisecond).String(),
+			)
+			return err
 		}
-		slog.Info("telegram update",
-			"kind", kind,
-			"user_id", sender.ID,
-			"username", sender.Username,
-			"payload", payload,
-			"status", status,
+
+		slog.InfoContext(ctx, "telegram update",
+			"status", "ok",
 			"duration", time.Since(start).Round(time.Millisecond).String(),
 		)
 		return err
 	}
+}
+
+func requestContext(c tele.Context) context.Context {
+	if raw := c.Get(requestContextKey); raw != nil {
+		if ctx, ok := raw.(context.Context); ok {
+			return ctx
+		}
+	}
+	return context.Background()
 }

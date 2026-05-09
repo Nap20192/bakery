@@ -18,8 +18,6 @@ type SyncService struct {
 	db       *pgxpool.Pool
 	queries  *sqlcrepo.Queries
 	interval time.Duration
-	dateFrom string
-	dateTo   string
 }
 
 const (
@@ -29,14 +27,12 @@ const (
 	syncStatusError = "error"
 )
 
-func NewSyncService(client *iiko.Client, db *pgxpool.Pool, queries *sqlcrepo.Queries, interval time.Duration, dateFrom, dateTo string) *SyncService {
+func NewSyncService(client *iiko.Client, db *pgxpool.Pool, queries *sqlcrepo.Queries, interval time.Duration) *SyncService {
 	return &SyncService{
 		client:   client,
 		db:       db,
 		queries:  queries,
 		interval: interval,
-		dateFrom: dateFrom,
-		dateTo:   dateTo,
 	}
 }
 
@@ -76,6 +72,7 @@ func (s *SyncService) SyncOnce(ctx context.Context) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
+	syncDate := latestSyncDate()
 	if err := s.client.Auth(); err != nil {
 		return fmt.Errorf("auth: %w", err)
 	}
@@ -89,17 +86,17 @@ func (s *SyncService) SyncOnce(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("list products: %w", err)
 	}
-	charts, err := s.client.AssemblyChartsGetAll(s.dateFrom, s.dateTo, false, true)
+	charts, err := s.client.AssemblyChartsGetAll(syncDate, syncDate, false, true)
 	if err != nil {
 		return fmt.Errorf("get assembly charts: %w", err)
 	}
-	if err := s.SaveSnapshot(ctx, catalog, charts); err != nil {
+	if err := s.SaveSnapshot(ctx, catalog, charts, syncDate); err != nil {
 		return fmt.Errorf("save snapshot: %w", err)
 	}
 	return nil
 }
 
-func (s *SyncService) SaveSnapshot(ctx context.Context, catalog *iiko.NomenclatureResponse, charts *iiko.ChartResultDto) error {
+func (s *SyncService) SaveSnapshot(ctx context.Context, catalog *iiko.NomenclatureResponse, charts *iiko.ChartResultDto, syncDate string) error {
 	if s.db == nil || s.queries == nil {
 		return fmt.Errorf("missing sync repository dependencies")
 	}
@@ -113,8 +110,8 @@ func (s *SyncService) SaveSnapshot(ctx context.Context, catalog *iiko.Nomenclatu
 	startedAt := time.Now().UTC().Format(time.RFC3339Nano)
 	run, err := s.queries.CreateIikoSyncRun(ctx, sqlcrepo.CreateIikoSyncRunParams{
 		Source:        iikoSyncSource,
-		DateFrom:      s.dateFrom,
-		DateTo:        s.dateTo,
+		DateFrom:      syncDate,
+		DateTo:        syncDate,
 		KnownRevision: int64(charts.KnownRevision),
 		Status:        syncStatusRun,
 		Error:         "",
@@ -316,4 +313,8 @@ func optionalString(value string) *string {
 		return nil
 	}
 	return &value
+}
+
+func latestSyncDate() string {
+	return time.Now().Format("2006-01-02")
 }

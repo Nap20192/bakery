@@ -15,11 +15,11 @@ import (
 )
 
 type OrderService struct {
-	queries *sqlc.Queries
+	queries sqlc.Querier
 	domain  *orderdomain.OrderService
 }
 
-func NewOrderService(queries *sqlc.Queries) *OrderService {
+func NewOrderService(queries sqlc.Querier) *OrderService {
 	return &OrderService{
 		queries: queries,
 		domain:  orderdomain.NewOrderService(),

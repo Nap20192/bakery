@@ -72,7 +72,11 @@ func main() {
 		return appDeps.SyncService.Run(groupCtx)
 	})
 	group.Go(func() error {
-		log.Info("orderbot started")
+		log.Info("orderbot started",
+			"bot_env", cfg.Telegram.BotEnv,
+			"bot_name", appDeps.OrderBot.Name(),
+			"bot_username", appDeps.OrderBot.Username(),
+		)
 		appDeps.OrderBot.Start()
 		return nil
 	})
