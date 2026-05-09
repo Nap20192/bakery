@@ -26,10 +26,10 @@ type OrderService struct {
 }
 
 type OrderSpec struct {
-	LineProcessable Specification[BulkOrderLine]
-	LineFormat      Specification[BulkOrderLine]
-	Quantity        Specification[ParsedOrderLine]
-	UniqueItems     Specification[[]OrderItem]
+	LineProcessable BulkOrderLineSpecification
+	LineFormat      BulkOrderLineSpecification
+	Quantity        ParsedOrderLineSpecification
+	UniqueItems     OrderItemsSpecification
 }
 
 func NewOrderService() *OrderService {
