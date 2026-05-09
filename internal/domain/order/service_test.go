@@ -40,8 +40,8 @@ broken line
 
 func TestOrderServiceUsesInjectedSpec(t *testing.T) {
 	svc := &OrderService{spec: OrderSpec{
-		LineProcessable: FunctionSpecification[BulkOrderLine](func(BulkOrderLine) bool { return true }),
-		LineFormat:      FunctionSpecification[BulkOrderLine](func(BulkOrderLine) bool { return false }),
+		LineProcessable: BulkOrderLineSpecificationFunc(func(BulkOrderLine) bool { return true }),
+		LineFormat:      BulkOrderLineSpecificationFunc(func(BulkOrderLine) bool { return false }),
 		Quantity:        PositiveQuantitySpecification{},
 		UniqueItems:     UniqueOrderItemsSpecification{},
 	}}

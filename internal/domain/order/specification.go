@@ -1,25 +1,31 @@
 package order
 
-import sharedkernel "bakery/internal/pkg/shared_kernel"
-
-type Specification[T any] = sharedkernel.Specification[T]
-
-type FunctionSpecification[T any] = sharedkernel.FunctionSpecification[T]
-
-type AndSpecification[T any] = sharedkernel.AndSpecification[T]
-
-func NewAndSpecification[T any](specifications ...Specification[T]) Specification[T] {
-	return sharedkernel.NewAndSpecification(specifications...)
+type BulkOrderLineSpecification interface {
+	IsValid(line BulkOrderLine) bool
 }
 
-type OrSpecification[T any] = sharedkernel.OrSpecification[T]
-
-func NewOrSpecification[T any](specifications ...Specification[T]) Specification[T] {
-	return sharedkernel.NewOrSpecification(specifications...)
+type ParsedOrderLineSpecification interface {
+	IsValid(line ParsedOrderLine) bool
 }
 
-type NotSpecification[T any] = sharedkernel.NotSpecification[T]
+type OrderItemsSpecification interface {
+	IsValid(items []OrderItem) bool
+}
 
-func NewNotSpecification[T any](specification Specification[T]) Specification[T] {
-	return sharedkernel.NewNotSpecification(specification)
+type BulkOrderLineSpecificationFunc func(line BulkOrderLine) bool
+
+func (s BulkOrderLineSpecificationFunc) IsValid(line BulkOrderLine) bool {
+	return s(line)
+}
+
+type ParsedOrderLineSpecificationFunc func(line ParsedOrderLine) bool
+
+func (s ParsedOrderLineSpecificationFunc) IsValid(line ParsedOrderLine) bool {
+	return s(line)
+}
+
+type OrderItemsSpecificationFunc func(items []OrderItem) bool
+
+func (s OrderItemsSpecificationFunc) IsValid(items []OrderItem) bool {
+	return s(items)
 }

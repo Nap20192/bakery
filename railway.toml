@@ -1,7 +1,0 @@
-[build]
-builder = "RAILPACK"
-buildCommand = "go build -o bin/worker ./cmd/worker && go build -o bin/createadmin ./cmd/createadmin"
-
-[deploy]
-startCommand = "./bin/worker"
-restartPolicyType = "ALWAYS"

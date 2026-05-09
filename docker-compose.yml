@@ -20,7 +20,6 @@ services:
       context: ${DOCKER_BUILD_CONTEXT:-.}
       dockerfile: ${DOCKERFILE:-Dockerfile}
       args:
-        APP: ${WORKER_APP:-worker}
         GO_VERSION: ${GO_VERSION:-1.26.1}
         ALPINE_VERSION: ${ALPINE_VERSION:-3.22}
     environment:
@@ -43,29 +42,6 @@ services:
       db:
         condition: service_healthy
     restart: ${WORKER_RESTART:-unless-stopped}
-
-  createadmin:
-    profiles:
-      - ${TOOLS_PROFILE:-tools}
-    build:
-      context: ${DOCKER_BUILD_CONTEXT:-.}
-      dockerfile: ${DOCKERFILE:-Dockerfile}
-      args:
-        APP: ${CREATEADMIN_APP:-createadmin}
-        GO_VERSION: ${GO_VERSION:-1.26.1}
-        ALPINE_VERSION: ${ALPINE_VERSION:-3.22}
-    environment:
-      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
-      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-bakery}?sslmode=${POSTGRES_SSLMODE:-disable}
-      LOG_PRETTY: ${DOCKER_LOG_PRETTY:-false}
-      LOG_LEVEL: ${LOG_LEVEL:-INFO}
-      LOG_DIR: ${LOG_DIR:-}
-      MIGRATIONS_DIR: ${DOCKER_MIGRATIONS_DIR:-/app/migrations}
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: "no"
 
 volumes:
   postgres_data:
