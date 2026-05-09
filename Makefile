@@ -21,13 +21,13 @@ docker-build:
 	docker compose build
 
 docker-up:
-	docker compose up -d db orderbot sync
+	docker compose up -d db worker
 
 docker-down:
 	docker compose down
 
 docker-logs:
-	docker compose logs -f orderbot sync
+	docker compose logs -f worker
 
 docker-create-admin:
 	docker compose --profile tools run --rm createadmin

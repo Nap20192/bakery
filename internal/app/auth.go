@@ -79,6 +79,34 @@ func (s *AuthService) CreateUserWithPassword(ctx context.Context, input accessdo
 	return authUserToDomain(user), nil
 }
 
+func (s *AuthService) EnsureAdminUser(ctx context.Context, username string, password string) (accessdomain.AuthUser, bool, error) {
+	username = strings.TrimSpace(username)
+	if username == "" {
+		return accessdomain.AuthUser{}, false, fmt.Errorf("admin username is required")
+	}
+	if password == "" {
+		return accessdomain.AuthUser{}, false, fmt.Errorf("admin password is required")
+	}
+
+	user, err := s.queries.GetAuthUserByUsername(ctx, username)
+	if err == nil {
+		return authUserToDomain(user), false, nil
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return accessdomain.AuthUser{}, false, fmt.Errorf("get admin user: %w", err)
+	}
+
+	created, err := s.CreateUserWithPassword(ctx, accessdomain.PasswordAuthUserInput{
+		Username: username,
+		Password: password,
+		Role:     accessdomain.RoleAdmin,
+	})
+	if err != nil {
+		return accessdomain.AuthUser{}, false, err
+	}
+	return created, true, nil
+}
+
 func (s *AuthService) VerifyPassword(ctx context.Context, username string, password string) (accessdomain.AuthUser, error) {
 	user, err := s.queries.GetAuthUserByUsername(ctx, strings.TrimSpace(username))
 	if err != nil {
