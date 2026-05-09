@@ -66,6 +66,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	admin, created, err := appDeps.AuthService.EnsureAdminUser(
+		ctx,
+		helpers.Env("ADMIN_USERNAME", "admin"),
+		helpers.Env("ADMIN_PASSWORD", ""),
+	)
+	if err != nil {
+		log.Error("ensure admin failed", "error", err)
+		os.Exit(1)
+	}
+	log.Info("admin user ready", "username", admin.Username, "role", admin.Role, "created", created)
+
 	group, groupCtx := errgroup.WithContext(ctx)
 	group.Go(func() error {
 		log.Info("sync service started")
