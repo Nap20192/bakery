@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	defaultAuthRole       = accessdomain.RoleClient
+	defaultAuthRole       = accessdomain.RoleAdmin
 	passwordHashAlgorithm = "pbkdf2-sha256"
 	passwordHashVersion   = "v1"
 	passwordSaltSize      = 16
@@ -165,9 +165,6 @@ func authUserToDomain(user sqlc.AuthUser) accessdomain.AuthUser {
 	createdAt, _ := time.Parse(time.RFC3339Nano, user.CreatedAt)
 	updatedAt, _ := time.Parse(time.RFC3339Nano, user.UpdatedAt)
 	role := accessdomain.NormalizeRole(user.Role)
-	if role == "user" {
-		role = accessdomain.RoleClient
-	}
 	return accessdomain.AuthUser{
 		ID:           user.ID,
 		TelegramID:   user.TelegramID,

@@ -19,16 +19,17 @@ func (b *OrderBot) register() {
 	bt.Handle("/start", b.handleStart)
 	bt.Handle("/login", b.handleLogin)
 	bt.Handle("/logout", b.handleLogout)
-	bt.Handle("/adduser", b.handleAddUser, b.requirePermissions(permManageUsers))
-	bt.Handle("/orders", b.handleOrders, b.requirePermissions(permViewOrders))
-	bt.Handle("/monitor", b.handleMonitor, b.requirePermissions(permMonitor))
-	bt.Handle("/sync", b.handleSync, b.requirePermissions(permSync))
+	bt.Handle("/adduser", b.handleAddUser)
+	bt.Handle("/orders", b.handleOrders)
+	bt.Handle("/monitor", b.handleMonitor)
+	bt.Handle("/sync", b.handleSync)
+	// Авторизация оставлена только на просмотр техкарты.
 	bt.Handle("/techcard", b.handleTechCard, b.requirePermissions(permTechCard))
-	bt.Handle("/template", b.handleTemplate, b.requirePermissions(permCreateOrder))
-	bt.Handle("/cancel", b.handleCancel, b.requirePermissions(permCreateOrder))
+	bt.Handle("/template", b.handleTemplate)
+	bt.Handle("/cancel", b.handleCancel)
 
-	bt.Handle("\fconfirm", b.handleConfirm, b.requirePermissions(permCreateOrder))
-	bt.Handle("\fcancel_cb", b.handleCancelCallback, b.requirePermissions(permCreateOrder))
+	bt.Handle("\fconfirm", b.handleConfirm)
+	bt.Handle("\fcancel_cb", b.handleCancelCallback)
 
 	bt.Handle(tele.OnText, b.handleText)
 }
