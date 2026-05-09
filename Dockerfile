@@ -1,7 +1,7 @@
-ARG GO_VERSION=1.26.1
-ARG ALPINE_VERSION=3.22
+ARG GO_IMAGE=golang:alpine
+ARG RUNTIME_IMAGE=alpine:latest
 
-FROM golang:${GO_VERSION}-alpine AS builder
+FROM ${GO_IMAGE} AS builder
 
 WORKDIR /src
 
@@ -15,7 +15,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
 	go build -trimpath -ldflags="-s -w" -o /out/bakery ./cmd/worker
 
-FROM alpine:${ALPINE_VERSION}
+FROM ${RUNTIME_IMAGE}
 
 RUN apk add --no-cache ca-certificates tzdata && \
 	addgroup -S app && adduser -S -G app app

@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:${POSTGRES_VERSION:-17-alpine}
+    image: postgres:${POSTGRES_VERSION:-latest}
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-bakery}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -20,8 +20,8 @@ services:
       context: ${DOCKER_BUILD_CONTEXT:-.}
       dockerfile: ${DOCKERFILE:-Dockerfile}
       args:
-        GO_VERSION: ${GO_VERSION:-1.26.1}
-        ALPINE_VERSION: ${ALPINE_VERSION:-3.22}
+        GO_IMAGE: ${GO_IMAGE:-golang:alpine}
+        RUNTIME_IMAGE: ${RUNTIME_IMAGE:-alpine:latest}
     environment:
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
