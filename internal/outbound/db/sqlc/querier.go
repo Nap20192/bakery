@@ -28,16 +28,16 @@ type Querier interface {
 	GetIikoProductsByName(ctx context.Context, name string) ([]GetIikoProductsByNameRow, error)
 	GetOrderByNumber(ctx context.Context, number string) (Order, error)
 	GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]GetOrderItemsByOrderIDRow, error)
-	InsertIikoAssemblyChartItem(ctx context.Context, arg InsertIikoAssemblyChartItemParams) (IikoAssemblyChartItem, error)
-	InsertIikoPreparedChartItem(ctx context.Context, arg InsertIikoPreparedChartItemParams) (IikoPreparedChartItem, error)
+	InsertIikoAssemblyChartItem(ctx context.Context, arg InsertIikoAssemblyChartItemParams) error
+	InsertIikoPreparedChartItem(ctx context.Context, arg InsertIikoPreparedChartItemParams) error
 	LinkTelegramAuthUser(ctx context.Context, arg LinkTelegramAuthUserParams) (AuthUser, error)
 	ListAssemblyChartItemsByChartID(ctx context.Context, chartID string) ([]ListAssemblyChartItemsByChartIDRow, error)
 	ListOrders(ctx context.Context, orderLimit int32) ([]Order, error)
 	NextOrderCounter(ctx context.Context, day string) (int64, error)
 	UnlinkTelegramAuthUser(ctx context.Context, arg UnlinkTelegramAuthUserParams) error
-	UpsertIikoAssemblyChart(ctx context.Context, arg UpsertIikoAssemblyChartParams) (IikoAssemblyChart, error)
-	UpsertIikoPreparedChart(ctx context.Context, arg UpsertIikoPreparedChartParams) (IikoPreparedChart, error)
-	UpsertIikoProduct(ctx context.Context, arg UpsertIikoProductParams) (IikoProduct, error)
+	UpsertIikoAssemblyChart(ctx context.Context, arg UpsertIikoAssemblyChartParams) error
+	UpsertIikoPreparedChart(ctx context.Context, arg UpsertIikoPreparedChartParams) error
+	UpsertIikoProduct(ctx context.Context, arg UpsertIikoProductParams) error
 }
 
 var _ Querier = (*Queries)(nil)

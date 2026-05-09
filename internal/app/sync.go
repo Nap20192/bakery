@@ -11,6 +11,7 @@ import (
 	"bakery/internal/outbound/iiko"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/sync/errgroup"
 )
 
 type SyncService struct {
@@ -25,6 +26,8 @@ const (
 	syncStatusRun   = "running"
 	syncStatusOK    = "ok"
 	syncStatusError = "error"
+	emptyJSON       = "{}"
+	nullJSON        = "null"
 )
 
 func NewSyncService(client *iiko.Client, db *pgxpool.Pool, queries *sqlcrepo.Queries, interval time.Duration) *SyncService {
@@ -82,14 +85,36 @@ func (s *SyncService) SyncOnce(ctx context.Context) error {
 		}
 	}()
 
-	catalog, err := s.client.ListProductsWithCategories()
-	if err != nil {
-		return fmt.Errorf("list products: %w", err)
+	var catalog *iiko.NomenclatureResponse
+	var charts *iiko.ChartResultDto
+	fetchStart := time.Now()
+	group, _ := errgroup.WithContext(ctx)
+	group.Go(func() error {
+		var err error
+		catalog, err = s.client.ListProductsWithCategories()
+		if err != nil {
+			return fmt.Errorf("list products: %w", err)
+		}
+		return nil
+	})
+	group.Go(func() error {
+		var err error
+		charts, err = s.client.AssemblyChartsGetAll(syncDate, syncDate, false, true)
+		if err != nil {
+			return fmt.Errorf("get assembly charts: %w", err)
+		}
+		return nil
+	})
+	if err := group.Wait(); err != nil {
+		return err
 	}
-	charts, err := s.client.AssemblyChartsGetAll(syncDate, syncDate, false, true)
-	if err != nil {
-		return fmt.Errorf("get assembly charts: %w", err)
-	}
+	slog.InfoContext(ctx, "iiko sync fetched",
+		"date", syncDate,
+		"duration", time.Since(fetchStart).Round(time.Millisecond).String(),
+		"products", len(catalog.Products),
+		"assembly_charts", len(charts.AssemblyCharts),
+		"prepared_charts", len(charts.PreparedCharts),
+	)
 	if err := s.SaveSnapshot(ctx, catalog, charts, syncDate); err != nil {
 		return fmt.Errorf("save snapshot: %w", err)
 	}
@@ -122,12 +147,21 @@ func (s *SyncService) SaveSnapshot(ctx context.Context, catalog *iiko.Nomenclatu
 		return fmt.Errorf("create sync run: %w", err)
 	}
 
+	saveStart := time.Now()
 	if err := s.saveSnapshotData(ctx, catalog, charts); err != nil {
 		if finishErr := s.finishSyncRun(ctx, run.ID, int64(charts.KnownRevision), syncStatusError, err.Error()); finishErr != nil {
 			slog.Warn("finish sync run failed", "error", finishErr)
 		}
 		return err
 	}
+	slog.InfoContext(ctx, "iiko snapshot saved",
+		"duration", time.Since(saveStart).Round(time.Millisecond).String(),
+		"products", len(catalog.Products),
+		"assembly_charts", len(charts.AssemblyCharts),
+		"assembly_items", countAssemblyItems(charts.AssemblyCharts),
+		"prepared_charts", len(charts.PreparedCharts),
+		"prepared_items", countPreparedItems(charts.PreparedCharts),
+	)
 
 	return s.finishSyncRun(ctx, run.ID, int64(charts.KnownRevision), syncStatusOK, "")
 }
@@ -202,13 +236,13 @@ func (s *SyncService) saveSnapshotData(ctx context.Context, catalog *iiko.Nomenc
 }
 
 func upsertIikoProduct(ctx context.Context, q *sqlcrepo.Queries, product iiko.Product, updatedAt string) error {
-	_, err := q.UpsertIikoProduct(ctx, sqlcrepo.UpsertIikoProductParams{
+	err := q.UpsertIikoProduct(ctx, sqlcrepo.UpsertIikoProductParams{
 		ID:          product.ID.String(),
 		Code:        product.Code,
 		Name:        product.Name,
 		Type:        optionalString(product.Type),
 		MeasureUnit: product.MeasureUnit,
-		RawJson:     encodeJSON(product),
+		RawJson:     emptyJSON,
 		UpdatedAt:   updatedAt,
 	})
 	if err != nil {
@@ -218,7 +252,7 @@ func upsertIikoProduct(ctx context.Context, q *sqlcrepo.Queries, product iiko.Pr
 }
 
 func upsertIikoAssemblyChart(ctx context.Context, q *sqlcrepo.Queries, chart iiko.AssemblyChartDto, updatedAt string) error {
-	_, err := q.UpsertIikoAssemblyChart(ctx, sqlcrepo.UpsertIikoAssemblyChartParams{
+	err := q.UpsertIikoAssemblyChart(ctx, sqlcrepo.UpsertIikoAssemblyChartParams{
 		ID:                                   chart.ID,
 		AssembledProductID:                   chart.AssembledProductID,
 		DateFrom:                             chart.DateFrom,
@@ -226,7 +260,7 @@ func upsertIikoAssemblyChart(ctx context.Context, q *sqlcrepo.Queries, chart iik
 		AssembledAmount:                      chart.AssembledAmount,
 		ProductWriteoffStrategy:              string(chart.ProductWriteoffStrategy),
 		ProductSizeAssemblyStrategy:          string(chart.ProductSizeAssemblyStrategy),
-		EffectiveDirectWriteoffStoreSpecJson: encodeJSON(chart.EffectiveDirectWriteoffStoreSpecification),
+		EffectiveDirectWriteoffStoreSpecJson: nullJSON,
 		RawJson:                              encodeJSON(chart),
 		UpdatedAt:                            updatedAt,
 	})
@@ -237,13 +271,13 @@ func upsertIikoAssemblyChart(ctx context.Context, q *sqlcrepo.Queries, chart iik
 }
 
 func insertIikoAssemblyChartItem(ctx context.Context, q *sqlcrepo.Queries, chartID string, item iiko.AssemblyChartItem) error {
-	_, err := q.InsertIikoAssemblyChartItem(ctx, sqlcrepo.InsertIikoAssemblyChartItemParams{
+	err := q.InsertIikoAssemblyChartItem(ctx, sqlcrepo.InsertIikoAssemblyChartItemParams{
 		ID:                  item.ID,
 		ChartID:             chartID,
 		SortWeight:          item.SortWeight,
 		ProductID:           item.ProductID,
-		ProductSizeSpecJson: encodeJSON(item.ProductSizeSpecification),
-		StoreSpecJson:       encodeJSON(item.StoreSpecification),
+		ProductSizeSpecJson: nullJSON,
+		StoreSpecJson:       nullJSON,
 		AmountIn:            item.AmountIn,
 		AmountMiddle:        item.AmountMiddle,
 		AmountOut:           item.AmountOut,
@@ -255,7 +289,7 @@ func insertIikoAssemblyChartItem(ctx context.Context, q *sqlcrepo.Queries, chart
 		AmountOut3:          item.AmountOut3,
 		PackageCount:        item.PackageCount,
 		PackageTypeID:       item.PackageTypeID,
-		RawJson:             encodeJSON(item),
+		RawJson:             emptyJSON,
 	})
 	if err != nil {
 		return fmt.Errorf("insert assembly chart item %s: %w", item.ID, err)
@@ -264,13 +298,13 @@ func insertIikoAssemblyChartItem(ctx context.Context, q *sqlcrepo.Queries, chart
 }
 
 func upsertIikoPreparedChart(ctx context.Context, q *sqlcrepo.Queries, chart iiko.PreparedChartDto, updatedAt string) error {
-	_, err := q.UpsertIikoPreparedChart(ctx, sqlcrepo.UpsertIikoPreparedChartParams{
+	err := q.UpsertIikoPreparedChart(ctx, sqlcrepo.UpsertIikoPreparedChartParams{
 		ID:                                   chart.ID,
 		AssembledProductID:                   chart.AssembledProductID,
 		DateFrom:                             chart.DateFrom,
 		DateTo:                               chart.DateTo,
 		ProductSizeAssemblyStrategy:          string(chart.ProductSizeAssemblyStrategy),
-		EffectiveDirectWriteoffStoreSpecJson: encodeJSON(chart.EffectiveDirectWriteoffStoreSpecification),
+		EffectiveDirectWriteoffStoreSpecJson: nullJSON,
 		RawJson:                              encodeJSON(chart),
 		UpdatedAt:                            updatedAt,
 	})
@@ -281,15 +315,15 @@ func upsertIikoPreparedChart(ctx context.Context, q *sqlcrepo.Queries, chart iik
 }
 
 func insertIikoPreparedChartItem(ctx context.Context, q *sqlcrepo.Queries, chartID string, item iiko.PreparedChartItem) error {
-	_, err := q.InsertIikoPreparedChartItem(ctx, sqlcrepo.InsertIikoPreparedChartItemParams{
+	err := q.InsertIikoPreparedChartItem(ctx, sqlcrepo.InsertIikoPreparedChartItemParams{
 		ID:                  item.ID,
 		PreparedChartID:     chartID,
 		SortWeight:          item.SortWeight,
 		ProductID:           item.ProductID,
-		ProductSizeSpecJson: encodeJSON(item.ProductSizeSpecification),
-		StoreSpecJson:       encodeJSON(item.StoreSpecification),
+		ProductSizeSpecJson: nullJSON,
+		StoreSpecJson:       nullJSON,
 		Amount:              item.Amount,
-		RawJson:             encodeJSON(item),
+		RawJson:             emptyJSON,
 	})
 	if err != nil {
 		return fmt.Errorf("insert prepared chart item %s: %w", item.ID, err)
@@ -313,6 +347,22 @@ func optionalString(value string) *string {
 		return nil
 	}
 	return &value
+}
+
+func countAssemblyItems(charts []iiko.AssemblyChartDto) int {
+	count := 0
+	for _, chart := range charts {
+		count += len(chart.Items)
+	}
+	return count
+}
+
+func countPreparedItems(charts []iiko.PreparedChartDto) int {
+	count := 0
+	for _, chart := range charts {
+		count += len(chart.Items)
+	}
+	return count
 }
 
 func latestSyncDate() string {

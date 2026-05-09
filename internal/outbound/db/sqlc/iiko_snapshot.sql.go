@@ -131,7 +131,7 @@ func (q *Queries) FinishIikoSyncRun(ctx context.Context, arg FinishIikoSyncRunPa
 	return i, err
 }
 
-const insertIikoAssemblyChartItem = `-- name: InsertIikoAssemblyChartItem :one
+const insertIikoAssemblyChartItem = `-- name: InsertIikoAssemblyChartItem :exec
 INSERT INTO iiko_assembly_chart_items (
     id,
     chart_id,
@@ -171,7 +171,6 @@ INSERT INTO iiko_assembly_chart_items (
     $17,
     $18
 )
-RETURNING id, chart_id, sort_weight, product_id, product_size_spec_json, store_spec_json, amount_in, amount_middle, amount_out, amount_in1, amount_out1, amount_in2, amount_out2, amount_in3, amount_out3, package_count, package_type_id, raw_json
 `
 
 type InsertIikoAssemblyChartItemParams struct {
@@ -195,8 +194,8 @@ type InsertIikoAssemblyChartItemParams struct {
 	RawJson             string  `json:"raw_json"`
 }
 
-func (q *Queries) InsertIikoAssemblyChartItem(ctx context.Context, arg InsertIikoAssemblyChartItemParams) (IikoAssemblyChartItem, error) {
-	row := q.db.QueryRow(ctx, insertIikoAssemblyChartItem,
+func (q *Queries) InsertIikoAssemblyChartItem(ctx context.Context, arg InsertIikoAssemblyChartItemParams) error {
+	_, err := q.db.Exec(ctx, insertIikoAssemblyChartItem,
 		arg.ID,
 		arg.ChartID,
 		arg.SortWeight,
@@ -216,31 +215,10 @@ func (q *Queries) InsertIikoAssemblyChartItem(ctx context.Context, arg InsertIik
 		arg.PackageTypeID,
 		arg.RawJson,
 	)
-	var i IikoAssemblyChartItem
-	err := row.Scan(
-		&i.ID,
-		&i.ChartID,
-		&i.SortWeight,
-		&i.ProductID,
-		&i.ProductSizeSpecJson,
-		&i.StoreSpecJson,
-		&i.AmountIn,
-		&i.AmountMiddle,
-		&i.AmountOut,
-		&i.AmountIn1,
-		&i.AmountOut1,
-		&i.AmountIn2,
-		&i.AmountOut2,
-		&i.AmountIn3,
-		&i.AmountOut3,
-		&i.PackageCount,
-		&i.PackageTypeID,
-		&i.RawJson,
-	)
-	return i, err
+	return err
 }
 
-const insertIikoPreparedChartItem = `-- name: InsertIikoPreparedChartItem :one
+const insertIikoPreparedChartItem = `-- name: InsertIikoPreparedChartItem :exec
 INSERT INTO iiko_prepared_chart_items (
     id,
     prepared_chart_id,
@@ -260,7 +238,6 @@ INSERT INTO iiko_prepared_chart_items (
     $7,
     $8
 )
-RETURNING id, prepared_chart_id, sort_weight, product_id, product_size_spec_json, store_spec_json, amount, raw_json
 `
 
 type InsertIikoPreparedChartItemParams struct {
@@ -274,8 +251,8 @@ type InsertIikoPreparedChartItemParams struct {
 	RawJson             string  `json:"raw_json"`
 }
 
-func (q *Queries) InsertIikoPreparedChartItem(ctx context.Context, arg InsertIikoPreparedChartItemParams) (IikoPreparedChartItem, error) {
-	row := q.db.QueryRow(ctx, insertIikoPreparedChartItem,
+func (q *Queries) InsertIikoPreparedChartItem(ctx context.Context, arg InsertIikoPreparedChartItemParams) error {
+	_, err := q.db.Exec(ctx, insertIikoPreparedChartItem,
 		arg.ID,
 		arg.PreparedChartID,
 		arg.SortWeight,
@@ -285,21 +262,10 @@ func (q *Queries) InsertIikoPreparedChartItem(ctx context.Context, arg InsertIik
 		arg.Amount,
 		arg.RawJson,
 	)
-	var i IikoPreparedChartItem
-	err := row.Scan(
-		&i.ID,
-		&i.PreparedChartID,
-		&i.SortWeight,
-		&i.ProductID,
-		&i.ProductSizeSpecJson,
-		&i.StoreSpecJson,
-		&i.Amount,
-		&i.RawJson,
-	)
-	return i, err
+	return err
 }
 
-const upsertIikoAssemblyChart = `-- name: UpsertIikoAssemblyChart :one
+const upsertIikoAssemblyChart = `-- name: UpsertIikoAssemblyChart :exec
 INSERT INTO iiko_assembly_charts (
     id,
     assembled_product_id,
@@ -333,7 +299,6 @@ ON CONFLICT(id) DO UPDATE SET
     effective_direct_writeoff_store_spec_json = excluded.effective_direct_writeoff_store_spec_json,
     raw_json = excluded.raw_json,
     updated_at = excluded.updated_at
-RETURNING id, assembled_product_id, date_from, date_to, assembled_amount, product_writeoff_strategy, product_size_assembly_strategy, effective_direct_writeoff_store_spec_json, raw_json, updated_at
 `
 
 type UpsertIikoAssemblyChartParams struct {
@@ -349,8 +314,8 @@ type UpsertIikoAssemblyChartParams struct {
 	UpdatedAt                            string  `json:"updated_at"`
 }
 
-func (q *Queries) UpsertIikoAssemblyChart(ctx context.Context, arg UpsertIikoAssemblyChartParams) (IikoAssemblyChart, error) {
-	row := q.db.QueryRow(ctx, upsertIikoAssemblyChart,
+func (q *Queries) UpsertIikoAssemblyChart(ctx context.Context, arg UpsertIikoAssemblyChartParams) error {
+	_, err := q.db.Exec(ctx, upsertIikoAssemblyChart,
 		arg.ID,
 		arg.AssembledProductID,
 		arg.DateFrom,
@@ -362,23 +327,10 @@ func (q *Queries) UpsertIikoAssemblyChart(ctx context.Context, arg UpsertIikoAss
 		arg.RawJson,
 		arg.UpdatedAt,
 	)
-	var i IikoAssemblyChart
-	err := row.Scan(
-		&i.ID,
-		&i.AssembledProductID,
-		&i.DateFrom,
-		&i.DateTo,
-		&i.AssembledAmount,
-		&i.ProductWriteoffStrategy,
-		&i.ProductSizeAssemblyStrategy,
-		&i.EffectiveDirectWriteoffStoreSpecJson,
-		&i.RawJson,
-		&i.UpdatedAt,
-	)
-	return i, err
+	return err
 }
 
-const upsertIikoPreparedChart = `-- name: UpsertIikoPreparedChart :one
+const upsertIikoPreparedChart = `-- name: UpsertIikoPreparedChart :exec
 INSERT INTO iiko_prepared_charts (
     id,
     assembled_product_id,
@@ -406,7 +358,6 @@ ON CONFLICT(id) DO UPDATE SET
     effective_direct_writeoff_store_spec_json = excluded.effective_direct_writeoff_store_spec_json,
     raw_json = excluded.raw_json,
     updated_at = excluded.updated_at
-RETURNING id, assembled_product_id, date_from, date_to, product_size_assembly_strategy, effective_direct_writeoff_store_spec_json, raw_json, updated_at
 `
 
 type UpsertIikoPreparedChartParams struct {
@@ -420,8 +371,8 @@ type UpsertIikoPreparedChartParams struct {
 	UpdatedAt                            string  `json:"updated_at"`
 }
 
-func (q *Queries) UpsertIikoPreparedChart(ctx context.Context, arg UpsertIikoPreparedChartParams) (IikoPreparedChart, error) {
-	row := q.db.QueryRow(ctx, upsertIikoPreparedChart,
+func (q *Queries) UpsertIikoPreparedChart(ctx context.Context, arg UpsertIikoPreparedChartParams) error {
+	_, err := q.db.Exec(ctx, upsertIikoPreparedChart,
 		arg.ID,
 		arg.AssembledProductID,
 		arg.DateFrom,
@@ -431,21 +382,10 @@ func (q *Queries) UpsertIikoPreparedChart(ctx context.Context, arg UpsertIikoPre
 		arg.RawJson,
 		arg.UpdatedAt,
 	)
-	var i IikoPreparedChart
-	err := row.Scan(
-		&i.ID,
-		&i.AssembledProductID,
-		&i.DateFrom,
-		&i.DateTo,
-		&i.ProductSizeAssemblyStrategy,
-		&i.EffectiveDirectWriteoffStoreSpecJson,
-		&i.RawJson,
-		&i.UpdatedAt,
-	)
-	return i, err
+	return err
 }
 
-const upsertIikoProduct = `-- name: UpsertIikoProduct :one
+const upsertIikoProduct = `-- name: UpsertIikoProduct :exec
 INSERT INTO iiko_products (
     id,
     code,
@@ -470,7 +410,6 @@ ON CONFLICT(id) DO UPDATE SET
     measure_unit = excluded.measure_unit,
     raw_json = excluded.raw_json,
     updated_at = excluded.updated_at
-RETURNING id, code, name, type, measure_unit, raw_json, updated_at
 `
 
 type UpsertIikoProductParams struct {
@@ -483,8 +422,8 @@ type UpsertIikoProductParams struct {
 	UpdatedAt   string  `json:"updated_at"`
 }
 
-func (q *Queries) UpsertIikoProduct(ctx context.Context, arg UpsertIikoProductParams) (IikoProduct, error) {
-	row := q.db.QueryRow(ctx, upsertIikoProduct,
+func (q *Queries) UpsertIikoProduct(ctx context.Context, arg UpsertIikoProductParams) error {
+	_, err := q.db.Exec(ctx, upsertIikoProduct,
 		arg.ID,
 		arg.Code,
 		arg.Name,
@@ -493,15 +432,5 @@ func (q *Queries) UpsertIikoProduct(ctx context.Context, arg UpsertIikoProductPa
 		arg.RawJson,
 		arg.UpdatedAt,
 	)
-	var i IikoProduct
-	err := row.Scan(
-		&i.ID,
-		&i.Code,
-		&i.Name,
-		&i.Type,
-		&i.MeasureUnit,
-		&i.RawJson,
-		&i.UpdatedAt,
-	)
-	return i, err
+	return err
 }
