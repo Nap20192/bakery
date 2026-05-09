@@ -68,7 +68,11 @@ func main() {
 
 	group, groupCtx := errgroup.WithContext(ctx)
 	group.Go(func() error {
-		log.Info("orderbot started")
+		log.Info("orderbot started",
+			"bot_env", cfg.Telegram.BotEnv,
+			"bot_name", appDeps.OrderBot.Name(),
+			"bot_username", appDeps.OrderBot.Username(),
+		)
 		appDeps.OrderBot.Start()
 		return nil
 	})

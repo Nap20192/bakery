@@ -21,10 +21,28 @@ type BulkOrderValidationError struct {
 	Message string
 }
 
-type OrderService struct{}
+type OrderService struct {
+	spec OrderSpec
+}
+
+type OrderSpec struct {
+	LineProcessable Specification[BulkOrderLine]
+	LineFormat      Specification[BulkOrderLine]
+	Quantity        Specification[ParsedOrderLine]
+	UniqueItems     Specification[[]OrderItem]
+}
 
 func NewOrderService() *OrderService {
-	return &OrderService{}
+	return &OrderService{spec: NewOrderSpec()}
+}
+
+func NewOrderSpec() OrderSpec {
+	return OrderSpec{
+		LineProcessable: OrderLineProcessableSpecification{},
+		LineFormat:      OrderLineFormatSpecification{},
+		Quantity:        PositiveQuantitySpecification{},
+		UniqueItems:     UniqueOrderItemsSpecification{},
+	}
 }
 
 func (s *OrderService) NormalizeCreatedAt(t time.Time) time.Time {
@@ -46,18 +64,15 @@ func (s *OrderService) BuildOrderNumber(day string, counter int64) string {
 func (s *OrderService) ParseBulkOrder(order string) BulkOrderValidationResult {
 	var result BulkOrderValidationResult
 	lines := strings.Split(order, "\n")
-	processableSpec := OrderLineProcessableSpecification{}
-	formatSpec := OrderLineFormatSpecification{}
-	quantitySpec := PositiveQuantitySpecification{}
 
 	for i, line := range lines {
 		line = strings.TrimSpace(line)
 		candidate := BulkOrderLine{Number: i + 1, Raw: line}
-		if !processableSpec.IsValid(candidate) {
+		if !s.spec.LineProcessable.IsValid(candidate) {
 			continue
 		}
 
-		if !formatSpec.IsValid(candidate) {
+		if !s.spec.LineFormat.IsValid(candidate) {
 			result.Errors = append(result.Errors, BulkOrderValidationError{
 				Line:    i + 1,
 				Raw:     line,
@@ -67,7 +82,7 @@ func (s *OrderService) ParseBulkOrder(order string) BulkOrderValidationResult {
 		}
 
 		parsed := ParseOrderLine(candidate)
-		if !quantitySpec.IsValid(parsed) {
+		if !s.spec.Quantity.IsValid(parsed) {
 			result.Errors = append(result.Errors, BulkOrderValidationError{
 				Line:    parsed.Line,
 				Code:    parsed.Code,
@@ -89,8 +104,7 @@ func (s *OrderService) ParseBulkOrder(order string) BulkOrderValidationResult {
 }
 
 func (s *OrderService) ValidateUniqueItems(items []OrderItem) error {
-	spec := UniqueOrderItemsSpecification{}
-	if spec.IsValid(items) {
+	if s.spec.UniqueItems.IsValid(items) {
 		return nil
 	}
 	return errors.Join(DuplicateOrderItemErrors(items)...)

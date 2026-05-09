@@ -1,7 +1,6 @@
 package bot
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -72,12 +71,13 @@ func (b *baseBot) authUserFromContext(c tele.Context) (accessdomain.AuthUser, er
 	if sender == nil {
 		return accessdomain.AuthUser{}, c.Send("Не удалось определить пользователя.")
 	}
-	user, err := b.authSvc.GetUserByTelegramID(context.Background(), sender.ID)
+	ctx := requestContext(c)
+	user, err := b.authSvc.GetUserByTelegramID(ctx, sender.ID)
 	if err != nil {
 		if errors.Is(err, app.ErrAuthUserNotFound) {
 			return accessdomain.AuthUser{}, c.Send("Пользователь не зарегистрирован. Обратитесь к администратору.")
 		}
-		slog.Error("auth user lookup failed", "user_id", sender.ID, "error", err)
+		slog.ErrorContext(ctx, "auth user lookup failed", "error", err)
 		return accessdomain.AuthUser{}, c.Send("Ошибка авторизации.")
 	}
 	c.Set(authUserContextKey, user)

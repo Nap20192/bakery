@@ -65,6 +65,20 @@ func (b *OrderBot) Start() {
 	b.tele.Start()
 }
 
+func (b *OrderBot) Name() string {
+	if b == nil || b.tele == nil || b.tele.Me == nil {
+		return ""
+	}
+	return b.tele.Me.FirstName
+}
+
+func (b *OrderBot) Username() string {
+	if b == nil || b.tele == nil || b.tele.Me == nil {
+		return ""
+	}
+	return b.tele.Me.Username
+}
+
 func (b *OrderBot) Stop() {
 	b.tele.Stop()
 }

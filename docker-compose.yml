@@ -1,0 +1,97 @@
+services:
+  db:
+    image: postgres:${POSTGRES_VERSION:-17-alpine}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bakery}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - ${POSTGRES_VOLUME:-postgres_data}:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-bakery}"]
+      interval: ${POSTGRES_HEALTHCHECK_INTERVAL:-5s}
+      timeout: ${POSTGRES_HEALTHCHECK_TIMEOUT:-5s}
+      retries: ${POSTGRES_HEALTHCHECK_RETRIES:-10}
+
+  orderbot:
+    build:
+      context: ${DOCKER_BUILD_CONTEXT:-.}
+      dockerfile: ${DOCKERFILE:-Dockerfile}
+      args:
+        APP: ${ORDERBOT_APP:-orderbot}
+        GO_VERSION: ${GO_VERSION:-1.26.1}
+        ALPINE_VERSION: ${ALPINE_VERSION:-3.22}
+    environment:
+      BOT_ENV: ${BOT_ENV:-test}
+      TEST_BOT_TOKEN: ${TEST_BOT_TOKEN:-}
+      PROD_BOT_TOKEN: ${PROD_BOT_TOKEN:-}
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-bakery}?sslmode=${POSTGRES_SSLMODE:-disable}
+      LOG_PRETTY: ${DOCKER_LOG_PRETTY:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_DIR: ${LOG_DIR:-}
+      MIGRATIONS_DIR: ${DOCKER_MIGRATIONS_DIR:-/app/migrations}
+      IIKO_HOST: ${IIKO_HOST:-}
+      IIKO_PORT: ${IIKO_PORT:-443}
+      IIKO_LOGIN: ${IIKO_LOGIN:-}
+      IIKO_PASSWORD: ${IIKO_PASSWORD:-}
+      SYNC_INTERVAL: ${SYNC_INTERVAL:-6h}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: ${ORDERBOT_RESTART:-unless-stopped}
+
+  sync:
+    build:
+      context: ${DOCKER_BUILD_CONTEXT:-.}
+      dockerfile: ${DOCKERFILE:-Dockerfile}
+      args:
+        APP: ${SYNC_APP:-sync}
+        GO_VERSION: ${GO_VERSION:-1.26.1}
+        ALPINE_VERSION: ${ALPINE_VERSION:-3.22}
+    environment:
+      BOT_ENV: ${BOT_ENV:-test}
+      TEST_BOT_TOKEN: ${TEST_BOT_TOKEN:-}
+      PROD_BOT_TOKEN: ${PROD_BOT_TOKEN:-}
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-bakery}?sslmode=${POSTGRES_SSLMODE:-disable}
+      LOG_PRETTY: ${DOCKER_LOG_PRETTY:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_DIR: ${LOG_DIR:-}
+      MIGRATIONS_DIR: ${DOCKER_MIGRATIONS_DIR:-/app/migrations}
+      IIKO_HOST: ${IIKO_HOST:-}
+      IIKO_PORT: ${IIKO_PORT:-443}
+      IIKO_LOGIN: ${IIKO_LOGIN:-}
+      IIKO_PASSWORD: ${IIKO_PASSWORD:-}
+      SYNC_INTERVAL: ${SYNC_INTERVAL:-6h}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: ${SYNC_RESTART:-unless-stopped}
+
+  createadmin:
+    profiles:
+      - ${TOOLS_PROFILE:-tools}
+    build:
+      context: ${DOCKER_BUILD_CONTEXT:-.}
+      dockerfile: ${DOCKERFILE:-Dockerfile}
+      args:
+        APP: ${CREATEADMIN_APP:-createadmin}
+        GO_VERSION: ${GO_VERSION:-1.26.1}
+        ALPINE_VERSION: ${ALPINE_VERSION:-3.22}
+    environment:
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-bakery}?sslmode=${POSTGRES_SSLMODE:-disable}
+      LOG_PRETTY: ${DOCKER_LOG_PRETTY:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_DIR: ${LOG_DIR:-}
+      MIGRATIONS_DIR: ${DOCKER_MIGRATIONS_DIR:-/app/migrations}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+volumes:
+  postgres_data:
+    name: ${POSTGRES_VOLUME:-postgres_data}

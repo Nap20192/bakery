@@ -49,11 +49,11 @@ func InitLogger(level string, pretty bool, logDir string) (*slog.Logger, error) 
 		}
 		fileHandler = slog.NewJSONHandler(f, opts)
 	} else {
-		return slog.New(TerminalHandler), nil
+		return slog.New(NewContextHandler(TerminalHandler)), nil
 	}
 	log := newMultiHandler(TerminalHandler, fileHandler)
 
-	return slog.New(log), nil
+	return slog.New(NewContextHandler(log)), nil
 }
 
 type multiHandler struct {

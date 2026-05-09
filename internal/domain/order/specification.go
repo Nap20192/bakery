@@ -1,57 +1,25 @@
 package order
 
-type Specification[T any] interface {
-	IsValid(value T) bool
-}
+import sharedkernel "bakery/internal/pkg/shared_kernel"
 
-type FunctionSpecification[T any] func(value T) bool
+type Specification[T any] = sharedkernel.Specification[T]
 
-func (s FunctionSpecification[T]) IsValid(value T) bool {
-	return s(value)
-}
+type FunctionSpecification[T any] = sharedkernel.FunctionSpecification[T]
 
-type AndSpecification[T any] struct {
-	specifications []Specification[T]
-}
+type AndSpecification[T any] = sharedkernel.AndSpecification[T]
 
 func NewAndSpecification[T any](specifications ...Specification[T]) Specification[T] {
-	return AndSpecification[T]{specifications: specifications}
+	return sharedkernel.NewAndSpecification(specifications...)
 }
 
-func (s AndSpecification[T]) IsValid(value T) bool {
-	for _, specification := range s.specifications {
-		if !specification.IsValid(value) {
-			return false
-		}
-	}
-	return true
-}
-
-type OrSpecification[T any] struct {
-	specifications []Specification[T]
-}
+type OrSpecification[T any] = sharedkernel.OrSpecification[T]
 
 func NewOrSpecification[T any](specifications ...Specification[T]) Specification[T] {
-	return OrSpecification[T]{specifications: specifications}
+	return sharedkernel.NewOrSpecification(specifications...)
 }
 
-func (s OrSpecification[T]) IsValid(value T) bool {
-	for _, specification := range s.specifications {
-		if specification.IsValid(value) {
-			return true
-		}
-	}
-	return false
-}
-
-type NotSpecification[T any] struct {
-	specification Specification[T]
-}
+type NotSpecification[T any] = sharedkernel.NotSpecification[T]
 
 func NewNotSpecification[T any](specification Specification[T]) Specification[T] {
-	return NotSpecification[T]{specification: specification}
-}
-
-func (s NotSpecification[T]) IsValid(value T) bool {
-	return !s.specification.IsValid(value)
+	return sharedkernel.NewNotSpecification(specification)
 }
