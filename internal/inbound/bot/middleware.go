@@ -15,29 +15,12 @@ import (
 const authUserContextKey = "auth_user"
 
 const (
-	permCreateOrder = "order:create"
-	permManageUsers = "user:manage"
-	permMonitor     = "monitor:view"
-	permSync        = "sync:run"
-	permTechCard    = "techcard:view"
-	permViewOrders  = "order:view"
+	permTechCard = "techcard:view"
 )
 
 var rolePermissions = map[string]map[string]struct{}{
-	accessdomain.RoleClient: {
-		permCreateOrder: {},
-	},
-	accessdomain.RoleBaker: {
-		permMonitor:    {},
-		permViewOrders: {},
-	},
 	accessdomain.RoleAdmin: {
-		permCreateOrder: {},
-		permManageUsers: {},
-		permMonitor:     {},
-		permSync:        {},
-		permTechCard:    {},
-		permViewOrders:  {},
+		permTechCard: {},
 	},
 }
 

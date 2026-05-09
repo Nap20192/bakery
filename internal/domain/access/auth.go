@@ -6,12 +6,8 @@ import (
 )
 
 const (
-	// RoleAdmin — полный доступ: управление пользователями, группами и операциями по заказам.
+	// RoleAdmin — полный доступ к заказам, мониторингу, iiko sync и управлению пользователями.
 	RoleAdmin = "admin"
-	// RoleBaker — операционная роль производства: просмотр отчётов/заказов и изменение статуса заказов.
-	RoleBaker = "baker"
-	// RoleClient — клиентская роль: создание заказов.
-	RoleClient = "client"
 )
 
 // AuthUser — доменная модель пользователя авторизации.
@@ -43,7 +39,7 @@ func NormalizeRole(role string) string {
 // IsValidRole проверяет, что роль входит в поддерживаемый набор RBAC.
 func IsValidRole(role string) bool {
 	switch NormalizeRole(role) {
-	case RoleAdmin, RoleBaker, RoleClient:
+	case RoleAdmin:
 		return true
 	default:
 		return false

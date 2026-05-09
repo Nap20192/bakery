@@ -28,19 +28,23 @@ var defaultMonitorCodes = []string{
 func (b *OrderBot) handleStart(c tele.Context) error {
 	return c.Send(
 		"<b>orderbot</b>\n\n"+
-			"Отправьте заказ одним сообщением в формате:\n\n"+
+			"<b>Заказ</b>\n"+
+			"Отправьте batch одним сообщением:\n"+
 			"<code>код название количество</code>\n\n"+
-			"После проверки бот покажет найденные позиции, ошибки и кнопку отправки.\n\n"+
+			"Бот проверит строки, покажет ошибки и даст кнопку отправки.\n\n"+
+			"<b>Команды</b>\n"+
+			"/template - шаблон заказа\n"+
+			"/cancel - отменить неподтвержденный заказ\n"+
+			"/orders - номера последних заказов\n"+
+			"/monitor order_number - расход теста по дефолтным кодам\n"+
+			"/monitor order_number code - расход по конкретному коду\n"+
+			"/sync - синхронизировать iiko\n\n"+
+			"<b>Техкарты</b>\n"+
 			"/login username password - войти\n"+
 			"/logout - выйти\n"+
-			"/adduser username password role - добавить пользователя\n"+
-			"/orders - посмотреть заказы\n"+
-			"/monitor order_number - мониторинг по дефолтным кодам\n"+
-			"/monitor order_number code - мониторинг по коду\n"+
-			"/sync - синхронизация с iiko\n"+
-			"/techcard code - техкарта\n"+
-			"/template - стандартный шаблон\n"+
-			"/cancel - отменить неподтвержденный заказ",
+			"/techcard code - посмотреть техкарту\n\n"+
+			"<b>Администраторы</b>\n"+
+			"/adduser username password - добавить администратора",
 		tele.ModeHTML,
 	)
 }
@@ -78,21 +82,21 @@ func (b *OrderBot) handleLogout(c tele.Context) error {
 func (b *OrderBot) handleAddUser(c tele.Context) error {
 	ctx := requestContext(c)
 	args := strings.Fields(c.Message().Payload)
-	if len(args) != 3 {
-		return c.Send("Формат: /adduser username password role\nРоли: admin, baker, client")
+	if len(args) != 2 {
+		return c.Send("Формат: /adduser username password")
 	}
 
 	user, err := b.authSvc.CreateUserWithPassword(ctx, accessdomain.PasswordAuthUserInput{
 		Username: args[0],
 		Password: args[1],
-		Role:     args[2],
+		Role:     accessdomain.RoleAdmin,
 	})
 	if err != nil {
-		slog.ErrorContext(ctx, "create user failed", "username", args[0], "role", args[2], "error", err)
+		slog.ErrorContext(ctx, "create admin user failed", "username", args[0], "error", err)
 		return c.Send("Не удалось создать пользователя. Проверьте данные и попробуйте снова.")
 	}
 
-	return c.Send(fmt.Sprintf("Пользователь %s создан. Роль: %s", user.Username, user.Role))
+	return c.Send(fmt.Sprintf("Администратор %s создан.", user.Username))
 }
 
 func (b *OrderBot) handleOrders(c tele.Context) error {
@@ -208,9 +212,6 @@ func (b *OrderBot) handleText(c tele.Context) error {
 	if text == "" {
 		return c.Send("Отправьте batch-заказ одним сообщением.")
 	}
-	if err := b.ensurePermission(c, permCreateOrder); err != nil {
-		return err
-	}
 	return b.handleBulkOrder(c, text)
 }
 
@@ -244,17 +245,6 @@ func (b *OrderBot) handleCancelCallback(c tele.Context) error {
 	b.clearSession(c.Sender().ID)
 	_ = c.Respond()
 	return c.Send("Заказ отменен.")
-}
-
-func (b *OrderBot) ensurePermission(c tele.Context, permission string) error {
-	user, err := b.authUserFromContext(c)
-	if err != nil {
-		return err
-	}
-	if !userHasPermission(user.Role, permission) {
-		return c.Send(fmt.Sprintf("Доступ запрещен: недостаточно прав (%s).", permission))
-	}
-	return nil
 }
 
 func (b *OrderBot) handleBulkOrder(c tele.Context, text string) error {
