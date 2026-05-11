@@ -12,6 +12,7 @@ import (
 	orderdomain "bakery/internal/domain/order"
 	"bakery/internal/outbound/db/sqlc"
 	"bakery/internal/outbound/iiko"
+	"bakery/internal/pkg/enum"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -87,7 +88,7 @@ func monitorUnit(product sqlc.GetIikoProductByIDRow) string {
 	if unit != "" {
 		return unit
 	}
-	if product.Type != nil && strings.EqualFold(*product.Type, "PREPARED") {
+	if product.Type != nil && enum.IsIikoProductType(*product.Type, enum.IikoProductTypePrepared) {
 		return "кг"
 	}
 	return ""

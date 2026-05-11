@@ -13,10 +13,14 @@ RETURNING counter;
 INSERT INTO orders (
     number,
     location,
+    from_department_id,
+    to_department_id,
     created_at
 ) VALUES (
     sqlc.arg(number),
     sqlc.arg(location),
+    sqlc.narg(from_department_id),
+    sqlc.narg(to_department_id),
     sqlc.arg(created_at)
 )
 RETURNING *;

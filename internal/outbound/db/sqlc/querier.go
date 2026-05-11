@@ -9,6 +9,8 @@ import (
 )
 
 type Querier interface {
+	AssignUserDepartment(ctx context.Context, arg AssignUserDepartmentParams) (AuthUser, error)
+	CreateDepartment(ctx context.Context, arg CreateDepartmentParams) (Department, error)
 	CreateIikoSyncRun(ctx context.Context, arg CreateIikoSyncRunParams) (IikoSyncRun, error)
 	CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error)
 	CreateOrderCounterDay(ctx context.Context, day string) error
@@ -23,6 +25,8 @@ type Querier interface {
 	GetActivePreparedChartFullByProductID(ctx context.Context, arg GetActivePreparedChartFullByProductIDParams) (IikoPreparedChart, error)
 	GetAuthUserByTelegramID(ctx context.Context, telegramID *int64) (AuthUser, error)
 	GetAuthUserByUsername(ctx context.Context, username string) (AuthUser, error)
+	GetDepartmentByCode(ctx context.Context, code string) (Department, error)
+	GetDepartmentByID(ctx context.Context, id int64) (Department, error)
 	GetIikoProductByCode(ctx context.Context, code string) (GetIikoProductByCodeRow, error)
 	GetIikoProductByID(ctx context.Context, id string) (GetIikoProductByIDRow, error)
 	GetIikoProductsByName(ctx context.Context, name string) ([]GetIikoProductsByNameRow, error)
@@ -32,12 +36,15 @@ type Querier interface {
 	InsertIikoPreparedChartItem(ctx context.Context, arg InsertIikoPreparedChartItemParams) error
 	LinkTelegramAuthUser(ctx context.Context, arg LinkTelegramAuthUserParams) (AuthUser, error)
 	ListAssemblyChartItemsByChartID(ctx context.Context, chartID string) ([]ListAssemblyChartItemsByChartIDRow, error)
+	ListAuthUsersByDepartmentID(ctx context.Context, departmentID *int64) ([]AuthUser, error)
+	ListDepartments(ctx context.Context, type_ *string) ([]Department, error)
 	ListOrders(ctx context.Context, orderLimit int32) ([]Order, error)
 	NextOrderCounter(ctx context.Context, day string) (int64, error)
 	UnlinkTelegramAuthUser(ctx context.Context, arg UnlinkTelegramAuthUserParams) error
 	UpsertIikoAssemblyChart(ctx context.Context, arg UpsertIikoAssemblyChartParams) error
 	UpsertIikoPreparedChart(ctx context.Context, arg UpsertIikoPreparedChartParams) error
 	UpsertIikoProduct(ctx context.Context, arg UpsertIikoProductParams) error
+	UpsertTelegramAuthUserDepartment(ctx context.Context, arg UpsertTelegramAuthUserDepartmentParams) (AuthUser, error)
 }
 
 var _ Querier = (*Queries)(nil)

@@ -13,29 +13,43 @@ const createOrder = `-- name: CreateOrder :one
 INSERT INTO orders (
     number,
     location,
+    from_department_id,
+    to_department_id,
     created_at
 ) VALUES (
     $1,
     $2,
-    $3
+    $3,
+    $4,
+    $5
 )
-RETURNING id, number, location, created_at
+RETURNING id, number, location, created_at, from_department_id, to_department_id
 `
 
 type CreateOrderParams struct {
-	Number    string `json:"number"`
-	Location  string `json:"location"`
-	CreatedAt string `json:"created_at"`
+	Number           string `json:"number"`
+	Location         string `json:"location"`
+	FromDepartmentID *int64 `json:"from_department_id"`
+	ToDepartmentID   *int64 `json:"to_department_id"`
+	CreatedAt        string `json:"created_at"`
 }
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
-	row := q.db.QueryRow(ctx, createOrder, arg.Number, arg.Location, arg.CreatedAt)
+	row := q.db.QueryRow(ctx, createOrder,
+		arg.Number,
+		arg.Location,
+		arg.FromDepartmentID,
+		arg.ToDepartmentID,
+		arg.CreatedAt,
+	)
 	var i Order
 	err := row.Scan(
 		&i.ID,
 		&i.Number,
 		&i.Location,
 		&i.CreatedAt,
+		&i.FromDepartmentID,
+		&i.ToDepartmentID,
 	)
 	return i, err
 }
@@ -92,7 +106,7 @@ func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams
 }
 
 const getOrderByNumber = `-- name: GetOrderByNumber :one
-SELECT id, number, location, created_at
+SELECT id, number, location, created_at, from_department_id, to_department_id
 FROM orders
 WHERE number = $1
 `
@@ -105,6 +119,8 @@ func (q *Queries) GetOrderByNumber(ctx context.Context, number string) (Order, e
 		&i.Number,
 		&i.Location,
 		&i.CreatedAt,
+		&i.FromDepartmentID,
+		&i.ToDepartmentID,
 	)
 	return i, err
 }
@@ -160,7 +176,7 @@ func (q *Queries) GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]
 }
 
 const listOrders = `-- name: ListOrders :many
-SELECT id, number, location, created_at
+SELECT id, number, location, created_at, from_department_id, to_department_id
 FROM orders
 ORDER BY id DESC
 LIMIT $1
@@ -180,6 +196,8 @@ func (q *Queries) ListOrders(ctx context.Context, orderLimit int32) ([]Order, er
 			&i.Number,
 			&i.Location,
 			&i.CreatedAt,
+			&i.FromDepartmentID,
+			&i.ToDepartmentID,
 		); err != nil {
 			return nil, err
 		}

@@ -1,31 +1,35 @@
 package access
 
 import (
-	"strings"
 	"time"
+
+	"bakery/internal/pkg/enum"
 )
 
 const (
 	// RoleAdmin — полный доступ к заказам, мониторингу, iiko sync и управлению пользователями.
-	RoleAdmin = "admin"
+	RoleAdmin = string(enum.RoleAdmin)
 )
 
 // AuthUser — доменная модель пользователя авторизации.
 // Используется middleware и сервисами для проверки роли и разрешений.
 type AuthUser struct {
-	ID           int64
-	TelegramID   *int64
-	Username     string
-	MetadataJSON string
-	Role         string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID               int64
+	TelegramID       *int64
+	TelegramUsername *string
+	DepartmentID     *int64
+	Username         string
+	MetadataJSON     string
+	Role             string
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
 // PasswordAuthUserInput — входные данные для пользователя с username/password.
 type PasswordAuthUserInput struct {
 	Username     string
 	Password     string
+	DepartmentID *int64
 	MetadataJSON string
 	Role         string
 }
@@ -33,15 +37,10 @@ type PasswordAuthUserInput struct {
 // NormalizeRole приводит роль к каноничному виду (trim + lower-case),
 // чтобы сравнение прав было стабильным независимо от регистра и пробелов.
 func NormalizeRole(role string) string {
-	return strings.ToLower(strings.TrimSpace(role))
+	return string(enum.NormalizeRole(role))
 }
 
 // IsValidRole проверяет, что роль входит в поддерживаемый набор RBAC.
 func IsValidRole(role string) bool {
-	switch NormalizeRole(role) {
-	case RoleAdmin:
-		return true
-	default:
-		return false
-	}
+	return enum.IsValidRole(role)
 }

@@ -8,10 +8,8 @@ import (
 )
 
 type TelegramConfig struct {
-	BotEnv       string
-	TestBotToken string
-	ProdBotToken string
-	BotToken     string
+	BotEnv   string
+	BotToken string
 }
 
 type IikoConfig struct {
@@ -39,10 +37,8 @@ func New() *Config {
 
 	return &Config{
 		Telegram: TelegramConfig{
-			BotEnv:       botEnv,
-			TestBotToken: testBotToken,
-			ProdBotToken: prodBotToken,
-			BotToken:     selectBotToken(botEnv, testBotToken, prodBotToken),
+			BotEnv:   botEnv,
+			BotToken: selectBotToken(botEnv, testBotToken, prodBotToken),
 		},
 		Iiko: IikoConfig{
 			Host:     helpers.Env("IIKO_HOST", ""),
@@ -59,9 +55,6 @@ func New() *Config {
 
 func databaseURL() string {
 	if value := helpers.Env("DATABASE_URL", ""); value != "" {
-		return value
-	}
-	if value := helpers.Env("DB_DSN", ""); value != "" {
 		return value
 	}
 	return fmt.Sprintf(

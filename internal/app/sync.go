@@ -9,6 +9,7 @@ import (
 
 	sqlcrepo "bakery/internal/outbound/db/sqlc"
 	"bakery/internal/outbound/iiko"
+	"bakery/internal/pkg/enum"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/sync/errgroup"
@@ -22,12 +23,8 @@ type SyncService struct {
 }
 
 const (
-	iikoSyncSource  = "getAll"
-	syncStatusRun   = "running"
-	syncStatusOK    = "ok"
-	syncStatusError = "error"
-	emptyJSON       = "{}"
-	nullJSON        = "null"
+	emptyJSON = "{}"
+	nullJSON  = "null"
 )
 
 func NewSyncService(client *iiko.Client, db *pgxpool.Pool, queries *sqlcrepo.Queries, interval time.Duration) *SyncService {
@@ -134,11 +131,11 @@ func (s *SyncService) SaveSnapshot(ctx context.Context, catalog *iiko.Nomenclatu
 
 	startedAt := time.Now().UTC().Format(time.RFC3339Nano)
 	run, err := s.queries.CreateIikoSyncRun(ctx, sqlcrepo.CreateIikoSyncRunParams{
-		Source:        iikoSyncSource,
+		Source:        string(enum.IikoSyncSourceGetAll),
 		DateFrom:      syncDate,
 		DateTo:        syncDate,
 		KnownRevision: int64(charts.KnownRevision),
-		Status:        syncStatusRun,
+		Status:        string(enum.SyncStatusRunning),
 		Error:         "",
 		StartedAt:     startedAt,
 		FinishedAt:    nil,
@@ -149,7 +146,7 @@ func (s *SyncService) SaveSnapshot(ctx context.Context, catalog *iiko.Nomenclatu
 
 	saveStart := time.Now()
 	if err := s.saveSnapshotData(ctx, catalog, charts); err != nil {
-		if finishErr := s.finishSyncRun(ctx, run.ID, int64(charts.KnownRevision), syncStatusError, err.Error()); finishErr != nil {
+		if finishErr := s.finishSyncRun(ctx, run.ID, int64(charts.KnownRevision), enum.SyncStatusError, err.Error()); finishErr != nil {
 			slog.Warn("finish sync run failed", "error", finishErr)
 		}
 		return err
@@ -163,14 +160,14 @@ func (s *SyncService) SaveSnapshot(ctx context.Context, catalog *iiko.Nomenclatu
 		"prepared_items", countPreparedItems(charts.PreparedCharts),
 	)
 
-	return s.finishSyncRun(ctx, run.ID, int64(charts.KnownRevision), syncStatusOK, "")
+	return s.finishSyncRun(ctx, run.ID, int64(charts.KnownRevision), enum.SyncStatusOK, "")
 }
 
-func (s *SyncService) finishSyncRun(ctx context.Context, runID int64, revision int64, status string, message string) error {
+func (s *SyncService) finishSyncRun(ctx context.Context, runID int64, revision int64, status enum.SyncStatus, message string) error {
 	finishedAt := time.Now().UTC().Format(time.RFC3339Nano)
 	_, err := s.queries.FinishIikoSyncRun(ctx, sqlcrepo.FinishIikoSyncRunParams{
 		KnownRevision: revision,
-		Status:        status,
+		Status:        string(status),
 		Error:         message,
 		FinishedAt:    &finishedAt,
 		ID:            runID,

@@ -4,35 +4,28 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"bakery/internal/app"
 	accessdomain "bakery/internal/domain/access"
+	"bakery/internal/pkg/enum"
 
 	tele "gopkg.in/telebot.v3"
 )
 
 const authUserContextKey = "auth_user"
 
-const (
-	permTechCard = "techcard:view"
-)
-
-var rolePermissions = map[string]map[string]struct{}{
-	accessdomain.RoleAdmin: {
-		permTechCard: {},
-	},
-}
-
-func (b *baseBot) requirePermissions(permissions ...string) tele.MiddlewareFunc {
+func (b *baseBot) requirePermissions(permissions ...enum.Permission) tele.MiddlewareFunc {
 	return func(next tele.HandlerFunc) tele.HandlerFunc {
 		return func(c tele.Context) error {
+			if b.rbacSvc == nil {
+				return c.Send("Сервис прав доступа недоступен.")
+			}
 			user, err := b.authUserFromContext(c)
 			if err != nil {
 				return err
 			}
 			for _, perm := range permissions {
-				if !userHasPermission(user.Role, perm) {
+				if !b.rbacSvc.HasPermission(user.Role, perm) {
 					return c.Send(fmt.Sprintf("Доступ запрещён: недостаточно прав (%s).", perm))
 				}
 			}
@@ -65,15 +58,4 @@ func (b *baseBot) authUserFromContext(c tele.Context) (accessdomain.AuthUser, er
 	}
 	c.Set(authUserContextKey, user)
 	return user, nil
-}
-
-func userHasPermission(role string, permission string) bool {
-	role = accessdomain.NormalizeRole(role)
-	permission = strings.TrimSpace(permission)
-	perms, ok := rolePermissions[role]
-	if !ok {
-		return false
-	}
-	_, ok = perms[permission]
-	return ok
 }
