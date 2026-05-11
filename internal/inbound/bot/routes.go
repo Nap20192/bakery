@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	"bakery/internal/app"
 	applog "bakery/pkg/logger"
 
 	tele "gopkg.in/telebot.v3"
@@ -22,14 +23,17 @@ func (b *OrderBot) register() {
 	bt.Handle("/adduser", b.handleAddUser)
 	bt.Handle("/orders", b.handleOrders)
 	bt.Handle("/monitor", b.handleMonitor)
-	bt.Handle("/sync", b.handleSync)
-	// Авторизация оставлена только на просмотр техкарты.
-	bt.Handle("/techcard", b.handleTechCard, b.requirePermissions(permTechCard))
+	bt.Handle("/sync", b.handleSync, b.requirePermissions(app.PermissionSync))
+	// Авторизация оставлена только на служебные команды iiko.
+	bt.Handle("/techcard", b.handleTechCard, b.requirePermissions(app.PermissionTechCard))
 	bt.Handle("/template", b.handleTemplate)
 	bt.Handle("/cancel", b.handleCancel)
 
 	bt.Handle("\fconfirm", b.handleConfirm)
 	bt.Handle("\fcancel_cb", b.handleCancelCallback)
+	bt.Handle("\fdept_shop", b.handleDepartmentShop)
+	bt.Handle("\fdept_workshop", b.handleDepartmentWorkshop)
+	bt.Handle("\fdept_select", b.handleDepartmentSelect)
 
 	bt.Handle(tele.OnText, b.handleText)
 }

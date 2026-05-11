@@ -9,6 +9,7 @@ import (
 
 	orderdomain "bakery/internal/domain/order"
 	"bakery/internal/outbound/db/sqlc"
+	"bakery/internal/pkg/enum"
 	"bakery/internal/pkg/helpers"
 
 	"github.com/jackc/pgx/v5"
@@ -44,9 +45,11 @@ func (s *OrderService) CreateOrder(ctx context.Context, input orderdomain.Create
 
 	number := s.domain.BuildOrderNumber(day, counter)
 	row, err := s.queries.CreateOrder(ctx, sqlc.CreateOrderParams{
-		Number:    number,
-		Location:  input.Location,
-		CreatedAt: createdAt.Format(time.RFC3339Nano),
+		Number:           number,
+		Location:         input.Location,
+		FromDepartmentID: input.FromDepartmentID,
+		ToDepartmentID:   input.ToDepartmentID,
+		CreatedAt:        createdAt.Format(time.RFC3339Nano),
 	})
 	if err != nil {
 		return orderdomain.Order{}, fmt.Errorf("create order: %w", err)
@@ -74,11 +77,13 @@ func (s *OrderService) CreateOrder(ctx context.Context, input orderdomain.Create
 	}
 
 	return orderdomain.Order{
-		ID:        fmt.Sprintf("%d", row.ID),
-		Number:    row.Number,
-		Location:  row.Location,
-		Items:     input.Items,
-		CreatedAt: helpers.ParseRFC3339(row.CreatedAt),
+		ID:               fmt.Sprintf("%d", row.ID),
+		Number:           row.Number,
+		Location:         row.Location,
+		FromDepartmentID: row.FromDepartmentID,
+		ToDepartmentID:   row.ToDepartmentID,
+		Items:            input.Items,
+		CreatedAt:        helpers.ParseRFC3339(row.CreatedAt),
 	}, nil
 }
 
@@ -92,11 +97,13 @@ func (s *OrderService) GetOrderByNumber(ctx context.Context, number string) (ord
 		return orderdomain.Order{}, err
 	}
 	return orderdomain.Order{
-		ID:        fmt.Sprintf("%d", order.ID),
-		Number:    order.Number,
-		Location:  order.Location,
-		Items:     mapOrderItems(items),
-		CreatedAt: helpers.ParseRFC3339(order.CreatedAt),
+		ID:               fmt.Sprintf("%d", order.ID),
+		Number:           order.Number,
+		Location:         order.Location,
+		FromDepartmentID: order.FromDepartmentID,
+		ToDepartmentID:   order.ToDepartmentID,
+		Items:            mapOrderItems(items),
+		CreatedAt:        helpers.ParseRFC3339(order.CreatedAt),
 	}, nil
 }
 
@@ -112,11 +119,13 @@ func (s *OrderService) ListOrders(ctx context.Context, limit int32) ([]orderdoma
 			return nil, err
 		}
 		result = append(result, orderdomain.Order{
-			ID:        fmt.Sprintf("%d", row.ID),
-			Number:    row.Number,
-			Location:  row.Location,
-			Items:     mapOrderItems(items),
-			CreatedAt: helpers.ParseRFC3339(row.CreatedAt),
+			ID:               fmt.Sprintf("%d", row.ID),
+			Number:           row.Number,
+			Location:         row.Location,
+			FromDepartmentID: row.FromDepartmentID,
+			ToDepartmentID:   row.ToDepartmentID,
+			Items:            mapOrderItems(items),
+			CreatedAt:        helpers.ParseRFC3339(row.CreatedAt),
 		})
 	}
 	return result, nil
@@ -190,7 +199,7 @@ func (s *OrderService) GetTemplate(ctx context.Context) (string, error) {
 
 		dishes := make([]sqlc.GetIikoProductsByNameRow, 0, len(products))
 		for _, product := range products {
-			if product.Type != nil && strings.EqualFold(*product.Type, "DISH") {
+			if product.Type != nil && enum.IsIikoProductType(*product.Type, enum.IikoProductTypeDish) {
 				dishes = append(dishes, product)
 			}
 		}

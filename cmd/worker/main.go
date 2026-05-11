@@ -37,8 +37,8 @@ func main() {
 		os.Exit(1)
 	}
 	defer helpers.ClosePool(db)
-	if err := dbmigrate.ApplyInitialSchema(ctx, db, log); err != nil {
-		log.Error("apply db schema failed", "error", err)
+	if err := dbmigrate.ApplyMigrations(ctx, db, log, helpers.Env("MIGRATIONS_DIR", "migrations")); err != nil {
+		log.Error("apply db migrations failed", "error", err)
 		os.Exit(1)
 	}
 
@@ -55,7 +55,9 @@ func main() {
 
 	appDeps, err := deps.NewAppDeps(
 		deps.WithAuthService(infra),
+		deps.WithRbacService(),
 		deps.WithOrderService(infra),
+		deps.WithDepartmentService(infra),
 		deps.WithMonitorService(infra),
 		deps.WithTechCardService(infra),
 		deps.WithSyncService(infra),

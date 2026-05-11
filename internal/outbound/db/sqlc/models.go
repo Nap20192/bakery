@@ -5,14 +5,28 @@
 package sqlc
 
 type AuthUser struct {
-	ID           int64  `json:"id"`
-	TelegramID   *int64 `json:"telegram_id"`
-	Username     string `json:"username"`
-	PasswordHash string `json:"password_hash"`
-	MetadataJson string `json:"metadata_json"`
-	Role         string `json:"role"`
-	CreatedAt    string `json:"created_at"`
-	UpdatedAt    string `json:"updated_at"`
+	ID               int64   `json:"id"`
+	TelegramID       *int64  `json:"telegram_id"`
+	Username         string  `json:"username"`
+	PasswordHash     string  `json:"password_hash"`
+	MetadataJson     string  `json:"metadata_json"`
+	Role             string  `json:"role"`
+	CreatedAt        string  `json:"created_at"`
+	UpdatedAt        string  `json:"updated_at"`
+	DepartmentID     *int64  `json:"department_id"`
+	TelegramUsername *string `json:"telegram_username"`
+}
+
+type Department struct {
+	ID               int64   `json:"id"`
+	Type             string  `json:"type"`
+	Code             string  `json:"code"`
+	Name             string  `json:"name"`
+	IikoDepartmentID *string `json:"iiko_department_id"`
+	MetadataJson     string  `json:"metadata_json"`
+	IsActive         bool    `json:"is_active"`
+	CreatedAt        string  `json:"created_at"`
+	UpdatedAt        string  `json:"updated_at"`
 }
 
 type IikoAssemblyChart struct {
@@ -94,10 +108,12 @@ type IikoSyncRun struct {
 }
 
 type Order struct {
-	ID        int64  `json:"id"`
-	Number    string `json:"number"`
-	Location  string `json:"location"`
-	CreatedAt string `json:"created_at"`
+	ID               int64  `json:"id"`
+	Number           string `json:"number"`
+	Location         string `json:"location"`
+	CreatedAt        string `json:"created_at"`
+	FromDepartmentID *int64 `json:"from_department_id"`
+	ToDepartmentID   *int64 `json:"to_department_id"`
 }
 
 type OrderCounter struct {

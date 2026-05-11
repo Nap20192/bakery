@@ -11,12 +11,14 @@ import (
 )
 
 type baseBot struct {
-	tele        *tele.Bot
-	orderSvc    *app.OrderService
-	authSvc     *app.AuthService
-	monitorSvc  *app.MonitorService
-	syncSvc     *app.SyncService
-	techCardSvc *app.TechCardService
+	tele          *tele.Bot
+	orderSvc      *app.OrderService
+	authSvc       *app.AuthService
+	rbacSvc       *app.RbacService
+	departmentSvc *app.DepartmentService
+	monitorSvc    *app.MonitorService
+	syncSvc       *app.SyncService
+	techCardSvc   *app.TechCardService
 }
 
 type OrderBot struct {
@@ -29,6 +31,8 @@ func NewOrderBot(
 	token string,
 	orderSvc *app.OrderService,
 	authSvc *app.AuthService,
+	rbacSvc *app.RbacService,
+	departmentSvc *app.DepartmentService,
 	monitorSvc *app.MonitorService,
 	syncSvc *app.SyncService,
 	techCardSvc *app.TechCardService,
@@ -40,12 +44,14 @@ func NewOrderBot(
 
 	bot := &OrderBot{
 		baseBot: &baseBot{
-			tele:        b,
-			orderSvc:    orderSvc,
-			authSvc:     authSvc,
-			monitorSvc:  monitorSvc,
-			syncSvc:     syncSvc,
-			techCardSvc: techCardSvc,
+			tele:          b,
+			orderSvc:      orderSvc,
+			authSvc:       authSvc,
+			rbacSvc:       rbacSvc,
+			departmentSvc: departmentSvc,
+			monitorSvc:    monitorSvc,
+			syncSvc:       syncSvc,
+			techCardSvc:   techCardSvc,
 		},
 		sessions: make(map[int64]*session),
 	}

@@ -13,8 +13,10 @@ const (
 )
 
 type session struct {
-	items     []orderdomain.OrderItem
-	updatedAt time.Time // время последнего изменения
+	items            []orderdomain.OrderItem
+	fromDepartmentID *int64
+	toDepartmentID   *int64
+	updatedAt        time.Time // время последнего изменения
 }
 
 // updateSession атомарно изменяет сессию пользователя под мьютексом.
