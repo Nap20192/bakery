@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"bakery/internal/app"
 	orderdomain "bakery/internal/domain/order"
@@ -57,6 +58,7 @@ func (b *OrderBot) handleBulkOrder(c tele.Context, text string) error {
 		s.items = result.ValidItems
 		s.fromDepartmentID = fromDepartmentID
 		s.toDepartmentID = toDepartmentID
+		s.fulfillmentDate = result.FulfillmentDate
 	})
 
 	markup := &tele.ReplyMarkup{}
@@ -74,12 +76,15 @@ func (b *OrderBot) handleConfirm(c tele.Context) error {
 	var items []orderdomain.OrderItem
 	var fromDepartmentID *int64
 	var toDepartmentID *int64
+	var fulfillmentDate time.Time
 	b.updateSession(c.Sender().ID, func(s *session) {
 		items = make([]orderdomain.OrderItem, len(s.items))
 		copy(items, s.items)
 		fromDepartmentID = cloneInt64Ptr(s.fromDepartmentID)
 		toDepartmentID = cloneInt64Ptr(s.toDepartmentID)
+		fulfillmentDate = s.fulfillmentDate
 		s.items = nil
+		s.fulfillmentDate = time.Time{}
 	})
 
 	_ = c.Respond()
@@ -94,6 +99,7 @@ func (b *OrderBot) handleConfirm(c tele.Context) error {
 		Items:            items,
 		FromDepartmentID: fromDepartmentID,
 		ToDepartmentID:   toDepartmentID,
+		FulfillmentDate:  fulfillmentDate,
 	})
 	if err != nil {
 		slog.ErrorContext(ctx, "create order failed", "error", err)

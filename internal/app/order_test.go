@@ -35,7 +35,7 @@ bad line
 	messages := validationMessages(result.Errors)
 	assertContains(t, messages, "product code not found")
 	assertContains(t, messages, "invalid format")
-	assertContains(t, messages, `duplicate item with code 15635 and product_name "Пирожок с капустой"`)
+	assertContains(t, messages, `duplicate item with code 15635`)
 }
 
 func TestOrderServiceValidateBulkOrderReportsDBError(t *testing.T) {

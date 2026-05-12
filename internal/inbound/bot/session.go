@@ -16,6 +16,7 @@ type session struct {
 	items            []orderdomain.OrderItem
 	fromDepartmentID *int64
 	toDepartmentID   *int64
+	fulfillmentDate  time.Time
 	updatedAt        time.Time // время последнего изменения
 }
 
@@ -35,6 +36,7 @@ func (b *OrderBot) updateSession(uid int64, fn func(*session)) {
 func (b *OrderBot) clearSession(uid int64) {
 	b.updateSession(uid, func(s *session) {
 		s.items = nil
+		s.fulfillmentDate = time.Time{}
 	})
 }
 

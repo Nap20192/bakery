@@ -2,6 +2,7 @@ package order
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -9,31 +10,37 @@ import (
 
 func TestOrderServiceParseBulkOrder(t *testing.T) {
 	svc := NewOrderService()
+	fulfillmentDate := time.Now().UTC().AddDate(0, 0, 1)
+	fulfillmentDateText := fulfillmentDate.Format("2006-01-02")
 
-	result := svc.ParseBulkOrder(`
+	result := svc.ParseBulkOrder(fmt.Sprintf(`
+на %s
 ПИРОЖКИ
 15635 Пирожок с капустой 15
-20495 Пирожок с картошкой 2,5
+20495 Пирожок с картошкой 2,5+1,5
 broken line
 15647 Сосиска в тесте abc
-15648 Сосиска с сыром в тесте 0
-`)
+15648 Сосиска с сыром в тесте 0+3
+`, fulfillmentDateText))
 
 	if len(result.ValidItems) != 3 {
 		t.Fatalf("valid items = %d, want 3: %#v", len(result.ValidItems), result.ValidItems)
 	}
+	if got := result.FulfillmentDate.Format("2006-01-02"); got != fulfillmentDateText {
+		t.Fatalf("fulfillment date = %s, want %s", got, fulfillmentDateText)
+	}
 
-	assertItem(t, result.ValidItems[0], "15635", "Пирожок с капустой", 15)
-	assertItem(t, result.ValidItems[1], "20495", "Пирожок с картошкой", 2.5)
-	assertItem(t, result.ValidItems[2], "15648", "Сосиска с сыром в тесте", 0)
+	assertItem(t, result.ValidItems[0], "15635", "Пирожок с капустой", 15, 0)
+	assertItem(t, result.ValidItems[1], "20495", "Пирожок с картошкой", 2.5, 1.5)
+	assertItem(t, result.ValidItems[2], "15648", "Сосиска с сыром в тесте", 0, 3)
 
 	if len(result.Errors) != 2 {
 		t.Fatalf("errors = %d, want 2: %#v", len(result.Errors), result.Errors)
 	}
-	if result.Errors[0].Line != 5 || result.Errors[0].Raw != "broken line" || result.Errors[0].Message != "invalid format" {
+	if result.Errors[0].Line != 6 || result.Errors[0].Raw != "broken line" || !strings.Contains(result.Errors[0].Message, "invalid format") {
 		t.Fatalf("unexpected first error: %#v", result.Errors[0])
 	}
-	if result.Errors[1].Line != 6 || result.Errors[1].Raw != "15647 Сосиска в тесте abc" || result.Errors[1].Message != "invalid format" {
+	if result.Errors[1].Line != 7 || result.Errors[1].Raw != "15647 Сосиска в тесте abc" || !strings.Contains(result.Errors[1].Message, "invalid format") {
 		t.Fatalf("unexpected second error: %#v", result.Errors[1])
 	}
 }
@@ -51,7 +58,7 @@ func TestOrderServiceUsesInjectedSpec(t *testing.T) {
 	if len(result.ValidItems) != 0 {
 		t.Fatalf("valid items = %d, want 0", len(result.ValidItems))
 	}
-	if len(result.Errors) != 1 || result.Errors[0].Message != "invalid format" {
+	if len(result.Errors) != 1 || !strings.Contains(result.Errors[0].Message, "invalid format") {
 		t.Fatalf("unexpected errors: %#v", result.Errors)
 	}
 }
@@ -68,11 +75,11 @@ func TestOrderServiceValidateUniqueItems(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected duplicate error")
 	}
-	if !strings.Contains(err.Error(), `duplicate item with code 15635 and product_name "Пирожок с капустой"`) {
+	if !strings.Contains(err.Error(), `duplicate item with code 15635`) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if err := svc.ValidateUniqueItems([]OrderItem{{Code: "1", ProductName: "A"}, {Code: "1", ProductName: "B"}}); err != nil {
+	if err := svc.ValidateUniqueItems([]OrderItem{{Code: "1", ProductName: "A"}, {Code: "2", ProductName: "A"}}); err != nil {
 		t.Fatalf("unique validation returned error: %v", err)
 	}
 }
@@ -124,14 +131,51 @@ func TestPositiveQuantitySpecification(t *testing.T) {
 	if !spec.IsValid(ParsedOrderLine{Quantity: "1,25"}) {
 		t.Fatal("comma decimal should be valid")
 	}
-	if !spec.IsValid(ParsedOrderLine{Quantity: "0"}) {
-		t.Fatal("zero quantity should be valid")
+	if !spec.IsValid(ParsedOrderLine{Quantity: "0+5"}) {
+		t.Fatal("reserved-only quantity should be valid")
+	}
+	if !spec.IsValid(ParsedOrderLine{Quantity: "5+0"}) {
+		t.Fatal("zero reserved quantity should be valid")
+	}
+	if spec.IsValid(ParsedOrderLine{Quantity: "0"}) {
+		t.Fatal("zero total quantity should be invalid")
+	}
+	if spec.IsValid(ParsedOrderLine{Quantity: "0+0"}) {
+		t.Fatal("zero total quantity with reserved should be invalid")
 	}
 	if spec.IsValid(ParsedOrderLine{Quantity: "-1"}) {
 		t.Fatal("negative quantity should be invalid")
 	}
 	if spec.IsValid(ParsedOrderLine{Quantity: "abc"}) {
 		t.Fatal("non numeric quantity should be invalid")
+	}
+}
+
+func TestOrderLineFormatSpecificationReservedQuantity(t *testing.T) {
+	spec := OrderLineFormatSpecification{}
+
+	valid := []string{
+		"15647 Сосиска в тесте 5",
+		"15647 Сосиска в тесте 5+5",
+		"15647 Сосиска в тесте 0+5",
+		"15647 Сосиска в тесте 5,5+2.5",
+	}
+	for _, line := range valid {
+		if !spec.IsValid(BulkOrderLine{Raw: line}) {
+			t.Fatalf("line %q should be valid", line)
+		}
+	}
+
+	invalid := []string{
+		"15647 Сосиска в тесте +5",
+		"15647 Сосиска в тесте 5+",
+		"15647 Сосиска в тесте 5+abc",
+		"15647 Сосиска в тесте 5+5+5",
+	}
+	for _, line := range invalid {
+		if spec.IsValid(BulkOrderLine{Raw: line}) {
+			t.Fatalf("line %q should be invalid", line)
+		}
 	}
 }
 
@@ -150,9 +194,9 @@ func TestDuplicateOrderItemErrors(t *testing.T) {
 	}
 }
 
-func assertItem(t *testing.T, item OrderItem, code string, name string, quantity float64) {
+func assertItem(t *testing.T, item OrderItem, code string, name string, quantity float64, reservedQuantity float64) {
 	t.Helper()
-	if item.Code != code || item.ProductName != name || item.Quantity != quantity {
-		t.Fatalf("item = %#v, want code=%s name=%s quantity=%v", item, code, name, quantity)
+	if item.Code != code || item.ProductName != name || item.Quantity != quantity || item.ReservedQuantity != reservedQuantity {
+		t.Fatalf("item = %#v, want code=%s name=%s quantity=%v reserved_quantity=%v", item, code, name, quantity, reservedQuantity)
 	}
 }

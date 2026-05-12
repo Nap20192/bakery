@@ -21,7 +21,9 @@ func (responseBuilder) Start() string {
 		"Выберите, кто вы: магазин или цех. Бот сохранит выбор и будет добавлять его к заказам.\n\n" +
 		"<b>Заказ</b>\n" +
 		"Отправьте batch одним сообщением:\n" +
-		"<code>код название количество</code>\n\n" +
+		"<code>код название количество</code>\n" +
+		"Заказное количество указывается так: <code>5+5</code>\n" +
+		"Дата выполнения: <code>на 2026-05-13</code>\n\n" +
 		"Бот проверит строки, покажет ошибки и даст кнопку отправки.\n\n" +
 		"<b>Команды</b>\n" +
 		"/template - шаблон заказа\n" +
@@ -54,13 +56,16 @@ func (responseBuilder) OrdersList(orders []orderdomain.Order) string {
 func (responseBuilder) BulkOrderCheck(result orderdomain.BulkOrderValidationResult) string {
 	var sb strings.Builder
 	sb.WriteString("Проверка заказа\n\n")
+	if !result.FulfillmentDate.IsZero() {
+		sb.WriteString(fmt.Sprintf("Дата выполнения: <code>%s</code>\n\n", html.EscapeString(result.FulfillmentDate.Format("02.01.2006"))))
+	}
 	sb.WriteString(fmt.Sprintf("Распознано: %d\n", len(result.ValidItems)))
 	for _, item := range result.ValidItems {
 		sb.WriteString(fmt.Sprintf(
 			"%s %s %s\n",
 			html.EscapeString(item.Code),
 			html.EscapeString(item.ProductName),
-			helpers.FormatQuantity(item.Quantity),
+			html.EscapeString(formatOrderItemQuantity(item)),
 		))
 	}
 
@@ -92,6 +97,9 @@ func (responseBuilder) OrderSummary(order orderdomain.Order, fromDepartment stri
 	if !order.CreatedAt.IsZero() {
 		sb.WriteString(fmt.Sprintf("Время: <code>%s</code>\n", html.EscapeString(order.CreatedAt.Local().Format("02.01.2006 15:04"))))
 	}
+	if !order.FulfillmentDate.IsZero() {
+		sb.WriteString(fmt.Sprintf("Дата выполнения: <code>%s</code>\n", html.EscapeString(order.FulfillmentDate.Format("02.01.2006"))))
+	}
 	if fromDepartment != "" {
 		sb.WriteString(fmt.Sprintf("Откуда: %s\n", html.EscapeString(fromDepartment)))
 	}
@@ -104,7 +112,7 @@ func (responseBuilder) OrderSummary(order orderdomain.Order, fromDepartment stri
 			"• <code>%s</code> %s - %s\n",
 			html.EscapeString(it.Code),
 			html.EscapeString(it.ProductName),
-			helpers.FormatQuantity(it.Quantity),
+			html.EscapeString(formatOrderItemQuantity(it)),
 		))
 	}
 	sb.WriteString(fmt.Sprintf(
@@ -112,6 +120,14 @@ func (responseBuilder) OrderSummary(order orderdomain.Order, fromDepartment stri
 		html.EscapeString(order.Number),
 	))
 	return sb.String()
+}
+
+func formatOrderItemQuantity(item orderdomain.OrderItem) string {
+	quantity := helpers.FormatQuantity(item.Quantity)
+	if item.ReservedQuantity <= 0 {
+		return quantity
+	}
+	return quantity + "+" + helpers.FormatQuantity(item.ReservedQuantity)
 }
 
 func (responseBuilder) MonitorReports(order orderdomain.Order, reports []monitoringdomain.IngredientReport) string {

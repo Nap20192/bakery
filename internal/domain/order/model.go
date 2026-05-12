@@ -14,6 +14,7 @@ type Order struct {
 	ToDepartmentID   *int64      `json:"to_department_id"`
 	Items            []OrderItem `json:"items"`
 	CreatedAt        time.Time   `json:"created_at"`
+	FulfillmentDate  time.Time   `json:"fulfillment_date"`
 }
 
 // CreateOrderInput — входная модель для создания нового заказа.
@@ -24,12 +25,18 @@ type CreateOrderInput struct {
 	FromDepartmentID *int64
 	ToDepartmentID   *int64
 	Date             time.Time
+	FulfillmentDate  time.Time
 }
 
 // OrderItem — одна позиция в заказе.
 // Code — код блюда из iiko, ProductName — отображаемое имя в заявке.
 type OrderItem struct {
-	Quantity    float64 `json:"quantity"`
-	ProductName string  `json:"product"`
-	Code        string  `json:"code"`
+	Quantity         float64 `json:"quantity"`
+	ReservedQuantity float64 `json:"reserved_quantity"`
+	ProductName      string  `json:"product"`
+	Code             string  `json:"code"`
+}
+
+func (item OrderItem) ProductionQuantity() float64 {
+	return item.Quantity + item.ReservedQuantity
 }

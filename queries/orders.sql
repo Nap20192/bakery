@@ -15,13 +15,15 @@ INSERT INTO orders (
     location,
     from_department_id,
     to_department_id,
-    created_at
+    created_at,
+    fulfillment_date
 ) VALUES (
     sqlc.arg(number),
     sqlc.arg(location),
     sqlc.narg(from_department_id),
     sqlc.narg(to_department_id),
-    sqlc.arg(created_at)
+    sqlc.arg(created_at),
+    sqlc.arg(fulfillment_date)
 )
 RETURNING *;
 
@@ -30,12 +32,14 @@ INSERT INTO order_items (
     order_id,
     iiko_product_id,
     product_name,
-    quantity
+    quantity,
+    reserved_quantity
 ) VALUES (
     sqlc.arg(order_id),
     sqlc.narg(iiko_product_id),
     sqlc.arg(product_name),
-    sqlc.arg(quantity)
+    sqlc.arg(quantity),
+    sqlc.arg(reserved_quantity)
 )
 RETURNING *;
 
@@ -51,6 +55,7 @@ SELECT
     oi.iiko_product_id,
     oi.product_name,
     oi.quantity,
+    oi.reserved_quantity,
     COALESCE(p.code, '') AS product_code
 FROM order_items AS oi
 LEFT JOIN iiko_products AS p ON p.id = oi.iiko_product_id
