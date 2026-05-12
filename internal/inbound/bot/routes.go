@@ -22,6 +22,7 @@ func (b *OrderBot) register() {
 	bt.Handle("/login", b.handleLogin)
 	bt.Handle("/logout", b.handleLogout)
 	bt.Handle("/adduser", b.handleAddUser)
+	bt.Handle("/order", b.handleOrder)
 	bt.Handle("/orders", b.handleOrders)
 	bt.Handle("/monitor", b.handleMonitor)
 	bt.Handle("/sync", b.handleSync, b.requirePermissions(app.PermissionSync))
