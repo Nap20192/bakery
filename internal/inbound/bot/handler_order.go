@@ -35,7 +35,7 @@ func (b *OrderBot) handleCancel(c tele.Context) error {
 func (b *OrderBot) handleText(c tele.Context) error {
 	text := strings.TrimSpace(c.Text())
 	if strings.HasPrefix(text, "/") {
-		return c.Send("Неизвестная команда.\n\n/start - список команд")
+		return c.Send("Неизвестная команда.\n\n/help - список команд и правила заказа")
 	}
 	if text == "" {
 		return c.Send("Отправьте batch-заказ одним сообщением.")

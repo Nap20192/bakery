@@ -18,6 +18,7 @@ func (b *OrderBot) register() {
 	bt.Use(b.logMiddleware)
 
 	bt.Handle("/start", b.handleStart)
+	bt.Handle("/help", b.handleStart)
 	bt.Handle("/login", b.handleLogin)
 	bt.Handle("/logout", b.handleLogout)
 	bt.Handle("/adduser", b.handleAddUser)
