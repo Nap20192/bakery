@@ -12,23 +12,22 @@ import (
 )
 
 type Server struct {
-	orderSvc   *app.OrderService
-	monitorSvc *app.MonitorService
-	server     *http.Server
+	orderSvc      *app.OrderService
+	monitorSvc    *app.MonitorService
+	departmentSvc *app.DepartmentService
+	server        *http.Server
 }
 
-func NewOrderBot(
+func NewServer(
 	orderSvc *app.OrderService,
 	monitorSvc *app.MonitorService,
+	departmentSvc *app.DepartmentService,
 ) *Server {
 	return &Server{
-		orderSvc:   orderSvc,
-		monitorSvc: monitorSvc,
+		orderSvc:      orderSvc,
+		monitorSvc:    monitorSvc,
+		departmentSvc: departmentSvc,
 	}
-}
-
-func NewServer(orderSvc *app.OrderService, monitorSvc *app.MonitorService) *Server {
-	return NewOrderBot(orderSvc, monitorSvc)
 }
 
 func (s *Server) Start() error {
@@ -38,7 +37,10 @@ func (s *Server) Start() error {
 		Addr:    resolveHTTPAddr(),
 		Handler: s.withMiddleware(mux),
 	}
-	return s.server.ListenAndServe()
+	if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		return err
+	}
+	return nil
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
@@ -53,6 +55,11 @@ func resolveHTTPAddr() string {
 		return addr
 	}
 	port := 8080
+	if raw := os.Getenv("PORT"); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
+			port = parsed
+		}
+	}
 	if raw := os.Getenv("HTTP_PORT"); raw != "" {
 		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
 			port = parsed

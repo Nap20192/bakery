@@ -1,27 +1,52 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
-	orderdomain "bakery/internal/domain/order"
 	monitoringdomain "bakery/internal/domain/monitoring"
+	orderdomain "bakery/internal/domain/order"
 )
 
 var defaultMonitorCodes = []string{"17642", "17644", "17650", "19694"}
+
+type departmentResponse struct {
+	ID   int64  `json:"id"`
+	Code string `json:"code"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+type orderItemResponse struct {
+	Code               string  `json:"code"`
+	ProductName        string  `json:"product_name"`
+	Quantity           float64 `json:"quantity"`
+	ReservedQuantity   float64 `json:"reserved_quantity"`
+	ProductionQuantity float64 `json:"production_quantity"`
+}
+
+type orderResponse struct {
+	ID              string              `json:"id"`
+	Number          string              `json:"number"`
+	Location        string              `json:"location"`
+	FromDepartment  *departmentResponse `json:"from_department,omitempty"`
+	ToDepartment    *departmentResponse `json:"to_department,omitempty"`
+	Items           []orderItemResponse `json:"items"`
+	CreatedAt       string              `json:"created_at"`
+	FulfillmentDate string              `json:"fulfillment_date"`
+	MonitorCommand  string              `json:"monitor_command"`
+}
 
 type monitorReportResponse struct {
 	Code   string                            `json:"code"`
 	Report monitoringdomain.IngredientReport `json:"report"`
 }
-type monitorReportWithMetaData struct {
-	Reports      []monitorReportResponse `json:"reports"`
-	OrderID      string                  `json:"order_id"`
-	LoactionFrom string                  `json:"loaction_from"`
-	LoactionTo   string                  `json:"loaction_to"`
-	Date         string                  `json:"date"`
+type monitorResponse struct {
+	Reports []monitorReportResponse `json:"reports"`
+	Order   orderResponse           `json:"order"`
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
@@ -50,7 +75,7 @@ func (s *Server) handleListOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, orders)
+	writeJSON(w, http.StatusOK, s.buildOrderResponses(r.Context(), orders))
 }
 
 func (s *Server) handleOrderByID(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +96,7 @@ func (s *Server) handleOrderByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, order)
+	writeJSON(w, http.StatusOK, s.buildOrderResponse(r.Context(), order))
 }
 
 func (s *Server) handleMonitorDefault(w http.ResponseWriter, r *http.Request) {
@@ -102,7 +127,7 @@ func (s *Server) handleMonitorDefault(w http.ResponseWriter, r *http.Request) {
 		reports = append(reports, monitorReportResponse{Code: code, Report: report})
 	}
 
-	writeJSON(w, http.StatusOK, buildMonitorMetadata(order, reports))
+	writeJSON(w, http.StatusOK, s.buildMonitorResponse(r.Context(), order, reports))
 }
 
 func (s *Server) handleMonitorByProduct(w http.ResponseWriter, r *http.Request) {
@@ -130,29 +155,72 @@ func (s *Server) handleMonitorByProduct(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	writeJSON(w, http.StatusOK, buildMonitorMetadata(order, []monitorReportResponse{
+	writeJSON(w, http.StatusOK, s.buildMonitorResponse(r.Context(), order, []monitorReportResponse{
 		{Code: productCode, Report: report},
 	}))
 }
 
-func buildMonitorMetadata(order orderdomain.Order, reports []monitorReportResponse) monitorReportWithMetaData {
-	locationFrom := order.Location
-	if order.FromDepartmentID != nil {
-		locationFrom = strconv.FormatInt(*order.FromDepartmentID, 10)
+func (s *Server) buildMonitorResponse(ctx context.Context, order orderdomain.Order, reports []monitorReportResponse) monitorResponse {
+	return monitorResponse{
+		Reports: reports,
+		Order:   s.buildOrderResponse(ctx, order),
 	}
-	locationTo := ""
-	if order.ToDepartmentID != nil {
-		locationTo = strconv.FormatInt(*order.ToDepartmentID, 10)
+}
+
+func (s *Server) buildOrderResponses(ctx context.Context, orders []orderdomain.Order) []orderResponse {
+	responses := make([]orderResponse, 0, len(orders))
+	for _, order := range orders {
+		responses = append(responses, s.buildOrderResponse(ctx, order))
 	}
-	date := ""
+	return responses
+}
+
+func (s *Server) buildOrderResponse(ctx context.Context, order orderdomain.Order) orderResponse {
+	items := make([]orderItemResponse, 0, len(order.Items))
+	for _, item := range order.Items {
+		items = append(items, orderItemResponse{
+			Code:               item.Code,
+			ProductName:        item.ProductName,
+			Quantity:           item.Quantity,
+			ReservedQuantity:   item.ReservedQuantity,
+			ProductionQuantity: item.ProductionQuantity(),
+		})
+	}
+
+	createdAt := ""
 	if !order.CreatedAt.IsZero() {
-		date = order.CreatedAt.Format(time.RFC3339)
+		createdAt = order.CreatedAt.Format(time.RFC3339)
 	}
-	return monitorReportWithMetaData{
-		Reports:      reports,
-		OrderID:      order.Number,
-		LoactionFrom: locationFrom,
-		LoactionTo:   locationTo,
-		Date:         date,
+	fulfillmentDate := ""
+	if !order.FulfillmentDate.IsZero() {
+		fulfillmentDate = order.FulfillmentDate.Format("2006-01-02")
+	}
+
+	return orderResponse{
+		ID:              order.ID,
+		Number:          order.Number,
+		Location:        order.Location,
+		FromDepartment:  s.departmentResponse(ctx, order.FromDepartmentID),
+		ToDepartment:    s.departmentResponse(ctx, order.ToDepartmentID),
+		Items:           items,
+		CreatedAt:       createdAt,
+		FulfillmentDate: fulfillmentDate,
+		MonitorCommand:  fmt.Sprintf("/monitor %s", order.Number),
+	}
+}
+
+func (s *Server) departmentResponse(ctx context.Context, id *int64) *departmentResponse {
+	if id == nil || s.departmentSvc == nil {
+		return nil
+	}
+	department, err := s.departmentSvc.GetByID(ctx, *id)
+	if err != nil {
+		return &departmentResponse{ID: *id, Name: strconv.FormatInt(*id, 10)}
+	}
+	return &departmentResponse{
+		ID:   department.ID,
+		Code: department.Code,
+		Name: department.Name,
+		Type: department.Type,
 	}
 }
