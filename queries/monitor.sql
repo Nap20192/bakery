@@ -35,6 +35,19 @@ LEFT JOIN iiko_products AS p ON p.id = i.product_id
 WHERE i.chart_id = sqlc.arg(chart_id)
 ORDER BY i.sort_weight, i.id;
 
+-- name: ListPreparedChartItemsByChartID :many
+SELECT
+    i.id AS item_id,
+    i.product_id,
+    i.amount,
+    COALESCE(p.name, '') AS product_name,
+    COALESCE(p.code, '') AS product_code,
+    COALESCE(p.measure_unit, '') AS measure_unit
+FROM iiko_prepared_chart_items AS i
+LEFT JOIN iiko_products AS p ON p.id = i.product_id
+WHERE i.prepared_chart_id = sqlc.arg(prepared_chart_id)
+ORDER BY i.sort_weight, i.id;
+
 -- name: GetActivePreparedChartFullByProductID :one
 SELECT *
 FROM iiko_prepared_charts
