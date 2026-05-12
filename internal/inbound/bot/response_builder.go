@@ -40,6 +40,7 @@ func (responseBuilder) Start() string {
 		"/template - шаблон заказа\n" +
 		"/cancel - отменить неподтвержденный заказ\n" +
 		"/orders - номера последних заказов\n" +
+		"/order order_number - посмотреть заказ\n" +
 		"/monitor order_number - расход теста по дефолтным кодам\n" +
 		"/monitor order_number code - расход по конкретному коду\n\n" +
 		"<b>Служебные команды</b>\n" +
