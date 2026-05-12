@@ -47,6 +47,9 @@ func (s *MonitorService) GetIngredientsByCode(ctx context.Context, code string, 
 	}
 
 	orderDate := order.CreatedAt
+	if !order.FulfillmentDate.IsZero() {
+		orderDate = order.FulfillmentDate
+	}
 	if orderDate.IsZero() {
 		orderDate = time.Now().UTC()
 	}
@@ -91,10 +94,11 @@ func (s *MonitorService) calculateOrderItemIngredientUsage(
 	ingredientID string,
 	orderDate pgtype.Date,
 ) (monitoringdomain.IngredientDishBreakdown, error) {
+	productionQuantity := orderItem.ProductionQuantity()
 	breakdown := monitoringdomain.IngredientDishBreakdown{
 		OrderItemCode:     orderItem.Code,
 		OrderItemName:     orderItem.ProductName,
-		OrderItemQuantity: orderItem.Quantity,
+		OrderItemQuantity: productionQuantity,
 	}
 
 	product, err := s.queries.GetIikoProductByCode(ctx, strings.TrimSpace(orderItem.Code))
@@ -110,7 +114,7 @@ func (s *MonitorService) calculateOrderItemIngredientUsage(
 		return breakdown, fmt.Errorf("load monitor graph for product %s: %w", orderItem.Code, err)
 	}
 
-	used, err := s.domain.CalculateIngredientUsage(graph, product.ID, ingredientID, orderItem.Quantity)
+	used, err := s.domain.CalculateIngredientUsage(graph, product.ID, ingredientID, productionQuantity)
 	if err != nil {
 		return breakdown, fmt.Errorf("calculate ingredient usage for product %s: %w", orderItem.Code, err)
 	}

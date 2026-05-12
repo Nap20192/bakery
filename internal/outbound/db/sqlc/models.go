@@ -114,6 +114,7 @@ type Order struct {
 	CreatedAt        string `json:"created_at"`
 	FromDepartmentID *int64 `json:"from_department_id"`
 	ToDepartmentID   *int64 `json:"to_department_id"`
+	FulfillmentDate  string `json:"fulfillment_date"`
 }
 
 type OrderCounter struct {
@@ -122,9 +123,10 @@ type OrderCounter struct {
 }
 
 type OrderItem struct {
-	ID            int64   `json:"id"`
-	OrderID       int64   `json:"order_id"`
-	IikoProductID *string `json:"iiko_product_id"`
-	ProductName   string  `json:"product_name"`
-	Quantity      float64 `json:"quantity"`
+	ID               int64   `json:"id"`
+	OrderID          int64   `json:"order_id"`
+	IikoProductID    *string `json:"iiko_product_id"`
+	ProductName      string  `json:"product_name"`
+	Quantity         float64 `json:"quantity"`
+	ReservedQuantity float64 `json:"reserved_quantity"`
 }

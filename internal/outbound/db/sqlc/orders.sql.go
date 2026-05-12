@@ -15,15 +15,17 @@ INSERT INTO orders (
     location,
     from_department_id,
     to_department_id,
-    created_at
+    created_at,
+    fulfillment_date
 ) VALUES (
     $1,
     $2,
     $3,
     $4,
-    $5
+    $5,
+    $6
 )
-RETURNING id, number, location, created_at, from_department_id, to_department_id
+RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date
 `
 
 type CreateOrderParams struct {
@@ -32,6 +34,7 @@ type CreateOrderParams struct {
 	FromDepartmentID *int64 `json:"from_department_id"`
 	ToDepartmentID   *int64 `json:"to_department_id"`
 	CreatedAt        string `json:"created_at"`
+	FulfillmentDate  string `json:"fulfillment_date"`
 }
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
@@ -41,6 +44,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		arg.FromDepartmentID,
 		arg.ToDepartmentID,
 		arg.CreatedAt,
+		arg.FulfillmentDate,
 	)
 	var i Order
 	err := row.Scan(
@@ -50,6 +54,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		&i.CreatedAt,
 		&i.FromDepartmentID,
 		&i.ToDepartmentID,
+		&i.FulfillmentDate,
 	)
 	return i, err
 }
@@ -70,21 +75,24 @@ INSERT INTO order_items (
     order_id,
     iiko_product_id,
     product_name,
-    quantity
+    quantity,
+    reserved_quantity
 ) VALUES (
     $1,
     $2,
     $3,
-    $4
+    $4,
+    $5
 )
-RETURNING id, order_id, iiko_product_id, product_name, quantity
+RETURNING id, order_id, iiko_product_id, product_name, quantity, reserved_quantity
 `
 
 type CreateOrderItemParams struct {
-	OrderID       int64   `json:"order_id"`
-	IikoProductID *string `json:"iiko_product_id"`
-	ProductName   string  `json:"product_name"`
-	Quantity      float64 `json:"quantity"`
+	OrderID          int64   `json:"order_id"`
+	IikoProductID    *string `json:"iiko_product_id"`
+	ProductName      string  `json:"product_name"`
+	Quantity         float64 `json:"quantity"`
+	ReservedQuantity float64 `json:"reserved_quantity"`
 }
 
 func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) (OrderItem, error) {
@@ -93,6 +101,7 @@ func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams
 		arg.IikoProductID,
 		arg.ProductName,
 		arg.Quantity,
+		arg.ReservedQuantity,
 	)
 	var i OrderItem
 	err := row.Scan(
@@ -101,12 +110,13 @@ func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams
 		&i.IikoProductID,
 		&i.ProductName,
 		&i.Quantity,
+		&i.ReservedQuantity,
 	)
 	return i, err
 }
 
 const getOrderByNumber = `-- name: GetOrderByNumber :one
-SELECT id, number, location, created_at, from_department_id, to_department_id
+SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date
 FROM orders
 WHERE number = $1
 `
@@ -121,6 +131,7 @@ func (q *Queries) GetOrderByNumber(ctx context.Context, number string) (Order, e
 		&i.CreatedAt,
 		&i.FromDepartmentID,
 		&i.ToDepartmentID,
+		&i.FulfillmentDate,
 	)
 	return i, err
 }
@@ -132,6 +143,7 @@ SELECT
     oi.iiko_product_id,
     oi.product_name,
     oi.quantity,
+    oi.reserved_quantity,
     COALESCE(p.code, '') AS product_code
 FROM order_items AS oi
 LEFT JOIN iiko_products AS p ON p.id = oi.iiko_product_id
@@ -140,12 +152,13 @@ ORDER BY oi.id
 `
 
 type GetOrderItemsByOrderIDRow struct {
-	ID            int64   `json:"id"`
-	OrderID       int64   `json:"order_id"`
-	IikoProductID *string `json:"iiko_product_id"`
-	ProductName   string  `json:"product_name"`
-	Quantity      float64 `json:"quantity"`
-	ProductCode   string  `json:"product_code"`
+	ID               int64   `json:"id"`
+	OrderID          int64   `json:"order_id"`
+	IikoProductID    *string `json:"iiko_product_id"`
+	ProductName      string  `json:"product_name"`
+	Quantity         float64 `json:"quantity"`
+	ReservedQuantity float64 `json:"reserved_quantity"`
+	ProductCode      string  `json:"product_code"`
 }
 
 func (q *Queries) GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]GetOrderItemsByOrderIDRow, error) {
@@ -163,6 +176,7 @@ func (q *Queries) GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]
 			&i.IikoProductID,
 			&i.ProductName,
 			&i.Quantity,
+			&i.ReservedQuantity,
 			&i.ProductCode,
 		); err != nil {
 			return nil, err
@@ -176,7 +190,7 @@ func (q *Queries) GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]
 }
 
 const listOrders = `-- name: ListOrders :many
-SELECT id, number, location, created_at, from_department_id, to_department_id
+SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date
 FROM orders
 ORDER BY id DESC
 LIMIT $1
@@ -198,6 +212,7 @@ func (q *Queries) ListOrders(ctx context.Context, orderLimit int32) ([]Order, er
 			&i.CreatedAt,
 			&i.FromDepartmentID,
 			&i.ToDepartmentID,
+			&i.FulfillmentDate,
 		); err != nil {
 			return nil, err
 		}

@@ -33,6 +33,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, input orderdomain.Create
 	}
 
 	createdAt := s.domain.NormalizeCreatedAt(input.Date)
+	fulfillmentDate := s.domain.NormalizeFulfillmentDate(input.FulfillmentDate, createdAt)
 	day := s.domain.OrderCounterDay(createdAt)
 
 	if err := s.queries.CreateOrderCounterDay(ctx, day); err != nil {
@@ -50,6 +51,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, input orderdomain.Create
 		FromDepartmentID: input.FromDepartmentID,
 		ToDepartmentID:   input.ToDepartmentID,
 		CreatedAt:        createdAt.Format(time.RFC3339Nano),
+		FulfillmentDate:  fulfillmentDate.Format("2006-01-02"),
 	})
 	if err != nil {
 		return orderdomain.Order{}, fmt.Errorf("create order: %w", err)
@@ -67,10 +69,11 @@ func (s *OrderService) CreateOrder(ctx context.Context, input orderdomain.Create
 			}
 		}
 		if _, err := s.queries.CreateOrderItem(ctx, sqlc.CreateOrderItemParams{
-			OrderID:       row.ID,
-			IikoProductID: productID,
-			ProductName:   item.ProductName,
-			Quantity:      item.Quantity,
+			OrderID:          row.ID,
+			IikoProductID:    productID,
+			ProductName:      item.ProductName,
+			Quantity:         item.Quantity,
+			ReservedQuantity: item.ReservedQuantity,
 		}); err != nil {
 			return orderdomain.Order{}, fmt.Errorf("create order item: %w", err)
 		}
@@ -84,6 +87,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, input orderdomain.Create
 		ToDepartmentID:   row.ToDepartmentID,
 		Items:            input.Items,
 		CreatedAt:        helpers.ParseRFC3339(row.CreatedAt),
+		FulfillmentDate:  parseDate(row.FulfillmentDate),
 	}, nil
 }
 
@@ -104,6 +108,7 @@ func (s *OrderService) GetOrderByNumber(ctx context.Context, number string) (ord
 		ToDepartmentID:   order.ToDepartmentID,
 		Items:            mapOrderItems(items),
 		CreatedAt:        helpers.ParseRFC3339(order.CreatedAt),
+		FulfillmentDate:  parseDate(order.FulfillmentDate),
 	}, nil
 }
 
@@ -126,6 +131,7 @@ func (s *OrderService) ListOrders(ctx context.Context, limit int32) ([]orderdoma
 			ToDepartmentID:   row.ToDepartmentID,
 			Items:            mapOrderItems(items),
 			CreatedAt:        helpers.ParseRFC3339(row.CreatedAt),
+			FulfillmentDate:  parseDate(row.FulfillmentDate),
 		})
 	}
 	return result, nil
@@ -166,12 +172,21 @@ func mapOrderItems(items []sqlc.GetOrderItemsByOrderIDRow) []orderdomain.OrderIt
 	result := make([]orderdomain.OrderItem, 0, len(items))
 	for _, item := range items {
 		result = append(result, orderdomain.OrderItem{
-			Code:        item.ProductCode,
-			ProductName: item.ProductName,
-			Quantity:    item.Quantity,
+			Code:             item.ProductCode,
+			ProductName:      item.ProductName,
+			Quantity:         item.Quantity,
+			ReservedQuantity: item.ReservedQuantity,
 		})
 	}
 	return result
+}
+
+func parseDate(value string) time.Time {
+	t, err := time.Parse("2006-01-02", value)
+	if err != nil {
+		return time.Time{}
+	}
+	return t
 }
 
 func (s *OrderService) GetTemplate(ctx context.Context) (string, error) {

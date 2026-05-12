@@ -9,8 +9,9 @@ import (
 )
 
 type BulkOrderValidationResult struct {
-	ValidItems []OrderItem
-	Errors     []BulkOrderValidationError
+	ValidItems      []OrderItem
+	Errors          []BulkOrderValidationError
+	FulfillmentDate time.Time
 }
 
 type BulkOrderValidationError struct {
@@ -53,6 +54,16 @@ func (s *OrderService) NormalizeCreatedAt(t time.Time) time.Time {
 	return createdAt
 }
 
+func (s *OrderService) NormalizeFulfillmentDate(t time.Time, fallback time.Time) time.Time {
+	if t.IsZero() {
+		if fallback.IsZero() {
+			fallback = time.Now().UTC()
+		}
+		t = fallback.AddDate(0, 0, 1)
+	}
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
+}
+
 func (s *OrderService) OrderCounterDay(t time.Time) string {
 	return s.NormalizeCreatedAt(t).Format("02012006")
 }
@@ -68,6 +79,18 @@ func (s *OrderService) ParseBulkOrder(order string) BulkOrderValidationResult {
 	for i, line := range lines {
 		line = strings.TrimSpace(line)
 		candidate := BulkOrderLine{Number: i + 1, Raw: line}
+		if date, ok, err := ParseFulfillmentDateLine(line); ok {
+			if err != nil {
+				result.Errors = append(result.Errors, BulkOrderValidationError{
+					Line:    i + 1,
+					Raw:     line,
+					Message: err.Error(),
+				})
+				continue
+			}
+			result.FulfillmentDate = date
+			continue
+		}
 		if !s.spec.LineProcessable.IsValid(candidate) {
 			continue
 		}
@@ -76,7 +99,7 @@ func (s *OrderService) ParseBulkOrder(order string) BulkOrderValidationResult {
 			result.Errors = append(result.Errors, BulkOrderValidationError{
 				Line:    i + 1,
 				Raw:     line,
-				Message: "invalid format",
+				Message: "invalid format: expected code product_name quantity or code product_name quantity+reserved_quantity",
 			})
 			continue
 		}
@@ -87,18 +110,21 @@ func (s *OrderService) ParseBulkOrder(order string) BulkOrderValidationResult {
 				Line:    parsed.Line,
 				Code:    parsed.Code,
 				Name:    parsed.Name,
-				Message: fmt.Sprintf("invalid quantity %q", parsed.Quantity),
+				Message: fmt.Sprintf("invalid quantity %q: quantity and reserved_quantity must be >= 0 and total must be > 0", parsed.Quantity),
 			})
 			continue
 		}
 		qty, _ := parsed.QuantityValue()
+		reservedQty, _ := parsed.ReservedQuantityValue()
 
 		result.ValidItems = append(result.ValidItems, OrderItem{
-			Code:        parsed.Code,
-			ProductName: parsed.Name,
-			Quantity:    qty,
+			Code:             parsed.Code,
+			ProductName:      parsed.Name,
+			Quantity:         qty,
+			ReservedQuantity: reservedQty,
 		})
 	}
+	result.FulfillmentDate = s.NormalizeFulfillmentDate(result.FulfillmentDate, time.Now().UTC())
 
 	return result
 }
