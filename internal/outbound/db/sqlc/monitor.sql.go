@@ -168,3 +168,53 @@ func (q *Queries) ListAssemblyChartItemsByChartID(ctx context.Context, chartID s
 	}
 	return items, nil
 }
+
+const listPreparedChartItemsByChartID = `-- name: ListPreparedChartItemsByChartID :many
+SELECT
+    i.id AS item_id,
+    i.product_id,
+    i.amount,
+    COALESCE(p.name, '') AS product_name,
+    COALESCE(p.code, '') AS product_code,
+    COALESCE(p.measure_unit, '') AS measure_unit
+FROM iiko_prepared_chart_items AS i
+LEFT JOIN iiko_products AS p ON p.id = i.product_id
+WHERE i.prepared_chart_id = $1
+ORDER BY i.sort_weight, i.id
+`
+
+type ListPreparedChartItemsByChartIDRow struct {
+	ItemID      string  `json:"item_id"`
+	ProductID   string  `json:"product_id"`
+	Amount      float64 `json:"amount"`
+	ProductName string  `json:"product_name"`
+	ProductCode string  `json:"product_code"`
+	MeasureUnit string  `json:"measure_unit"`
+}
+
+func (q *Queries) ListPreparedChartItemsByChartID(ctx context.Context, preparedChartID string) ([]ListPreparedChartItemsByChartIDRow, error) {
+	rows, err := q.db.Query(ctx, listPreparedChartItemsByChartID, preparedChartID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPreparedChartItemsByChartIDRow
+	for rows.Next() {
+		var i ListPreparedChartItemsByChartIDRow
+		if err := rows.Scan(
+			&i.ItemID,
+			&i.ProductID,
+			&i.Amount,
+			&i.ProductName,
+			&i.ProductCode,
+			&i.MeasureUnit,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

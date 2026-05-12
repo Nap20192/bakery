@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -11,21 +10,22 @@ import (
 	monitoringdomain "bakery/internal/domain/monitoring"
 	orderdomain "bakery/internal/domain/order"
 	"bakery/internal/outbound/db/sqlc"
-	"bakery/internal/outbound/iiko"
 	"bakery/internal/pkg/enum"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const maxMonitorDepth = 12
-
 type MonitorService struct {
 	queries *sqlc.Queries
+	domain  *monitoringdomain.Service
 }
 
 func NewMonitorService(queries *sqlc.Queries) *MonitorService {
-	return &MonitorService{queries: queries}
+	return &MonitorService{
+		queries: queries,
+		domain:  monitoringdomain.NewService(),
+	}
 }
 
 func (s *MonitorService) GetIngredientsByCode(ctx context.Context, code string, order orderdomain.Order) (monitoringdomain.IngredientReport, error) {
@@ -48,6 +48,7 @@ func (s *MonitorService) GetIngredientsByCode(ctx context.Context, code string, 
 		orderDate = time.Now().UTC()
 	}
 	orderDateParam := pgDate(orderDate)
+	graph := monitoringdomain.ProductGraph{}
 
 	for _, orderItem := range order.Items {
 		breakdown := monitoringdomain.IngredientDishBreakdown{
@@ -56,7 +57,7 @@ func (s *MonitorService) GetIngredientsByCode(ctx context.Context, code string, 
 			OrderItemQuantity: orderItem.Quantity,
 		}
 
-		product, err := s.queries.GetIikoProductByCode(ctx, orderItem.Code)
+		product, err := s.queries.GetIikoProductByCode(ctx, strings.TrimSpace(orderItem.Code))
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				continue
@@ -64,7 +65,11 @@ func (s *MonitorService) GetIngredientsByCode(ctx context.Context, code string, 
 			return report, fmt.Errorf("get product by code %s: %w", orderItem.Code, err)
 		}
 
-		used, err := s.ingredientUsageForProduct(ctx, product.ID, ingredient.ID, orderItem.Quantity, orderDateParam, map[string]bool{})
+		if err := s.LoadMonitorGraph(ctx, graph, product.ID, orderDateParam); err != nil {
+			return report, fmt.Errorf("load monitor graph for product %s: %w", orderItem.Code, err)
+		}
+
+		used, err := s.domain.CalculateIngredientUsage(graph, product.ID, ingredient.ID, orderItem.Quantity)
 		if err != nil {
 			return report, fmt.Errorf("calculate ingredient usage for product %s: %w", orderItem.Code, err)
 		}
@@ -98,29 +103,20 @@ func pgDate(t time.Time) pgtype.Date {
 	return pgtype.Date{Time: t, Valid: true}
 }
 
-func (s *MonitorService) ingredientUsageForProduct(
-	ctx context.Context,
-	productID string,
-	ingredientID string,
-	amount float64,
-	orderDate pgtype.Date,
-	path map[string]bool,
-) (float64, error) {
-	if productID == "" || amount == 0 {
-		return 0, nil
-	}
-	if productID == ingredientID {
-		return amount, nil
-	}
-	if path[productID] || len(path) >= maxMonitorDepth {
-		return 0, nil
-	}
+func (s *MonitorService) LoadMonitorGraph(ctx context.Context, graph monitoringdomain.ProductGraph, productID string, orderDate pgtype.Date) error {
+	return s.loadMonitorGraph(ctx, graph, productID, orderDate, make(map[string]bool, monitoringdomain.DefaultMaxDepth))
+}
 
-	nextPath := make(map[string]bool, len(path)+1)
-	for key, value := range path {
-		nextPath[key] = value
+func (s *MonitorService) loadMonitorGraph(ctx context.Context, graph monitoringdomain.ProductGraph, productID string, orderDate pgtype.Date, path map[string]bool) error {
+	if productID == "" {
+		return nil
 	}
-	nextPath[productID] = true
+	if _, ok := graph[productID]; ok {
+		return nil
+	}
+	if path[productID] || len(path) >= monitoringdomain.DefaultMaxDepth {
+		return nil
+	}
 
 	assembly, err := s.queries.GetActiveAssemblyChartByProductID(ctx, sqlc.GetActiveAssemblyChartByProductIDParams{
 		AssembledProductID: productID,
@@ -129,26 +125,34 @@ func (s *MonitorService) ingredientUsageForProduct(
 	if err == nil {
 		items, err := s.queries.ListAssemblyChartItemsByChartID(ctx, assembly.ID)
 		if err != nil {
-			return 0, fmt.Errorf("list assembly chart items %s: %w", assembly.ID, err)
-		}
-		scale := amount
-		if assembly.AssembledAmount > 0 {
-			scale = amount / assembly.AssembledAmount
+			return fmt.Errorf("list assembly chart items %s: %w", assembly.ID, err)
 		}
 
-		var total float64
+		recipeItems := make([]monitoringdomain.RecipeItem, 0, len(items))
 		for _, item := range items {
-			childAmount := item.AmountIn * scale
-			used, err := s.ingredientUsageForProduct(ctx, item.ProductID, ingredientID, childAmount, orderDate, nextPath)
-			if err != nil {
-				return 0, err
-			}
-			total += used
+			recipeItems = append(recipeItems, monitoringdomain.RecipeItem{
+				ProductID: item.ProductID,
+				Amount:    item.AmountIn,
+			})
 		}
-		return total, nil
+		graph[productID] = monitoringdomain.ProductRecipe{
+			Assembly: &monitoringdomain.AssemblyRecipe{
+				AssembledAmount: assembly.AssembledAmount,
+				Items:           recipeItems,
+			},
+		}
+
+		path[productID] = true
+		defer delete(path, productID)
+		for _, item := range items {
+			if err := s.loadMonitorGraph(ctx, graph, item.ProductID, orderDate, path); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 	if err != pgx.ErrNoRows {
-		return 0, fmt.Errorf("get active assembly chart: %w", err)
+		return fmt.Errorf("get active assembly chart: %w", err)
 	}
 
 	prepared, err := s.queries.GetActivePreparedChartFullByProductID(ctx, sqlc.GetActivePreparedChartFullByProductIDParams{
@@ -156,27 +160,37 @@ func (s *MonitorService) ingredientUsageForProduct(
 		OrderDate:          orderDate,
 	})
 	if err == pgx.ErrNoRows {
-		return 0, nil
+		graph[productID] = monitoringdomain.ProductRecipe{}
+		return nil
 	}
 	if err != nil {
-		return 0, fmt.Errorf("get active prepared chart: %w", err)
+		return fmt.Errorf("get active prepared chart: %w", err)
 	}
 
-	var dto iiko.PreparedChartDto
-	if err := json.Unmarshal([]byte(prepared.RawJson), &dto); err != nil {
-		return 0, fmt.Errorf("decode prepared chart raw json: %w", err)
+	items, err := s.queries.ListPreparedChartItemsByChartID(ctx, prepared.ID)
+	if err != nil {
+		return fmt.Errorf("list prepared chart items %s: %w", prepared.ID, err)
 	}
 
-	var total float64
-	for _, item := range dto.Items {
-		childAmount := item.Amount * amount
-		used, err := s.ingredientUsageForProduct(ctx, item.ProductID, ingredientID, childAmount, orderDate, nextPath)
-		if err != nil {
-			return 0, err
+	recipeItems := make([]monitoringdomain.RecipeItem, 0, len(items))
+	for _, item := range items {
+		recipeItems = append(recipeItems, monitoringdomain.RecipeItem{
+			ProductID: item.ProductID,
+			Amount:    item.Amount,
+		})
+	}
+	graph[productID] = monitoringdomain.ProductRecipe{
+		Prepared: &monitoringdomain.PreparedRecipe{Items: recipeItems},
+	}
+
+	path[productID] = true
+	defer delete(path, productID)
+	for _, item := range items {
+		if err := s.loadMonitorGraph(ctx, graph, item.ProductID, orderDate, path); err != nil {
+			return err
 		}
-		total += used
 	}
-	return total, nil
+	return nil
 }
 
 func (s *MonitorService) resolveIngredient(ctx context.Context, code string) (sqlc.GetIikoProductByIDRow, error) {

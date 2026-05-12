@@ -39,6 +39,7 @@ type Querier interface {
 	ListAuthUsersByDepartmentID(ctx context.Context, departmentID *int64) ([]AuthUser, error)
 	ListDepartments(ctx context.Context, type_ *string) ([]Department, error)
 	ListOrders(ctx context.Context, orderLimit int32) ([]Order, error)
+	ListPreparedChartItemsByChartID(ctx context.Context, preparedChartID string) ([]ListPreparedChartItemsByChartIDRow, error)
 	NextOrderCounter(ctx context.Context, day string) (int64, error)
 	UnlinkTelegramAuthUser(ctx context.Context, arg UnlinkTelegramAuthUserParams) error
 	UpsertIikoAssemblyChart(ctx context.Context, arg UpsertIikoAssemblyChartParams) error
