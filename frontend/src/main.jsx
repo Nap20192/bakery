@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { Activity, ClipboardList, RefreshCcw, Search } from 'lucide-react';
 import './styles.css';
 
-const defaultApiBase = window.__BAKERY_CONFIG__?.apiBaseUrl || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+const apiBase = import.meta.env.VITE_API_BASE_URL || '/api';
 
 function formatQuantity(value) {
   if (!Number.isFinite(value)) return '0';
@@ -34,7 +34,6 @@ function apiURL(base, path) {
 }
 
 function App() {
-  const [apiBase, setApiBase] = useState(() => localStorage.getItem('bakery_api_base') || defaultApiBase);
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [monitor, setMonitor] = useState(null);
@@ -44,10 +43,6 @@ function App() {
 
   const selectedNumber = selectedOrder?.number || '';
   const pageTitle = useMemo(() => selectedNumber || 'Последние заказы', [selectedNumber]);
-
-  useEffect(() => {
-    localStorage.setItem('bakery_api_base', apiBase);
-  }, [apiBase]);
 
   useEffect(() => {
     loadOrders();
@@ -111,11 +106,6 @@ function App() {
             <span>Orders</span>
           </div>
         </div>
-
-        <label className="field">
-          <span>API</span>
-          <input value={apiBase} onChange={(event) => setApiBase(event.target.value)} />
-        </label>
 
         <button className="button primary" onClick={loadOrders} disabled={loading}>
           <RefreshCcw size={16} />

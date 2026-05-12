@@ -10,9 +10,10 @@ RUN npm run build
 
 FROM nginx:1.27-alpine
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+ENV PORT=8080
+ENV BACKEND_URL=http://bakery.railway.internal:8080
+
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=builder /src/dist /usr/share/nginx/html
 
 EXPOSE 8080
-
-CMD ["sh", "-c", "printf 'window.__BAKERY_CONFIG__ = { apiBaseUrl: \"%s\" };' \"$VITE_API_BASE_URL\" > /usr/share/nginx/html/config.js && nginx -g 'daemon off;'"]
