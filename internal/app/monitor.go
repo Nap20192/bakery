@@ -14,7 +14,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"golang.org/x/sync/errgroup"
 )
+
+const monitorConcurrencyLimit = 4
 
 type MonitorService struct {
 	queries *sqlc.Queries
@@ -48,37 +51,31 @@ func (s *MonitorService) GetIngredientsByCode(ctx context.Context, code string, 
 		orderDate = time.Now().UTC()
 	}
 	orderDateParam := pgDate(orderDate)
-	graph := monitoringdomain.ProductGraph{}
+	breakdowns := make([]monitoringdomain.IngredientDishBreakdown, len(order.Items))
+	group, groupCtx := errgroup.WithContext(ctx)
+	group.SetLimit(monitorConcurrencyLimit)
 
-	for _, orderItem := range order.Items {
-		breakdown := monitoringdomain.IngredientDishBreakdown{
-			OrderItemCode:     orderItem.Code,
-			OrderItemName:     orderItem.ProductName,
-			OrderItemQuantity: orderItem.Quantity,
-		}
-
-		product, err := s.queries.GetIikoProductByCode(ctx, strings.TrimSpace(orderItem.Code))
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				continue
+	for i, item := range order.Items {
+		i, item := i, item
+		group.Go(func() error {
+			breakdown, err := s.calculateOrderItemIngredientUsage(groupCtx, item, ingredient.ID, orderDateParam)
+			if err != nil {
+				return err
 			}
-			return report, fmt.Errorf("get product by code %s: %w", orderItem.Code, err)
-		}
+			breakdowns[i] = breakdown
+			return nil
+		})
+	}
+	if err := group.Wait(); err != nil {
+		return report, err
+	}
 
-		if err := s.LoadMonitorGraph(ctx, graph, product.ID, orderDateParam); err != nil {
-			return report, fmt.Errorf("load monitor graph for product %s: %w", orderItem.Code, err)
+	for _, breakdown := range breakdowns {
+		if breakdown.IngredientQuantity <= 0 {
+			continue
 		}
-
-		used, err := s.domain.CalculateIngredientUsage(graph, product.ID, ingredient.ID, orderItem.Quantity)
-		if err != nil {
-			return report, fmt.Errorf("calculate ingredient usage for product %s: %w", orderItem.Code, err)
-		}
-		breakdown.IngredientQuantity = used
-		report.Ingredient.Quantity += used
-
-		if breakdown.IngredientQuantity > 0 {
-			report.Breakdown = append(report.Breakdown, breakdown)
-		}
+		report.Ingredient.Quantity += breakdown.IngredientQuantity
+		report.Breakdown = append(report.Breakdown, breakdown)
 	}
 
 	sort.Slice(report.Breakdown, func(i, j int) bool {
@@ -86,6 +83,39 @@ func (s *MonitorService) GetIngredientsByCode(ctx context.Context, code string, 
 	})
 
 	return report, nil
+}
+
+func (s *MonitorService) calculateOrderItemIngredientUsage(
+	ctx context.Context,
+	orderItem orderdomain.OrderItem,
+	ingredientID string,
+	orderDate pgtype.Date,
+) (monitoringdomain.IngredientDishBreakdown, error) {
+	breakdown := monitoringdomain.IngredientDishBreakdown{
+		OrderItemCode:     orderItem.Code,
+		OrderItemName:     orderItem.ProductName,
+		OrderItemQuantity: orderItem.Quantity,
+	}
+
+	product, err := s.queries.GetIikoProductByCode(ctx, strings.TrimSpace(orderItem.Code))
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return breakdown, nil
+		}
+		return breakdown, fmt.Errorf("get product by code %s: %w", orderItem.Code, err)
+	}
+
+	graph := monitoringdomain.ProductGraph{}
+	if err := s.LoadMonitorGraph(ctx, graph, product.ID, orderDate); err != nil {
+		return breakdown, fmt.Errorf("load monitor graph for product %s: %w", orderItem.Code, err)
+	}
+
+	used, err := s.domain.CalculateIngredientUsage(graph, product.ID, ingredientID, orderItem.Quantity)
+	if err != nil {
+		return breakdown, fmt.Errorf("calculate ingredient usage for product %s: %w", orderItem.Code, err)
+	}
+	breakdown.IngredientQuantity = used
+	return breakdown, nil
 }
 
 func monitorUnit(product sqlc.GetIikoProductByIDRow) string {
