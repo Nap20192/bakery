@@ -12,16 +12,19 @@ func TestOrderServiceParseBulkOrder(t *testing.T) {
 	svc := NewOrderService()
 	fulfillmentDate := time.Now().UTC().AddDate(0, 0, 1)
 	fulfillmentDateText := fulfillmentDate.Format("2006-01-02")
+	fulfillmentDateInput := fulfillmentDate.Format("02.01.2006")
 
 	result := svc.ParseBulkOrder(fmt.Sprintf(`
-на %s
+%s
 ПИРОЖКИ
+ПИРОГИ СЫТНЫЕ/СЛАДКИЕ
 15635 Пирожок с капустой 15
 20495 Пирожок с картошкой 2,5+1,5
 broken line
 15647 Сосиска в тесте abc
+СДОБНЫЕ ИЗДЕЛИЯ
 15648 Сосиска с сыром в тесте 0+3
-`, fulfillmentDateText))
+`, fulfillmentDateInput))
 
 	if len(result.ValidItems) != 3 {
 		t.Fatalf("valid items = %d, want 3: %#v", len(result.ValidItems), result.ValidItems)
@@ -37,10 +40,10 @@ broken line
 	if len(result.Errors) != 2 {
 		t.Fatalf("errors = %d, want 2: %#v", len(result.Errors), result.Errors)
 	}
-	if result.Errors[0].Line != 6 || result.Errors[0].Raw != "broken line" || !strings.Contains(result.Errors[0].Message, "invalid format") {
+	if result.Errors[0].Line != 7 || result.Errors[0].Raw != "broken line" || !strings.Contains(result.Errors[0].Message, "invalid format") {
 		t.Fatalf("unexpected first error: %#v", result.Errors[0])
 	}
-	if result.Errors[1].Line != 7 || result.Errors[1].Raw != "15647 Сосиска в тесте abc" || !strings.Contains(result.Errors[1].Message, "invalid format") {
+	if result.Errors[1].Line != 8 || result.Errors[1].Raw != "15647 Сосиска в тесте abc" || !strings.Contains(result.Errors[1].Message, "invalid format") {
 		t.Fatalf("unexpected second error: %#v", result.Errors[1])
 	}
 }
@@ -111,6 +114,8 @@ func TestOrderServiceIsTemplateHeader(t *testing.T) {
 	}{
 		{line: "ПИРОЖКИ", want: true},
 		{line: "ПИРОГИ СЫТНЫЕ/СЛАДКИЕ", want: true},
+		{line: "РЖАНЫЕ ПИРОЖКИ", want: true},
+		{line: "СДОБНЫЕ ИЗДЕЛИЯ", want: true},
 		{line: "Кокрок с картофелем", want: false},
 		{line: "15635 Пирожок с капустой 15", want: false},
 		{line: "12345", want: false},
@@ -122,6 +127,25 @@ func TestOrderServiceIsTemplateHeader(t *testing.T) {
 				t.Fatalf("IsTemplateHeader(%q) = %v, want %v", tt.line, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestOrderLineProcessableSpecificationSkipsUppercaseHeaders(t *testing.T) {
+	spec := OrderLineProcessableSpecification{}
+
+	headers := []string{
+		"ПИРОГИ СЫТНЫЕ/СЛАДКИЕ",
+		"РЖАНЫЕ ПИРОЖКИ",
+		"СДОБНЫЕ ИЗДЕЛИЯ",
+	}
+	for _, header := range headers {
+		if spec.IsValid(BulkOrderLine{Raw: header}) {
+			t.Fatalf("header %q should not be processable", header)
+		}
+	}
+
+	if !spec.IsValid(BulkOrderLine{Raw: "broken line"}) {
+		t.Fatal("mixed lowercase invalid order line should stay processable and produce format error")
 	}
 }
 
