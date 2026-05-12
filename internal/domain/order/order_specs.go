@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 )
 
 type BulkOrderLine struct {
@@ -23,7 +24,7 @@ type ParsedOrderLine struct {
 
 var (
 	orderLineRe         = regexp.MustCompile(`^(\S+)\s+(.+?)\s+(\d+(?:[.,]\d+)?(?:\+\d+(?:[.,]\d+)?)?)$`)
-	fulfillmentDateRe   = regexp.MustCompile(`^(?:на|date)\s+(\d{4}-\d{2}-\d{2})$`)
+	fulfillmentDateRe   = regexp.MustCompile(`^(\d{2})\.(\d{2})\.(\d{4})$`)
 	singleWordLineRe    = regexp.MustCompile(`^\p{L}+$`)
 	quantitySeparatorRe = regexp.MustCompile(`\+`)
 )
@@ -31,7 +32,7 @@ var (
 type OrderLineProcessableSpecification struct{}
 
 func (s OrderLineProcessableSpecification) IsValid(line BulkOrderLine) bool {
-	return line.Raw != "" && !singleWordLineRe.MatchString(line.Raw)
+	return line.Raw != "" && !singleWordLineRe.MatchString(line.Raw) && !IsTemplateHeaderLine(line.Raw)
 }
 
 type OrderLineFormatSpecification struct{}
@@ -87,17 +88,18 @@ func parseQuantityPart(value string) (float64, error) {
 
 func ParseFulfillmentDateLine(line string) (time.Time, bool, error) {
 	matches := fulfillmentDateRe.FindStringSubmatch(strings.ToLower(strings.TrimSpace(line)))
-	if len(matches) != 2 {
+	if len(matches) != 4 {
 		return time.Time{}, false, nil
 	}
-	date, err := time.Parse("2006-01-02", matches[1])
+	value := matches[1] + "." + matches[2] + "." + matches[3]
+	date, err := time.Parse("02.01.2006", value)
 	if err != nil {
-		return time.Time{}, true, fmt.Errorf("invalid fulfillment date %q", matches[1])
+		return time.Time{}, true, fmt.Errorf("invalid fulfillment date %q: expected dd.mm.yyyy", value)
 	}
 	today := time.Now().UTC()
 	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC)
 	if date.Before(today) {
-		return time.Time{}, true, fmt.Errorf("fulfillment date %s is in the past", matches[1])
+		return time.Time{}, true, fmt.Errorf("fulfillment date %s is in the past", value)
 	}
 	return date, true, nil
 }
@@ -128,4 +130,26 @@ func DuplicateOrderItemErrors(items []OrderItem) []error {
 		seen[key] = struct{}{}
 	}
 	return errs
+}
+
+func IsTemplateHeaderLine(line string) bool {
+	line = strings.TrimSpace(line)
+	if line == "" {
+		return false
+	}
+
+	hasLetter := false
+	for _, r := range line {
+		if unicode.IsDigit(r) {
+			return false
+		}
+		if !unicode.IsLetter(r) {
+			continue
+		}
+		hasLetter = true
+		if unicode.IsLower(r) {
+			return false
+		}
+	}
+	return hasLetter
 }

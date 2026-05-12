@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	"unicode"
 )
 
 type BulkOrderValidationResult struct {
@@ -137,15 +136,5 @@ func (s *OrderService) ValidateUniqueItems(items []OrderItem) error {
 }
 
 func (s *OrderService) IsTemplateHeader(line string) bool {
-	hasLetter := false
-	for _, r := range line {
-		if !unicode.IsLetter(r) {
-			continue
-		}
-		hasLetter = true
-		if unicode.IsLower(r) {
-			return false
-		}
-	}
-	return hasLetter
+	return IsTemplateHeaderLine(line)
 }
