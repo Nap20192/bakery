@@ -1,4 +1,4 @@
-ARG GO_IMAGE=golang:1.23-alpine
+ARG GO_IMAGE=golang:1.26-alpine
 ARG RUNTIME_IMAGE=alpine:3.20
 
 FROM ${GO_IMAGE} AS builder
