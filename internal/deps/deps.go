@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"bakery/internal/app"
+	"bakery/internal/inbound/api"
 	"bakery/internal/inbound/bot"
 )
 
@@ -15,6 +16,7 @@ type AppDeps struct {
 	OrderService      *app.OrderService
 	SyncService       *app.SyncService
 	TechCardService   *app.TechCardService
+	APIServer         *api.Server
 	OrderBot          *bot.OrderBot
 }
 
@@ -120,6 +122,16 @@ func WithOrderBot(infra *InfraDeps) appOption {
 			return err
 		}
 		deps.OrderBot = orderBot
+		return nil
+	}
+}
+
+func WithAPIServer() appOption {
+	return func(deps *AppDeps) error {
+		if deps.OrderService == nil || deps.MonitorService == nil || deps.DepartmentService == nil {
+			return fmt.Errorf("missing dependencies for APIServer")
+		}
+		deps.APIServer = api.NewServer(deps.OrderService, deps.MonitorService, deps.DepartmentService)
 		return nil
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/joho/godotenv"
 	"golang.org/x/sync/errgroup"
@@ -62,6 +63,7 @@ func main() {
 		deps.WithTechCardService(infra),
 		deps.WithSyncService(infra),
 		deps.WithOrderBot(infra),
+		deps.WithAPIServer(),
 	)
 	if err != nil {
 		log.Error("build app deps failed", "error", err)
@@ -85,6 +87,10 @@ func main() {
 		return appDeps.SyncService.Run(groupCtx)
 	})
 	group.Go(func() error {
+		log.Info("http api started")
+		return appDeps.APIServer.Start()
+	})
+	group.Go(func() error {
 		log.Info("orderbot started",
 			"bot_env", cfg.Telegram.BotEnv,
 			"bot_name", appDeps.OrderBot.Name(),
@@ -96,7 +102,9 @@ func main() {
 	group.Go(func() error {
 		<-groupCtx.Done()
 		appDeps.OrderBot.Stop()
-		return nil
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), helpers.EnvDuration("HTTP_SHUTDOWN_TIMEOUT", 10*time.Second))
+		defer cancel()
+		return appDeps.APIServer.Shutdown(shutdownCtx)
 	})
 
 	if err := group.Wait(); err != nil {

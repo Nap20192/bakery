@@ -9,6 +9,9 @@ docker-compose.yml
 
 bin/
 dist/
+frontend/dist/
+node_modules/
+frontend/node_modules/
 tmp/
 logs/
 coverage.out

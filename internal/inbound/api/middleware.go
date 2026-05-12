@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -13,7 +14,25 @@ type errorResponse struct {
 }
 
 func (s *Server) withMiddleware(next http.Handler) http.Handler {
-	return s.recoverer(s.requestLogger(next))
+	return s.recoverer(s.requestLogger(s.cors(next)))
+}
+
+func (s *Server) cors(next http.Handler) http.Handler {
+	allowedOrigins := parseAllowedOrigins(os.Getenv("HTTP_ALLOWED_ORIGINS"))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if origin != "" && isAllowedOrigin(origin, allowedOrigins) {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Vary", "Origin")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		}
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (s *Server) recoverer(next http.Handler) http.Handler {
@@ -52,4 +71,24 @@ func readJSON(r *http.Request, dst any) error {
 
 func trim(value string) string {
 	return strings.TrimSpace(value)
+}
+
+func parseAllowedOrigins(raw string) map[string]struct{} {
+	allowed := make(map[string]struct{})
+	for _, origin := range strings.Split(raw, ",") {
+		origin = strings.TrimSpace(origin)
+		if origin == "" {
+			continue
+		}
+		allowed[origin] = struct{}{}
+	}
+	return allowed
+}
+
+func isAllowedOrigin(origin string, allowed map[string]struct{}) bool {
+	if len(allowed) == 0 {
+		return true
+	}
+	_, ok := allowed[origin]
+	return ok
 }

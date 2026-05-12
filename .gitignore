@@ -9,6 +9,7 @@ cookies.txt
 *.out
 bin/
 dist/
+node_modules/
 
 # SQLite/runtime data
 *.db
