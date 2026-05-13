@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html"
 	"strings"
+	"time"
 
 	monitoringdomain "bakery/internal/domain/monitoring"
 	orderdomain "bakery/internal/domain/order"
@@ -35,9 +36,10 @@ func (responseBuilder) Start() string {
 		"<code>ПИРОГИ СЫТНЫЕ/СЛАДКИЕ</code>\n" +
 		"<code>РЖАНЫЕ ПИРОЖКИ</code>\n\n" +
 		"<b>Проверка</b>\n" +
-		"Бот проверит строки, покажет найденные ошибки и даст кнопку отправки. Если результат не подходит, отправьте новый заказ целиком.\n\n" +
+		"Бот добавляет позиции в текущий заказ поэтапно. Строка с количеством <code>0</code> удаляет позицию из текущего заказа.\n\n" +
 		"<b>Команды заказа</b>\n" +
 		"/template - шаблон заказа\n" +
+		"/templates - сохраненные шаблоны\n" +
 		"/cancel - отменить неподтвержденный заказ\n" +
 		"/orders - номера последних заказов\n" +
 		"/order order_number - посмотреть заказ\n" +
@@ -51,7 +53,8 @@ func (responseBuilder) Start() string {
 		"/techcard code - посмотреть техкарту\n" +
 		"/sync - синхронизировать iiko\n\n" +
 		"<b>Администраторы</b>\n" +
-		"/adduser username password - добавить администратора"
+		"/adduser username password - добавить администратора\n" +
+		"/addtemplate - добавить шаблон"
 }
 
 func (responseBuilder) Template(template string) string {
@@ -108,11 +111,56 @@ func (responseBuilder) ValidationErrors(errors []orderdomain.BulkOrderValidation
 func (responseBuilder) OrderSummary(order orderdomain.Order, fromDepartment string, toDepartment string) string {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("<b>Заказ <code>%s</code> отправлен</b>\n\n", html.EscapeString(order.Number)))
+	writeOrderDetails(&sb, order, fromDepartment, toDepartment)
+	return sb.String()
+}
+
+func (responseBuilder) OrderUpdated(order orderdomain.Order, fromDepartment string, toDepartment string) string {
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("<b>Заказ <code>%s</code> обновлен</b>\n\n", html.EscapeString(order.Number)))
+	writeOrderDetails(&sb, order, fromDepartment, toDepartment)
+	return sb.String()
+}
+
+func (responseBuilder) OrderDraft(orderNumber string, items []orderdomain.OrderItem, fulfillmentDate time.Time, errors []orderdomain.BulkOrderValidationError) string {
+	var sb strings.Builder
+	if strings.TrimSpace(orderNumber) != "" {
+		sb.WriteString(fmt.Sprintf("<b>Редактирование <code>%s</code></b>\n\n", html.EscapeString(orderNumber)))
+	} else {
+		sb.WriteString("<b>Текущий заказ</b>\n\n")
+	}
+	if !fulfillmentDate.IsZero() {
+		sb.WriteString(fmt.Sprintf("Дата выполнения: <code>%s</code>\n", html.EscapeString(fulfillmentDate.Format("02.01.2006"))))
+	}
+	sb.WriteString(fmt.Sprintf("Позиций: %d\n\n", len(items)))
+	if len(items) == 0 {
+		sb.WriteString("Добавьте позиции сообщением или выберите шаблон через /templates.")
+	} else {
+		for _, it := range items {
+			sb.WriteString(fmt.Sprintf(
+				"• <code>%s</code> %s - %s\n",
+				html.EscapeString(it.Code),
+				html.EscapeString(it.ProductName),
+				html.EscapeString(formatOrderItemQuantity(it)),
+			))
+		}
+	}
+	if len(errors) > 0 {
+		sb.WriteString(fmt.Sprintf("\nОшибки: %d\n", len(errors)))
+		writeValidationErrors(&sb, errors)
+	}
+	return sb.String()
+}
+
+func writeOrderDetails(sb *strings.Builder, order orderdomain.Order, fromDepartment string, toDepartment string) {
 	if !order.CreatedAt.IsZero() {
 		sb.WriteString(fmt.Sprintf("Время: <code>%s</code>\n", html.EscapeString(order.CreatedAt.Local().Format("02.01.2006 15:04"))))
 	}
 	if !order.FulfillmentDate.IsZero() {
 		sb.WriteString(fmt.Sprintf("Дата выполнения: <code>%s</code>\n", html.EscapeString(order.FulfillmentDate.Format("02.01.2006"))))
+	}
+	if createdBy := orderCreatedBy(order, fromDepartment); createdBy != "" {
+		sb.WriteString(fmt.Sprintf("От кого: %s\n", html.EscapeString(createdBy)))
 	}
 	if fromDepartment != "" {
 		sb.WriteString(fmt.Sprintf("Откуда: %s\n", html.EscapeString(fromDepartment)))
@@ -133,7 +181,17 @@ func (responseBuilder) OrderSummary(order orderdomain.Order, fromDepartment stri
 		"\nМониторинг: <code>/monitor %s</code>",
 		html.EscapeString(order.Number),
 	))
-	return sb.String()
+}
+
+func orderCreatedBy(order orderdomain.Order, fallback string) string {
+	username := strings.TrimSpace(order.CreatedByUsername)
+	if username != "" {
+		if strings.HasPrefix(username, "@") {
+			return username
+		}
+		return "@" + username
+	}
+	return strings.TrimSpace(fallback)
 }
 
 func formatOrderItemQuantity(item orderdomain.OrderItem) string {

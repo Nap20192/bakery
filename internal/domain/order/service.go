@@ -138,3 +138,59 @@ func (s *OrderService) ValidateUniqueItems(items []OrderItem) error {
 func (s *OrderService) IsTemplateHeader(line string) bool {
 	return IsTemplateHeaderLine(line)
 }
+
+func (s *OrderService) ParseOrderTemplate(raw string) (ParsedOrderTemplate, BulkOrderValidationResult) {
+	lines := strings.Split(strings.TrimSpace(raw), "\n")
+	var title string
+	var bodyLines []string
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if title == "" {
+			title = line
+			continue
+		}
+		bodyLines = append(bodyLines, line)
+	}
+
+	var result BulkOrderValidationResult
+	if title == "" || !s.IsTemplateHeader(title) {
+		result.Errors = append(result.Errors, BulkOrderValidationError{
+			Line:    1,
+			Raw:     title,
+			Message: "template first line must be an uppercase title",
+		})
+		return ParsedOrderTemplate{}, result
+	}
+
+	result = s.ParseBulkOrder(strings.Join(bodyLines, "\n"))
+	if len(result.ValidItems) == 0 {
+		result.Errors = append(result.Errors, BulkOrderValidationError{
+			Message: "template must contain at least one product line",
+		})
+	}
+	for _, item := range result.ValidItems {
+		if item.Quantity != 0 || item.ReservedQuantity != 0 {
+			result.Errors = append(result.Errors, BulkOrderValidationError{
+				Code:    item.Code,
+				Name:    item.ProductName,
+				Message: "template quantity must be 0",
+			})
+		}
+	}
+	if len(result.Errors) > 0 {
+		return ParsedOrderTemplate{}, result
+	}
+	body := title
+	if len(bodyLines) > 0 {
+		body += "\n" + strings.Join(bodyLines, "\n")
+	}
+	return ParsedOrderTemplate{
+		Theme: title,
+		Name:  title,
+		Body:  body,
+		Items: result.ValidItems,
+	}, result
+}
