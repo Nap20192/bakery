@@ -16,14 +16,17 @@ func (b *OrderBot) handleOrders(c tele.Context) error {
 	result, err := b.orderSvc.ListOrders(ctx, app.ListOrdersInput{Limit: 10})
 	if err != nil {
 		slog.ErrorContext(ctx, "list orders failed", "error", err)
-		return c.Send("Не удалось получить заказы. Попробуйте позже.")
+		return sendText(c, "Не удалось получить заказы. Попробуйте позже.")
 	}
 	orders := result.Orders
 	if len(orders) == 0 {
 		return sendText(c, "Заказов пока нет.")
 	}
 
-	return sendHTML(c, responses.OrdersList(orders))
+	if err := sendHTML(c, responses.OrdersList(orders)); err != nil {
+		return err
+	}
+	return b.sendActionMenu(c)
 }
 
 func (b *OrderBot) handleOrder(c tele.Context) error {
@@ -44,5 +47,8 @@ func (b *OrderBot) handleOrder(c tele.Context) error {
 	toName := b.departmentDisplayName(ctx, order.ToDepartmentID)
 	markup := &tele.ReplyMarkup{}
 	markup.Inline(markup.Row(markup.Data("Изменить", "edit_order", order.Number)))
-	return sendHTML(c, responses.OrderSummary(order, fromName, toName), markup)
+	if err := sendHTML(c, responses.OrderSummary(order, fromName, toName), markup); err != nil {
+		return err
+	}
+	return b.sendActionMenu(c)
 }

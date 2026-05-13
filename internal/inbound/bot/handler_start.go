@@ -30,10 +30,10 @@ func (b *OrderBot) handleDepartmentShop(c tele.Context) error {
 	departments, err := b.departmentSvc.ListByType(ctx, app.DepartmentTypeShop)
 	if err != nil {
 		slog.ErrorContext(ctx, "list shop departments failed", "error", err)
-		return c.Send("Не удалось получить список магазинов.")
+		return sendText(c, "Не удалось получить список магазинов.")
 	}
 	if len(departments) == 0 {
-		return c.Send("Магазины не настроены.")
+		return sendText(c, "Магазины не настроены.")
 	}
 
 	markup := &tele.ReplyMarkup{}
@@ -43,7 +43,7 @@ func (b *OrderBot) handleDepartmentShop(c tele.Context) error {
 	}
 	markup.Inline(rows...)
 	_ = c.Respond()
-	return c.Send("Выберите магазин:", markup)
+	return sendText(c, "Выберите магазин:", markup)
 }
 
 func (b *OrderBot) handleDepartmentWorkshop(c tele.Context) error {
@@ -53,7 +53,7 @@ func (b *OrderBot) handleDepartmentWorkshop(c tele.Context) error {
 func (b *OrderBot) handleDepartmentSelect(c tele.Context) error {
 	code := strings.TrimSpace(c.Callback().Data)
 	if code == "" {
-		return c.Send("Не удалось определить выбранную локацию.")
+		return sendText(c, "Не удалось определить выбранную локацию.")
 	}
 	return b.saveDepartmentByCode(c, code)
 }
@@ -62,17 +62,17 @@ func (b *OrderBot) saveDepartmentByCode(c tele.Context, code string) error {
 	ctx := requestContext(c)
 	sender := c.Sender()
 	if sender == nil {
-		return c.Send("Не удалось определить пользователя.")
+		return sendText(c, "Не удалось определить пользователя.")
 	}
 	department, err := b.departmentSvc.GetByCode(ctx, code)
 	if err != nil {
 		slog.WarnContext(ctx, "department lookup failed", "code", code, "error", err)
-		return c.Send("Локация не найдена.")
+		return sendText(c, "Локация не найдена.")
 	}
 	user, err := b.authSvc.SetTelegramUserDepartment(ctx, sender.ID, sender.Username, department.ID)
 	if err != nil {
 		slog.ErrorContext(ctx, "save user department failed", "department_id", department.ID, "error", err)
-		return c.Send("Не удалось сохранить локацию.")
+		return sendText(c, "Не удалось сохранить локацию.")
 	}
 	c.Set(authUserContextKey, user)
 
@@ -86,5 +86,8 @@ func (b *OrderBot) saveDepartmentByCode(c tele.Context, code string) error {
 	})
 
 	_ = c.Respond()
-	return c.Send(fmt.Sprintf("Локация сохранена: %s.", department.Name))
+	if err := sendText(c, fmt.Sprintf("Локация сохранена: %s.", department.Name)); err != nil {
+		return err
+	}
+	return b.sendActionMenu(c)
 }

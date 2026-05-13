@@ -38,32 +38,10 @@ func (b *OrderBot) handleTemplates(c tele.Context) error {
 		rows = append(rows, markup.Row(markup.Data(template.Name, "template_use", strconv.FormatInt(template.ID, 10))))
 	}
 	markup.Inline(rows...)
-	return sendText(c, text.String(), markup)
-}
-
-func (b *OrderBot) handleTemplateTheme(c tele.Context) error {
-	ctx := requestContext(c)
-	theme := strings.TrimSpace(c.Callback().Data)
-	if theme == "" {
-		return sendText(c, "Не удалось определить тему.")
+	if err := sendText(c, text.String(), markup); err != nil {
+		return err
 	}
-	templates, err := b.orderSvc.ListOrderTemplatesByTheme(ctx, theme)
-	if err != nil {
-		slog.ErrorContext(ctx, "list order templates failed", "theme", theme, "error", err)
-		return sendText(c, "Не удалось получить шаблоны этой темы.")
-	}
-	if len(templates) == 0 {
-		return sendText(c, "В этой теме нет шаблонов.")
-	}
-
-	markup := &tele.ReplyMarkup{}
-	rows := make([]tele.Row, 0, len(templates))
-	for _, template := range templates {
-		rows = append(rows, markup.Row(markup.Data(template.Name, "template_use", strconv.FormatInt(template.ID, 10))))
-	}
-	markup.Inline(rows...)
-	_ = c.Respond()
-	return sendText(c, fmt.Sprintf("Тема: %s\nВыберите шаблон:", theme), markup)
+	return b.sendActionMenu(c)
 }
 
 func (b *OrderBot) handleTemplateUse(c tele.Context) error {
@@ -78,17 +56,24 @@ func (b *OrderBot) handleTemplateUse(c tele.Context) error {
 		return sendText(c, "Шаблон не найден.")
 	}
 	_ = c.Respond()
-	return sendHTML(c, responses.Template(template.Body))
+	if err := sendHTML(c, responses.Template(template.Body)); err != nil {
+		return err
+	}
+	return b.sendActionMenu(c)
 }
 
 func (b *OrderBot) handleAddTemplate(c tele.Context) error {
-	if c.Sender() == nil {
+	sender := c.Sender()
+	if sender == nil {
 		return sendText(c, "Не удалось определить пользователя.")
 	}
-	b.updateSession(c.Sender().ID, func(s *session) {
+	b.updateSession(sender.ID, func(s *session) {
 		s.waitingTemplate = true
 	})
-	return sendText(c, "Отправьте шаблон одним сообщением.\nПервая строка - НАЗВАНИЕ заглавными буквами.\nДальше строки: код название 0")
+	if err := sendText(c, "Отправьте шаблон одним сообщением.\nПервая строка - НАЗВАНИЕ заглавными буквами.\nДальше строки: код название 0"); err != nil {
+		return err
+	}
+	return b.sendActionMenu(c)
 }
 
 func (b *OrderBot) createTemplateFromMessage(c tele.Context, text string) error {
@@ -105,10 +90,16 @@ func (b *OrderBot) createTemplateFromMessage(c tele.Context, text string) error 
 	if len(validation.Errors) > 0 {
 		return sendHTML(c, responses.ValidationErrors(validation.Errors))
 	}
-	b.updateSession(c.Sender().ID, func(s *session) {
-		s.waitingTemplate = false
-	})
-	return sendText(c, fmt.Sprintf("Шаблон сохранен: %s", template.Name))
+	sender := c.Sender()
+	if sender != nil {
+		b.updateSession(sender.ID, func(s *session) {
+			s.waitingTemplate = false
+		})
+	}
+	if err := sendText(c, fmt.Sprintf("Шаблон сохранен: %s", template.Name)); err != nil {
+		return err
+	}
+	return b.sendActionMenu(c)
 }
 
 func (b *OrderBot) isWaitingTemplate(uid int64) bool {
