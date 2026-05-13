@@ -96,10 +96,11 @@ func (b *OrderBot) handleConfirm(c tele.Context) error {
 	}
 
 	order, err := b.orderSvc.CreateOrder(ctx, orderdomain.CreateOrderInput{
-		Items:            items,
-		FromDepartmentID: fromDepartmentID,
-		ToDepartmentID:   toDepartmentID,
-		FulfillmentDate:  fulfillmentDate,
+		Items:             items,
+		FromDepartmentID:  fromDepartmentID,
+		ToDepartmentID:    toDepartmentID,
+		CreatedByUsername: b.createdByUsername(ctx, c),
+		FulfillmentDate:   fulfillmentDate,
 	})
 	if err != nil {
 		slog.ErrorContext(ctx, "create order failed", "error", err)
@@ -115,6 +116,23 @@ func (b *OrderBot) handleConfirm(c tele.Context) error {
 
 	slog.InfoContext(applog.WithOrderNumber(ctx, order.Number), "order created", "items", len(items))
 	return c.Send(summary, tele.ModeHTML)
+}
+
+func (b *OrderBot) createdByUsername(ctx context.Context, c tele.Context) string {
+	if c == nil || c.Sender() == nil {
+		return ""
+	}
+	if username := strings.TrimSpace(c.Sender().Username); username != "" {
+		return username
+	}
+	user, err := b.authSvc.GetUserByTelegramID(ctx, c.Sender().ID)
+	if err != nil {
+		return ""
+	}
+	if user.TelegramUsername != nil && strings.TrimSpace(*user.TelegramUsername) != "" {
+		return strings.TrimSpace(*user.TelegramUsername)
+	}
+	return strings.TrimSpace(user.Username)
 }
 
 func (b *OrderBot) handleCancelCallback(c tele.Context) error {

@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"bakery/internal/app"
 	applog "bakery/pkg/logger"
 
 	tele "gopkg.in/telebot.v3"
@@ -12,11 +13,12 @@ import (
 
 func (b *OrderBot) handleOrders(c tele.Context) error {
 	ctx := requestContext(c)
-	orders, err := b.orderSvc.ListOrders(ctx, 10)
+	result, err := b.orderSvc.ListOrders(ctx, app.ListOrdersInput{Limit: 10})
 	if err != nil {
 		slog.ErrorContext(ctx, "list orders failed", "error", err)
 		return c.Send("Не удалось получить заказы. Попробуйте позже.")
 	}
+	orders := result.Orders
 	if len(orders) == 0 {
 		return c.Send("Заказов пока нет.")
 	}
