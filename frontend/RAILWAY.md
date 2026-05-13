@@ -1,11 +1,11 @@
 # Railway Frontend Setup
 
-Frontend is a separate Railway service that serves React through nginx.
-The browser calls the frontend public domain, and nginx proxies `/api/*` to the backend over Railway private network.
+Frontend is a separate Railway service that serves React through a small Node HTTP server.
+The browser calls the frontend public domain, and the Node server proxies `/api/*` to the backend over Railway private network.
 
 ## Services
 
-- `frontend`: React + nginx, public domain enabled.
+- `frontend`: React + Node static/proxy server, public domain enabled.
 - `bakery`: Go backend/bot/sync, no public domain required.
 - `Postgres`: database, private network only.
 
@@ -14,13 +14,13 @@ The browser calls the frontend public domain, and nginx proxies `/api/*` to the 
 Set these on the `frontend` service:
 
 ```env
+HOST=0.0.0.0
 PORT=8080
-VITE_API_BASE_URL=/api
 BACKEND_URL=http://bakery.railway.internal:8080
 ```
 
-`VITE_API_BASE_URL=/api` makes the React app call its own domain.
-`BACKEND_URL` is used only inside the frontend container by nginx.
+React defaults to `/api`, so `VITE_API_BASE_URL` is not needed on Railway.
+`BACKEND_URL` is used only inside the frontend container by the Node proxy.
 
 ## Backend Variables
 
@@ -30,7 +30,7 @@ Set this on the `bakery` service:
 PORT=8080
 ```
 
-`HTTP_ALLOWED_ORIGINS` is not needed when the browser only calls the frontend domain and nginx proxies to `bakery` privately.
+`HTTP_ALLOWED_ORIGINS` is not needed when the browser only calls the frontend domain and the Node server proxies to `bakery` privately.
 
 ## Frontend Service Settings
 
