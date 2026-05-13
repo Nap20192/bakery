@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -39,6 +40,11 @@ type UpdateOrderInput struct {
 	ToDepartmentID    *int64
 	CreatedByUsername string
 	FulfillmentDate   time.Time
+}
+
+type EnsureDefaultTemplatesResult struct {
+	Created int
+	Skipped int
 }
 
 func NewOrderService(queries sqlc.Querier) *OrderService {
@@ -323,6 +329,56 @@ func (s *OrderService) GetOrderTemplate(ctx context.Context, id int64) (orderdom
 		return orderdomain.OrderTemplate{}, err
 	}
 	return orderTemplateToDomain(row), nil
+}
+
+func (s *OrderService) EnsureDefaultOrderTemplates(ctx context.Context, path string) (EnsureDefaultTemplatesResult, error) {
+	var result EnsureDefaultTemplatesResult
+	if strings.TrimSpace(path) == "" {
+		path = "templates/dishes.txt"
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return result, nil
+		}
+		return result, fmt.Errorf("read default templates: %w", err)
+	}
+
+	defaults := parseDefaultOrderTemplates(string(data))
+	if len(defaults) == 0 {
+		return result, nil
+	}
+
+	existingRows, err := s.queries.ListOrderTemplates(ctx)
+	if err != nil {
+		return result, fmt.Errorf("list templates: %w", err)
+	}
+	existing := make(map[string]struct{}, len(existingRows))
+	for _, row := range existingRows {
+		existing[normalizeTemplateName(row.Name)] = struct{}{}
+	}
+
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	for _, template := range defaults {
+		key := normalizeTemplateName(template.Name)
+		if _, ok := existing[key]; ok {
+			result.Skipped++
+			continue
+		}
+		if _, err := s.queries.CreateOrderTemplate(ctx, sqlc.CreateOrderTemplateParams{
+			Theme:           template.Theme,
+			Name:            template.Name,
+			Body:            template.Body,
+			CreatedByUserID: nil,
+			CreatedAt:       now,
+			UpdatedAt:       now,
+		}); err != nil {
+			return result, fmt.Errorf("create default template %q: %w", template.Name, err)
+		}
+		existing[key] = struct{}{}
+		result.Created++
+	}
+	return result, nil
 }
 
 func (s *OrderService) createOrderItems(ctx context.Context, orderID int64, items []orderdomain.OrderItem) error {

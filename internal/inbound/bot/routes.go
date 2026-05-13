@@ -38,6 +38,8 @@ func (b *OrderBot) register() {
 	bt.Handle("\fsubmit_order", b.handleConfirm)
 	bt.Handle("\fedit_order", b.handleEditOrder)
 	bt.Handle("\fupdate_order", b.handleUpdateOrder)
+	bt.Handle("\fopen_order", b.handleOpenOrderCallback)
+	bt.Handle("\fmonitor_order", b.handleMonitorOrderCallback)
 	bt.Handle("\ftemplate_use", b.handleTemplateUse)
 	bt.Handle("\fopen_templates", b.handleTemplates)
 	bt.Handle("\fopen_orders", b.handleOrders)

@@ -19,6 +19,7 @@ type session struct {
 	fulfillmentDate  time.Time
 	editOrderNumber  string
 	waitingTemplate  bool
+	waitingDelete    bool
 	updatedAt        time.Time // время последнего изменения
 }
 
@@ -41,7 +42,15 @@ func (b *OrderBot) clearSession(uid int64) {
 		s.fulfillmentDate = time.Time{}
 		s.editOrderNumber = ""
 		s.waitingTemplate = false
+		s.waitingDelete = false
 	})
+}
+
+func (b *OrderBot) isWaitingDelete(uid int64) bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	s := b.sessions[uid]
+	return s != nil && s.waitingDelete
 }
 
 func mergeSessionItems(existing []orderdomain.OrderItem, incoming []orderdomain.OrderItem) []orderdomain.OrderItem {
@@ -67,8 +76,8 @@ func mergeSessionItems(existing []orderdomain.OrderItem, incoming []orderdomain.
 		}
 		if idx, ok := index[item.Code]; ok {
 			merged[idx].ProductName = item.ProductName
-			merged[idx].Quantity += item.Quantity
-			merged[idx].ReservedQuantity += item.ReservedQuantity
+			merged[idx].Quantity = item.Quantity
+			merged[idx].ReservedQuantity = item.ReservedQuantity
 			continue
 		}
 		index[item.Code] = len(merged)
