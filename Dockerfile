@@ -25,6 +25,7 @@ WORKDIR /app
 
 COPY --from=builder /out/bakery .
 COPY migrations ./migrations
+COPY templates ./templates
 
 ENV LOG_PRETTY=false \
     LOG_LEVEL=INFO \

@@ -16,6 +16,7 @@ const (
 	actionOrders          = "Последние заказы"
 	actionSubmitOrder     = "Отправить заказ"
 	actionUpdateOrder     = "Обновить заказ"
+	actionDeletePosition  = "Удалить позицию"
 	actionCancelOrder     = "Отменить заказ"
 	actionSeeCurrentOrder = "Посмотреть текущий заказ"
 	actionAddTemplate     = "Добавить шаблон"
@@ -37,7 +38,8 @@ func (b *OrderBot) actionMarkup(c tele.Context) *tele.ReplyMarkup {
 			{actionAddTemplate, actionSync},
 		}
 		if action, ok := b.currentOrderAction(c); ok {
-			rows = append(rows, []string{action, actionCancelOrder})
+			rows = append(rows, []string{action, actionDeletePosition})
+			rows = append(rows, []string{actionCancelOrder})
 		}
 		rows = append(rows, []string{actionHelp})
 		return replyKeyboard(rows...)
@@ -52,7 +54,8 @@ func (b *OrderBot) actionMarkup(c tele.Context) *tele.ReplyMarkup {
 		{actionTemplates, actionOrders},
 	}
 	if action, ok := b.currentOrderAction(c); ok {
-		rows = append(rows, []string{action, actionCancelOrder})
+		rows = append(rows, []string{action, actionDeletePosition})
+		rows = append(rows, []string{actionCancelOrder})
 	}
 	rows = append(rows, []string{actionHelp})
 	return replyKeyboard(rows...)

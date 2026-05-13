@@ -46,6 +46,9 @@ func (b *OrderBot) handleText(c tele.Context) error {
 	if handled, err := b.handleActionText(c, text); handled {
 		return err
 	}
+	if sender != nil && b.isWaitingDelete(sender.ID) {
+		return b.deletePositionFromMessage(c, text)
+	}
 	if strings.HasPrefix(text, "/") {
 		return sendText(c, "Неизвестная команда.\n\n/help - список команд и правила заказа")
 	}
@@ -69,6 +72,8 @@ func (b *OrderBot) handleActionText(c tele.Context, text string) (bool, error) {
 		return true, b.handleConfirm(c)
 	case actionUpdateOrder:
 		return true, b.handleUpdateOrder(c)
+	case actionDeletePosition:
+		return true, b.handleDeletePosition(c)
 	case actionCancelOrder:
 		return true, b.handleCancel(c)
 	case actionAddTemplate:
@@ -86,6 +91,70 @@ func (b *OrderBot) handleActionText(c tele.Context, text string) (bool, error) {
 	default:
 		return false, nil
 	}
+}
+
+func (b *OrderBot) handleDeletePosition(c tele.Context) error {
+	sender := c.Sender()
+	if sender == nil {
+		return sendText(c, "Не удалось определить пользователя.")
+	}
+	var hasItems bool
+	b.updateSession(sender.ID, func(s *session) {
+		hasItems = len(s.items) > 0
+		s.waitingDelete = hasItems
+	})
+	if !hasItems {
+		return sendText(c, "В текущем заказе нет позиций для удаления.", b.actionMarkup(c))
+	}
+	return sendText(c, "Отправьте код позиции, которую нужно удалить.\nНапример: 15647", b.actionMarkup(c))
+}
+
+func (b *OrderBot) deletePositionFromMessage(c tele.Context, text string) error {
+	sender := c.Sender()
+	if sender == nil {
+		return sendText(c, "Не удалось определить пользователя.")
+	}
+	code := firstField(text)
+	if code == "" {
+		return sendText(c, "Отправьте код позиции, например: 15647", b.actionMarkup(c))
+	}
+
+	var current session
+	var removed bool
+	b.updateSession(sender.ID, func(s *session) {
+		s.items, removed = removeSessionItemByCode(s.items, code)
+		s.waitingDelete = false
+		current = *s
+	})
+	if !removed {
+		return sendText(c, fmt.Sprintf("Позиция с кодом %s не найдена в текущем заказе.", code), b.actionMarkup(c))
+	}
+	return sendHTML(c, responses.OrderDraft(current.editOrderNumber, current.items, current.fulfillmentDate, nil), b.actionMarkup(c))
+}
+
+func firstField(text string) string {
+	fields := strings.Fields(strings.TrimSpace(text))
+	if len(fields) == 0 {
+		return ""
+	}
+	return fields[0]
+}
+
+func removeSessionItemByCode(items []orderdomain.OrderItem, code string) ([]orderdomain.OrderItem, bool) {
+	code = strings.TrimSpace(code)
+	if code == "" {
+		return items, false
+	}
+	for i, item := range items {
+		if item.Code != code {
+			continue
+		}
+		result := make([]orderdomain.OrderItem, 0, len(items)-1)
+		result = append(result, items[:i]...)
+		result = append(result, items[i+1:]...)
+		return result, true
+	}
+	return items, false
 }
 
 func (b *OrderBot) ensureActionPermission(c tele.Context, permission enum.Permission) error {

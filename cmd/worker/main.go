@@ -80,6 +80,13 @@ func main() {
 	}
 	log.Info("admin user ready", "username", admin.Username, "role", admin.Role, "created", created)
 
+	templateSeed, err := appDeps.OrderService.EnsureDefaultOrderTemplates(ctx, "templates/dishes.txt")
+	if err != nil {
+		log.Error("ensure default templates failed", "error", err)
+		os.Exit(1)
+	}
+	log.Info("default order templates ready", "created", templateSeed.Created, "skipped", templateSeed.Skipped)
+
 	group, groupCtx := errgroup.WithContext(ctx)
 	group.Go(func() error {
 		log.Info("sync service started")

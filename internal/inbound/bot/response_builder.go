@@ -24,20 +24,44 @@ func (responseBuilder) Start() string {
 		"Пример: <code>15647 Сосиска в тесте 5</code>\n" +
 		"Дата отдельной строкой: <code>13.05.2026</code>\n" +
 		"Заказное: <code>5+5</code>\n" +
-		"Количество <code>0</code> удаляет позицию из текущего заказа."
+		"Количество <code>0</code> удаляет позицию из текущего заказа.\n" +
+		"Также можно нажать кнопку <b>Удалить позицию</b> и отправить код."
 }
 
 func (responseBuilder) Template(template string) string {
 	return "<pre>" + html.EscapeString(template) + "</pre>"
 }
 
-func (responseBuilder) OrdersList(orders []orderdomain.Order) string {
+func (responseBuilder) OrdersList(orders []orderdomain.Order, departments map[int64]string) string {
 	var sb strings.Builder
 	sb.WriteString("<b>Последние заказы</b>\n\n")
 	for _, order := range orders {
-		sb.WriteString(fmt.Sprintf("<code>%s</code> · %d поз.\n", html.EscapeString(order.Number), len(order.Items)))
+		sb.WriteString(fmt.Sprintf("<b><code>%s</code></b>\n", html.EscapeString(order.Number)))
+		if !order.FulfillmentDate.IsZero() {
+			sb.WriteString(fmt.Sprintf("Дата выполнения: <code>%s</code>\n", html.EscapeString(order.FulfillmentDate.Format("02.01.2006"))))
+		}
+		if !order.CreatedAt.IsZero() {
+			sb.WriteString(fmt.Sprintf("Создан: <code>%s</code>\n", html.EscapeString(order.CreatedAt.Local().Format("02.01.2006 15:04"))))
+		}
+		if createdBy := orderCreatedBy(order, ""); createdBy != "" {
+			sb.WriteString(fmt.Sprintf("От кого: %s\n", html.EscapeString(createdBy)))
+		}
+		if from := departmentName(departments, order.FromDepartmentID); from != "" {
+			sb.WriteString(fmt.Sprintf("Откуда: %s\n", html.EscapeString(from)))
+		}
+		if to := departmentName(departments, order.ToDepartmentID); to != "" {
+			sb.WriteString(fmt.Sprintf("Куда: %s\n", html.EscapeString(to)))
+		}
+		sb.WriteString(fmt.Sprintf("Позиций: %d\n\n", len(order.Items)))
 	}
 	return sb.String()
+}
+
+func departmentName(departments map[int64]string, id *int64) string {
+	if id == nil {
+		return ""
+	}
+	return strings.TrimSpace(departments[*id])
 }
 
 func (responseBuilder) BulkOrderCheck(result orderdomain.BulkOrderValidationResult) string {
@@ -81,6 +105,13 @@ func (responseBuilder) ValidationErrors(errors []orderdomain.BulkOrderValidation
 func (responseBuilder) OrderSummary(order orderdomain.Order, fromDepartment string, toDepartment string) string {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("<b>Заказ <code>%s</code> отправлен</b>\n\n", html.EscapeString(order.Number)))
+	writeOrderDetails(&sb, order, fromDepartment, toDepartment)
+	return sb.String()
+}
+
+func (responseBuilder) OrderView(order orderdomain.Order, fromDepartment string, toDepartment string) string {
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("<b>Заказ <code>%s</code></b>\n\n", html.EscapeString(order.Number)))
 	writeOrderDetails(&sb, order, fromDepartment, toDepartment)
 	return sb.String()
 }
