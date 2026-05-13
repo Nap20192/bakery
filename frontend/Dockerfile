@@ -8,12 +8,17 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM nginx:1.27-alpine
+FROM node:22-alpine
 
+ENV HOST=0.0.0.0
 ENV PORT=8080
 ENV BACKEND_URL=http://bakery.railway.internal:8080
 
-COPY nginx.conf.template /etc/nginx/templates/default.conf.template
-COPY --from=builder /src/dist /usr/share/nginx/html
+WORKDIR /app
+
+COPY server.js ./server.js
+COPY --from=builder /src/dist ./dist
 
 EXPOSE 8080
+
+CMD ["node", "server.js"]
