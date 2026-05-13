@@ -23,10 +23,7 @@ func (b *OrderBot) handleOrders(c tele.Context) error {
 		return sendText(c, "Заказов пока нет.")
 	}
 
-	if err := sendHTML(c, responses.OrdersList(orders)); err != nil {
-		return err
-	}
-	return b.sendActionMenu(c)
+	return sendHTML(c, responses.OrdersList(orders), b.actionMarkup(c))
 }
 
 func (b *OrderBot) handleOrder(c tele.Context) error {
@@ -47,8 +44,5 @@ func (b *OrderBot) handleOrder(c tele.Context) error {
 	toName := b.departmentDisplayName(ctx, order.ToDepartmentID)
 	markup := &tele.ReplyMarkup{}
 	markup.Inline(markup.Row(markup.Data("Изменить", "edit_order", order.Number)))
-	if err := sendHTML(c, responses.OrderSummary(order, fromName, toName), markup); err != nil {
-		return err
-	}
-	return b.sendActionMenu(c)
+	return sendHTML(c, responses.OrderSummary(order, fromName, toName), markup)
 }

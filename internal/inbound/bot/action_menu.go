@@ -9,32 +9,82 @@ import (
 	tele "gopkg.in/telebot.v3"
 )
 
-type actionMenu struct {
-	text   string
-	markup *tele.ReplyMarkup
-}
+const (
+	actionChooseShop     = "Выбрать магазин"
+	actionChooseWorkshop = "Выбрать цех"
+	actionTemplates      = "Шаблоны"
+	actionOrders         = "Последние заказы"
+	actionSubmitOrder    = "Отправить заказ"
+	actionUpdateOrder    = "Обновить заказ"
+	actionCancelOrder    = "Отменить заказ"
+	actionAddTemplate    = "Добавить шаблон"
+	actionSync           = "Sync iiko"
+	actionHelp           = "Помощь"
+)
 
-func (b *OrderBot) sendActionMenu(c tele.Context) error {
-	menu := b.actionMenu(c)
-	if menu.text == "" {
-		return nil
-	}
-	return sendText(c, menu.text, menu.markup)
-}
-
-func (b *OrderBot) actionMenu(c tele.Context) actionMenu {
+func (b *OrderBot) actionMarkup(c tele.Context) *tele.ReplyMarkup {
 	user, ok := b.currentUser(c)
 	if !ok {
-		return guestActionMenu()
+		return replyKeyboard(
+			[]string{actionChooseShop, actionChooseWorkshop},
+			[]string{actionHelp},
+		)
 	}
-	departmentType := b.userDepartmentType(c, user)
 	if strings.EqualFold(user.Role, accessdomain.RoleAdmin) {
-		return adminActionMenu()
+		rows := [][]string{
+			[]string{actionOrders, actionTemplates},
+			[]string{actionAddTemplate, actionSync},
+		}
+		if action, ok := b.currentOrderAction(c); ok {
+			rows = append(rows, []string{action, actionCancelOrder})
+		}
+		rows = append(rows, []string{actionHelp})
+		return replyKeyboard(rows...)
 	}
-	if departmentType == string(app.DepartmentTypeWorkshop) {
-		return workshopActionMenu()
+	if b.userDepartmentType(c, user) == string(app.DepartmentTypeWorkshop) {
+		return replyKeyboard(
+			[]string{actionOrders, actionTemplates},
+			[]string{actionHelp},
+		)
 	}
-	return shopActionMenu()
+	rows := [][]string{
+		[]string{actionTemplates, actionOrders},
+	}
+	if action, ok := b.currentOrderAction(c); ok {
+		rows = append(rows, []string{action, actionCancelOrder})
+	}
+	rows = append(rows, []string{actionHelp})
+	return replyKeyboard(rows...)
+}
+
+func (b *OrderBot) currentOrderAction(c tele.Context) (string, bool) {
+	if c.Sender() == nil {
+		return "", false
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	s := b.sessions[c.Sender().ID]
+	if s == nil || len(s.items) == 0 {
+		return "", false
+	}
+	if strings.TrimSpace(s.editOrderNumber) != "" {
+		return actionUpdateOrder, true
+	}
+	return actionSubmitOrder, true
+}
+
+func replyKeyboard(rows ...[]string) *tele.ReplyMarkup {
+	markup := &tele.ReplyMarkup{ResizeKeyboard: true}
+	replyRows := make([]tele.Row, 0, len(rows))
+	for _, labels := range rows {
+		buttons := make([]tele.Btn, 0, len(labels))
+		for _, label := range labels {
+			buttons = append(buttons, markup.Text(label))
+		}
+		replyRows = append(replyRows, markup.Row(buttons...))
+	}
+	markup.Reply(replyRows...)
+	return markup
 }
 
 func (b *OrderBot) currentUser(c tele.Context) (accessdomain.AuthUser, bool) {
@@ -63,73 +113,4 @@ func (b *OrderBot) userDepartmentType(c tele.Context, user accessdomain.AuthUser
 		return ""
 	}
 	return department.Type
-}
-
-func guestActionMenu() actionMenu {
-	markup := &tele.ReplyMarkup{}
-	markup.Inline(markup.Row(
-		markup.Data("Выбрать магазин", "dept_shop"),
-		markup.Data("Выбрать цех", "dept_workshop"),
-	))
-	return actionMenu{
-		text:   "Доступные действия:\n/start - выбрать локацию\n/login username password - войти",
-		markup: markup,
-	}
-}
-
-func shopActionMenu() actionMenu {
-	markup := &tele.ReplyMarkup{}
-	markup.Inline(
-		markup.Row(
-			markup.Data("Шаблоны", "open_templates"),
-			markup.Data("Последние заказы", "open_orders"),
-		),
-		markup.Row(markup.Data("Отменить текущий заказ", "cancel_cb")),
-	)
-	return actionMenu{
-		text: "Доступные действия:\n" +
-			"Отправьте позиции сообщением, чтобы добавить их в текущий заказ.\n" +
-			"/templates - выбрать шаблон\n" +
-			"/orders - последние заказы\n" +
-			"/cancel - отменить текущий заказ",
-		markup: markup,
-	}
-}
-
-func workshopActionMenu() actionMenu {
-	markup := &tele.ReplyMarkup{}
-	markup.Inline(markup.Row(
-		markup.Data("Последние заказы", "open_orders"),
-		markup.Data("Шаблоны", "open_templates"),
-	))
-	return actionMenu{
-		text: "Доступные действия:\n" +
-			"/orders - последние заказы\n" +
-			"/order order_number - открыть заказ\n" +
-			"/monitor order_number - посмотреть расход",
-		markup: markup,
-	}
-}
-
-func adminActionMenu() actionMenu {
-	markup := &tele.ReplyMarkup{}
-	markup.Inline(
-		markup.Row(
-			markup.Data("Последние заказы", "open_orders"),
-			markup.Data("Шаблоны", "open_templates"),
-		),
-		markup.Row(
-			markup.Data("Добавить шаблон", "start_addtemplate"),
-			markup.Data("Sync iiko", "run_sync"),
-		),
-	)
-	return actionMenu{
-		text: "Доступные действия администратора:\n" +
-			"/orders - последние заказы\n" +
-			"/templates - шаблоны\n" +
-			"/addtemplate - добавить шаблон\n" +
-			"/sync - синхронизировать iiko\n" +
-			"/techcard code - техкарта",
-		markup: markup,
-	}
 }

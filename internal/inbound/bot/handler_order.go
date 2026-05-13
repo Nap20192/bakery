@@ -10,6 +10,7 @@ import (
 
 	"bakery/internal/app"
 	orderdomain "bakery/internal/domain/order"
+	"bakery/internal/pkg/enum"
 	applog "bakery/pkg/logger"
 
 	tele "gopkg.in/telebot.v3"
@@ -33,10 +34,7 @@ func (b *OrderBot) handleCancel(c tele.Context) error {
 		return sendText(c, "Не удалось определить пользователя.")
 	}
 	b.clearSession(sender.ID)
-	if err := sendText(c, "Текущий заказ отменен."); err != nil {
-		return err
-	}
-	return b.sendActionMenu(c)
+	return sendText(c, "Текущий заказ отменен.", b.actionMarkup(c))
 }
 
 func (b *OrderBot) handleText(c tele.Context) error {
@@ -45,6 +43,9 @@ func (b *OrderBot) handleText(c tele.Context) error {
 	if sender != nil && b.isWaitingTemplate(sender.ID) {
 		return b.createTemplateFromMessage(c, text)
 	}
+	if handled, err := b.handleActionText(c, text); handled {
+		return err
+	}
 	if strings.HasPrefix(text, "/") {
 		return sendText(c, "Неизвестная команда.\n\n/help - список команд и правила заказа")
 	}
@@ -52,6 +53,50 @@ func (b *OrderBot) handleText(c tele.Context) error {
 		return sendText(c, "Отправьте позиции заказа одним сообщением.")
 	}
 	return b.handleBulkOrder(c, text)
+}
+
+func (b *OrderBot) handleActionText(c tele.Context, text string) (bool, error) {
+	switch strings.TrimSpace(text) {
+	case actionChooseShop:
+		return true, b.handleDepartmentShop(c)
+	case actionChooseWorkshop:
+		return true, b.handleDepartmentWorkshop(c)
+	case actionTemplates:
+		return true, b.handleTemplates(c)
+	case actionOrders:
+		return true, b.handleOrders(c)
+	case actionSubmitOrder:
+		return true, b.handleConfirm(c)
+	case actionUpdateOrder:
+		return true, b.handleUpdateOrder(c)
+	case actionCancelOrder:
+		return true, b.handleCancel(c)
+	case actionAddTemplate:
+		if err := b.ensureActionPermission(c, app.PermissionTemplateManage); err != nil {
+			return true, err
+		}
+		return true, b.handleAddTemplate(c)
+	case actionSync:
+		if err := b.ensureActionPermission(c, app.PermissionSync); err != nil {
+			return true, err
+		}
+		return true, b.handleSync(c)
+	case actionHelp:
+		return true, b.handleStart(c)
+	default:
+		return false, nil
+	}
+}
+
+func (b *OrderBot) ensureActionPermission(c tele.Context, permission enum.Permission) error {
+	user, err := b.authUserFromContext(c)
+	if err != nil {
+		return err
+	}
+	if b.rbacSvc == nil || !b.rbacSvc.HasPermission(user.Role, permission) {
+		return sendText(c, "Доступ запрещён.")
+	}
+	return nil
 }
 
 func (b *OrderBot) handleBulkOrder(c tele.Context, text string) error {
@@ -83,10 +128,7 @@ func (b *OrderBot) handleBulkOrder(c tele.Context, text string) error {
 		current = *s
 	})
 
-	if err := sendHTML(c, responses.OrderDraft(current.editOrderNumber, current.items, current.fulfillmentDate, result.Errors), b.orderDraftMarkup(current.editOrderNumber)); err != nil {
-		return err
-	}
-	return b.sendActionMenu(c)
+	return sendHTML(c, responses.OrderDraft(current.editOrderNumber, current.items, current.fulfillmentDate, result.Errors), b.actionMarkup(c))
 }
 
 func hasFulfillmentDateLine(text string) bool {
@@ -157,10 +199,7 @@ func (b *OrderBot) handleConfirm(c tele.Context) error {
 	}
 
 	slog.InfoContext(applog.WithOrderNumber(ctx, order.Number), "order created", "items", len(items))
-	if err := sendHTML(c, summary); err != nil {
-		return err
-	}
-	return b.sendActionMenu(c)
+	return sendHTML(c, summary, b.actionMarkup(c))
 }
 
 func (b *OrderBot) createdByUsername(ctx context.Context, sender *tele.User) string {
@@ -187,10 +226,7 @@ func (b *OrderBot) handleCancelCallback(c tele.Context) error {
 	}
 	b.clearSession(sender.ID)
 	_ = c.Respond()
-	if err := sendText(c, "Текущий заказ отменен."); err != nil {
-		return err
-	}
-	return b.sendActionMenu(c)
+	return sendText(c, "Текущий заказ отменен.", b.actionMarkup(c))
 }
 
 func (b *OrderBot) handleEditOrder(c tele.Context) error {
@@ -216,7 +252,7 @@ func (b *OrderBot) handleEditOrder(c tele.Context) error {
 		s.editOrderNumber = order.Number
 	})
 	_ = c.Respond()
-	return sendHTML(c, responses.OrderDraft(order.Number, order.Items, order.FulfillmentDate, nil), b.orderDraftMarkup(order.Number))
+	return sendHTML(c, responses.OrderDraft(order.Number, order.Items, order.FulfillmentDate, nil), b.actionMarkup(c))
 }
 
 func (b *OrderBot) handleUpdateOrder(c tele.Context) error {
@@ -265,32 +301,7 @@ func (b *OrderBot) handleUpdateOrder(c tele.Context) error {
 	if err := b.notifyWorkshop(ctx, sender.ID, summary); err != nil {
 		slog.WarnContext(ctx, "notify workshop about order update failed", "order_number", order.Number, "error", err)
 	}
-	if err := sendHTML(c, summary); err != nil {
-		return err
-	}
-	return b.sendActionMenu(c)
-}
-
-func (b *OrderBot) orderDraftMarkup(orderNumber string) *tele.ReplyMarkup {
-	markup := &tele.ReplyMarkup{}
-	if strings.TrimSpace(orderNumber) != "" {
-		markup.Inline(
-			markup.Row(
-				markup.Data("Обновить заказ", "update_order"),
-				markup.Data("Отмена", "cancel_cb"),
-			),
-			markup.Row(markup.Data("Шаблоны", "open_templates")),
-		)
-		return markup
-	}
-	markup.Inline(
-		markup.Row(
-			markup.Data("Отправить заказ", "submit_order"),
-			markup.Data("Отмена", "cancel_cb"),
-		),
-		markup.Row(markup.Data("Шаблоны", "open_templates")),
-	)
-	return markup
+	return sendHTML(c, summary, b.actionMarkup(c))
 }
 
 func (b *OrderBot) orderDepartmentsForSender(ctx context.Context, c tele.Context) (*int64, *int64) {

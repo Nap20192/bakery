@@ -11,18 +11,7 @@ import (
 )
 
 func (b *OrderBot) handleStart(c tele.Context) error {
-	markup := &tele.ReplyMarkup{}
-	markup.Inline(
-		markup.Row(
-			markup.Data("Магазин", "dept_shop"),
-			markup.Data("Цех", "dept_workshop"),
-		),
-		markup.Row(
-			markup.Data("Шаблоны", "open_templates"),
-			markup.Data("Последние заказы", "open_orders"),
-		),
-	)
-	return sendHTML(c, responses.Start(), markup)
+	return sendHTML(c, responses.Start(), b.actionMarkup(c))
 }
 
 func (b *OrderBot) handleDepartmentShop(c tele.Context) error {
@@ -86,8 +75,5 @@ func (b *OrderBot) saveDepartmentByCode(c tele.Context, code string) error {
 	})
 
 	_ = c.Respond()
-	if err := sendText(c, fmt.Sprintf("Локация сохранена: %s.", department.Name)); err != nil {
-		return err
-	}
-	return b.sendActionMenu(c)
+	return sendText(c, fmt.Sprintf("Локация сохранена: %s.", department.Name), b.actionMarkup(c))
 }
