@@ -66,7 +66,7 @@ func (s PositiveQuantitySpecification) IsValid(line ParsedOrderLine) bool {
 	if err != nil || reservedQty < 0 {
 		return false
 	}
-	return qty+reservedQty > 0
+	return true
 }
 
 func (line ParsedOrderLine) QuantityValue() (float64, error) {

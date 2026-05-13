@@ -32,6 +32,15 @@ type ListOrdersResult struct {
 	Offset int32
 }
 
+type UpdateOrderInput struct {
+	Number            string
+	Items             []orderdomain.OrderItem
+	FromDepartmentID  *int64
+	ToDepartmentID    *int64
+	CreatedByUsername string
+	FulfillmentDate   time.Time
+}
+
 func NewOrderService(queries sqlc.Querier) *OrderService {
 	return &OrderService{
 		queries: queries,
@@ -40,6 +49,7 @@ func NewOrderService(queries sqlc.Querier) *OrderService {
 }
 
 func (s *OrderService) CreateOrder(ctx context.Context, input orderdomain.CreateOrderInput) (orderdomain.Order, error) {
+	input.Items = positiveOrderItems(input.Items)
 	if len(input.Items) == 0 {
 		return orderdomain.Order{}, fmt.Errorf("order must contain items")
 	}
@@ -70,26 +80,8 @@ func (s *OrderService) CreateOrder(ctx context.Context, input orderdomain.Create
 		return orderdomain.Order{}, fmt.Errorf("create order: %w", err)
 	}
 
-	for _, item := range input.Items {
-		var productID *string
-		if item.Code != "" {
-			product, err := s.queries.GetIikoProductByCode(ctx, item.Code)
-			if err != nil && err != pgx.ErrNoRows {
-				return orderdomain.Order{}, fmt.Errorf("resolve product by code %s: %w", item.Code, err)
-			}
-			if err == nil {
-				productID = &product.ID
-			}
-		}
-		if _, err := s.queries.CreateOrderItem(ctx, sqlc.CreateOrderItemParams{
-			OrderID:          row.ID,
-			IikoProductID:    productID,
-			ProductName:      item.ProductName,
-			Quantity:         item.Quantity,
-			ReservedQuantity: item.ReservedQuantity,
-		}); err != nil {
-			return orderdomain.Order{}, fmt.Errorf("create order item: %w", err)
-		}
+	if err := s.createOrderItems(ctx, row.ID, input.Items); err != nil {
+		return orderdomain.Order{}, err
 	}
 
 	return orderdomain.Order{
@@ -103,6 +95,72 @@ func (s *OrderService) CreateOrder(ctx context.Context, input orderdomain.Create
 		CreatedAt:         helpers.ParseRFC3339(row.CreatedAt),
 		FulfillmentDate:   parseDate(row.FulfillmentDate),
 	}, nil
+}
+
+func (s *OrderService) UpdateOrder(ctx context.Context, input UpdateOrderInput) (orderdomain.Order, error) {
+	input.Items = positiveOrderItems(input.Items)
+	input.Number = strings.TrimSpace(input.Number)
+	if input.Number == "" {
+		return orderdomain.Order{}, fmt.Errorf("order number is required")
+	}
+	if len(input.Items) == 0 {
+		return orderdomain.Order{}, fmt.Errorf("order must contain items")
+	}
+
+	existing, err := s.queries.GetOrderByNumber(ctx, input.Number)
+	if err != nil {
+		return orderdomain.Order{}, err
+	}
+	if input.FromDepartmentID == nil {
+		input.FromDepartmentID = existing.FromDepartmentID
+	}
+	if input.ToDepartmentID == nil {
+		input.ToDepartmentID = existing.ToDepartmentID
+	}
+	fulfillmentDate := s.domain.NormalizeFulfillmentDate(input.FulfillmentDate, helpers.ParseRFC3339(existing.CreatedAt))
+	createdBy := strings.TrimSpace(input.CreatedByUsername)
+	if createdBy == "" {
+		createdBy = existing.CreatedByUsername
+	}
+
+	row, err := s.queries.UpdateOrder(ctx, sqlc.UpdateOrderParams{
+		FromDepartmentID:  input.FromDepartmentID,
+		ToDepartmentID:    input.ToDepartmentID,
+		FulfillmentDate:   fulfillmentDate.Format("2006-01-02"),
+		CreatedByUsername: createdBy,
+		Number:            input.Number,
+	})
+	if err != nil {
+		return orderdomain.Order{}, fmt.Errorf("update order: %w", err)
+	}
+	if err := s.queries.DeleteOrderItemsByOrderID(ctx, row.ID); err != nil {
+		return orderdomain.Order{}, fmt.Errorf("delete order items: %w", err)
+	}
+	if err := s.createOrderItems(ctx, row.ID, input.Items); err != nil {
+		return orderdomain.Order{}, err
+	}
+
+	return orderdomain.Order{
+		ID:                fmt.Sprintf("%d", row.ID),
+		Number:            row.Number,
+		Location:          row.Location,
+		FromDepartmentID:  row.FromDepartmentID,
+		ToDepartmentID:    row.ToDepartmentID,
+		CreatedByUsername: row.CreatedByUsername,
+		Items:             input.Items,
+		CreatedAt:         helpers.ParseRFC3339(row.CreatedAt),
+		FulfillmentDate:   parseDate(row.FulfillmentDate),
+	}, nil
+}
+
+func positiveOrderItems(items []orderdomain.OrderItem) []orderdomain.OrderItem {
+	result := make([]orderdomain.OrderItem, 0, len(items))
+	for _, item := range items {
+		if item.ProductionQuantity() > 0 {
+			result = append(result, item)
+		}
+	}
+	return result
 }
 
 func (s *OrderService) GetOrderByNumber(ctx context.Context, number string) (orderdomain.Order, error) {
@@ -205,6 +263,112 @@ func (s *OrderService) ValidateBulkOrder(ctx context.Context, order string) orde
 	return result
 }
 
+func (s *OrderService) CreateOrderTemplate(ctx context.Context, creatorID *int64, raw string) (orderdomain.OrderTemplate, orderdomain.BulkOrderValidationResult, error) {
+	template, validation := s.domain.ParseOrderTemplate(raw)
+	if len(validation.Errors) > 0 {
+		return orderdomain.OrderTemplate{}, validation, nil
+	}
+	for _, item := range template.Items {
+		exists, err := s.queries.DishExistsByCode(ctx, item.Code)
+		if err != nil {
+			validation.Errors = append(validation.Errors, orderdomain.BulkOrderValidationError{
+				Code:    item.Code,
+				Name:    item.ProductName,
+				Message: fmt.Sprintf("failed to validate code: %v", err),
+			})
+			continue
+		}
+		if exists == 0 {
+			validation.Errors = append(validation.Errors, orderdomain.BulkOrderValidationError{
+				Code:    item.Code,
+				Name:    item.ProductName,
+				Message: "product code not found",
+			})
+		}
+	}
+	if len(validation.Errors) > 0 {
+		return orderdomain.OrderTemplate{}, validation, nil
+	}
+
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	row, err := s.queries.CreateOrderTemplate(ctx, sqlc.CreateOrderTemplateParams{
+		Theme:           template.Theme,
+		Name:            template.Name,
+		Body:            template.Body,
+		CreatedByUserID: creatorID,
+		CreatedAt:       now,
+		UpdatedAt:       now,
+	})
+	if err != nil {
+		return orderdomain.OrderTemplate{}, validation, fmt.Errorf("create order template: %w", err)
+	}
+	return orderTemplateToDomain(row), validation, nil
+}
+
+func (s *OrderService) ListOrderTemplateThemes(ctx context.Context) ([]string, error) {
+	return s.queries.ListOrderTemplateThemes(ctx)
+}
+
+func (s *OrderService) ListOrderTemplates(ctx context.Context) ([]orderdomain.OrderTemplate, error) {
+	rows, err := s.queries.ListOrderTemplates(ctx)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]orderdomain.OrderTemplate, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, orderTemplateToDomain(row))
+	}
+	return result, nil
+}
+
+func (s *OrderService) ListOrderTemplatesByTheme(ctx context.Context, theme string) ([]orderdomain.OrderTemplate, error) {
+	rows, err := s.queries.ListOrderTemplatesByTheme(ctx, strings.TrimSpace(theme))
+	if err != nil {
+		return nil, err
+	}
+	result := make([]orderdomain.OrderTemplate, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, orderTemplateToDomain(row))
+	}
+	return result, nil
+}
+
+func (s *OrderService) GetOrderTemplate(ctx context.Context, id int64) (orderdomain.OrderTemplate, error) {
+	row, err := s.queries.GetOrderTemplateByID(ctx, id)
+	if err != nil {
+		return orderdomain.OrderTemplate{}, err
+	}
+	return orderTemplateToDomain(row), nil
+}
+
+func (s *OrderService) createOrderItems(ctx context.Context, orderID int64, items []orderdomain.OrderItem) error {
+	for _, item := range items {
+		if item.ProductionQuantity() <= 0 {
+			continue
+		}
+		var productID *string
+		if item.Code != "" {
+			product, err := s.queries.GetIikoProductByCode(ctx, item.Code)
+			if err != nil && err != pgx.ErrNoRows {
+				return fmt.Errorf("resolve product by code %s: %w", item.Code, err)
+			}
+			if err == nil {
+				productID = &product.ID
+			}
+		}
+		if _, err := s.queries.CreateOrderItem(ctx, sqlc.CreateOrderItemParams{
+			OrderID:          orderID,
+			IikoProductID:    productID,
+			ProductName:      item.ProductName,
+			Quantity:         item.Quantity,
+			ReservedQuantity: item.ReservedQuantity,
+		}); err != nil {
+			return fmt.Errorf("create order item: %w", err)
+		}
+	}
+	return nil
+}
+
 func mapOrderItems(items []sqlc.GetOrderItemsByOrderIDRow) []orderdomain.OrderItem {
 	result := make([]orderdomain.OrderItem, 0, len(items))
 	for _, item := range items {
@@ -216,6 +380,18 @@ func mapOrderItems(items []sqlc.GetOrderItemsByOrderIDRow) []orderdomain.OrderIt
 		})
 	}
 	return result
+}
+
+func orderTemplateToDomain(row sqlc.OrderTemplate) orderdomain.OrderTemplate {
+	return orderdomain.OrderTemplate{
+		ID:              row.ID,
+		Theme:           row.Theme,
+		Name:            row.Name,
+		Body:            row.Body,
+		CreatedByUserID: row.CreatedByUserID,
+		CreatedAt:       helpers.ParseRFC3339(row.CreatedAt),
+		UpdatedAt:       helpers.ParseRFC3339(row.UpdatedAt),
+	}
 }
 
 func parseDate(value string) time.Time {

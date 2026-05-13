@@ -17,8 +17,12 @@ func (b *OrderBot) handleStart(c tele.Context) error {
 			markup.Data("Магазин", "dept_shop"),
 			markup.Data("Цех", "dept_workshop"),
 		),
+		markup.Row(
+			markup.Data("Шаблоны", "open_templates"),
+			markup.Data("Последние заказы", "open_orders"),
+		),
 	)
-	return c.Send(responses.Start(), tele.ModeHTML, markup)
+	return sendHTML(c, responses.Start(), markup)
 }
 
 func (b *OrderBot) handleDepartmentShop(c tele.Context) error {

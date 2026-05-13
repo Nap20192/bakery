@@ -18,14 +18,14 @@ func (b *OrderBot) handleMonitor(c tele.Context) error {
 	ctx := requestContext(c)
 	args := strings.Fields(c.Message().Payload)
 	if len(args) != 1 && len(args) != 2 {
-		return c.Send("Формат: /monitor order_number [code]")
+		return sendText(c, "Формат: /monitor order_number [code]")
 	}
 
 	ctx = applog.WithOrderNumber(ctx, args[0])
 	order, err := b.orderSvc.GetOrderByNumber(ctx, args[0])
 	if err != nil {
 		slog.WarnContext(ctx, "order lookup failed", "error", err)
-		return c.Send(fmt.Sprintf("Заказ %s не найден.", args[0]))
+		return sendText(c, fmt.Sprintf("Заказ %s не найден.", args[0]))
 	}
 
 	if len(args) == 1 {
@@ -36,10 +36,10 @@ func (b *OrderBot) handleMonitor(c tele.Context) error {
 
 func (b *OrderBot) handleSync(c tele.Context) error {
 	if b.syncSvc == nil {
-		return c.Send("Sync service недоступен.")
+		return sendText(c, "Sync service недоступен.")
 	}
 
-	if err := c.Send("Синхронизация с iiko запущена..."); err != nil {
+	if err := sendText(c, "Синхронизация с iiko запущена..."); err != nil {
 		return err
 	}
 
@@ -49,10 +49,10 @@ func (b *OrderBot) handleSync(c tele.Context) error {
 
 	if err := b.syncSvc.SyncOnce(ctx); err != nil {
 		slog.ErrorContext(ctx, "manual iiko sync failed", "error", err)
-		return c.Send("Синхронизация с iiko не выполнена. Подробности записаны в лог.")
+		return sendText(c, "Синхронизация с iiko не выполнена. Подробности записаны в лог.")
 	}
 
-	return c.Send(fmt.Sprintf("Синхронизация с iiko завершена за %s.", time.Since(start).Round(time.Second)))
+	return sendText(c, fmt.Sprintf("Синхронизация с iiko завершена за %s.", time.Since(start).Round(time.Second)))
 }
 
 func (b *OrderBot) sendMonitorReports(ctx context.Context, c tele.Context, order orderdomain.Order, codes []string) error {
@@ -60,7 +60,7 @@ func (b *OrderBot) sendMonitorReports(ctx context.Context, c tele.Context, order
 	if err != nil {
 		return err
 	}
-	return c.Send(message, tele.ModeHTML)
+	return sendHTML(c, message)
 }
 
 func (b *OrderBot) buildMonitorReports(ctx context.Context, order orderdomain.Order, codes []string) (string, error) {
