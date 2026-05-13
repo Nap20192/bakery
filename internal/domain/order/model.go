@@ -18,6 +18,23 @@ type Order struct {
 	FulfillmentDate   time.Time   `json:"fulfillment_date"`
 }
 
+type OrderTemplate struct {
+	ID              int64
+	Theme           string
+	Name            string
+	Body            string
+	CreatedByUserID *int64
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+}
+
+type ParsedOrderTemplate struct {
+	Theme string
+	Name  string
+	Body  string
+	Items []OrderItem
+}
+
 // CreateOrderInput — входная модель для создания нового заказа.
 // Date может быть пустой: тогда сервис подставляет текущее время.
 type CreateOrderInput struct {

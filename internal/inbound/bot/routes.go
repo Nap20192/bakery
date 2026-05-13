@@ -24,6 +24,8 @@ func (b *OrderBot) register() {
 	bt.Handle("/adduser", b.handleAddUser)
 	bt.Handle("/order", b.handleOrder)
 	bt.Handle("/orders", b.handleOrders)
+	bt.Handle("/templates", b.handleTemplates)
+	bt.Handle("/addtemplate", b.handleAddTemplate, b.requirePermissions(app.PermissionTemplateManage))
 	bt.Handle("/monitor", b.handleMonitor)
 	bt.Handle("/sync", b.handleSync, b.requirePermissions(app.PermissionSync))
 	// Авторизация оставлена только на служебные команды iiko.
@@ -33,6 +35,13 @@ func (b *OrderBot) register() {
 
 	bt.Handle("\fconfirm", b.handleConfirm)
 	bt.Handle("\fcancel_cb", b.handleCancelCallback)
+	bt.Handle("\fsubmit_order", b.handleConfirm)
+	bt.Handle("\fedit_order", b.handleEditOrder)
+	bt.Handle("\fupdate_order", b.handleUpdateOrder)
+	bt.Handle("\ftemplate_theme", b.handleTemplateTheme)
+	bt.Handle("\ftemplate_use", b.handleTemplateUse)
+	bt.Handle("\fopen_templates", b.handleTemplates)
+	bt.Handle("\fopen_orders", b.handleOrders)
 	bt.Handle("\fdept_shop", b.handleDepartmentShop)
 	bt.Handle("\fdept_workshop", b.handleDepartmentWorkshop)
 	bt.Handle("\fdept_select", b.handleDepartmentSelect)
