@@ -107,17 +107,6 @@ INSERT INTO order_templates (
 )
 RETURNING *;
 
--- name: ListOrderTemplateThemes :many
-SELECT DISTINCT theme
-FROM order_templates
-ORDER BY theme;
-
--- name: ListOrderTemplatesByTheme :many
-SELECT *
-FROM order_templates
-WHERE theme = sqlc.arg(theme)
-ORDER BY name, id;
-
 -- name: ListOrderTemplates :many
 SELECT *
 FROM order_templates

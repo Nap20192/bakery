@@ -288,32 +288,6 @@ func (q *Queries) GetOrderTemplateByID(ctx context.Context, id int64) (OrderTemp
 	return i, err
 }
 
-const listOrderTemplateThemes = `-- name: ListOrderTemplateThemes :many
-SELECT DISTINCT theme
-FROM order_templates
-ORDER BY theme
-`
-
-func (q *Queries) ListOrderTemplateThemes(ctx context.Context) ([]string, error) {
-	rows, err := q.db.Query(ctx, listOrderTemplateThemes)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []string
-	for rows.Next() {
-		var theme string
-		if err := rows.Scan(&theme); err != nil {
-			return nil, err
-		}
-		items = append(items, theme)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listOrderTemplates = `-- name: ListOrderTemplates :many
 SELECT id, theme, name, body, created_by_user_id, created_at, updated_at
 FROM order_templates
@@ -322,41 +296,6 @@ ORDER BY theme, name, id
 
 func (q *Queries) ListOrderTemplates(ctx context.Context) ([]OrderTemplate, error) {
 	rows, err := q.db.Query(ctx, listOrderTemplates)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []OrderTemplate
-	for rows.Next() {
-		var i OrderTemplate
-		if err := rows.Scan(
-			&i.ID,
-			&i.Theme,
-			&i.Name,
-			&i.Body,
-			&i.CreatedByUserID,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listOrderTemplatesByTheme = `-- name: ListOrderTemplatesByTheme :many
-SELECT id, theme, name, body, created_by_user_id, created_at, updated_at
-FROM order_templates
-WHERE theme = $1
-ORDER BY name, id
-`
-
-func (q *Queries) ListOrderTemplatesByTheme(ctx context.Context, theme string) ([]OrderTemplate, error) {
-	rows, err := q.db.Query(ctx, listOrderTemplatesByTheme, theme)
 	if err != nil {
 		return nil, err
 	}

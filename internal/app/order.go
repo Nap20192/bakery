@@ -305,24 +305,8 @@ func (s *OrderService) CreateOrderTemplate(ctx context.Context, creatorID *int64
 	return orderTemplateToDomain(row), validation, nil
 }
 
-func (s *OrderService) ListOrderTemplateThemes(ctx context.Context) ([]string, error) {
-	return s.queries.ListOrderTemplateThemes(ctx)
-}
-
 func (s *OrderService) ListOrderTemplates(ctx context.Context) ([]orderdomain.OrderTemplate, error) {
 	rows, err := s.queries.ListOrderTemplates(ctx)
-	if err != nil {
-		return nil, err
-	}
-	result := make([]orderdomain.OrderTemplate, 0, len(rows))
-	for _, row := range rows {
-		result = append(result, orderTemplateToDomain(row))
-	}
-	return result, nil
-}
-
-func (s *OrderService) ListOrderTemplatesByTheme(ctx context.Context, theme string) ([]orderdomain.OrderTemplate, error) {
-	rows, err := s.queries.ListOrderTemplatesByTheme(ctx, strings.TrimSpace(theme))
 	if err != nil {
 		return nil, err
 	}
