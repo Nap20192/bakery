@@ -20,6 +20,18 @@ type OrderService struct {
 	domain  *orderdomain.OrderService
 }
 
+type ListOrdersInput struct {
+	Limit  int32
+	Offset int32
+}
+
+type ListOrdersResult struct {
+	Orders []orderdomain.Order
+	Total  int64
+	Limit  int32
+	Offset int32
+}
+
 func NewOrderService(queries sqlc.Querier) *OrderService {
 	return &OrderService{
 		queries: queries,
@@ -46,12 +58,13 @@ func (s *OrderService) CreateOrder(ctx context.Context, input orderdomain.Create
 
 	number := s.domain.BuildOrderNumber(day, counter)
 	row, err := s.queries.CreateOrder(ctx, sqlc.CreateOrderParams{
-		Number:           number,
-		Location:         input.Location,
-		FromDepartmentID: input.FromDepartmentID,
-		ToDepartmentID:   input.ToDepartmentID,
-		CreatedAt:        createdAt.Format(time.RFC3339Nano),
-		FulfillmentDate:  fulfillmentDate.Format("2006-01-02"),
+		Number:            number,
+		Location:          input.Location,
+		FromDepartmentID:  input.FromDepartmentID,
+		ToDepartmentID:    input.ToDepartmentID,
+		CreatedAt:         createdAt.Format(time.RFC3339Nano),
+		FulfillmentDate:   fulfillmentDate.Format("2006-01-02"),
+		CreatedByUsername: strings.TrimSpace(input.CreatedByUsername),
 	})
 	if err != nil {
 		return orderdomain.Order{}, fmt.Errorf("create order: %w", err)
@@ -80,14 +93,15 @@ func (s *OrderService) CreateOrder(ctx context.Context, input orderdomain.Create
 	}
 
 	return orderdomain.Order{
-		ID:               fmt.Sprintf("%d", row.ID),
-		Number:           row.Number,
-		Location:         row.Location,
-		FromDepartmentID: row.FromDepartmentID,
-		ToDepartmentID:   row.ToDepartmentID,
-		Items:            input.Items,
-		CreatedAt:        helpers.ParseRFC3339(row.CreatedAt),
-		FulfillmentDate:  parseDate(row.FulfillmentDate),
+		ID:                fmt.Sprintf("%d", row.ID),
+		Number:            row.Number,
+		Location:          row.Location,
+		FromDepartmentID:  row.FromDepartmentID,
+		ToDepartmentID:    row.ToDepartmentID,
+		CreatedByUsername: row.CreatedByUsername,
+		Items:             input.Items,
+		CreatedAt:         helpers.ParseRFC3339(row.CreatedAt),
+		FulfillmentDate:   parseDate(row.FulfillmentDate),
 	}, nil
 }
 
@@ -101,40 +115,63 @@ func (s *OrderService) GetOrderByNumber(ctx context.Context, number string) (ord
 		return orderdomain.Order{}, err
 	}
 	return orderdomain.Order{
-		ID:               fmt.Sprintf("%d", order.ID),
-		Number:           order.Number,
-		Location:         order.Location,
-		FromDepartmentID: order.FromDepartmentID,
-		ToDepartmentID:   order.ToDepartmentID,
-		Items:            mapOrderItems(items),
-		CreatedAt:        helpers.ParseRFC3339(order.CreatedAt),
-		FulfillmentDate:  parseDate(order.FulfillmentDate),
+		ID:                fmt.Sprintf("%d", order.ID),
+		Number:            order.Number,
+		Location:          order.Location,
+		FromDepartmentID:  order.FromDepartmentID,
+		ToDepartmentID:    order.ToDepartmentID,
+		CreatedByUsername: order.CreatedByUsername,
+		Items:             mapOrderItems(items),
+		CreatedAt:         helpers.ParseRFC3339(order.CreatedAt),
+		FulfillmentDate:   parseDate(order.FulfillmentDate),
 	}, nil
 }
 
-func (s *OrderService) ListOrders(ctx context.Context, limit int32) ([]orderdomain.Order, error) {
-	rows, err := s.queries.ListOrders(ctx, limit)
+func (s *OrderService) ListOrders(ctx context.Context, input ListOrdersInput) (ListOrdersResult, error) {
+	if input.Limit <= 0 {
+		input.Limit = 10
+	}
+	if input.Limit > 100 {
+		input.Limit = 100
+	}
+	if input.Offset < 0 {
+		input.Offset = 0
+	}
+	total, err := s.queries.CountOrders(ctx)
 	if err != nil {
-		return nil, err
+		return ListOrdersResult{}, err
+	}
+	rows, err := s.queries.ListOrders(ctx, sqlc.ListOrdersParams{
+		OrderLimit:  input.Limit,
+		OrderOffset: input.Offset,
+	})
+	if err != nil {
+		return ListOrdersResult{}, err
 	}
 	result := make([]orderdomain.Order, 0, len(rows))
 	for _, row := range rows {
 		items, err := s.queries.GetOrderItemsByOrderID(ctx, row.ID)
 		if err != nil {
-			return nil, err
+			return ListOrdersResult{}, err
 		}
 		result = append(result, orderdomain.Order{
-			ID:               fmt.Sprintf("%d", row.ID),
-			Number:           row.Number,
-			Location:         row.Location,
-			FromDepartmentID: row.FromDepartmentID,
-			ToDepartmentID:   row.ToDepartmentID,
-			Items:            mapOrderItems(items),
-			CreatedAt:        helpers.ParseRFC3339(row.CreatedAt),
-			FulfillmentDate:  parseDate(row.FulfillmentDate),
+			ID:                fmt.Sprintf("%d", row.ID),
+			Number:            row.Number,
+			Location:          row.Location,
+			FromDepartmentID:  row.FromDepartmentID,
+			ToDepartmentID:    row.ToDepartmentID,
+			CreatedByUsername: row.CreatedByUsername,
+			Items:             mapOrderItems(items),
+			CreatedAt:         helpers.ParseRFC3339(row.CreatedAt),
+			FulfillmentDate:   parseDate(row.FulfillmentDate),
 		})
 	}
-	return result, nil
+	return ListOrdersResult{
+		Orders: result,
+		Total:  total,
+		Limit:  input.Limit,
+		Offset: input.Offset,
+	}, nil
 }
 
 func (s *OrderService) ValidateBulkOrder(ctx context.Context, order string) orderdomain.BulkOrderValidationResult {

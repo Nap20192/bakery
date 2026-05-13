@@ -3,10 +3,12 @@ package api
 import (
 	"context"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
 
+	"bakery/internal/app"
 	monitoringdomain "bakery/internal/domain/monitoring"
 	orderdomain "bakery/internal/domain/order"
 )
@@ -29,15 +31,25 @@ type orderItemResponse struct {
 }
 
 type orderResponse struct {
-	ID              string              `json:"id"`
-	Number          string              `json:"number"`
-	Location        string              `json:"location"`
-	FromDepartment  *departmentResponse `json:"from_department,omitempty"`
-	ToDepartment    *departmentResponse `json:"to_department,omitempty"`
-	Items           []orderItemResponse `json:"items"`
-	CreatedAt       string              `json:"created_at"`
-	FulfillmentDate string              `json:"fulfillment_date"`
-	MonitorCommand  string              `json:"monitor_command"`
+	ID                string              `json:"id"`
+	Number            string              `json:"number"`
+	Location          string              `json:"location"`
+	CreatedByUsername string              `json:"created_by_username"`
+	FromDepartment    *departmentResponse `json:"from_department,omitempty"`
+	ToDepartment      *departmentResponse `json:"to_department,omitempty"`
+	Items             []orderItemResponse `json:"items"`
+	CreatedAt         string              `json:"created_at"`
+	FulfillmentDate   string              `json:"fulfillment_date"`
+	MonitorCommand    string              `json:"monitor_command"`
+}
+
+type ordersPageResponse struct {
+	Items      []orderResponse `json:"items"`
+	Page       int32           `json:"page"`
+	Limit      int32           `json:"limit"`
+	Offset     int32           `json:"offset"`
+	Total      int64           `json:"total"`
+	TotalPages int32           `json:"total_pages"`
 }
 
 type monitorReportResponse struct {
@@ -68,14 +80,34 @@ func (s *Server) handleListOrders(w http.ResponseWriter, r *http.Request) {
 		}
 		limit = int32(parsed)
 	}
+	page := int32(1)
+	if raw := trim(r.URL.Query().Get("page")); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed <= 0 {
+			writeJSON(w, http.StatusBadRequest, errorResponse{Error: "invalid page"})
+			return
+		}
+		page = int32(parsed)
+	}
+	offset := (page - 1) * limit
 
-	orders, err := s.orderSvc.ListOrders(r.Context(), limit)
+	result, err := s.orderSvc.ListOrders(r.Context(), app.ListOrdersInput{
+		Limit:  limit,
+		Offset: offset,
+	})
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, errorResponse{Error: err.Error()})
 		return
 	}
 
-	writeJSON(w, http.StatusOK, s.buildOrderResponses(r.Context(), orders))
+	writeJSON(w, http.StatusOK, ordersPageResponse{
+		Items:      s.buildOrderResponses(r.Context(), result.Orders),
+		Page:       page,
+		Limit:      result.Limit,
+		Offset:     result.Offset,
+		Total:      result.Total,
+		TotalPages: int32(math.Ceil(float64(result.Total) / float64(result.Limit))),
+	})
 }
 
 func (s *Server) handleOrderByID(w http.ResponseWriter, r *http.Request) {
@@ -197,15 +229,16 @@ func (s *Server) buildOrderResponse(ctx context.Context, order orderdomain.Order
 	}
 
 	return orderResponse{
-		ID:              order.ID,
-		Number:          order.Number,
-		Location:        order.Location,
-		FromDepartment:  s.departmentResponse(ctx, order.FromDepartmentID),
-		ToDepartment:    s.departmentResponse(ctx, order.ToDepartmentID),
-		Items:           items,
-		CreatedAt:       createdAt,
-		FulfillmentDate: fulfillmentDate,
-		MonitorCommand:  fmt.Sprintf("/monitor %s", order.Number),
+		ID:                order.ID,
+		Number:            order.Number,
+		Location:          order.Location,
+		CreatedByUsername: order.CreatedByUsername,
+		FromDepartment:    s.departmentResponse(ctx, order.FromDepartmentID),
+		ToDepartment:      s.departmentResponse(ctx, order.ToDepartmentID),
+		Items:             items,
+		CreatedAt:         createdAt,
+		FulfillmentDate:   fulfillmentDate,
+		MonitorCommand:    fmt.Sprintf("/monitor %s", order.Number),
 	}
 }
 

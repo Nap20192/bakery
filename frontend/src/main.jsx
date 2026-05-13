@@ -37,6 +37,11 @@ function orderSource(order) {
   return order?.from_department?.name || order?.location || '-';
 }
 
+function orderCreator(order) {
+  if (order?.created_by_username) return `@${order.created_by_username}`;
+  return orderSource(order);
+}
+
 function apiURL(base, path) {
   return `${base.replace(/\/$/, '')}${path}`;
 }
@@ -49,6 +54,12 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [ordersPage, setOrdersPage] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    total_pages: 0,
+  });
 
   const selectedNumber = selectedOrder?.number || '';
   const pageTitle = useMemo(() => selectedNumber || 'Последние заказы', [selectedNumber]);
@@ -78,12 +89,19 @@ function App() {
     }
   }
 
-  function loadOrders() {
+  function loadOrders(page = ordersPage.page) {
     return run(async () => {
-      const result = await request('/orders?limit=50');
-      setOrders(result);
-      if (!selectedOrder && result.length > 0) {
-        setSelectedOrder(result[0]);
+      const result = await request(`/orders?page=${page}&limit=${ordersPage.limit}`);
+      const items = result.items || [];
+      setOrders(items);
+      setOrdersPage({
+        page: result.page || page,
+        limit: result.limit || ordersPage.limit,
+        total: result.total || 0,
+        total_pages: result.total_pages || 0,
+      });
+      if (!selectedOrder && items.length > 0) {
+        setSelectedOrder(items[0]);
       }
     });
   }
@@ -125,7 +143,7 @@ function App() {
           </button>
         </div>
 
-        <button className="button primary" onClick={loadOrders} disabled={loading}>
+        <button className="button primary" onClick={() => loadOrders(ordersPage.page)} disabled={loading}>
           <RefreshCcw size={16} />
           Обновить
         </button>
@@ -141,7 +159,8 @@ function App() {
               }}
             >
               <strong>{order.number}</strong>
-              <span className="order-line">От кого: {orderSource(order)}</span>
+              <span className="order-line">От кого: {orderCreator(order)}</span>
+              <span className="order-line">Откуда: {orderSource(order)}</span>
               <span className="order-line">Куда: {orderDepartmentName(order, 'to_department')}</span>
               <span className="order-line">Выполнить: {formatFulfillmentDate(order.fulfillment_date) || '-'}</span>
               <span className="order-meta">
@@ -149,6 +168,22 @@ function App() {
               </span>
             </button>
           ))}
+        </div>
+
+        <div className="pagination">
+          <button className="button" onClick={() => loadOrders(ordersPage.page - 1)} disabled={loading || ordersPage.page <= 1}>
+            Назад
+          </button>
+          <span>
+            {ordersPage.page} / {ordersPage.total_pages || 1}
+          </span>
+          <button
+            className="button"
+            onClick={() => loadOrders(ordersPage.page + 1)}
+            disabled={loading || ordersPage.page >= (ordersPage.total_pages || 1)}
+          >
+            Далее
+          </button>
         </div>
       </aside>
 
@@ -231,6 +266,10 @@ function OrderDetails({ order }) {
         <div>
           <span>Выполнить</span>
           <strong>{formatFulfillmentDate(order.fulfillment_date) || '-'}</strong>
+        </div>
+        <div>
+          <span>От кого</span>
+          <strong>{orderCreator(order)}</strong>
         </div>
         <div>
           <span>Откуда</span>

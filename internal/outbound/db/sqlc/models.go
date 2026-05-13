@@ -108,13 +108,14 @@ type IikoSyncRun struct {
 }
 
 type Order struct {
-	ID               int64  `json:"id"`
-	Number           string `json:"number"`
-	Location         string `json:"location"`
-	CreatedAt        string `json:"created_at"`
-	FromDepartmentID *int64 `json:"from_department_id"`
-	ToDepartmentID   *int64 `json:"to_department_id"`
-	FulfillmentDate  string `json:"fulfillment_date"`
+	ID                int64  `json:"id"`
+	Number            string `json:"number"`
+	Location          string `json:"location"`
+	CreatedAt         string `json:"created_at"`
+	FromDepartmentID  *int64 `json:"from_department_id"`
+	ToDepartmentID    *int64 `json:"to_department_id"`
+	FulfillmentDate   string `json:"fulfillment_date"`
+	CreatedByUsername string `json:"created_by_username"`
 }
 
 type OrderCounter struct {

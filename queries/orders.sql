@@ -16,14 +16,16 @@ INSERT INTO orders (
     from_department_id,
     to_department_id,
     created_at,
-    fulfillment_date
+    fulfillment_date,
+    created_by_username
 ) VALUES (
     sqlc.arg(number),
     sqlc.arg(location),
     sqlc.narg(from_department_id),
     sqlc.narg(to_department_id),
     sqlc.arg(created_at),
-    sqlc.arg(fulfillment_date)
+    sqlc.arg(fulfillment_date),
+    sqlc.arg(created_by_username)
 )
 RETURNING *;
 
@@ -66,4 +68,9 @@ ORDER BY oi.id;
 SELECT *
 FROM orders
 ORDER BY id DESC
-LIMIT sqlc.arg(order_limit);
+LIMIT sqlc.arg(order_limit)
+OFFSET sqlc.arg(order_offset);
+
+-- name: CountOrders :one
+SELECT COUNT(*)
+FROM orders;

@@ -9,6 +9,18 @@ import (
 	"context"
 )
 
+const countOrders = `-- name: CountOrders :one
+SELECT COUNT(*)
+FROM orders
+`
+
+func (q *Queries) CountOrders(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countOrders)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createOrder = `-- name: CreateOrder :one
 INSERT INTO orders (
     number,
@@ -16,25 +28,28 @@ INSERT INTO orders (
     from_department_id,
     to_department_id,
     created_at,
-    fulfillment_date
+    fulfillment_date,
+    created_by_username
 ) VALUES (
     $1,
     $2,
     $3,
     $4,
     $5,
-    $6
+    $6,
+    $7
 )
-RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date
+RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username
 `
 
 type CreateOrderParams struct {
-	Number           string `json:"number"`
-	Location         string `json:"location"`
-	FromDepartmentID *int64 `json:"from_department_id"`
-	ToDepartmentID   *int64 `json:"to_department_id"`
-	CreatedAt        string `json:"created_at"`
-	FulfillmentDate  string `json:"fulfillment_date"`
+	Number            string `json:"number"`
+	Location          string `json:"location"`
+	FromDepartmentID  *int64 `json:"from_department_id"`
+	ToDepartmentID    *int64 `json:"to_department_id"`
+	CreatedAt         string `json:"created_at"`
+	FulfillmentDate   string `json:"fulfillment_date"`
+	CreatedByUsername string `json:"created_by_username"`
 }
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
@@ -45,6 +60,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		arg.ToDepartmentID,
 		arg.CreatedAt,
 		arg.FulfillmentDate,
+		arg.CreatedByUsername,
 	)
 	var i Order
 	err := row.Scan(
@@ -55,6 +71,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		&i.FromDepartmentID,
 		&i.ToDepartmentID,
 		&i.FulfillmentDate,
+		&i.CreatedByUsername,
 	)
 	return i, err
 }
@@ -116,7 +133,7 @@ func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams
 }
 
 const getOrderByNumber = `-- name: GetOrderByNumber :one
-SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date
+SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username
 FROM orders
 WHERE number = $1
 `
@@ -132,6 +149,7 @@ func (q *Queries) GetOrderByNumber(ctx context.Context, number string) (Order, e
 		&i.FromDepartmentID,
 		&i.ToDepartmentID,
 		&i.FulfillmentDate,
+		&i.CreatedByUsername,
 	)
 	return i, err
 }
@@ -190,14 +208,20 @@ func (q *Queries) GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]
 }
 
 const listOrders = `-- name: ListOrders :many
-SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date
+SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username
 FROM orders
 ORDER BY id DESC
-LIMIT $1
+LIMIT $2
+OFFSET $1
 `
 
-func (q *Queries) ListOrders(ctx context.Context, orderLimit int32) ([]Order, error) {
-	rows, err := q.db.Query(ctx, listOrders, orderLimit)
+type ListOrdersParams struct {
+	OrderOffset int32 `json:"order_offset"`
+	OrderLimit  int32 `json:"order_limit"`
+}
+
+func (q *Queries) ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order, error) {
+	rows, err := q.db.Query(ctx, listOrders, arg.OrderOffset, arg.OrderLimit)
 	if err != nil {
 		return nil, err
 	}
@@ -213,6 +237,7 @@ func (q *Queries) ListOrders(ctx context.Context, orderLimit int32) ([]Order, er
 			&i.FromDepartmentID,
 			&i.ToDepartmentID,
 			&i.FulfillmentDate,
+			&i.CreatedByUsername,
 		); err != nil {
 			return nil, err
 		}

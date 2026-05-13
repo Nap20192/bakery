@@ -10,6 +10,7 @@ import (
 
 type Querier interface {
 	AssignUserDepartment(ctx context.Context, arg AssignUserDepartmentParams) (AuthUser, error)
+	CountOrders(ctx context.Context) (int64, error)
 	CreateDepartment(ctx context.Context, arg CreateDepartmentParams) (Department, error)
 	CreateIikoSyncRun(ctx context.Context, arg CreateIikoSyncRunParams) (IikoSyncRun, error)
 	CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error)
@@ -38,7 +39,7 @@ type Querier interface {
 	ListAssemblyChartItemsByChartID(ctx context.Context, chartID string) ([]ListAssemblyChartItemsByChartIDRow, error)
 	ListAuthUsersByDepartmentID(ctx context.Context, departmentID *int64) ([]AuthUser, error)
 	ListDepartments(ctx context.Context, type_ *string) ([]Department, error)
-	ListOrders(ctx context.Context, orderLimit int32) ([]Order, error)
+	ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order, error)
 	ListPreparedChartItemsByChartID(ctx context.Context, preparedChartID string) ([]ListPreparedChartItemsByChartIDRow, error)
 	NextOrderCounter(ctx context.Context, day string) (int64, error)
 	UnlinkTelegramAuthUser(ctx context.Context, arg UnlinkTelegramAuthUserParams) error
