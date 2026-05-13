@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/joho/godotenv"
 	"golang.org/x/sync/errgroup"
@@ -22,23 +21,23 @@ import (
 func main() {
 	_ = godotenv.Load()
 
-	log, err := logger.InitLogger(helpers.Env("LOG_LEVEL", "INFO"), helpers.EnvBool("LOG_PRETTY", true), helpers.Env("LOG_DIR", ""))
+	cfg := config.New()
+	log, err := logger.InitLogger(cfg.Log.Level, cfg.Log.Pretty, cfg.Log.Dir)
 	if err != nil {
 		panic(err)
 	}
 	slog.SetDefault(log)
 
-	cfg := config.New()
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	db, err := outbounddb.OpenPostgres(ctx, cfg.DatabaseURL)
+	db, err := outbounddb.OpenPostgres(ctx, cfg.Database.URL)
 	if err != nil {
 		log.Error("open db failed", "error", err)
 		os.Exit(1)
 	}
 	defer helpers.ClosePool(db)
-	if err := dbmigrate.ApplyMigrations(ctx, db, log, helpers.Env("MIGRATIONS_DIR", "migrations")); err != nil {
+	if err := dbmigrate.ApplyMigrations(ctx, db, log, cfg.Migration.Dir); err != nil {
 		log.Error("apply db migrations failed", "error", err)
 		os.Exit(1)
 	}
@@ -63,7 +62,7 @@ func main() {
 		deps.WithTechCardService(infra),
 		deps.WithSyncService(infra),
 		deps.WithOrderBot(infra),
-		deps.WithAPIServer(),
+		deps.WithAPIServerConfig(infra),
 	)
 	if err != nil {
 		log.Error("build app deps failed", "error", err)
@@ -72,8 +71,8 @@ func main() {
 
 	admin, created, err := appDeps.AuthService.EnsureAdminUser(
 		ctx,
-		helpers.Env("ADMIN_USERNAME", "admin"),
-		helpers.Env("ADMIN_PASSWORD", ""),
+		cfg.Admin.Username,
+		cfg.Admin.Password,
 	)
 	if err != nil {
 		log.Error("ensure admin failed", "error", err)
@@ -87,7 +86,7 @@ func main() {
 		return appDeps.SyncService.Run(groupCtx)
 	})
 	group.Go(func() error {
-		log.Info("http api started")
+		log.Info("http api started", "addr", cfg.Server.Addr())
 		return appDeps.APIServer.Start()
 	})
 	group.Go(func() error {
@@ -102,7 +101,7 @@ func main() {
 	group.Go(func() error {
 		<-groupCtx.Done()
 		appDeps.OrderBot.Stop()
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), helpers.EnvDuration("HTTP_SHUTDOWN_TIMEOUT", 10*time.Second))
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
 		defer cancel()
 		return appDeps.APIServer.Shutdown(shutdownCtx)
 	})

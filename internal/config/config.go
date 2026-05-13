@@ -8,8 +8,49 @@ import (
 )
 
 type TelegramConfig struct {
-	BotEnv   string
-	BotToken string
+	BotEnv       string
+	TestBotToken string
+	ProdBotToken string
+	BotToken     string
+}
+
+type LogConfig struct {
+	Level  string
+	Pretty bool
+	Dir    string
+}
+
+type ServerConfig struct {
+	Host            string
+	Port            int
+	AllowedOrigins  string
+	ShutdownTimeout time.Duration
+}
+
+func (c ServerConfig) Addr() string {
+	if c.Host == "" {
+		return fmt.Sprintf(":%d", c.Port)
+	}
+	return fmt.Sprintf("%s:%d", c.Host, c.Port)
+}
+
+type DatabaseConfig struct {
+	URL      string
+	Host     string
+	Port     int
+	Name     string
+	User     string
+	Password string
+	SSLMode  string
+}
+
+type MigrationConfig struct {
+	Dir string
+}
+
+type AdminConfig struct {
+	Username string
+	Password string
 }
 
 type IikoConfig struct {
@@ -20,10 +61,14 @@ type IikoConfig struct {
 }
 
 type Config struct {
-	Telegram    TelegramConfig
-	Iiko        IikoConfig
-	DatabaseURL string
-	Sync        SyncConfig
+	Admin     AdminConfig
+	Database  DatabaseConfig
+	Iiko      IikoConfig
+	Log       LogConfig
+	Migration MigrationConfig
+	Server    ServerConfig
+	Sync      SyncConfig
+	Telegram  TelegramConfig
 }
 
 type SyncConfig struct {
@@ -34,11 +79,19 @@ func New() *Config {
 	botEnv := helpers.Env("BOT_ENV", "test")
 	testBotToken := helpers.Env("TEST_BOT_TOKEN", "")
 	prodBotToken := helpers.Env("PROD_BOT_TOKEN", "")
+	database := databaseConfig()
 
 	return &Config{
+		Admin: AdminConfig{
+			Username: helpers.Env("ADMIN_USERNAME", "admin"),
+			Password: helpers.Env("ADMIN_PASSWORD", ""),
+		},
+		Database: database,
 		Telegram: TelegramConfig{
-			BotEnv:   botEnv,
-			BotToken: selectBotToken(botEnv, testBotToken, prodBotToken),
+			BotEnv:       botEnv,
+			TestBotToken: testBotToken,
+			ProdBotToken: prodBotToken,
+			BotToken:     selectBotToken(botEnv, testBotToken, prodBotToken),
 		},
 		Iiko: IikoConfig{
 			Host:     helpers.Env("IIKO_HOST", ""),
@@ -46,26 +99,56 @@ func New() *Config {
 			Login:    helpers.Env("IIKO_LOGIN", ""),
 			Password: helpers.Env("IIKO_PASSWORD", ""),
 		},
-		DatabaseURL: databaseURL(),
+		Log: LogConfig{
+			Level:  helpers.Env("LOG_LEVEL", "INFO"),
+			Pretty: helpers.EnvBool("LOG_PRETTY", false),
+			Dir:    helpers.Env("LOG_DIR", ""),
+		},
+		Migration: MigrationConfig{
+			Dir: helpers.Env("MIGRATIONS_DIR", "migrations"),
+		},
+		Server: ServerConfig{
+			Host:            helpers.Env("HTTP_HOST", ""),
+			Port:            serverPort(),
+			AllowedOrigins:  helpers.Env("HTTP_ALLOWED_ORIGINS", ""),
+			ShutdownTimeout: helpers.EnvDuration("HTTP_SHUTDOWN_TIMEOUT", 10*time.Second),
+		},
 		Sync: SyncConfig{
 			Interval: helpers.EnvDuration("SYNC_INTERVAL", 6*time.Hour),
 		},
 	}
 }
 
-func databaseURL() string {
-	if value := helpers.Env("DATABASE_URL", ""); value != "" {
-		return value
+func databaseConfig() DatabaseConfig {
+	cfg := DatabaseConfig{
+		Host:     helpers.Env("POSTGRES_HOST", "localhost"),
+		Port:     helpers.EnvInt("POSTGRES_PORT", 5432),
+		Name:     helpers.Env("POSTGRES_DB", "bakery"),
+		User:     helpers.Env("POSTGRES_USER", "postgres"),
+		Password: helpers.Env("POSTGRES_PASSWORD", "postgres"),
+		SSLMode:  helpers.Env("POSTGRES_SSLMODE", "disable"),
 	}
-	return fmt.Sprintf(
+	if value := helpers.Env("DATABASE_URL", ""); value != "" {
+		cfg.URL = value
+		return cfg
+	}
+	cfg.URL = fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s?sslmode=%s",
-		helpers.Env("POSTGRES_USER", "postgres"),
-		helpers.Env("POSTGRES_PASSWORD", "postgres"),
-		helpers.Env("POSTGRES_HOST", "localhost"),
-		helpers.EnvInt("POSTGRES_PORT", 5432),
-		helpers.Env("POSTGRES_DB", "bakery"),
-		helpers.Env("POSTGRES_SSLMODE", "disable"),
+		cfg.User,
+		cfg.Password,
+		cfg.Host,
+		cfg.Port,
+		cfg.Name,
+		cfg.SSLMode,
 	)
+	return cfg
+}
+
+func serverPort() int {
+	if port := helpers.EnvInt("PORT", 0); port > 0 {
+		return port
+	}
+	return helpers.EnvInt("HTTP_PORT", 8080)
 }
 
 func selectBotToken(botEnv string, testToken string, prodToken string) string {
