@@ -64,6 +64,20 @@ LEFT JOIN iiko_products AS p ON p.id = oi.iiko_product_id
 WHERE oi.order_id = sqlc.arg(order_id)
 ORDER BY oi.id;
 
+-- name: DeleteOrderItemsByOrderID :exec
+DELETE FROM order_items
+WHERE order_id = sqlc.arg(order_id);
+
+-- name: UpdateOrder :one
+UPDATE orders
+SET
+    from_department_id = sqlc.narg(from_department_id),
+    to_department_id = sqlc.narg(to_department_id),
+    fulfillment_date = sqlc.arg(fulfillment_date),
+    created_by_username = sqlc.arg(created_by_username)
+WHERE number = sqlc.arg(number)
+RETURNING *;
+
 -- name: ListOrders :many
 SELECT *
 FROM orders
@@ -74,3 +88,42 @@ OFFSET sqlc.arg(order_offset);
 -- name: CountOrders :one
 SELECT COUNT(*)
 FROM orders;
+
+-- name: CreateOrderTemplate :one
+INSERT INTO order_templates (
+    theme,
+    name,
+    body,
+    created_by_user_id,
+    created_at,
+    updated_at
+) VALUES (
+    sqlc.arg(theme),
+    sqlc.arg(name),
+    sqlc.arg(body),
+    sqlc.narg(created_by_user_id),
+    sqlc.arg(created_at),
+    sqlc.arg(updated_at)
+)
+RETURNING *;
+
+-- name: ListOrderTemplateThemes :many
+SELECT DISTINCT theme
+FROM order_templates
+ORDER BY theme;
+
+-- name: ListOrderTemplatesByTheme :many
+SELECT *
+FROM order_templates
+WHERE theme = sqlc.arg(theme)
+ORDER BY name, id;
+
+-- name: ListOrderTemplates :many
+SELECT *
+FROM order_templates
+ORDER BY theme, name, id;
+
+-- name: GetOrderTemplateByID :one
+SELECT *
+FROM order_templates
+WHERE id = sqlc.arg(id);

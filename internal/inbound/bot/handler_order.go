@@ -22,23 +22,26 @@ func (b *OrderBot) handleTemplate(c tele.Context) error {
 	template, err := b.orderSvc.GetTemplate(ctx)
 	if err != nil {
 		slog.ErrorContext(ctx, "get order template failed", "error", err)
-		return c.Send("Не удалось получить шаблон заказа.")
+		return sendText(c, "Не удалось получить шаблон заказа.")
 	}
-	return c.Send(responses.Template(template), tele.ModeHTML)
+	return sendHTML(c, responses.Template(template))
 }
 
 func (b *OrderBot) handleCancel(c tele.Context) error {
 	b.clearSession(c.Sender().ID)
-	return c.Send("Заказ отменен.")
+	return sendText(c, "Текущий заказ отменен.")
 }
 
 func (b *OrderBot) handleText(c tele.Context) error {
 	text := strings.TrimSpace(c.Text())
+	if c.Sender() != nil && b.isWaitingTemplate(c.Sender().ID) {
+		return b.createTemplateFromMessage(c, text)
+	}
 	if strings.HasPrefix(text, "/") {
-		return c.Send("Неизвестная команда.\n\n/help - список команд и правила заказа")
+		return sendText(c, "Неизвестная команда.\n\n/help - список команд и правила заказа")
 	}
 	if text == "" {
-		return c.Send("Отправьте batch-заказ одним сообщением.")
+		return sendText(c, "Отправьте позиции заказа одним сообщением.")
 	}
 	return b.handleBulkOrder(c, text)
 }
@@ -46,29 +49,35 @@ func (b *OrderBot) handleText(c tele.Context) error {
 func (b *OrderBot) handleBulkOrder(c tele.Context, text string) error {
 	ctx := requestContext(c)
 	result := b.orderSvc.ValidateBulkOrder(ctx, text)
-	if len(result.ValidItems) == 0 {
-		return c.Send(responses.ValidationErrors(result.Errors), tele.ModeHTML)
+	if len(result.ValidItems) == 0 && len(result.Errors) > 0 {
+		return sendHTML(c, responses.ValidationErrors(result.Errors))
 	}
 
 	fromDepartmentID, toDepartmentID := b.orderDepartmentsForSender(ctx, c)
 	if fromDepartmentID == nil && toDepartmentID == nil {
-		return c.Send("Заказ создается от магазина в цех. Выберите магазин через /start.")
+		return sendText(c, "Заказ создается от магазина в цех. Выберите магазин через /start.")
 	}
+	var current session
 	b.updateSession(c.Sender().ID, func(s *session) {
-		s.items = result.ValidItems
+		s.items = mergeSessionItems(s.items, result.ValidItems)
 		s.fromDepartmentID = fromDepartmentID
 		s.toDepartmentID = toDepartmentID
-		s.fulfillmentDate = result.FulfillmentDate
+		if hasFulfillmentDateLine(text) || s.fulfillmentDate.IsZero() {
+			s.fulfillmentDate = result.FulfillmentDate
+		}
+		current = *s
 	})
 
-	markup := &tele.ReplyMarkup{}
-	markup.Inline(
-		markup.Row(
-			markup.Data("Отправить", "confirm"),
-			markup.Data("Отмена", "cancel_cb"),
-		),
-	)
-	return c.Send(responses.BulkOrderCheck(result), tele.ModeHTML, markup)
+	return sendHTML(c, responses.OrderDraft(current.editOrderNumber, current.items, current.fulfillmentDate, result.Errors), b.orderDraftMarkup(current.editOrderNumber))
+}
+
+func hasFulfillmentDateLine(text string) bool {
+	for _, line := range strings.Split(text, "\n") {
+		if _, ok, _ := orderdomain.ParseFulfillmentDateLine(strings.TrimSpace(line)); ok {
+			return true
+		}
+	}
+	return false
 }
 
 func (b *OrderBot) handleConfirm(c tele.Context) error {
@@ -85,11 +94,12 @@ func (b *OrderBot) handleConfirm(c tele.Context) error {
 		fulfillmentDate = s.fulfillmentDate
 		s.items = nil
 		s.fulfillmentDate = time.Time{}
+		s.editOrderNumber = ""
 	})
 
 	_ = c.Respond()
 	if len(items) == 0 {
-		return c.Send("Заказ пустой или уже отправлен.")
+		return sendText(c, "Заказ пустой или уже отправлен.")
 	}
 	if fromDepartmentID == nil && toDepartmentID == nil {
 		fromDepartmentID, toDepartmentID = b.orderDepartmentsForSender(ctx, c)
@@ -104,7 +114,7 @@ func (b *OrderBot) handleConfirm(c tele.Context) error {
 	})
 	if err != nil {
 		slog.ErrorContext(ctx, "create order failed", "error", err)
-		return c.Send("Не удалось создать заказ. Проверьте заказ и попробуйте снова.")
+		return sendText(c, "Не удалось создать заказ. Проверьте заказ и попробуйте снова.")
 	}
 
 	fromName := b.departmentDisplayName(ctx, order.FromDepartmentID)
@@ -115,7 +125,7 @@ func (b *OrderBot) handleConfirm(c tele.Context) error {
 	}
 
 	slog.InfoContext(applog.WithOrderNumber(ctx, order.Number), "order created", "items", len(items))
-	return c.Send(summary, tele.ModeHTML)
+	return sendHTML(c, summary)
 }
 
 func (b *OrderBot) createdByUsername(ctx context.Context, c tele.Context) string {
@@ -138,7 +148,96 @@ func (b *OrderBot) createdByUsername(ctx context.Context, c tele.Context) string
 func (b *OrderBot) handleCancelCallback(c tele.Context) error {
 	b.clearSession(c.Sender().ID)
 	_ = c.Respond()
-	return c.Send("Заказ отменен.")
+	return sendText(c, "Текущий заказ отменен.")
+}
+
+func (b *OrderBot) handleEditOrder(c tele.Context) error {
+	ctx := requestContext(c)
+	number := strings.TrimSpace(c.Callback().Data)
+	if number == "" {
+		return sendText(c, "Не удалось определить заказ.")
+	}
+	order, err := b.orderSvc.GetOrderByNumber(ctx, number)
+	if err != nil {
+		slog.WarnContext(ctx, "get order for edit failed", "order_number", number, "error", err)
+		return sendText(c, "Заказ не найден.")
+	}
+	b.updateSession(c.Sender().ID, func(s *session) {
+		s.items = append([]orderdomain.OrderItem(nil), order.Items...)
+		s.fromDepartmentID = cloneInt64Ptr(order.FromDepartmentID)
+		s.toDepartmentID = cloneInt64Ptr(order.ToDepartmentID)
+		s.fulfillmentDate = order.FulfillmentDate
+		s.editOrderNumber = order.Number
+	})
+	_ = c.Respond()
+	return sendHTML(c, responses.OrderDraft(order.Number, order.Items, order.FulfillmentDate, nil), b.orderDraftMarkup(order.Number))
+}
+
+func (b *OrderBot) handleUpdateOrder(c tele.Context) error {
+	ctx := requestContext(c)
+	var items []orderdomain.OrderItem
+	var fromDepartmentID *int64
+	var toDepartmentID *int64
+	var fulfillmentDate time.Time
+	var orderNumber string
+	b.updateSession(c.Sender().ID, func(s *session) {
+		items = append([]orderdomain.OrderItem(nil), s.items...)
+		fromDepartmentID = cloneInt64Ptr(s.fromDepartmentID)
+		toDepartmentID = cloneInt64Ptr(s.toDepartmentID)
+		fulfillmentDate = s.fulfillmentDate
+		orderNumber = s.editOrderNumber
+		s.items = nil
+		s.fulfillmentDate = time.Time{}
+		s.editOrderNumber = ""
+	})
+	_ = c.Respond()
+	if orderNumber == "" {
+		return sendText(c, "Нет заказа в режиме редактирования.")
+	}
+	if len(items) == 0 {
+		return sendText(c, "Заказ пустой. Добавьте позиции или нажмите отмену.")
+	}
+	order, err := b.orderSvc.UpdateOrder(ctx, app.UpdateOrderInput{
+		Number:            orderNumber,
+		Items:             items,
+		FromDepartmentID:  fromDepartmentID,
+		ToDepartmentID:    toDepartmentID,
+		CreatedByUsername: b.createdByUsername(ctx, c),
+		FulfillmentDate:   fulfillmentDate,
+	})
+	if err != nil {
+		slog.ErrorContext(ctx, "update order failed", "order_number", orderNumber, "error", err)
+		return sendText(c, "Не удалось обновить заказ.")
+	}
+	fromName := b.departmentDisplayName(ctx, order.FromDepartmentID)
+	toName := b.departmentDisplayName(ctx, order.ToDepartmentID)
+	summary := responses.OrderUpdated(order, fromName, toName)
+	if err := b.notifyWorkshop(ctx, c.Sender().ID, summary); err != nil {
+		slog.WarnContext(ctx, "notify workshop about order update failed", "order_number", order.Number, "error", err)
+	}
+	return sendHTML(c, summary)
+}
+
+func (b *OrderBot) orderDraftMarkup(orderNumber string) *tele.ReplyMarkup {
+	markup := &tele.ReplyMarkup{}
+	if strings.TrimSpace(orderNumber) != "" {
+		markup.Inline(
+			markup.Row(
+				markup.Data("Обновить заказ", "update_order"),
+				markup.Data("Отмена", "cancel_cb"),
+			),
+			markup.Row(markup.Data("Шаблоны", "open_templates")),
+		)
+		return markup
+	}
+	markup.Inline(
+		markup.Row(
+			markup.Data("Отправить заказ", "submit_order"),
+			markup.Data("Отмена", "cancel_cb"),
+		),
+		markup.Row(markup.Data("Шаблоны", "open_templates")),
+	)
+	return markup
 }
 
 func (b *OrderBot) orderDepartmentsForSender(ctx context.Context, c tele.Context) (*int64, *int64) {
@@ -219,7 +318,7 @@ func (b *OrderBot) notifyWorkshop(ctx context.Context, senderID int64, message s
 		if user.TelegramID == nil || *user.TelegramID == senderID {
 			continue
 		}
-		if _, err := b.tele.Send(tele.ChatID(*user.TelegramID), message, tele.ModeHTML); err != nil {
+		if err := b.sendHTMLToChat(*user.TelegramID, message); err != nil {
 			slog.WarnContext(ctx, "send workshop order notification failed", "telegram_id", *user.TelegramID, "error", err)
 		}
 	}

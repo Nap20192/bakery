@@ -17,6 +17,8 @@ type session struct {
 	fromDepartmentID *int64
 	toDepartmentID   *int64
 	fulfillmentDate  time.Time
+	editOrderNumber  string
+	waitingTemplate  bool
 	updatedAt        time.Time // время последнего изменения
 }
 
@@ -37,7 +39,42 @@ func (b *OrderBot) clearSession(uid int64) {
 	b.updateSession(uid, func(s *session) {
 		s.items = nil
 		s.fulfillmentDate = time.Time{}
+		s.editOrderNumber = ""
+		s.waitingTemplate = false
 	})
+}
+
+func mergeSessionItems(existing []orderdomain.OrderItem, incoming []orderdomain.OrderItem) []orderdomain.OrderItem {
+	merged := make([]orderdomain.OrderItem, 0, len(existing)+len(incoming))
+	index := make(map[string]int, len(existing)+len(incoming))
+	for _, item := range existing {
+		if item.ProductionQuantity() <= 0 {
+			continue
+		}
+		index[item.Code] = len(merged)
+		merged = append(merged, item)
+	}
+	for _, item := range incoming {
+		if item.ProductionQuantity() <= 0 {
+			if idx, ok := index[item.Code]; ok {
+				merged = append(merged[:idx], merged[idx+1:]...)
+				index = make(map[string]int, len(merged))
+				for i, existingItem := range merged {
+					index[existingItem.Code] = i
+				}
+			}
+			continue
+		}
+		if idx, ok := index[item.Code]; ok {
+			merged[idx].ProductName = item.ProductName
+			merged[idx].Quantity += item.Quantity
+			merged[idx].ReservedQuantity += item.ReservedQuantity
+			continue
+		}
+		index[item.Code] = len(merged)
+		merged = append(merged, item)
+	}
+	return merged
 }
 
 // cleanupLoop удаляет сессии, которые не обновлялись дольше sessionTTL.

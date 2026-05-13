@@ -161,17 +161,48 @@ func TestPositiveQuantitySpecification(t *testing.T) {
 	if !spec.IsValid(ParsedOrderLine{Quantity: "5+0"}) {
 		t.Fatal("zero reserved quantity should be valid")
 	}
-	if spec.IsValid(ParsedOrderLine{Quantity: "0"}) {
-		t.Fatal("zero total quantity should be invalid")
+	if !spec.IsValid(ParsedOrderLine{Quantity: "0"}) {
+		t.Fatal("zero total quantity should be valid as delete marker")
 	}
-	if spec.IsValid(ParsedOrderLine{Quantity: "0+0"}) {
-		t.Fatal("zero total quantity with reserved should be invalid")
+	if !spec.IsValid(ParsedOrderLine{Quantity: "0+0"}) {
+		t.Fatal("zero total quantity with reserved should be valid as delete marker")
 	}
 	if spec.IsValid(ParsedOrderLine{Quantity: "-1"}) {
 		t.Fatal("negative quantity should be invalid")
 	}
 	if spec.IsValid(ParsedOrderLine{Quantity: "abc"}) {
 		t.Fatal("non numeric quantity should be invalid")
+	}
+}
+
+func TestOrderServiceParseOrderTemplate(t *testing.T) {
+	svc := NewOrderService()
+
+	template, validation := svc.ParseOrderTemplate(`
+ПИРОЖКИ
+15635 Пирожок с капустой 0
+20495 Пирожок с картошкой 0
+`)
+	if len(validation.Errors) != 0 {
+		t.Fatalf("unexpected errors: %#v", validation.Errors)
+	}
+	if template.Theme != "ПИРОЖКИ" || template.Name != "ПИРОЖКИ" {
+		t.Fatalf("unexpected template: %#v", template)
+	}
+	if len(template.Items) != 2 {
+		t.Fatalf("items = %d, want 2", len(template.Items))
+	}
+}
+
+func TestOrderServiceParseOrderTemplateRequiresZeroQuantity(t *testing.T) {
+	svc := NewOrderService()
+
+	_, validation := svc.ParseOrderTemplate(`
+ПИРОЖКИ
+15635 Пирожок с капустой 1
+`)
+	if len(validation.Errors) != 1 || !strings.Contains(validation.Errors[0].Message, "template quantity must be 0") {
+		t.Fatalf("unexpected errors: %#v", validation.Errors)
 	}
 }
 

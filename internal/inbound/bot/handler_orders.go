@@ -20,27 +20,29 @@ func (b *OrderBot) handleOrders(c tele.Context) error {
 	}
 	orders := result.Orders
 	if len(orders) == 0 {
-		return c.Send("Заказов пока нет.")
+		return sendText(c, "Заказов пока нет.")
 	}
 
-	return c.Send(responses.OrdersList(orders), tele.ModeHTML)
+	return sendHTML(c, responses.OrdersList(orders))
 }
 
 func (b *OrderBot) handleOrder(c tele.Context) error {
 	ctx := requestContext(c)
 	args := strings.Fields(c.Message().Payload)
 	if len(args) != 1 {
-		return c.Send("Формат: /order order_number")
+		return sendText(c, "Формат: /order order_number")
 	}
 
 	ctx = applog.WithOrderNumber(ctx, args[0])
 	order, err := b.orderSvc.GetOrderByNumber(ctx, args[0])
 	if err != nil {
 		slog.WarnContext(ctx, "order lookup failed", "error", err)
-		return c.Send(fmt.Sprintf("Заказ %s не найден.", args[0]))
+		return sendText(c, fmt.Sprintf("Заказ %s не найден.", args[0]))
 	}
 
 	fromName := b.departmentDisplayName(ctx, order.FromDepartmentID)
 	toName := b.departmentDisplayName(ctx, order.ToDepartmentID)
-	return c.Send(responses.OrderSummary(order, fromName, toName), tele.ModeHTML)
+	markup := &tele.ReplyMarkup{}
+	markup.Inline(markup.Row(markup.Data("Изменить", "edit_order", order.Number)))
+	return sendHTML(c, responses.OrderSummary(order, fromName, toName), markup)
 }
