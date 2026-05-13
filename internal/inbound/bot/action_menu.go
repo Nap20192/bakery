@@ -10,16 +10,17 @@ import (
 )
 
 const (
-	actionChooseShop     = "Выбрать магазин"
-	actionChooseWorkshop = "Выбрать цех"
-	actionTemplates      = "Шаблоны"
-	actionOrders         = "Последние заказы"
-	actionSubmitOrder    = "Отправить заказ"
-	actionUpdateOrder    = "Обновить заказ"
-	actionCancelOrder    = "Отменить заказ"
-	actionAddTemplate    = "Добавить шаблон"
-	actionSync           = "Sync iiko"
-	actionHelp           = "Помощь"
+	actionChooseShop      = "Выбрать магазин"
+	actionChooseWorkshop  = "Выбрать цех"
+	actionTemplates       = "Шаблоны"
+	actionOrders          = "Последние заказы"
+	actionSubmitOrder     = "Отправить заказ"
+	actionUpdateOrder     = "Обновить заказ"
+	actionCancelOrder     = "Отменить заказ"
+	actionSeeCurrentOrder = "Посмотреть текущий заказ"
+	actionAddTemplate     = "Добавить шаблон"
+	actionSync            = "Sync iiko"
+	actionHelp            = "Помощь"
 )
 
 func (b *OrderBot) actionMarkup(c tele.Context) *tele.ReplyMarkup {
@@ -32,8 +33,8 @@ func (b *OrderBot) actionMarkup(c tele.Context) *tele.ReplyMarkup {
 	}
 	if strings.EqualFold(user.Role, accessdomain.RoleAdmin) {
 		rows := [][]string{
-			[]string{actionOrders, actionTemplates},
-			[]string{actionAddTemplate, actionSync},
+			{actionOrders, actionTemplates},
+			{actionAddTemplate, actionSync},
 		}
 		if action, ok := b.currentOrderAction(c); ok {
 			rows = append(rows, []string{action, actionCancelOrder})
@@ -48,7 +49,7 @@ func (b *OrderBot) actionMarkup(c tele.Context) *tele.ReplyMarkup {
 		)
 	}
 	rows := [][]string{
-		[]string{actionTemplates, actionOrders},
+		{actionTemplates, actionOrders},
 	}
 	if action, ok := b.currentOrderAction(c); ok {
 		rows = append(rows, []string{action, actionCancelOrder})
