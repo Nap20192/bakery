@@ -35,10 +35,24 @@ input {
   padding: 22px;
 }
 
+.sidebar-head,
+.topbar-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.topbar-title {
+  justify-content: flex-start;
+  min-width: 0;
+}
+
 .brand {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
 .brand h1,
@@ -99,6 +113,26 @@ input {
   background: #245b4f;
 }
 
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #bfccd1;
+  border-radius: 6px;
+  color: #17202a;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.menu-button,
+.close-menu,
+.scrim {
+  display: none;
+}
+
 .orders {
   display: grid;
   gap: 8px;
@@ -108,11 +142,11 @@ input {
 
 .order-row {
   display: grid;
-  gap: 4px;
+  gap: 6px;
   width: 100%;
   border: 1px solid #dce3e6;
   border-radius: 6px;
-  padding: 10px;
+  padding: 12px;
   text-align: left;
   background: #ffffff;
   cursor: pointer;
@@ -126,6 +160,21 @@ input {
 .order-row span {
   color: #64747b;
   font-size: 13px;
+}
+
+.order-row strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.order-line,
+.order-meta {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.order-meta {
+  line-height: 1.35;
 }
 
 .content {
@@ -290,15 +339,39 @@ code {
   }
 
   .sidebar {
-    border-right: 0;
-    border-bottom: 1px solid #dce3e6;
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 30;
+    width: min(360px, 88vw);
+    border-right: 1px solid #dce3e6;
+    border-bottom: 0;
+    box-shadow: 18px 0 42px rgba(23, 32, 42, 0.16);
+    transform: translateX(-105%);
+    transition: transform 180ms ease;
+    overflow-y: auto;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
   }
 
   .orders {
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(190px, 240px);
-    overflow-x: auto;
-    padding-bottom: 4px;
+    overflow: visible;
+  }
+
+  .menu-button,
+  .close-menu {
+    display: inline-flex;
+  }
+
+  .scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    border: 0;
+    background: rgba(23, 32, 42, 0.28);
+    cursor: pointer;
   }
 
   .meta {
@@ -307,9 +380,12 @@ code {
 }
 
 @media (max-width: 560px) {
-  .content,
-  .sidebar {
+  .content {
     padding: 12px;
+  }
+
+  .sidebar {
+    padding: 16px;
   }
 
   .brand h1 {
