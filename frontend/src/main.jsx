@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Activity, ClipboardList, RefreshCcw, Search } from 'lucide-react';
+import { Activity, ClipboardList, Menu, RefreshCcw, Search, X } from 'lucide-react';
 import './styles.css';
 
 const apiBase = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -29,6 +29,14 @@ function orderQuantity(item) {
   return `${formatQuantity(item.quantity)}+${formatQuantity(item.reserved_quantity)}`;
 }
 
+function orderDepartmentName(order, key) {
+  return order?.[key]?.name || '-';
+}
+
+function orderSource(order) {
+  return order?.from_department?.name || order?.location || '-';
+}
+
 function apiURL(base, path) {
   return `${base.replace(/\/$/, '')}${path}`;
 }
@@ -40,6 +48,7 @@ function App() {
   const [monitorCode, setMonitorCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const selectedNumber = selectedOrder?.number || '';
   const pageTitle = useMemo(() => selectedNumber || 'Последние заказы', [selectedNumber]);
@@ -98,13 +107,22 @@ function App() {
 
   return (
     <main className="shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <ClipboardList size={22} />
-          <div>
-            <h1>Bakery</h1>
-            <span>Orders</span>
+      {menuOpen && (
+        <button className="scrim" type="button" aria-label="Закрыть меню" onClick={() => setMenuOpen(false)} />
+      )}
+
+      <aside className={`sidebar ${menuOpen ? 'open' : ''}`}>
+        <div className="sidebar-head">
+          <div className="brand">
+            <ClipboardList size={22} />
+            <div>
+              <h1>Bakery</h1>
+              <span>Orders</span>
+            </div>
           </div>
+          <button className="icon-button close-menu" type="button" aria-label="Закрыть меню" onClick={() => setMenuOpen(false)}>
+            <X size={20} />
+          </button>
         </div>
 
         <button className="button primary" onClick={loadOrders} disabled={loading}>
@@ -117,10 +135,18 @@ function App() {
             <button
               key={order.number}
               className={`order-row ${selectedOrder?.number === order.number ? 'active' : ''}`}
-              onClick={() => loadOrder(order.number)}
+              onClick={() => {
+                setMenuOpen(false);
+                loadOrder(order.number);
+              }}
             >
               <strong>{order.number}</strong>
-              <span>{order.items?.length || 0} поз.</span>
+              <span className="order-line">От кого: {orderSource(order)}</span>
+              <span className="order-line">Куда: {orderDepartmentName(order, 'to_department')}</span>
+              <span className="order-line">Выполнить: {formatFulfillmentDate(order.fulfillment_date) || '-'}</span>
+              <span className="order-meta">
+                Создан: {formatDate(order.created_at) || '-'} · {order.items?.length || 0} поз.
+              </span>
             </button>
           ))}
         </div>
@@ -128,9 +154,14 @@ function App() {
 
       <section className="content">
         <header className="topbar">
-          <div>
-            <span className="eyebrow">Просмотр заказа</span>
-            <h2>{pageTitle}</h2>
+          <div className="topbar-title">
+            <button className="icon-button menu-button" type="button" aria-label="Открыть заказы" onClick={() => setMenuOpen(true)}>
+              <Menu size={20} />
+            </button>
+            <div>
+              <span className="eyebrow">Просмотр заказа</span>
+              <h2>{pageTitle}</h2>
+            </div>
           </div>
           <div className="actions">
             <button className="button" onClick={() => selectedOrder && loadOrder(selectedOrder.number)} disabled={!selectedOrder || loading}>
