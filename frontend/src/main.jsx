@@ -223,10 +223,10 @@ function OrderDetails({ order }) {
         <tbody>
           {order.items?.map((item) => (
             <tr key={item.code}>
-              <td><code>{item.code}</code></td>
-              <td>{item.product_name}</td>
-              <td>{orderQuantity(item)}</td>
-              <td>{formatQuantity(item.production_quantity)}</td>
+              <td data-label="Код"><code>{item.code}</code></td>
+              <td data-label="Позиция">{item.product_name}</td>
+              <td data-label="Кол-во">{orderQuantity(item)}</td>
+              <td data-label="Всего">{formatQuantity(item.production_quantity)}</td>
             </tr>
           ))}
         </tbody>
