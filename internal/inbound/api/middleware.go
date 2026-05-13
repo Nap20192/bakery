@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 )
@@ -18,7 +17,7 @@ func (s *Server) withMiddleware(next http.Handler) http.Handler {
 }
 
 func (s *Server) cors(next http.Handler) http.Handler {
-	allowedOrigins := parseAllowedOrigins(os.Getenv("HTTP_ALLOWED_ORIGINS"))
+	allowedOrigins := parseAllowedOrigins(s.config.AllowedOrigins)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
 		if origin != "" && isAllowedOrigin(origin, allowedOrigins) {

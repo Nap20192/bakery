@@ -126,12 +126,18 @@ func WithOrderBot(infra *InfraDeps) appOption {
 	}
 }
 
-func WithAPIServer() appOption {
+func WithAPIServerConfig(infra *InfraDeps) appOption {
 	return func(deps *AppDeps) error {
+		if infra == nil || infra.config == nil {
+			return fmt.Errorf("missing dependencies for APIServer config")
+		}
 		if deps.OrderService == nil || deps.MonitorService == nil || deps.DepartmentService == nil {
 			return fmt.Errorf("missing dependencies for APIServer")
 		}
-		deps.APIServer = api.NewServer(deps.OrderService, deps.MonitorService, deps.DepartmentService)
+		deps.APIServer = api.NewServer(deps.OrderService, deps.MonitorService, deps.DepartmentService, api.ServerConfig{
+			Addr:           infra.config.Server.Addr(),
+			AllowedOrigins: infra.config.Server.AllowedOrigins,
+		})
 		return nil
 	}
 }
