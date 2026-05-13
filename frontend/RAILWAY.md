@@ -39,16 +39,16 @@ Use the repository `Nap20192/bakery`.
 Recommended settings:
 
 ```text
-Root Directory: /frontend
-Dockerfile Path: /Dockerfile
-Config File: /railway.json
+Root Directory: /
+Dockerfile Path: /frontend/Dockerfile
+Config File: /frontend/railway.json
 ```
 
 If deploying manually from local CLI:
 
 ```bash
 railway service link frontend
-railway up ./frontend --path-as-root --detach -m "Deploy frontend"
+railway up --detach -m "Deploy frontend"
 ```
 
 ## Public Domains
