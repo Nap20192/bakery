@@ -38,10 +38,7 @@ func (b *OrderBot) handleTemplates(c tele.Context) error {
 		rows = append(rows, markup.Row(markup.Data(template.Name, "template_use", strconv.FormatInt(template.ID, 10))))
 	}
 	markup.Inline(rows...)
-	if err := sendText(c, text.String(), markup); err != nil {
-		return err
-	}
-	return b.sendActionMenu(c)
+	return sendText(c, text.String(), markup)
 }
 
 func (b *OrderBot) handleTemplateUse(c tele.Context) error {
@@ -56,10 +53,7 @@ func (b *OrderBot) handleTemplateUse(c tele.Context) error {
 		return sendText(c, "Шаблон не найден.")
 	}
 	_ = c.Respond()
-	if err := sendHTML(c, responses.Template(template.Body)); err != nil {
-		return err
-	}
-	return b.sendActionMenu(c)
+	return sendHTML(c, responses.Template(template.Body), b.actionMarkup(c))
 }
 
 func (b *OrderBot) handleAddTemplate(c tele.Context) error {
@@ -70,10 +64,7 @@ func (b *OrderBot) handleAddTemplate(c tele.Context) error {
 	b.updateSession(sender.ID, func(s *session) {
 		s.waitingTemplate = true
 	})
-	if err := sendText(c, "Отправьте шаблон одним сообщением.\nПервая строка - НАЗВАНИЕ заглавными буквами.\nДальше строки: код название 0"); err != nil {
-		return err
-	}
-	return b.sendActionMenu(c)
+	return sendText(c, "Отправьте шаблон одним сообщением.\nПервая строка - НАЗВАНИЕ заглавными буквами.\nДальше строки: код название 0", b.actionMarkup(c))
 }
 
 func (b *OrderBot) createTemplateFromMessage(c tele.Context, text string) error {
@@ -96,10 +87,7 @@ func (b *OrderBot) createTemplateFromMessage(c tele.Context, text string) error 
 			s.waitingTemplate = false
 		})
 	}
-	if err := sendText(c, fmt.Sprintf("Шаблон сохранен: %s", template.Name)); err != nil {
-		return err
-	}
-	return b.sendActionMenu(c)
+	return sendText(c, fmt.Sprintf("Шаблон сохранен: %s", template.Name), b.actionMarkup(c))
 }
 
 func (b *OrderBot) isWaitingTemplate(uid int64) bool {

@@ -28,10 +28,7 @@ func (b *OrderBot) handleLogin(c tele.Context) error {
 	}
 
 	c.Set(authUserContextKey, user)
-	if err := sendText(c, fmt.Sprintf("Вход выполнен. Роль: %s", user.Role)); err != nil {
-		return err
-	}
-	return b.sendActionMenu(c)
+	return sendText(c, fmt.Sprintf("Вход выполнен. Роль: %s", user.Role), b.actionMarkup(c))
 }
 
 func (b *OrderBot) handleLogout(c tele.Context) error {
@@ -45,10 +42,7 @@ func (b *OrderBot) handleLogout(c tele.Context) error {
 		return sendText(c, "Не удалось выполнить выход. Попробуйте позже.")
 	}
 	c.Set(authUserContextKey, nil)
-	if err := sendText(c, "Вы вышли."); err != nil {
-		return err
-	}
-	return b.sendActionMenu(c)
+	return sendText(c, "Вы вышли.", b.actionMarkup(c))
 }
 
 func (b *OrderBot) handleAddUser(c tele.Context) error {
@@ -68,8 +62,5 @@ func (b *OrderBot) handleAddUser(c tele.Context) error {
 		return sendText(c, "Не удалось создать пользователя. Проверьте данные и попробуйте снова.")
 	}
 
-	if err := sendText(c, fmt.Sprintf("Администратор %s создан.", user.Username)); err != nil {
-		return err
-	}
-	return b.sendActionMenu(c)
+	return sendText(c, fmt.Sprintf("Администратор %s создан.", user.Username), b.actionMarkup(c))
 }
