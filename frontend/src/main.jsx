@@ -1,17 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Activity, ClipboardList, Menu, RefreshCcw, Search, X } from 'lucide-react';
 import './styles.css';
 
 const apiBase = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const buttonClass =
-  'inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 transition hover:border-stone-400 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50';
+  'inline-flex min-h-9 items-center justify-center rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 transition hover:border-stone-400 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50';
 const primaryButtonClass =
-  'inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-slate-950 bg-slate-950 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50';
-const iconButtonClass =
-  'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-stone-300 bg-white text-slate-800 transition hover:border-stone-400 hover:bg-stone-50';
-const panelClass = 'rounded-2xl border border-stone-200 bg-white p-3 shadow-sm sm:p-4';
+  'inline-flex min-h-9 items-center justify-center rounded-lg border border-slate-950 bg-slate-950 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50';
+const panelClass = 'rounded-xl border border-stone-200 bg-white p-3 sm:p-4';
 
 function formatQuantity(value) {
   if (!Number.isFinite(value)) return '0';
@@ -58,10 +55,8 @@ function App() {
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [monitor, setMonitor] = useState(null);
-  const [monitorCode, setMonitorCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [menuOpen, setMenuOpen] = useState(false);
   const [ordersPage, setOrdersPage] = useState({
     page: 1,
     limit: 10,
@@ -122,48 +117,27 @@ function App() {
     });
   }
 
-  function loadMonitor(code = '') {
+  function loadMonitor() {
     if (!selectedOrder) return;
     return run(async () => {
-      const suffix = code.trim() ? `/${encodeURIComponent(code.trim())}` : '';
-      const result = await request(`/monitor/${encodeURIComponent(selectedOrder.number)}${suffix}`);
+      const result = await request(`/monitor/${encodeURIComponent(selectedOrder.number)}`);
       setMonitor(result);
     });
   }
 
   return (
-    <main className="min-h-screen bg-[#f3f4f0] text-slate-900 lg:grid lg:grid-cols-[20rem_minmax(0,1fr)]">
-      {menuOpen && (
-        <button
-          className="fixed inset-0 z-30 bg-slate-950/25 backdrop-blur-[1px] lg:hidden"
-          type="button"
-          aria-label="Закрыть меню"
-          onClick={() => setMenuOpen(false)}
-        />
-      )}
-
-      <aside
-        className={`fixed bottom-3 left-3 top-3 z-40 flex w-[min(22rem,calc(100vw-1.5rem))] flex-col gap-3 overflow-hidden rounded-3xl border border-white/80 bg-[#f7f8f5] p-3 shadow-2xl transition-transform duration-200 lg:sticky lg:top-0 lg:bottom-auto lg:left-auto lg:z-auto lg:h-screen lg:w-auto lg:rounded-none lg:border-r lg:border-stone-200 lg:bg-white lg:p-4 lg:shadow-none ${
-          menuOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
+    <main className="min-h-screen bg-[#f5f5f2] text-slate-900 lg:grid lg:grid-cols-[22rem_minmax(0,1fr)]">
+      <aside className="flex max-h-[46vh] flex-col gap-3 border-b border-stone-200 bg-white p-3 lg:sticky lg:top-0 lg:h-screen lg:max-h-none lg:border-b-0 lg:border-r lg:p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white">
-              <ClipboardList size={21} />
-            </div>
             <div className="min-w-0">
-              <h1 className="m-0 text-lg font-semibold leading-tight">Bakery</h1>
-              <span className="text-xs text-slate-500">Orders</span>
+              <h1 className="m-0 text-lg font-semibold leading-tight">Заказы</h1>
+              <span className="text-xs text-slate-500">Bakery</span>
             </div>
           </div>
-          <button className={`${iconButtonClass} lg:hidden`} type="button" aria-label="Закрыть меню" onClick={() => setMenuOpen(false)}>
-            <X size={19} />
-          </button>
         </div>
 
         <button className={primaryButtonClass} onClick={() => loadOrders(ordersPage.page)} disabled={loading}>
-          <RefreshCcw size={16} />
           Обновить
         </button>
 
@@ -172,34 +146,21 @@ function App() {
             orders.map((order) => (
               <button
                 key={order.number}
-                className={`w-full rounded-2xl border p-3 text-left transition ${
+                className={`w-full rounded-lg border px-3 py-2 text-left transition ${
                   selectedOrder?.number === order.number
-                    ? 'border-slate-950 bg-slate-950 text-white'
+                    ? 'border-slate-950 bg-stone-50'
                     : 'border-transparent bg-white hover:border-stone-300 hover:bg-stone-50'
                 }`}
                 onClick={() => {
-                  setMenuOpen(false);
                   loadOrder(order.number);
                 }}
               >
-                <strong className={`block break-words text-sm font-semibold ${selectedOrder?.number === order.number ? 'text-white' : 'text-slate-900'}`}>
-                  {order.number}
-                </strong>
-                <span className={`mt-1 block break-words text-xs leading-5 ${selectedOrder?.number === order.number ? 'text-stone-200' : 'text-slate-600'}`}>
-                  От кого: {orderCreator(order)}
-                </span>
-                <span className={`block break-words text-xs leading-5 ${selectedOrder?.number === order.number ? 'text-stone-200' : 'text-slate-600'}`}>
-                  Откуда: {orderSource(order)}
-                </span>
-                <span className={`block break-words text-xs leading-5 ${selectedOrder?.number === order.number ? 'text-stone-200' : 'text-slate-600'}`}>
-                  Куда: {orderDepartmentName(order, 'to_department')}
-                </span>
-                <span className={`block break-words text-xs leading-5 ${selectedOrder?.number === order.number ? 'text-stone-200' : 'text-slate-600'}`}>
-                  Выполнить: {formatFulfillmentDate(order.fulfillment_date) || '-'}
-                </span>
-                <span className={`mt-1 block break-words text-xs ${selectedOrder?.number === order.number ? 'text-stone-300' : 'text-slate-500'}`}>
-                  Создан: {formatDate(order.created_at) || '-'} · {order.items?.length || 0} поз.
-                </span>
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                  <strong className="truncate text-sm font-semibold text-slate-900">{order.number}</strong>
+                  <span className="text-xs text-slate-500">{order.items?.length || 0} поз.</span>
+                  <span className="truncate text-xs text-slate-600">Откуда: {orderSource(order)}</span>
+                  <span className="text-xs text-slate-500">{formatFulfillmentDate(order.fulfillment_date) || '-'}</span>
+                </div>
               </button>
             ))
           ) : (
@@ -224,53 +185,37 @@ function App() {
         </div>
       </aside>
 
-      <section className="min-w-0 p-2.5 sm:p-5 lg:p-6">
-        <header className="sticky top-0 z-20 -mx-2.5 mb-3 border-b border-stone-200/70 bg-[#f3f4f0]/95 px-2.5 py-2 backdrop-blur sm:static sm:mx-0 sm:mb-4 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+      <section className="min-w-0 p-3 sm:p-5 lg:p-6">
+        <header className="mb-3 sm:mb-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex min-w-0 items-center gap-3">
-            <button className={`${iconButtonClass} lg:hidden`} type="button" aria-label="Открыть заказы" onClick={() => setMenuOpen(true)}>
-              <Menu size={19} />
-            </button>
             <div className="min-w-0">
               <span className="text-[11px] font-medium uppercase text-slate-500">Просмотр заказа</span>
-              <h2 className="m-0 break-words text-lg font-semibold leading-tight text-slate-950 sm:text-2xl">{pageTitle}</h2>
+              <h2 className="m-0 truncate text-lg font-semibold leading-tight text-slate-950 sm:text-2xl">{pageTitle}</h2>
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:flex">
-            <button className={buttonClass} onClick={() => selectedOrder && loadOrder(selectedOrder.number)} disabled={!selectedOrder || loading}>
-              <RefreshCcw size={16} />
-              Заказ
-            </button>
-            <button className={buttonClass} onClick={() => loadMonitor()} disabled={!selectedOrder || loading}>
-              <Activity size={16} />
-              Мониторинг
-            </button>
-          </div>
+            <div className="grid grid-cols-2 gap-2 sm:flex">
+              <button className={buttonClass} onClick={() => selectedOrder && loadOrder(selectedOrder.number)} disabled={!selectedOrder || loading}>
+                Обновить заказ
+              </button>
+              <button className={buttonClass} onClick={() => loadMonitor()} disabled={!selectedOrder || loading}>
+                Расчёт теста
+              </button>
+            </div>
           </div>
         </header>
 
         {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</div>}
 
         {selectedOrder ? (
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)]">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(24rem,0.85fr)]">
             <section className={panelClass}>
               <OrderDetails order={selectedOrder} />
             </section>
 
             <section className={panelClass}>
-              <PanelHeader eyebrow="Расход ингредиентов" title="Мониторинг" />
-              <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
-                <input
-                  className="min-h-10 min-w-0 rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-950 focus:ring-2 focus:ring-slate-950/10"
-                  placeholder="Код ингредиента"
-                  value={monitorCode}
-                  onChange={(event) => setMonitorCode(event.target.value)}
-                />
-                <button className={buttonClass} onClick={() => loadMonitor(monitorCode)} disabled={loading}>
-                  <Search size={16} />
-                  Найти
-                </button>
-              </div>
+              <PanelHeader eyebrow="Расход полуфабрикатов" title="Расчёт теста" />
+              <button className={buttonClass} onClick={() => loadMonitor()} disabled={!selectedOrder || loading}>
+                Рассчитать
+              </button>
               <MonitorReports monitor={monitor} />
             </section>
           </div>
@@ -330,8 +275,8 @@ function OrderItems({ items }) {
     return <EmptyState compact>В заказе нет позиций.</EmptyState>;
   }
   return (
-    <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white">
-      <div className="hidden grid-cols-[5rem_minmax(0,1fr)_5rem_5rem] gap-2 bg-stone-50 px-3 py-2 text-xs font-semibold uppercase text-slate-500 sm:grid">
+    <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
+      <div className="hidden grid-cols-[5rem_minmax(0,1fr)_5rem_5rem] gap-2 bg-stone-50 px-3 py-2 text-xs font-medium uppercase text-slate-500 sm:grid">
         <span>Код</span>
         <span>Позиция</span>
         <span className="text-right">Кол-во</span>
@@ -340,17 +285,15 @@ function OrderItems({ items }) {
       <div className="divide-y divide-stone-200">
         {items.map((item) => (
           <div
-            className="grid grid-cols-[4.4rem_minmax(0,1fr)] gap-x-2 gap-y-1 px-3 py-2.5 text-sm sm:grid-cols-[5rem_minmax(0,1fr)_5rem_5rem] sm:items-start sm:py-2"
+            className="grid grid-cols-[4.2rem_minmax(0,1fr)_3.5rem] items-center gap-2 px-3 py-2 text-sm sm:grid-cols-[5rem_minmax(0,1fr)_5rem_5rem]"
             key={item.code}
           >
-            <code className="self-start break-words rounded-lg bg-stone-100 px-1.5 py-0.5 text-xs text-slate-700">{item.code}</code>
-            <span className="min-w-0 break-words leading-5 text-slate-800">{item.product_name}</span>
-            <span className="col-start-2 text-xs text-slate-500 sm:hidden">
-              Кол-во: {orderQuantity(item)}
+            <code className="truncate text-xs text-slate-500">{item.code}</code>
+            <span className="min-w-0 truncate leading-5 text-slate-800" title={item.product_name}>
+              {item.product_name}
             </span>
             <span className="hidden text-right text-sm text-slate-600 sm:block">{orderQuantity(item)}</span>
-            <strong className="col-start-2 text-xs font-semibold text-slate-950 sm:col-start-auto sm:text-right sm:text-sm">
-              <span className="sm:hidden">Всего: </span>
+            <strong className="truncate text-right text-xs font-semibold text-slate-950 sm:text-sm">
               {formatQuantity(item.production_quantity)}
             </strong>
           </div>
@@ -362,18 +305,17 @@ function OrderItems({ items }) {
 
 function MonitorReports({ monitor }) {
   if (!monitor) {
-    return <EmptyState compact>Нажмите "Мониторинг" для расчета по дефолтным кодам.</EmptyState>;
+    return <EmptyState compact>Нажмите "Рассчитать", чтобы увидеть расход теста.</EmptyState>;
   }
   if (!monitor.reports?.length) {
-    return <EmptyState compact>Нет данных мониторинга.</EmptyState>;
+    return <EmptyState compact>Нет данных для расчёта теста.</EmptyState>;
   }
   return (
-    <div className="mt-3 space-y-3">
+    <div className="mt-3 overflow-hidden rounded-lg border border-stone-200 bg-white">
       {monitor.reports.map(({ code, report }) => (
-        <article className="rounded-2xl border border-stone-200 bg-white" key={code}>
-          <header className="flex flex-col gap-1 border-b border-stone-200 bg-stone-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-            <strong className="min-w-0 break-words text-sm text-slate-950">
-              <code className="rounded-lg bg-white px-1.5 py-0.5 text-xs text-slate-700">{report.ingredient.product_code}</code>{' '}
+        <article className="border-b border-stone-200 last:border-b-0" key={code}>
+          <header className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 bg-stone-50 px-3 py-2">
+            <strong className="min-w-0 truncate text-sm text-slate-950" title={report.ingredient.product_name}>
               {report.ingredient.product_name}
             </strong>
             <span className="text-sm font-semibold text-slate-950">
@@ -383,15 +325,15 @@ function MonitorReports({ monitor }) {
           <div className="divide-y divide-stone-200">
             {report.breakdown?.map((item) => (
               <div
-                className="grid grid-cols-1 gap-1 px-3 py-2 text-sm sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-2"
+                className="grid grid-cols-[4.2rem_minmax(0,1fr)_5.5rem] items-center gap-2 px-3 py-2 text-sm sm:grid-cols-[5rem_minmax(0,1fr)_8rem]"
                 key={`${code}-${item.order_item_code}`}
               >
-                <span className="min-w-0 break-words text-slate-700">
-                  <code className="rounded-lg bg-stone-100 px-1.5 py-0.5 text-xs text-slate-700">{item.order_item_code}</code>{' '}
+                <code className="truncate text-xs text-slate-500">{item.order_item_code}</code>
+                <span className="min-w-0 truncate text-slate-700" title={item.order_item_name}>
                   {item.order_item_name}
                 </span>
-                <strong className="text-left font-semibold text-slate-950 sm:text-right">
-                  {formatQuantity(item.order_item_quantity)} / {formatQuantity(item.ingredient_quantity)} {report.ingredient.unit}
+                <strong className="truncate text-right text-xs font-semibold text-slate-950 sm:text-sm">
+                  {formatQuantity(item.ingredient_quantity)} {report.ingredient.unit}
                 </strong>
               </div>
             ))}
