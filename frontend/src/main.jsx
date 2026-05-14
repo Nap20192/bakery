@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client';
 import './styles.css';
 
 const apiBase = import.meta.env.VITE_API_BASE_URL || '/api';
+const frontendLogsEnabled = import.meta.env.VITE_FRONTEND_LOGS !== 'false';
+const buildMode = import.meta.env.MODE;
 
 const buttonClass =
   'inline-flex min-h-8 items-center justify-center rounded-md border border-stone-300 bg-white px-2.5 py-1.5 text-[13px] font-medium text-stone-800 transition hover:border-stone-400 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50';
@@ -51,6 +53,22 @@ function apiURL(base, path) {
   return `${base.replace(/\/$/, '')}${path}`;
 }
 
+function logInfo(event, payload = {}) {
+  if (!frontendLogsEnabled) return;
+  console.info(`[bakery-ui] ${event}`, {
+    at: new Date().toISOString(),
+    ...payload,
+  });
+}
+
+function logWarn(event, payload = {}) {
+  if (!frontendLogsEnabled) return;
+  console.warn(`[bakery-ui] ${event}`, {
+    at: new Date().toISOString(),
+    ...payload,
+  });
+}
+
 function App() {
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -68,15 +86,60 @@ function App() {
   const pageTitle = useMemo(() => selectedNumber || 'Последние заказы', [selectedNumber]);
 
   useEffect(() => {
+    logInfo('app.config', {
+      mode: buildMode,
+      api_base: apiBase,
+      frontend_logs: frontendLogsEnabled,
+      page_origin: window.location.origin,
+      page_path: window.location.pathname,
+    });
     loadOrders();
   }, []);
 
   async function request(path) {
-    const response = await fetch(apiURL(apiBase, path));
+    const url = apiURL(apiBase, path);
+    const started = performance.now();
+    logInfo('api.request', {
+      path,
+      url,
+      api_base: apiBase,
+      page_origin: window.location.origin,
+    });
+
+    let response;
+    try {
+      response = await fetch(url);
+    } catch (err) {
+      logWarn('api.network_error', {
+        path,
+        url,
+        api_base: apiBase,
+        duration_ms: Math.round(performance.now() - started),
+        error: err instanceof Error ? err.message : String(err),
+      });
+      throw err;
+    }
+
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
+      logWarn('api.error', {
+        path,
+        url,
+        api_base: apiBase,
+        status: response.status,
+        content_type: response.headers.get('content-type') || '',
+        duration_ms: Math.round(performance.now() - started),
+        error: payload.error || `HTTP ${response.status}`,
+      });
       throw new Error(payload.error || `HTTP ${response.status}`);
     }
+    logInfo('api.response', {
+      path,
+      url,
+      status: response.status,
+      content_type: response.headers.get('content-type') || '',
+      duration_ms: Math.round(performance.now() - started),
+    });
     return payload;
   }
 
@@ -86,6 +149,9 @@ function App() {
     try {
       await task();
     } catch (err) {
+      logWarn('action.failed', {
+        error: err instanceof Error ? err.message : String(err),
+      });
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
@@ -96,6 +162,12 @@ function App() {
     return run(async () => {
       const result = await request(`/orders?page=${page}&limit=${ordersPage.limit}`);
       const items = result.items || [];
+      logInfo('orders.loaded', {
+        page: result.page || page,
+        limit: result.limit || ordersPage.limit,
+        total: result.total || 0,
+        count: items.length,
+      });
       setOrders(items);
       setOrdersPage({
         page: result.page || page,
@@ -112,6 +184,10 @@ function App() {
   function loadOrder(number) {
     return run(async () => {
       const order = await request(`/orders/${encodeURIComponent(number)}`);
+      logInfo('order.loaded', {
+        number,
+        items: order.items?.length || 0,
+      });
       setSelectedOrder(order);
       setMonitor(null);
     });
@@ -121,13 +197,17 @@ function App() {
     if (!selectedOrder) return;
     return run(async () => {
       const result = await request(`/monitor/${encodeURIComponent(selectedOrder.number)}`);
+      logInfo('dough_calculation.loaded', {
+        order_number: selectedOrder.number,
+        reports: result.reports?.length || 0,
+      });
       setMonitor(result);
     });
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f7f5] text-stone-900 lg:grid lg:grid-cols-[20rem_minmax(0,1fr)]">
-      <aside className="flex max-h-[44vh] flex-col gap-2.5 border-b border-stone-200 bg-white p-3 lg:sticky lg:top-0 lg:h-screen lg:max-h-none lg:border-b-0 lg:border-r lg:p-4">
+    <main className="min-h-screen bg-[#f7f7f5] text-stone-900 lg:grid lg:grid-cols-[24rem_minmax(0,1fr)]">
+      <aside className="m-3 flex max-h-[44vh] flex-col gap-2.5 rounded-lg border border-stone-200 bg-white p-3 lg:sticky lg:top-3 lg:ml-3 lg:mr-0 lg:h-[calc(100vh-1.5rem)] lg:max-h-none">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-3">
             <div className="min-w-0">
@@ -136,7 +216,7 @@ function App() {
           </div>
         </div>
 
-        <button className={primaryButtonClass} onClick={() => loadOrders(ordersPage.page)} disabled={loading}>
+        <button className={`${primaryButtonClass} self-start`} onClick={() => loadOrders(ordersPage.page)} disabled={loading}>
           Обновить
         </button>
 
@@ -154,7 +234,7 @@ function App() {
                   loadOrder(order.number);
                 }}
               >
-                <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-0.5">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5">
                   <strong className="break-words text-[13px] font-semibold leading-5 text-stone-900">{order.number}</strong>
                   <span className="text-[12px] leading-5 text-stone-500">{order.items?.length || 0} поз.</span>
                   <span className="break-words text-[12px] leading-5 text-stone-600">Откуда: {orderSource(order)}</span>
@@ -184,7 +264,7 @@ function App() {
         </div>
       </aside>
 
-      <section className="min-w-0 p-3 sm:p-5 lg:p-6">
+      <section className="min-w-0 p-3 pt-0 sm:p-5 lg:p-6">
         <div className="mx-auto max-w-[1180px]">
         <header className="mb-3 sm:mb-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

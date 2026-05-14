@@ -35,7 +35,11 @@ func (b *OrderBot) handleTemplates(c tele.Context) error {
 		text.WriteString("- ")
 		text.WriteString(template.Name)
 		text.WriteString("\n")
-		rows = append(rows, markup.Row(markup.Data(template.Name, "template_use", strconv.FormatInt(template.ID, 10))))
+		templateID := strconv.FormatInt(template.ID, 10)
+		rows = append(rows, markup.Row(
+			markup.Data(template.Name, "template_use", templateID),
+			markup.Data("Удалить", "template_delete_confirm", templateID),
+		))
 	}
 	markup.Inline(rows...)
 	return sendText(c, text.String(), markup)
@@ -54,6 +58,43 @@ func (b *OrderBot) handleTemplateUse(c tele.Context) error {
 	}
 	_ = c.Respond()
 	return sendHTML(c, responses.Template(template.Body), b.actionMarkup(c))
+}
+
+func (b *OrderBot) handleTemplateDeleteConfirm(c tele.Context) error {
+	ctx := requestContext(c)
+	id, err := templateIDFromCallback(c)
+	if err != nil {
+		return sendText(c, "Не удалось определить шаблон.")
+	}
+	template, err := b.orderSvc.GetOrderTemplate(ctx, id)
+	if err != nil {
+		slog.WarnContext(ctx, "get order template before delete failed", "template_id", id, "error", err)
+		return sendText(c, "Шаблон не найден.")
+	}
+
+	markup := &tele.ReplyMarkup{}
+	markup.Inline(
+		markup.Row(
+			markup.Data("Удалить", "template_delete", strconv.FormatInt(template.ID, 10)),
+			markup.Data("Отмена", "open_templates"),
+		),
+	)
+	_ = c.Respond()
+	return sendText(c, fmt.Sprintf("Удалить шаблон %s?", template.Name), markup)
+}
+
+func (b *OrderBot) handleTemplateDelete(c tele.Context) error {
+	ctx := requestContext(c)
+	id, err := templateIDFromCallback(c)
+	if err != nil {
+		return sendText(c, "Не удалось определить шаблон.")
+	}
+	if err := b.orderSvc.DeleteOrderTemplate(ctx, id); err != nil {
+		slog.ErrorContext(ctx, "delete order template failed", "template_id", id, "error", err)
+		return sendText(c, "Не удалось удалить шаблон.")
+	}
+	_ = c.Respond()
+	return sendText(c, "Шаблон удален.", b.actionMarkup(c))
 }
 
 func (b *OrderBot) handleAddTemplate(c tele.Context) error {
@@ -95,4 +136,15 @@ func (b *OrderBot) isWaitingTemplate(uid int64) bool {
 	defer b.mu.Unlock()
 	s := b.sessions[uid]
 	return s != nil && s.waitingTemplate
+}
+
+func templateIDFromCallback(c tele.Context) (int64, error) {
+	if c.Callback() == nil {
+		return 0, fmt.Errorf("missing callback")
+	}
+	id, err := strconv.ParseInt(strings.TrimSpace(c.Callback().Data), 10, 64)
+	if err != nil || id <= 0 {
+		return 0, fmt.Errorf("invalid template id")
+	}
+	return id, nil
 }
