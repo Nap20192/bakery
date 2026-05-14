@@ -536,6 +536,50 @@ code {
     font-weight: 600;
   }
 
+  .order-items {
+    display: table;
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  .order-items tbody,
+  .order-items tr {
+    display: table-row;
+    width: auto;
+  }
+
+  .order-items tr {
+    border: 0;
+    border-radius: 0;
+    margin-bottom: 0;
+    padding: 0;
+  }
+
+  .order-items td {
+    display: table-cell;
+    border-bottom: 1px solid #edf1f2;
+    padding: 7px 6px;
+    font-size: 12px;
+  }
+
+  .order-items td::before {
+    content: none;
+  }
+
+  .order-items .item-code {
+    width: 86px;
+  }
+
+  .order-items .item-total {
+    width: 58px;
+    text-align: right;
+  }
+
+  .order-items .item-name,
+  .order-items .item-quantity {
+    display: none;
+  }
+
   .report {
     padding: 10px;
   }
