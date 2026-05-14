@@ -7,6 +7,8 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const countOrders = `-- name: CountOrders :one
@@ -205,14 +207,14 @@ func (q *Queries) DeleteOrderTemplateByID(ctx context.Context, id int64) error {
 const deleteOrdersCreatedBefore = `-- name: DeleteOrdersCreatedBefore :one
 WITH deleted AS (
     DELETE FROM orders
-    WHERE created_at < $1
+    WHERE created_at::timestamptz < $1::timestamptz
     RETURNING id
 )
 SELECT COUNT(*)::BIGINT
 FROM deleted
 `
 
-func (q *Queries) DeleteOrdersCreatedBefore(ctx context.Context, createdAtBefore string) (int64, error) {
+func (q *Queries) DeleteOrdersCreatedBefore(ctx context.Context, createdAtBefore pgtype.Timestamptz) (int64, error) {
 	row := q.db.QueryRow(ctx, deleteOrdersCreatedBefore, createdAtBefore)
 	var column_1 int64
 	err := row.Scan(&column_1)
