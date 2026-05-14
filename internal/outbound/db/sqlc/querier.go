@@ -6,6 +6,8 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
@@ -22,7 +24,7 @@ type Querier interface {
 	DeleteIikoPreparedChartItemsByChartID(ctx context.Context, preparedChartID string) error
 	DeleteOrderItemsByOrderID(ctx context.Context, orderID int64) error
 	DeleteOrderTemplateByID(ctx context.Context, id int64) error
-	DeleteOrdersCreatedBefore(ctx context.Context, createdAtBefore string) (int64, error)
+	DeleteOrdersCreatedBefore(ctx context.Context, createdAtBefore pgtype.Timestamptz) (int64, error)
 	DishExistsByCode(ctx context.Context, code string) (int64, error)
 	FinishIikoSyncRun(ctx context.Context, arg FinishIikoSyncRunParams) (IikoSyncRun, error)
 	GetActiveAssemblyChartByProductID(ctx context.Context, arg GetActiveAssemblyChartByProductIDParams) (GetActiveAssemblyChartByProductIDRow, error)

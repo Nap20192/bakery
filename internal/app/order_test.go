@@ -9,6 +9,8 @@ import (
 
 	orderdomain "bakery/internal/domain/order"
 	"bakery/internal/outbound/db/sqlc"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 func TestOrderServiceValidateBulkOrder(t *testing.T) {
@@ -70,8 +72,11 @@ func TestOrderServiceDeleteOrdersOlderThan(t *testing.T) {
 	if deleted != 7 {
 		t.Fatalf("deleted = %d, want 7", deleted)
 	}
-	if !strings.HasPrefix(queries.deleteOrdersCreatedBefore, "2026-04-13T12:00:00") {
-		t.Fatalf("cutoff = %q", queries.deleteOrdersCreatedBefore)
+	if !queries.deleteOrdersCreatedBefore.Valid {
+		t.Fatal("cutoff is not valid")
+	}
+	if !queries.deleteOrdersCreatedBefore.Time.Equal(time.Date(2026, 4, 13, 12, 0, 0, 0, time.UTC)) {
+		t.Fatalf("cutoff = %v", queries.deleteOrdersCreatedBefore)
 	}
 }
 
@@ -94,7 +99,7 @@ type fakeOrderQueries struct {
 	sqlc.Querier
 	dishExistsByCode          map[string]int64
 	dishErrorsByCode          map[string]error
-	deleteOrdersCreatedBefore string
+	deleteOrdersCreatedBefore pgtype.Timestamptz
 }
 
 func (q *fakeOrderQueries) DishExistsByCode(_ context.Context, code string) (int64, error) {
@@ -104,7 +109,7 @@ func (q *fakeOrderQueries) DishExistsByCode(_ context.Context, code string) (int
 	return q.dishExistsByCode[code], nil
 }
 
-func (q *fakeOrderQueries) DeleteOrdersCreatedBefore(_ context.Context, createdAtBefore string) (int64, error) {
+func (q *fakeOrderQueries) DeleteOrdersCreatedBefore(_ context.Context, createdAtBefore pgtype.Timestamptz) (int64, error) {
 	q.deleteOrdersCreatedBefore = createdAtBefore
 	return 7, nil
 }

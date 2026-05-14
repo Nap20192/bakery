@@ -5,13 +5,18 @@ import (
 	"fmt"
 	"log/slog"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 func (s *OrderService) DeleteOrdersOlderThan(ctx context.Context, now time.Time, retention time.Duration) (int64, error) {
 	if retention <= 0 {
 		return 0, fmt.Errorf("order retention must be positive")
 	}
-	cutoff := now.UTC().Add(-retention).Format(time.RFC3339Nano)
+	cutoff := pgtype.Timestamptz{
+		Time:  now.UTC().Add(-retention),
+		Valid: true,
+	}
 	count, err := s.queries.DeleteOrdersCreatedBefore(ctx, cutoff)
 	if err != nil {
 		return 0, fmt.Errorf("delete old orders: %w", err)
@@ -43,7 +48,7 @@ func (s *OrderService) RunCleanupTicker(ctx context.Context, interval time.Durat
 	for {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return nil
 		case <-ticker.C:
 			run()
 		}

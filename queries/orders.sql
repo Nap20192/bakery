@@ -92,7 +92,7 @@ FROM orders;
 -- name: DeleteOrdersCreatedBefore :one
 WITH deleted AS (
     DELETE FROM orders
-    WHERE created_at < sqlc.arg(created_at_before)
+    WHERE created_at::timestamptz < sqlc.arg(created_at_before)::timestamptz
     RETURNING id
 )
 SELECT COUNT(*)::BIGINT
