@@ -218,7 +218,7 @@ func writeOrderDetails(sb *strings.Builder, order orderdomain.Order, fromDepartm
 		"\nКалькуляция: <code>/monitor %s</code>",
 		html.EscapeString(order.Number),
 	))
-	sb.WriteString(fmt.Sprintf("\nОткрыть заказ: <a href=\"%s\">%s</a>", html.EscapeString(orderWebURL(order.Number)), html.EscapeString(order.Number)))
+	sb.WriteString(fmt.Sprintf("\nОткрыть заказ: %s", html.EscapeString(orderWebURL(order.Number))))
 	sb.WriteString(fmt.Sprintf("\nВсе заказы: %s", ordersWebURL))
 }
 

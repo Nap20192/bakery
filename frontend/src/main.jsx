@@ -54,7 +54,8 @@ function apiURL(base, path) {
 }
 
 function orderNumberFromLocation() {
-  return stringsTrim(new URLSearchParams(window.location.search).get('order'));
+  const params = new URLSearchParams(window.location.search);
+  return stringsTrim(params.get('order') || params.get('order_number') || params.get('number'));
 }
 
 function syncOrderURL(number) {
@@ -109,6 +110,7 @@ function App() {
       frontend_logs: frontendLogsEnabled,
       page_origin: window.location.origin,
       page_path: window.location.pathname,
+      page_search: window.location.search,
       linked_order: linkedOrderNumber,
     });
     loadOrders(ordersPage.page, linkedOrderNumber);
