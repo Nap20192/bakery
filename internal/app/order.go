@@ -331,6 +331,19 @@ func (s *OrderService) GetOrderTemplate(ctx context.Context, id int64) (orderdom
 	return orderTemplateToDomain(row), nil
 }
 
+func (s *OrderService) DeleteOrderTemplate(ctx context.Context, id int64) error {
+	if id <= 0 {
+		return fmt.Errorf("template id is required")
+	}
+	if _, err := s.queries.GetOrderTemplateByID(ctx, id); err != nil {
+		return fmt.Errorf("get order template: %w", err)
+	}
+	if err := s.queries.DeleteOrderTemplateByID(ctx, id); err != nil {
+		return fmt.Errorf("delete order template: %w", err)
+	}
+	return nil
+}
+
 func (s *OrderService) EnsureDefaultOrderTemplates(ctx context.Context, path string) (EnsureDefaultTemplatesResult, error) {
 	var result EnsureDefaultTemplatesResult
 	if strings.TrimSpace(path) == "" {

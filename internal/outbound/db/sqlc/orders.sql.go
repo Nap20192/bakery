@@ -192,6 +192,16 @@ func (q *Queries) DeleteOrderItemsByOrderID(ctx context.Context, orderID int64) 
 	return err
 }
 
+const deleteOrderTemplateByID = `-- name: DeleteOrderTemplateByID :exec
+DELETE FROM order_templates
+WHERE id = $1
+`
+
+func (q *Queries) DeleteOrderTemplateByID(ctx context.Context, id int64) error {
+	_, err := q.db.Exec(ctx, deleteOrderTemplateByID, id)
+	return err
+}
+
 const getOrderByNumber = `-- name: GetOrderByNumber :one
 SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username
 FROM orders

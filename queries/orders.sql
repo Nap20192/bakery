@@ -116,3 +116,7 @@ ORDER BY theme, name, id;
 SELECT *
 FROM order_templates
 WHERE id = sqlc.arg(id);
+
+-- name: DeleteOrderTemplateByID :exec
+DELETE FROM order_templates
+WHERE id = sqlc.arg(id);

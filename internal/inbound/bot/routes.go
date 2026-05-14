@@ -41,6 +41,8 @@ func (b *OrderBot) register() {
 	bt.Handle("\fopen_order", b.handleOpenOrderCallback)
 	bt.Handle("\fmonitor_order", b.handleMonitorOrderCallback)
 	bt.Handle("\ftemplate_use", b.handleTemplateUse)
+	bt.Handle("\ftemplate_delete_confirm", b.handleTemplateDeleteConfirm, b.requirePermissions(app.PermissionTemplateManage))
+	bt.Handle("\ftemplate_delete", b.handleTemplateDelete, b.requirePermissions(app.PermissionTemplateManage))
 	bt.Handle("\fopen_templates", b.handleTemplates)
 	bt.Handle("\fopen_orders", b.handleOrders)
 	bt.Handle("\fstart_addtemplate", b.handleAddTemplate, b.requirePermissions(app.PermissionTemplateManage))
