@@ -14,6 +14,10 @@ func (b *OrderBot) handleStart(c tele.Context) error {
 	return sendHTML(c, responses.Start(), b.actionMarkup(c))
 }
 
+func (b *OrderBot) handleHelp(c tele.Context) error {
+	return sendHTML(c, responses.Help(), b.actionMarkup(c))
+}
+
 func (b *OrderBot) handleDepartmentShop(c tele.Context) error {
 	ctx := requestContext(c)
 	departments, err := b.departmentSvc.ListByType(ctx, app.DepartmentTypeShop)

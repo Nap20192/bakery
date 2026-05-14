@@ -18,7 +18,7 @@ func (b *OrderBot) register() {
 	bt.Use(b.logMiddleware)
 
 	bt.Handle("/start", b.handleStart)
-	bt.Handle("/help", b.handleStart)
+	bt.Handle("/help", b.handleHelp)
 	bt.Handle("/login", b.handleLogin)
 	bt.Handle("/logout", b.handleLogout)
 	bt.Handle("/adduser", b.handleAddUser)
@@ -34,6 +34,7 @@ func (b *OrderBot) register() {
 	bt.Handle("/cancel", b.handleCancel)
 
 	bt.Handle("\fconfirm", b.handleConfirm)
+	bt.Handle("\fnoop", b.handleNoop)
 	bt.Handle("\fcancel_cb", b.handleCancelCallback)
 	bt.Handle("\fsubmit_order", b.handleConfirm)
 	bt.Handle("\fedit_order", b.handleEditOrder)

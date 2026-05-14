@@ -10,18 +10,16 @@ import (
 )
 
 const (
-	actionChooseShop      = "Выбрать магазин"
-	actionChooseWorkshop  = "Выбрать цех"
-	actionTemplates       = "Шаблоны"
-	actionOrders          = "Последние заказы"
-	actionSubmitOrder     = "Отправить заказ"
-	actionUpdateOrder     = "Обновить заказ"
-	actionDeletePosition  = "Удалить позицию"
-	actionCancelOrder     = "Отменить заказ"
-	actionSeeCurrentOrder = "Посмотреть текущий заказ"
-	actionAddTemplate     = "Добавить шаблон"
-	actionSync            = "Sync iiko"
-	actionHelp            = "Помощь"
+	actionChooseShop     = "Выбрать магазин"
+	actionChooseWorkshop = "Выбрать цех"
+	actionTemplates      = "Шаблоны"
+	actionOrders         = "Последние заказы"
+	actionSubmitOrder    = "Отправить заказ"
+	actionUpdateOrder    = "Обновить заказ"
+	actionCancelOrder    = "Отменить заказ"
+	actionCurrentOrder   = "Текущий заказ"
+	actionAddTemplate    = "Добавить шаблон"
+	actionSync           = "Sync iiko"
 )
 
 func (b *OrderBot) actionMarkup(c tele.Context) *tele.ReplyMarkup {
@@ -29,7 +27,6 @@ func (b *OrderBot) actionMarkup(c tele.Context) *tele.ReplyMarkup {
 	if !ok {
 		return replyKeyboard(
 			[]string{actionChooseShop, actionChooseWorkshop},
-			[]string{actionHelp},
 		)
 	}
 	if strings.EqualFold(user.Role, accessdomain.RoleAdmin) {
@@ -38,26 +35,25 @@ func (b *OrderBot) actionMarkup(c tele.Context) *tele.ReplyMarkup {
 			{actionAddTemplate, actionSync},
 		}
 		if action, ok := b.currentOrderAction(c); ok {
-			rows = append(rows, []string{action, actionDeletePosition})
+			rows = append(rows, []string{actionCurrentOrder})
+			rows = append(rows, []string{action})
 			rows = append(rows, []string{actionCancelOrder})
 		}
-		rows = append(rows, []string{actionHelp})
 		return replyKeyboard(rows...)
 	}
 	if b.userDepartmentType(c, user) == string(app.DepartmentTypeWorkshop) {
 		return replyKeyboard(
 			[]string{actionOrders, actionTemplates},
-			[]string{actionHelp},
 		)
 	}
 	rows := [][]string{
 		{actionTemplates, actionOrders},
 	}
 	if action, ok := b.currentOrderAction(c); ok {
-		rows = append(rows, []string{action, actionDeletePosition})
+		rows = append(rows, []string{actionCurrentOrder})
+		rows = append(rows, []string{action})
 		rows = append(rows, []string{actionCancelOrder})
 	}
-	rows = append(rows, []string{actionHelp})
 	return replyKeyboard(rows...)
 }
 
