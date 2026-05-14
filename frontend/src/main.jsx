@@ -261,7 +261,7 @@ function App() {
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5">
                   <strong className="break-words text-[13px] font-semibold leading-5 text-stone-900">{order.number}</strong>
                   <span className="text-[12px] leading-5 text-stone-500">{order.items?.length || 0} поз.</span>
-                  <span className="break-words text-[12px] leading-5 text-stone-600">Откуда: {orderSource(order)}</span>
+                  <strong className="break-words text-[12px] font-semibold leading-5 text-stone-800">Откуда: {orderSource(order)}</strong>
                   <span className="text-[12px] leading-5 text-stone-500">{formatFulfillmentDate(order.fulfillment_date) || '-'}</span>
                 </div>
               </button>

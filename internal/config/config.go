@@ -61,18 +61,24 @@ type IikoConfig struct {
 }
 
 type Config struct {
-	Admin     AdminConfig
-	Database  DatabaseConfig
-	Iiko      IikoConfig
-	Log       LogConfig
-	Migration MigrationConfig
-	Server    ServerConfig
-	Sync      SyncConfig
-	Telegram  TelegramConfig
+	Admin        AdminConfig
+	Database     DatabaseConfig
+	Iiko         IikoConfig
+	Log          LogConfig
+	Migration    MigrationConfig
+	OrderCleanup OrderCleanupConfig
+	Server       ServerConfig
+	Sync         SyncConfig
+	Telegram     TelegramConfig
 }
 
 type SyncConfig struct {
 	Interval time.Duration
+}
+
+type OrderCleanupConfig struct {
+	Interval  time.Duration
+	Retention time.Duration
 }
 
 func New() *Config {
@@ -115,6 +121,10 @@ func New() *Config {
 		},
 		Sync: SyncConfig{
 			Interval: helpers.EnvDuration("SYNC_INTERVAL", 6*time.Hour),
+		},
+		OrderCleanup: OrderCleanupConfig{
+			Interval:  helpers.EnvDuration("ORDER_CLEANUP_INTERVAL", 24*time.Hour),
+			Retention: helpers.EnvDuration("ORDER_RETENTION", 31*24*time.Hour),
 		},
 	}
 }
