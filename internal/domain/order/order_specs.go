@@ -24,6 +24,7 @@ type ParsedOrderLine struct {
 
 var (
 	orderLineRe         = regexp.MustCompile(`^(\S+)\s+(.+?)\s+(\d+(?:[.,]\d+)?(?:\+\d+(?:[.,]\d+)?)?)$`)
+	integerQuantityRe   = regexp.MustCompile(`^\d+(?:\+\d+)?$`)
 	fulfillmentDateRe   = regexp.MustCompile(`^(\d{2})\.(\d{2})\.(\d{4})$`)
 	singleWordLineRe    = regexp.MustCompile(`^\p{L}+$`)
 	quantitySeparatorRe = regexp.MustCompile(`\+`)
@@ -66,7 +67,7 @@ func (s PositiveQuantitySpecification) IsValid(line ParsedOrderLine) bool {
 	if err != nil || reservedQty < 0 {
 		return false
 	}
-	return true
+	return integerQuantityRe.MatchString(line.Quantity)
 }
 
 func (line ParsedOrderLine) QuantityValue() (float64, error) {

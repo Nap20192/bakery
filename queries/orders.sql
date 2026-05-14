@@ -89,6 +89,15 @@ OFFSET sqlc.arg(order_offset);
 SELECT COUNT(*)
 FROM orders;
 
+-- name: DeleteOrdersCreatedBefore :one
+WITH deleted AS (
+    DELETE FROM orders
+    WHERE created_at < sqlc.arg(created_at_before)
+    RETURNING id
+)
+SELECT COUNT(*)::BIGINT
+FROM deleted;
+
 -- name: CreateOrderTemplate :one
 INSERT INTO order_templates (
     theme,

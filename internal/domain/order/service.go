@@ -109,7 +109,7 @@ func (s *OrderService) ParseBulkOrder(order string) BulkOrderValidationResult {
 				Line:    parsed.Line,
 				Code:    parsed.Code,
 				Name:    parsed.Name,
-				Message: fmt.Sprintf("invalid quantity %q: quantity and reserved_quantity must be >= 0 and total must be > 0", parsed.Quantity),
+				Message: fmt.Sprintf("invalid quantity %q: quantity and reserved_quantity must be non-negative integers", parsed.Quantity),
 			})
 			continue
 		}

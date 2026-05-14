@@ -202,6 +202,23 @@ func (q *Queries) DeleteOrderTemplateByID(ctx context.Context, id int64) error {
 	return err
 }
 
+const deleteOrdersCreatedBefore = `-- name: DeleteOrdersCreatedBefore :one
+WITH deleted AS (
+    DELETE FROM orders
+    WHERE created_at < $1
+    RETURNING id
+)
+SELECT COUNT(*)::BIGINT
+FROM deleted
+`
+
+func (q *Queries) DeleteOrdersCreatedBefore(ctx context.Context, createdAtBefore string) (int64, error) {
+	row := q.db.QueryRow(ctx, deleteOrdersCreatedBefore, createdAtBefore)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const getOrderByNumber = `-- name: GetOrderByNumber :one
 SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username
 FROM orders

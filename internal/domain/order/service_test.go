@@ -26,25 +26,27 @@ broken line
 15648 Сосиска с сыром в тесте 0+3
 `, fulfillmentDateInput))
 
-	if len(result.ValidItems) != 3 {
-		t.Fatalf("valid items = %d, want 3: %#v", len(result.ValidItems), result.ValidItems)
+	if len(result.ValidItems) != 2 {
+		t.Fatalf("valid items = %d, want 2: %#v", len(result.ValidItems), result.ValidItems)
 	}
 	if got := result.FulfillmentDate.Format("2006-01-02"); got != fulfillmentDateText {
 		t.Fatalf("fulfillment date = %s, want %s", got, fulfillmentDateText)
 	}
 
 	assertItem(t, result.ValidItems[0], "15635", "Пирожок с капустой", 15, 0)
-	assertItem(t, result.ValidItems[1], "20495", "Пирожок с картошкой", 2.5, 1.5)
-	assertItem(t, result.ValidItems[2], "15648", "Сосиска с сыром в тесте", 0, 3)
+	assertItem(t, result.ValidItems[1], "15648", "Сосиска с сыром в тесте", 0, 3)
 
-	if len(result.Errors) != 2 {
-		t.Fatalf("errors = %d, want 2: %#v", len(result.Errors), result.Errors)
+	if len(result.Errors) != 3 {
+		t.Fatalf("errors = %d, want 3: %#v", len(result.Errors), result.Errors)
 	}
-	if result.Errors[0].Line != 7 || result.Errors[0].Raw != "broken line" || !strings.Contains(result.Errors[0].Message, "invalid format") {
+	if result.Errors[0].Line != 6 || result.Errors[0].Code != "20495" || !strings.Contains(result.Errors[0].Message, "non-negative integers") {
 		t.Fatalf("unexpected first error: %#v", result.Errors[0])
 	}
-	if result.Errors[1].Line != 8 || result.Errors[1].Raw != "15647 Сосиска в тесте abc" || !strings.Contains(result.Errors[1].Message, "invalid format") {
+	if result.Errors[1].Line != 7 || result.Errors[1].Raw != "broken line" || !strings.Contains(result.Errors[1].Message, "invalid format") {
 		t.Fatalf("unexpected second error: %#v", result.Errors[1])
+	}
+	if result.Errors[2].Line != 8 || result.Errors[2].Raw != "15647 Сосиска в тесте abc" || !strings.Contains(result.Errors[2].Message, "invalid format") {
+		t.Fatalf("unexpected third error: %#v", result.Errors[2])
 	}
 }
 
@@ -152,11 +154,17 @@ func TestOrderLineProcessableSpecificationSkipsUppercaseHeaders(t *testing.T) {
 func TestPositiveQuantitySpecification(t *testing.T) {
 	spec := PositiveQuantitySpecification{}
 
-	if !spec.IsValid(ParsedOrderLine{Quantity: "1,25"}) {
-		t.Fatal("comma decimal should be valid")
+	if spec.IsValid(ParsedOrderLine{Quantity: "1,25"}) {
+		t.Fatal("comma decimal should be invalid")
+	}
+	if spec.IsValid(ParsedOrderLine{Quantity: "1.25"}) {
+		t.Fatal("dot decimal should be invalid")
 	}
 	if !spec.IsValid(ParsedOrderLine{Quantity: "0+5"}) {
 		t.Fatal("reserved-only quantity should be valid")
+	}
+	if spec.IsValid(ParsedOrderLine{Quantity: "5+1,25"}) {
+		t.Fatal("decimal reserved quantity should be invalid")
 	}
 	if !spec.IsValid(ParsedOrderLine{Quantity: "5+0"}) {
 		t.Fatal("zero reserved quantity should be valid")
@@ -213,7 +221,6 @@ func TestOrderLineFormatSpecificationReservedQuantity(t *testing.T) {
 		"15647 Сосиска в тесте 5",
 		"15647 Сосиска в тесте 5+5",
 		"15647 Сосиска в тесте 0+5",
-		"15647 Сосиска в тесте 5,5+2.5",
 	}
 	for _, line := range valid {
 		if !spec.IsValid(BulkOrderLine{Raw: line}) {

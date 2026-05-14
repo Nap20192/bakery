@@ -93,6 +93,13 @@ func main() {
 		return appDeps.SyncService.Run(groupCtx)
 	})
 	group.Go(func() error {
+		log.Info("order cleanup started",
+			"interval", cfg.OrderCleanup.Interval.String(),
+			"retention", cfg.OrderCleanup.Retention.String(),
+		)
+		return appDeps.OrderService.RunCleanupTicker(groupCtx, cfg.OrderCleanup.Interval, cfg.OrderCleanup.Retention)
+	})
+	group.Go(func() error {
 		log.Info("http api started", "addr", cfg.Server.Addr())
 		return appDeps.APIServer.Start()
 	})
