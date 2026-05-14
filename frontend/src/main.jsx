@@ -281,7 +281,7 @@ function OrderDetails({ order }) {
         </div>
       </div>
 
-      <table>
+      <table className="order-items">
         <thead>
           <tr>
             <th>Код</th>
@@ -293,10 +293,10 @@ function OrderDetails({ order }) {
         <tbody>
           {order.items?.map((item) => (
             <tr key={item.code}>
-              <td data-label="Код"><code>{item.code}</code></td>
-              <td data-label="Позиция">{item.product_name}</td>
-              <td data-label="Кол-во">{orderQuantity(item)}</td>
-              <td data-label="Всего">{formatQuantity(item.production_quantity)}</td>
+              <td className="item-code" data-label="Код"><code>{item.code}</code></td>
+              <td className="item-name" data-label="Позиция">{item.product_name}</td>
+              <td className="item-quantity" data-label="Кол-во">{orderQuantity(item)}</td>
+              <td className="item-total" data-label="Всего">{formatQuantity(item.production_quantity)}</td>
             </tr>
           ))}
         </tbody>
