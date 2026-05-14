@@ -112,7 +112,7 @@ func (b *OrderBot) orderActionsMarkup(orderNumber string) *tele.ReplyMarkup {
 	markup.Inline(
 		markup.Row(
 			markup.Data("Изменить", "edit_order", orderNumber),
-			markup.Data("Мониторинг", "monitor_order", orderNumber),
+			markup.Data("Калькуляция", "monitor_order", orderNumber),
 		),
 	)
 	return markup

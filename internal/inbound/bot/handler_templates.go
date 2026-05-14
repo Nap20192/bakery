@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"bakery/internal/app"
+
 	tele "gopkg.in/telebot.v3"
 )
 
@@ -20,29 +22,27 @@ func (b *OrderBot) handleTemplates(c tele.Context) error {
 		return sendText(c, "Шаблонов пока нет.")
 	}
 
+	canDelete := b.canManageTemplates(c)
 	markup := &tele.ReplyMarkup{}
 	rows := make([]tele.Row, 0, len(templates))
-	var text strings.Builder
-	text.WriteString("Выберите шаблон:\n")
 	currentTheme := ""
 	for _, template := range templates {
 		if template.Theme != currentTheme {
 			currentTheme = template.Theme
-			text.WriteString("\n")
-			text.WriteString(currentTheme)
-			text.WriteString("\n")
+			rows = append(rows, markup.Row(markup.Data(currentTheme, "noop", currentTheme)))
 		}
-		text.WriteString("- ")
-		text.WriteString(template.Name)
-		text.WriteString("\n")
 		templateID := strconv.FormatInt(template.ID, 10)
-		rows = append(rows, markup.Row(
-			markup.Data(template.Name, "template_use", templateID),
-			markup.Data("Удалить", "template_delete_confirm", templateID),
-		))
+		if canDelete {
+			rows = append(rows, markup.Row(
+				markup.Data(template.Name, "template_use", templateID),
+				markup.Data("Удалить", "template_delete_confirm", templateID),
+			))
+			continue
+		}
+		rows = append(rows, markup.Row(markup.Data(template.Name, "template_use", templateID)))
 	}
 	markup.Inline(rows...)
-	return sendText(c, text.String(), markup)
+	return sendText(c, "Шаблоны", markup)
 }
 
 func (b *OrderBot) handleTemplateUse(c tele.Context) error {
@@ -58,6 +58,10 @@ func (b *OrderBot) handleTemplateUse(c tele.Context) error {
 	}
 	_ = c.Respond()
 	return sendHTML(c, responses.Template(template.Body), b.actionMarkup(c))
+}
+
+func (b *OrderBot) handleNoop(c tele.Context) error {
+	return c.Respond()
 }
 
 func (b *OrderBot) handleTemplateDeleteConfirm(c tele.Context) error {
@@ -136,6 +140,14 @@ func (b *OrderBot) isWaitingTemplate(uid int64) bool {
 	defer b.mu.Unlock()
 	s := b.sessions[uid]
 	return s != nil && s.waitingTemplate
+}
+
+func (b *OrderBot) canManageTemplates(c tele.Context) bool {
+	user, ok := b.currentUser(c)
+	if !ok || b.rbacSvc == nil {
+		return false
+	}
+	return b.rbacSvc.HasPermission(user.Role, app.PermissionTemplateManage)
 }
 
 func templateIDFromCallback(c tele.Context) (int64, error) {

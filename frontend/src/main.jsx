@@ -53,6 +53,22 @@ function apiURL(base, path) {
   return `${base.replace(/\/$/, '')}${path}`;
 }
 
+function orderNumberFromLocation() {
+  return stringsTrim(new URLSearchParams(window.location.search).get('order'));
+}
+
+function syncOrderURL(number) {
+  const orderNumber = stringsTrim(number);
+  if (!orderNumber) return;
+  const url = new URL(window.location.href);
+  url.searchParams.set('order', orderNumber);
+  window.history.replaceState({}, '', url);
+}
+
+function stringsTrim(value) {
+  return String(value || '').trim();
+}
+
 function logInfo(event, payload = {}) {
   if (!frontendLogsEnabled) return;
   console.info(`[bakery-ui] ${event}`, {
@@ -86,14 +102,19 @@ function App() {
   const pageTitle = useMemo(() => selectedNumber || 'Последние заказы', [selectedNumber]);
 
   useEffect(() => {
+    const linkedOrderNumber = orderNumberFromLocation();
     logInfo('app.config', {
       mode: buildMode,
       api_base: apiBase,
       frontend_logs: frontendLogsEnabled,
       page_origin: window.location.origin,
       page_path: window.location.pathname,
+      linked_order: linkedOrderNumber,
     });
-    loadOrders();
+    loadOrders(ordersPage.page, linkedOrderNumber);
+    if (linkedOrderNumber) {
+      loadOrder(linkedOrderNumber);
+    }
   }, []);
 
   async function request(path) {
@@ -158,7 +179,7 @@ function App() {
     }
   }
 
-  function loadOrders(page = ordersPage.page) {
+  function loadOrders(page = ordersPage.page, linkedOrderNumber = '') {
     return run(async () => {
       const result = await request(`/orders?page=${page}&limit=${ordersPage.limit}`);
       const items = result.items || [];
@@ -175,7 +196,7 @@ function App() {
         total: result.total || 0,
         total_pages: result.total_pages || 0,
       });
-      if (!selectedOrder && items.length > 0) {
+      if (!selectedOrder && items.length > 0 && !stringsTrim(linkedOrderNumber)) {
         setSelectedOrder(items[0]);
       }
     });
@@ -183,6 +204,7 @@ function App() {
 
   function loadOrder(number) {
     return run(async () => {
+      syncOrderURL(number);
       const order = await request(`/orders/${encodeURIComponent(number)}`);
       logInfo('order.loaded', {
         number,

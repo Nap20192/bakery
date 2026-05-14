@@ -3,6 +3,7 @@ package bot
 import (
 	"fmt"
 	"html"
+	"net/url"
 	"strings"
 	"time"
 
@@ -14,18 +15,53 @@ import (
 
 var responses responseBuilder
 
+const ordersWebURL = "https://orders-production-3e6e.up.railway.app/"
+
 type responseBuilder struct{}
 
 func (responseBuilder) Start() string {
 	return "<b>orderbot</b>\n\n" +
-		"Выберите действие кнопками снизу.\n\n" +
-		"<b>Заказ</b>\n" +
+		"Выберите действие кнопками снизу.\n" +
+		fmt.Sprintf("Все заказы: %s\n", ordersWebURL) +
+		"Инструкция: /help"
+}
+
+func (responseBuilder) Help() string {
+	return "<b>Инструкция orderbot</b>\n\n" +
+		"<b>1. Локация</b>\n" +
+		"Сначала выберите магазин или цех кнопками снизу.\n" +
+		"Магазин создаёт заказы. Цех просматривает заказы и расчёт теста.\n\n" +
+		"<b>2. Создание заказа</b>\n" +
+		"Отправьте позиции сообщением:\n" +
 		"<code>код название количество</code>\n" +
-		"Пример: <code>15647 Сосиска в тесте 5</code>\n" +
-		"Дата отдельной строкой: <code>13.05.2026</code>\n" +
-		"Заказное: <code>5+5</code>\n" +
-		"Количество <code>0</code> удаляет позицию из текущего заказа.\n" +
-		"Также можно нажать кнопку <b>Удалить позицию</b> и отправить код."
+		"Пример:\n" +
+		"<code>15647 Сосиска в тесте 5</code>\n\n" +
+		"Можно отправлять много строк сразу.\n" +
+		"Заголовки заглавными буквами можно оставлять в тексте.\n\n" +
+		"<b>3. Дата выполнения</b>\n" +
+		"Дата указывается отдельной строкой в формате:\n" +
+		"<code>дд.мм.гггг</code>\n" +
+		"Пример: <code>13.05.2026</code>\n\n" +
+		"<b>4. Заказное</b>\n" +
+		"Формат количества:\n" +
+		"<code>основное+заказное</code>\n" +
+		"Пример: <code>15647 Сосиска в тесте 5+5</code>\n\n" +
+		"<b>5. Изменение текущего заказа</b>\n" +
+		"Если позиция уже есть в текущем заказе, новое сообщение обновит количество.\n" +
+		"Количество <code>0</code> удаляет позицию.\n\n" +
+		"<b>6. Шаблоны</b>\n" +
+		"/templates — выбрать шаблон.\n" +
+		"После выбора шаблона отправьте его как заказ или измените количества.\n\n" +
+		"<b>7. Заказы</b>\n" +
+		"/orders — последние заказы.\n" +
+		"В карточке заказа можно открыть заказ, изменить его или посмотреть расчёт теста.\n" +
+		fmt.Sprintf("Все заказы в вебе: %s\n\n", ordersWebURL) +
+		"<b>8. Служебные команды</b>\n" +
+		"/sync — синхронизация iiko, только админ.\n" +
+		"/techcard код — техкарта, только с доступом.\n" +
+		"/addtemplate — добавить шаблон, только админ.\n" +
+		"/adduser username password role — добавить пользователя, только админ.\n" +
+		"/logout — выйти из пользователя."
 }
 
 func (responseBuilder) Template(template string) string {
@@ -179,9 +215,22 @@ func writeOrderDetails(sb *strings.Builder, order orderdomain.Order, fromDepartm
 		))
 	}
 	sb.WriteString(fmt.Sprintf(
-		"\nМониторинг: <code>/monitor %s</code>",
+		"\nКалькуляция: <code>/monitor %s</code>",
 		html.EscapeString(order.Number),
 	))
+	sb.WriteString(fmt.Sprintf("\nОткрыть заказ: <a href=\"%s\">%s</a>", html.EscapeString(orderWebURL(order.Number)), html.EscapeString(order.Number)))
+	sb.WriteString(fmt.Sprintf("\nВсе заказы: %s", ordersWebURL))
+}
+
+func orderWebURL(orderNumber string) string {
+	base, err := url.Parse(ordersWebURL)
+	if err != nil {
+		return ordersWebURL
+	}
+	query := base.Query()
+	query.Set("order", strings.TrimSpace(orderNumber))
+	base.RawQuery = query.Encode()
+	return base.String()
 }
 
 func orderCreatedBy(order orderdomain.Order, fallback string) string {
@@ -205,7 +254,7 @@ func formatOrderItemQuantity(item orderdomain.OrderItem) string {
 
 func (responseBuilder) MonitorReports(order orderdomain.Order, reports []monitoringdomain.IngredientReport) string {
 	var sb strings.Builder
-	sb.WriteString("<b>Мониторинг</b>\n\n")
+	sb.WriteString("<b>Калькуляция</b>\n\n")
 	sb.WriteString(fmt.Sprintf("Заказ: <code>%s</code>\n\n", html.EscapeString(order.Number)))
 
 	for _, report := range reports {

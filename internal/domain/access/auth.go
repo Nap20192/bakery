@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	// RoleAdmin — полный доступ к заказам, мониторингу, iiko sync и управлению пользователями.
+	// RoleAdmin — полный доступ к заказам, калькуляции, iiko sync и управлению пользователями.
 	RoleAdmin = string(enum.RoleAdmin)
 )
 
