@@ -149,25 +149,29 @@ function App() {
         </button>
 
         <div className="orders">
-          {orders.map((order) => (
-            <button
-              key={order.number}
-              className={`order-row ${selectedOrder?.number === order.number ? 'active' : ''}`}
-              onClick={() => {
-                setMenuOpen(false);
-                loadOrder(order.number);
-              }}
-            >
-              <strong>{order.number}</strong>
-              <span className="order-line">От кого: {orderCreator(order)}</span>
-              <span className="order-line">Откуда: {orderSource(order)}</span>
-              <span className="order-line">Куда: {orderDepartmentName(order, 'to_department')}</span>
-              <span className="order-line">Выполнить: {formatFulfillmentDate(order.fulfillment_date) || '-'}</span>
-              <span className="order-meta">
-                Создан: {formatDate(order.created_at) || '-'} · {order.items?.length || 0} поз.
-              </span>
-            </button>
-          ))}
+          {orders.length ? (
+            orders.map((order) => (
+              <button
+                key={order.number}
+                className={`order-row ${selectedOrder?.number === order.number ? 'active' : ''}`}
+                onClick={() => {
+                  setMenuOpen(false);
+                  loadOrder(order.number);
+                }}
+              >
+                <strong>{order.number}</strong>
+                <span className="order-line">От кого: {orderCreator(order)}</span>
+                <span className="order-line">Откуда: {orderSource(order)}</span>
+                <span className="order-line">Куда: {orderDepartmentName(order, 'to_department')}</span>
+                <span className="order-line">Выполнить: {formatFulfillmentDate(order.fulfillment_date) || '-'}</span>
+                <span className="order-meta">
+                  Создан: {formatDate(order.created_at) || '-'} · {order.items?.length || 0} поз.
+                </span>
+              </button>
+            ))
+          ) : (
+            <div className="empty compact">Заказов нет.</div>
+          )}
         </div>
 
         <div className="pagination">
@@ -255,7 +259,7 @@ function OrderDetails({ order }) {
           <span className="eyebrow">Заказ</span>
           <h3>{order.number}</h3>
         </div>
-        <code>{order.monitor_command}</code>
+        <span className="panel-count">{order.items?.length || 0} поз.</span>
       </div>
 
       <div className="meta">
