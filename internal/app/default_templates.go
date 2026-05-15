@@ -6,8 +6,6 @@ import (
 	orderdomain "bakery/internal/domain/order"
 )
 
-const defaultTemplateTheme = "БЛЮДА"
-
 func parseDefaultOrderTemplates(raw string) []orderdomain.OrderTemplate {
 	var templates []orderdomain.OrderTemplate
 	var currentName string
@@ -21,9 +19,8 @@ func parseDefaultOrderTemplates(raw string) []orderdomain.OrderTemplate {
 		bodyLines = append(bodyLines, currentName)
 		bodyLines = append(bodyLines, currentLines...)
 		templates = append(templates, orderdomain.OrderTemplate{
-			Theme: defaultTemplateTheme,
-			Name:  currentName,
-			Body:  strings.Join(bodyLines, "\n"),
+			Name: currentName,
+			Body: strings.Join(bodyLines, "\n"),
 		})
 	}
 

@@ -188,7 +188,6 @@ func (s *OrderService) ParseOrderTemplate(raw string) (ParsedOrderTemplate, Bulk
 		body += "\n" + strings.Join(bodyLines, "\n")
 	}
 	return ParsedOrderTemplate{
-		Theme: title,
 		Name:  title,
 		Body:  body,
 		Items: result.ValidItems,
