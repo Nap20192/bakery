@@ -182,7 +182,7 @@ func (responseBuilder) OrderDraft(orderNumber string, items []orderdomain.OrderI
 	} else {
 		for _, it := range items {
 			sb.WriteString(fmt.Sprintf(
-				"• <code>%s</code> %s - %s\n",
+				"<code>%s</code> %s %s\n",
 				html.EscapeString(it.Code),
 				html.EscapeString(it.ProductName),
 				html.EscapeString(formatOrderItemQuantity(it)),
@@ -215,7 +215,7 @@ func writeOrderDetails(sb *strings.Builder, order orderdomain.Order, fromDepartm
 	sb.WriteString("\n<b>Состав заказа:</b>\n")
 	for _, it := range order.Items {
 		sb.WriteString(fmt.Sprintf(
-			"• <code>%s</code> %s - %s\n",
+			"<code>%s</code> %s %s\n",
 			html.EscapeString(it.Code),
 			html.EscapeString(it.ProductName),
 			html.EscapeString(formatOrderItemQuantity(it)),
@@ -226,7 +226,6 @@ func writeOrderDetails(sb *strings.Builder, order orderdomain.Order, fromDepartm
 		html.EscapeString(order.Number),
 	))
 	sb.WriteString(fmt.Sprintf("\nОткрыть заказ: %s", html.EscapeString(orderWebURL(order.Number))))
-	sb.WriteString(fmt.Sprintf("\nВсе заказы: %s", ordersWebURL))
 }
 
 func orderWebURL(orderNumber string) string {
