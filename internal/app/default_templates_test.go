@@ -14,9 +14,6 @@ func TestParseDefaultOrderTemplates(t *testing.T) {
 	if len(templates) != 2 {
 		t.Fatalf("templates = %d, want 2", len(templates))
 	}
-	if templates[0].Theme != defaultTemplateTheme {
-		t.Fatalf("theme = %q, want %q", templates[0].Theme, defaultTemplateTheme)
-	}
 	if templates[0].Name != "КОКРОКИ" {
 		t.Fatalf("name = %q, want КОКРОКИ", templates[0].Name)
 	}

@@ -136,7 +136,6 @@ func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams
 
 const createOrderTemplate = `-- name: CreateOrderTemplate :one
 INSERT INTO order_templates (
-    theme,
     name,
     body,
     created_by_user_id,
@@ -147,14 +146,12 @@ INSERT INTO order_templates (
     $2,
     $3,
     $4,
-    $5,
-    $6
+    $5
 )
-RETURNING id, theme, name, body, created_by_user_id, created_at, updated_at
+RETURNING id, name, body, created_by_user_id, created_at, updated_at
 `
 
 type CreateOrderTemplateParams struct {
-	Theme           string `json:"theme"`
 	Name            string `json:"name"`
 	Body            string `json:"body"`
 	CreatedByUserID *int64 `json:"created_by_user_id"`
@@ -164,7 +161,6 @@ type CreateOrderTemplateParams struct {
 
 func (q *Queries) CreateOrderTemplate(ctx context.Context, arg CreateOrderTemplateParams) (OrderTemplate, error) {
 	row := q.db.QueryRow(ctx, createOrderTemplate,
-		arg.Theme,
 		arg.Name,
 		arg.Body,
 		arg.CreatedByUserID,
@@ -174,7 +170,6 @@ func (q *Queries) CreateOrderTemplate(ctx context.Context, arg CreateOrderTempla
 	var i OrderTemplate
 	err := row.Scan(
 		&i.ID,
-		&i.Theme,
 		&i.Name,
 		&i.Body,
 		&i.CreatedByUserID,
@@ -297,7 +292,7 @@ func (q *Queries) GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]
 }
 
 const getOrderTemplateByID = `-- name: GetOrderTemplateByID :one
-SELECT id, theme, name, body, created_by_user_id, created_at, updated_at
+SELECT id, name, body, created_by_user_id, created_at, updated_at
 FROM order_templates
 WHERE id = $1
 `
@@ -307,7 +302,6 @@ func (q *Queries) GetOrderTemplateByID(ctx context.Context, id int64) (OrderTemp
 	var i OrderTemplate
 	err := row.Scan(
 		&i.ID,
-		&i.Theme,
 		&i.Name,
 		&i.Body,
 		&i.CreatedByUserID,
@@ -318,9 +312,9 @@ func (q *Queries) GetOrderTemplateByID(ctx context.Context, id int64) (OrderTemp
 }
 
 const listOrderTemplates = `-- name: ListOrderTemplates :many
-SELECT id, theme, name, body, created_by_user_id, created_at, updated_at
+SELECT id, name, body, created_by_user_id, created_at, updated_at
 FROM order_templates
-ORDER BY theme, name, id
+ORDER BY name, id
 `
 
 func (q *Queries) ListOrderTemplates(ctx context.Context) ([]OrderTemplate, error) {
@@ -334,7 +328,6 @@ func (q *Queries) ListOrderTemplates(ctx context.Context) ([]OrderTemplate, erro
 		var i OrderTemplate
 		if err := rows.Scan(
 			&i.ID,
-			&i.Theme,
 			&i.Name,
 			&i.Body,
 			&i.CreatedByUserID,

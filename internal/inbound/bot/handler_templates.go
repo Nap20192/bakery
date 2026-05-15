@@ -25,12 +25,7 @@ func (b *OrderBot) handleTemplates(c tele.Context) error {
 	canDelete := b.canManageTemplates(c)
 	markup := &tele.ReplyMarkup{}
 	rows := make([]tele.Row, 0, len(templates))
-	currentTheme := ""
 	for _, template := range templates {
-		if template.Theme != currentTheme {
-			currentTheme = template.Theme
-			rows = append(rows, markup.Row(markup.Data(currentTheme, "noop", currentTheme)))
-		}
 		templateID := strconv.FormatInt(template.ID, 10)
 		if canDelete {
 			rows = append(rows, markup.Row(

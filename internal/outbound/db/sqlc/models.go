@@ -134,7 +134,6 @@ type OrderItem struct {
 
 type OrderTemplate struct {
 	ID              int64  `json:"id"`
-	Theme           string `json:"theme"`
 	Name            string `json:"name"`
 	Body            string `json:"body"`
 	CreatedByUserID *int64 `json:"created_by_user_id"`

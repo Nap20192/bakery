@@ -20,7 +20,6 @@ type Order struct {
 
 type OrderTemplate struct {
 	ID              int64
-	Theme           string
 	Name            string
 	Body            string
 	CreatedByUserID *int64
@@ -29,7 +28,6 @@ type OrderTemplate struct {
 }
 
 type ParsedOrderTemplate struct {
-	Theme string
 	Name  string
 	Body  string
 	Items []OrderItem

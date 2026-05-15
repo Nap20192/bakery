@@ -298,7 +298,6 @@ func (s *OrderService) CreateOrderTemplate(ctx context.Context, creatorID *int64
 
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	row, err := s.queries.CreateOrderTemplate(ctx, sqlc.CreateOrderTemplateParams{
-		Theme:           template.Theme,
 		Name:            template.Name,
 		Body:            template.Body,
 		CreatedByUserID: creatorID,
@@ -379,7 +378,6 @@ func (s *OrderService) EnsureDefaultOrderTemplates(ctx context.Context, path str
 			continue
 		}
 		if _, err := s.queries.CreateOrderTemplate(ctx, sqlc.CreateOrderTemplateParams{
-			Theme:           template.Theme,
 			Name:            template.Name,
 			Body:            template.Body,
 			CreatedByUserID: nil,
@@ -438,7 +436,6 @@ func mapOrderItems(items []sqlc.GetOrderItemsByOrderIDRow) []orderdomain.OrderIt
 func orderTemplateToDomain(row sqlc.OrderTemplate) orderdomain.OrderTemplate {
 	return orderdomain.OrderTemplate{
 		ID:              row.ID,
-		Theme:           row.Theme,
 		Name:            row.Name,
 		Body:            row.Body,
 		CreatedByUserID: row.CreatedByUserID,

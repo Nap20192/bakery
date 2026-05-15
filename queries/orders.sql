@@ -100,14 +100,12 @@ FROM deleted;
 
 -- name: CreateOrderTemplate :one
 INSERT INTO order_templates (
-    theme,
     name,
     body,
     created_by_user_id,
     created_at,
     updated_at
 ) VALUES (
-    sqlc.arg(theme),
     sqlc.arg(name),
     sqlc.arg(body),
     sqlc.narg(created_by_user_id),
@@ -119,7 +117,7 @@ RETURNING *;
 -- name: ListOrderTemplates :many
 SELECT *
 FROM order_templates
-ORDER BY theme, name, id;
+ORDER BY name, id;
 
 -- name: GetOrderTemplateByID :one
 SELECT *

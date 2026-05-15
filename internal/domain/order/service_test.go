@@ -194,7 +194,7 @@ func TestOrderServiceParseOrderTemplate(t *testing.T) {
 	if len(validation.Errors) != 0 {
 		t.Fatalf("unexpected errors: %#v", validation.Errors)
 	}
-	if template.Theme != "ПИРОЖКИ" || template.Name != "ПИРОЖКИ" {
+	if template.Name != "ПИРОЖКИ" {
 		t.Fatalf("unexpected template: %#v", template)
 	}
 	if len(template.Items) != 2 {
