@@ -35,7 +35,7 @@ export function OrderList({
   onResetFilters,
 }) {
   return (
-    <aside className="m-3 flex max-h-[44vh] flex-col gap-2.5 rounded-lg border border-stone-300 bg-[#fff7df] p-3 lg:sticky lg:top-3 lg:ml-3 lg:mr-0 lg:h-[calc(100vh-1.5rem)] lg:max-h-none">
+    <aside className="m-3 flex min-h-[32rem] max-h-[70vh] flex-col gap-2.5 rounded-lg border border-stone-300 bg-[#fff7df] p-3 lg:sticky lg:top-3 lg:ml-3 lg:mr-0 lg:h-[calc(100vh-1.5rem)] lg:max-h-none lg:min-h-[38rem]">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <h1 className="m-0 text-[20px] font-semibold leading-7 text-stone-950">Заказы</h1>
@@ -94,31 +94,31 @@ export function OrderList({
           orders.map((order) => {
             const checked = selectedOrderNumbers.includes(order.number);
             return (
-            <div
-              key={order.number}
-              className={`w-full rounded-md border px-2.5 py-2 text-left transition ${
-                selectedNumber === order.number ? 'border-stone-300 bg-[#fff1cb]' : 'border-transparent bg-[#fff7df] hover:border-stone-300 hover:bg-[#fff1cb]'
-              }`}
-            >
-              <div className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-2">
-                <input
-                  type="checkbox"
-                  className="mt-0.5 h-4 w-4 accent-stone-950"
-                  checked={checked}
-                  aria-label={`Выбрать заказ ${order.number}`}
-                  onChange={() => onToggleSelection(order.number)}
-                />
-                <button className="min-w-0 text-left" onClick={() => onSelect(order.number)}>
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5">
-                    <strong className="break-words text-[13px] font-semibold leading-5 text-stone-900">{order.number}</strong>
-                    <span className="text-[12px] leading-5 text-stone-600">{order.items?.length || 0} поз.</span>
-                    <strong className="break-words text-[12px] font-semibold leading-5 text-stone-800">Откуда: {orderSource(order)}</strong>
-                    <span className="text-[12px] leading-5 text-stone-600">{formatFulfillmentDate(order.fulfillment_date) || '-'}</span>
-                  </div>
-                </button>
+              <div
+                key={order.number}
+                className={`w-full rounded-md border px-2.5 py-2 text-left transition ${
+                  selectedNumber === order.number ? 'border-stone-300 bg-[#fff1cb]' : 'border-transparent bg-[#fff7df] hover:border-stone-300 hover:bg-[#fff1cb]'
+                }`}
+              >
+                <div className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-2">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 accent-stone-950"
+                    checked={checked}
+                    aria-label={`Выбрать заказ ${order.number}`}
+                    onChange={() => onToggleSelection(order.number)}
+                  />
+                  <button className="min-w-0 text-left" onClick={() => onSelect(order.number)}>
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5">
+                      <strong className="break-words text-[13px] font-semibold leading-5 text-stone-900">{order.number}</strong>
+                      <span className="text-[12px] leading-5 text-stone-600">{order.items?.length || 0} поз.</span>
+                      <strong className="break-words text-[12px] font-semibold leading-5 text-stone-800">Откуда: {orderSource(order)}</strong>
+                      <span className="text-[12px] leading-5 text-stone-600">{formatFulfillmentDate(order.fulfillment_date) || '-'}</span>
+                    </div>
+                  </button>
+                </div>
               </div>
-            </div>
-          );
+            );
           })
         ) : (
           <EmptyState compact>Заказов нет.</EmptyState>
