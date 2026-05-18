@@ -11,6 +11,7 @@ import (
 	"bakery/internal/app"
 	monitoringdomain "bakery/internal/domain/monitoring"
 	orderdomain "bakery/internal/domain/order"
+	"bakery/internal/pkg/enum"
 )
 
 var defaultMonitorCodes = []string{"17642", "17644", "17650", "19694"}
@@ -61,8 +62,41 @@ type monitorResponse struct {
 	Order   orderResponse           `json:"order"`
 }
 
+type batchMonitorOrderResponse struct {
+	Order   orderResponse           `json:"order"`
+	Reports []monitorReportResponse `json:"reports"`
+}
+
+type batchMonitorResponse struct {
+	Orders       []batchMonitorOrderResponse `json:"orders"`
+	TotalReports []monitorReportResponse     `json:"total_reports"`
+}
+
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+func (s *Server) handleListDepartments(w http.ResponseWriter, r *http.Request) {
+	if s.departmentSvc == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errorResponse{Error: "department service unavailable"})
+		return
+	}
+	departmentType := enum.DepartmentType(trim(r.URL.Query().Get("type")))
+	departments, err := s.departmentSvc.ListByType(r.Context(), departmentType)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to list departments"})
+		return
+	}
+	response := make([]departmentResponse, 0, len(departments))
+	for _, department := range departments {
+		response = append(response, departmentResponse{
+			ID:   department.ID,
+			Code: department.Code,
+			Name: department.Name,
+			Type: department.Type,
+		})
+	}
+	writeJSON(w, http.StatusOK, response)
 }
 
 func (s *Server) handleListOrders(w http.ResponseWriter, r *http.Request) {
@@ -90,10 +124,26 @@ func (s *Server) handleListOrders(w http.ResponseWriter, r *http.Request) {
 		page = int32(parsed)
 	}
 	offset := (page - 1) * limit
+	var fromDepartmentID *int64
+	if raw := trim(r.URL.Query().Get("from_department_id")); raw != "" {
+		parsed, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || parsed <= 0 {
+			writeJSON(w, http.StatusBadRequest, errorResponse{Error: "invalid from_department_id"})
+			return
+		}
+		fromDepartmentID = &parsed
+	}
+	fulfillmentDate, err := parseRequestDate(r.URL.Query().Get("fulfillment_date"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "invalid fulfillment_date"})
+		return
+	}
 
 	result, err := s.orderSvc.ListOrders(r.Context(), app.ListOrdersInput{
-		Limit:  limit,
-		Offset: offset,
+		Limit:            limit,
+		Offset:           offset,
+		FromDepartmentID: fromDepartmentID,
+		FulfillmentDate:  fulfillmentDate,
 	})
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, errorResponse{Error: err.Error()})
@@ -192,11 +242,91 @@ func (s *Server) handleMonitorByProduct(w http.ResponseWriter, r *http.Request) 
 	}))
 }
 
+func (s *Server) handleMonitorBatch(w http.ResponseWriter, r *http.Request) {
+	if s.monitorSvc == nil || s.orderSvc == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errorResponse{Error: "monitor service unavailable"})
+		return
+	}
+
+	orderNumbers := uniqueQueryValues(r.URL.Query()["orders"])
+	if len(orderNumbers) == 0 {
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "orders query parameter is required"})
+		return
+	}
+	if len(orderNumbers) > 50 {
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "too many orders"})
+		return
+	}
+
+	orders := make([]orderdomain.Order, 0, len(orderNumbers))
+	for _, number := range orderNumbers {
+		order, err := s.orderSvc.GetOrderByNumber(r.Context(), number)
+		if err != nil {
+			writeJSON(w, http.StatusNotFound, errorResponse{Error: fmt.Sprintf("order %s not found", number)})
+			return
+		}
+		orders = append(orders, order)
+	}
+
+	report, err := s.monitorSvc.GetBatchIngredientsByCodes(r.Context(), defaultMonitorCodes, orders)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, s.buildBatchMonitorResponse(r.Context(), orders, report))
+}
+
 func (s *Server) buildMonitorResponse(ctx context.Context, order orderdomain.Order, reports []monitorReportResponse) monitorResponse {
 	return monitorResponse{
 		Reports: reports,
 		Order:   s.buildOrderResponse(ctx, order),
 	}
+}
+
+func (s *Server) buildBatchMonitorResponse(
+	ctx context.Context,
+	orders []orderdomain.Order,
+	report monitoringdomain.BatchMonitoringReport,
+) batchMonitorResponse {
+	orderByNumber := make(map[string]orderdomain.Order, len(orders))
+	for _, order := range orders {
+		orderByNumber[order.Number] = order
+	}
+
+	response := batchMonitorResponse{
+		Orders:       make([]batchMonitorOrderResponse, 0, len(report.Orders)),
+		TotalReports: make([]monitorReportResponse, 0, len(report.TotalReports)),
+	}
+	for i, total := range report.TotalReports {
+		code := ""
+		if i < len(defaultMonitorCodes) {
+			code = defaultMonitorCodes[i]
+		}
+		response.TotalReports = append(response.TotalReports, monitorReportResponse{
+			Code:   code,
+			Report: total,
+		})
+	}
+	for _, orderReport := range report.Orders {
+		order := orderByNumber[orderReport.OrderNumber]
+		reports := make([]monitorReportResponse, 0, len(orderReport.Reports))
+		for i, item := range orderReport.Reports {
+			code := ""
+			if i < len(defaultMonitorCodes) {
+				code = defaultMonitorCodes[i]
+			}
+			reports = append(reports, monitorReportResponse{
+				Code:   code,
+				Report: item,
+			})
+		}
+		response.Orders = append(response.Orders, batchMonitorOrderResponse{
+			Order:   s.buildOrderResponse(ctx, order),
+			Reports: reports,
+		})
+	}
+	return response
 }
 
 func (s *Server) buildOrderResponses(ctx context.Context, orders []orderdomain.Order) []orderResponse {
@@ -256,4 +386,21 @@ func (s *Server) departmentResponse(ctx context.Context, id *int64) *departmentR
 		Name: department.Name,
 		Type: department.Type,
 	}
+}
+
+func uniqueQueryValues(values []string) []string {
+	result := make([]string, 0, len(values))
+	seen := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		value = trim(value)
+		if value == "" {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	return result
 }

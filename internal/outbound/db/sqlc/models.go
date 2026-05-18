@@ -123,6 +123,25 @@ type OrderCounter struct {
 	Counter int64  `json:"counter"`
 }
 
+type OrderHistory struct {
+	ID                int64  `json:"id"`
+	OrderID           int64  `json:"order_id"`
+	ChangedByUsername string `json:"changed_by_username"`
+	ChangedAt         string `json:"changed_at"`
+}
+
+type OrderHistoryItem struct {
+	ID                  int64    `json:"id"`
+	HistoryID           int64    `json:"history_id"`
+	ChangeType          string   `json:"change_type"`
+	ProductCode         string   `json:"product_code"`
+	ProductName         string   `json:"product_name"`
+	OldQuantity         *float64 `json:"old_quantity"`
+	NewQuantity         *float64 `json:"new_quantity"`
+	OldReservedQuantity *float64 `json:"old_reserved_quantity"`
+	NewReservedQuantity *float64 `json:"new_reserved_quantity"`
+}
+
 type OrderItem struct {
 	ID               int64   `json:"id"`
 	OrderID          int64   `json:"order_id"`

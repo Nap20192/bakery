@@ -88,6 +88,77 @@ func (s *MonitorService) GetIngredientsByCode(ctx context.Context, code string, 
 	return report, nil
 }
 
+func (s *MonitorService) GetBatchIngredientsByCodes(ctx context.Context, codes []string, orders []orderdomain.Order) (monitoringdomain.BatchMonitoringReport, error) {
+	result := monitoringdomain.BatchMonitoringReport{
+		Orders:       make([]monitoringdomain.OrderMonitoringReport, 0, len(orders)),
+		TotalReports: make([]monitoringdomain.IngredientReport, 0, len(codes)),
+	}
+	if len(codes) == 0 || len(orders) == 0 {
+		return result, nil
+	}
+
+	totalByCode := make(map[string]monitoringdomain.IngredientReport, len(codes))
+	breakdownByCode := make(map[string]map[string]monitoringdomain.IngredientDishBreakdown, len(codes))
+
+	for _, order := range orders {
+		orderReport := monitoringdomain.OrderMonitoringReport{
+			OrderNumber: order.Number,
+			Reports:     make([]monitoringdomain.IngredientReport, 0, len(codes)),
+		}
+		for _, code := range codes {
+			report, err := s.GetIngredientsByCode(ctx, code, order)
+			if err != nil {
+				return result, err
+			}
+			orderReport.Reports = append(orderReport.Reports, report)
+
+			total := totalByCode[code]
+			if total.Ingredient.ProductCode == "" {
+				total.Ingredient = report.Ingredient
+				total.Ingredient.Quantity = 0
+			}
+			total.Ingredient.Quantity += report.Ingredient.Quantity
+			totalByCode[code] = total
+
+			if _, ok := breakdownByCode[code]; !ok {
+				breakdownByCode[code] = make(map[string]monitoringdomain.IngredientDishBreakdown)
+			}
+			for _, breakdown := range report.Breakdown {
+				key := breakdown.OrderItemCode + "\x00" + breakdown.OrderItemName
+				existing := breakdownByCode[code][key]
+				if existing.OrderItemCode == "" {
+					existing = monitoringdomain.IngredientDishBreakdown{
+						OrderItemCode: breakdown.OrderItemCode,
+						OrderItemName: breakdown.OrderItemName,
+					}
+				}
+				existing.OrderItemQuantity += breakdown.OrderItemQuantity
+				existing.IngredientQuantity += breakdown.IngredientQuantity
+				breakdownByCode[code][key] = existing
+			}
+		}
+		result.Orders = append(result.Orders, orderReport)
+	}
+
+	for _, code := range codes {
+		total, ok := totalByCode[code]
+		if !ok {
+			continue
+		}
+		for _, breakdown := range breakdownByCode[code] {
+			if breakdown.IngredientQuantity > 0 {
+				total.Breakdown = append(total.Breakdown, breakdown)
+			}
+		}
+		sort.Slice(total.Breakdown, func(i, j int) bool {
+			return total.Breakdown[i].IngredientQuantity > total.Breakdown[j].IngredientQuantity
+		})
+		result.TotalReports = append(result.TotalReports, total)
+	}
+
+	return result, nil
+}
+
 func (s *MonitorService) calculateOrderItemIngredientUsage(
 	ctx context.Context,
 	orderItem orderdomain.OrderItem,

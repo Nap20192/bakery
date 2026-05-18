@@ -100,6 +100,22 @@ func (responseBuilder) OrdersList(orders []orderdomain.Order, departments map[in
 	return sb.String()
 }
 
+func (responseBuilder) ShopOrdersList(orders []orderdomain.Order, departments map[int64]string) string {
+	var sb strings.Builder
+	sb.WriteString("<b>Ваши последние заказы</b>\n\n")
+	for _, order := range orders {
+		sb.WriteString(fmt.Sprintf("<b><code>%s</code></b>\n", html.EscapeString(order.Number)))
+		if !order.FulfillmentDate.IsZero() {
+			sb.WriteString(fmt.Sprintf("Дата: <code>%s</code>\n", html.EscapeString(order.FulfillmentDate.Format("02.01.2006"))))
+		}
+		if from := departmentName(departments, order.FromDepartmentID); from != "" {
+			sb.WriteString(fmt.Sprintf("<b>Откуда: %s</b>\n", html.EscapeString(from)))
+		}
+		sb.WriteString(fmt.Sprintf("Позиций: %d\n\n", len(order.Items)))
+	}
+	return sb.String()
+}
+
 func departmentName(departments map[int64]string, id *int64) string {
 	if id == nil {
 		return ""
@@ -159,6 +175,25 @@ func (responseBuilder) OrderView(order orderdomain.Order, fromDepartment string,
 	return sb.String()
 }
 
+func (responseBuilder) OrderCopy(order orderdomain.Order) string {
+	var sb strings.Builder
+	sb.WriteString("<pre>")
+	if !order.FulfillmentDate.IsZero() {
+		sb.WriteString(html.EscapeString(order.FulfillmentDate.Format("02.01.2006")))
+		sb.WriteString("\n")
+	}
+	for _, item := range order.Items {
+		sb.WriteString(html.EscapeString(item.Code))
+		sb.WriteString(" ")
+		sb.WriteString(html.EscapeString(item.ProductName))
+		sb.WriteString(" ")
+		sb.WriteString(html.EscapeString(formatOrderItemQuantity(item)))
+		sb.WriteString("\n")
+	}
+	sb.WriteString("</pre>")
+	return sb.String()
+}
+
 func (responseBuilder) OrderUpdated(order orderdomain.Order, fromDepartment string, toDepartment string) string {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("<b>Заказ <code>%s</code> обновлен</b>\n\n", html.EscapeString(order.Number)))
@@ -213,19 +248,102 @@ func writeOrderDetails(sb *strings.Builder, order orderdomain.Order, fromDepartm
 		sb.WriteString(fmt.Sprintf("Куда: %s\n", html.EscapeString(toDepartment)))
 	}
 	sb.WriteString("\n<b>Состав заказа:</b>\n")
+	latestChanges := latestOrderChanges(order)
 	for _, it := range order.Items {
+		mark := ""
+		if changeType := latestChanges[it.Code]; changeType != "" {
+			mark = " " + orderChangeLabel(changeType)
+		}
 		sb.WriteString(fmt.Sprintf(
-			"<code>%s</code> %s %s\n",
+			"<code>%s</code> %s %s%s\n",
 			html.EscapeString(it.Code),
 			html.EscapeString(it.ProductName),
 			html.EscapeString(formatOrderItemQuantity(it)),
+			mark,
 		))
 	}
+	writeOrderHistorySummary(sb, order)
 	sb.WriteString(fmt.Sprintf(
 		"\nКалькуляция: <code>/monitor %s</code>",
 		html.EscapeString(order.Number),
 	))
 	sb.WriteString(fmt.Sprintf("\nОткрыть заказ: %s", html.EscapeString(orderWebURL(order.Number))))
+}
+
+func latestOrderChanges(order orderdomain.Order) map[string]string {
+	result := make(map[string]string)
+	if len(order.History) == 0 {
+		return result
+	}
+	for _, item := range order.History[0].Items {
+		if strings.TrimSpace(item.ProductCode) == "" {
+			continue
+		}
+		result[item.ProductCode] = item.ChangeType
+	}
+	return result
+}
+
+func writeOrderHistorySummary(sb *strings.Builder, order orderdomain.Order) {
+	if len(order.History) == 0 {
+		return
+	}
+	sb.WriteString("\n<b>История изменений:</b>\n")
+	for _, history := range order.History {
+		if !history.ChangedAt.IsZero() {
+			sb.WriteString(fmt.Sprintf("<code>%s</code>", html.EscapeString(history.ChangedAt.Local().Format("02.01.2006 15:04"))))
+		}
+		if strings.TrimSpace(history.ChangedByUsername) != "" {
+			sb.WriteString(fmt.Sprintf(" %s", html.EscapeString(orderCreatedBy(orderdomain.Order{CreatedByUsername: history.ChangedByUsername}, ""))))
+		}
+		sb.WriteByte('\n')
+		for _, item := range history.Items {
+			writeOrderHistoryItem(sb, item)
+		}
+	}
+}
+
+func writeOrderHistoryItem(sb *strings.Builder, item orderdomain.OrderHistoryItem) {
+	sb.WriteString(fmt.Sprintf(
+		"%s <code>%s</code> %s",
+		orderChangeLabel(item.ChangeType),
+		html.EscapeString(item.ProductCode),
+		html.EscapeString(item.ProductName),
+	))
+	if item.ChangeType == "updated" {
+		sb.WriteString(fmt.Sprintf(": %s → %s", historyQuantity(item.OldQuantity, item.OldReservedQuantity), historyQuantity(item.NewQuantity, item.NewReservedQuantity)))
+	}
+	if item.ChangeType == "added" {
+		sb.WriteString(fmt.Sprintf(": %s", historyQuantity(item.NewQuantity, item.NewReservedQuantity)))
+	}
+	if item.ChangeType == "removed" {
+		sb.WriteString(fmt.Sprintf(": было %s", historyQuantity(item.OldQuantity, item.OldReservedQuantity)))
+	}
+	sb.WriteByte('\n')
+}
+
+func historyQuantity(quantity *float64, reserved *float64) string {
+	if quantity == nil {
+		return "0"
+	}
+	item := orderdomain.OrderItem{Quantity: *quantity}
+	if reserved != nil {
+		item.ReservedQuantity = *reserved
+	}
+	return html.EscapeString(formatOrderItemQuantity(item))
+}
+
+func orderChangeLabel(changeType string) string {
+	switch changeType {
+	case "added":
+		return "[добавлено]"
+	case "updated":
+		return "[изменено]"
+	case "removed":
+		return "[удалено]"
+	default:
+		return "[обновлено]"
+	}
 }
 
 func orderWebURL(orderNumber string) string {
@@ -289,6 +407,57 @@ func (responseBuilder) MonitorReports(order orderdomain.Order, reports []monitor
 	}
 
 	return sb.String()
+}
+
+func (responseBuilder) BatchMonitorReports(report monitoringdomain.BatchMonitoringReport) string {
+	var sb strings.Builder
+	sb.WriteString("<b>Калькуляция выбранных заказов</b>\n\n")
+	if len(report.Orders) > 0 {
+		sb.WriteString("<b>Заказы:</b>\n")
+		for _, order := range report.Orders {
+			sb.WriteString(fmt.Sprintf("• <code>%s</code>\n", html.EscapeString(order.OrderNumber)))
+		}
+		sb.WriteString("\n")
+	}
+
+	sb.WriteString("<b>Итого по всем заказам</b>\n\n")
+	writeMonitorReports(&sb, report.TotalReports, false)
+
+	for _, order := range report.Orders {
+		sb.WriteString(fmt.Sprintf("<b>Заказ <code>%s</code></b>\n\n", html.EscapeString(order.OrderNumber)))
+		writeMonitorReports(&sb, order.Reports, true)
+	}
+
+	return sb.String()
+}
+
+func writeMonitorReports(sb *strings.Builder, reports []monitoringdomain.IngredientReport, totalsOnly bool) {
+	for _, report := range reports {
+		sb.WriteString(fmt.Sprintf(
+			"<b><code>%s</code> %s</b>\n",
+			html.EscapeString(report.Ingredient.ProductCode),
+			html.EscapeString(report.Ingredient.ProductName),
+		))
+		sb.WriteString(fmt.Sprintf(
+			"Итого: %s %s\n",
+			helpers.FormatQuantity(report.Ingredient.Quantity),
+			html.EscapeString(report.Ingredient.Unit),
+		))
+
+		if !totalsOnly {
+			for _, item := range report.Breakdown {
+				sb.WriteString(fmt.Sprintf(
+					"• <code>%s</code> %s: %s / %s %s\n",
+					html.EscapeString(item.OrderItemCode),
+					html.EscapeString(item.OrderItemName),
+					helpers.FormatQuantity(item.OrderItemQuantity),
+					helpers.FormatQuantity(item.IngredientQuantity),
+					html.EscapeString(report.Ingredient.Unit),
+				))
+			}
+		}
+		sb.WriteString("\n")
+	}
 }
 
 func (responseBuilder) TechCard(card techcarddomain.TechCard) string {

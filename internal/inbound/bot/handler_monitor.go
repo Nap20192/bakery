@@ -77,3 +77,31 @@ func (b *OrderBot) buildMonitorReports(ctx context.Context, order orderdomain.Or
 	}
 	return responses.MonitorReports(order, reports), nil
 }
+
+func (b *OrderBot) sendBatchMonitorReports(ctx context.Context, c tele.Context, orderNumbers []string) error {
+	orders := make([]orderdomain.Order, 0, len(orderNumbers))
+	for _, number := range orderNumbers {
+		number = strings.TrimSpace(number)
+		if number == "" {
+			continue
+		}
+		orderCtx := applog.WithOrderNumber(ctx, number)
+		order, err := b.orderSvc.GetOrderByNumber(orderCtx, number)
+		if err != nil {
+			slog.WarnContext(orderCtx, "order lookup failed", "error", err)
+			return sendText(c, fmt.Sprintf("Заказ %s не найден.", number))
+		}
+		orders = append(orders, order)
+	}
+	if len(orders) == 0 {
+		return sendText(c, "Выберите заказы в списке /orders.")
+	}
+
+	report, err := b.monitorSvc.GetBatchIngredientsByCodes(ctx, defaultMonitorCodes, orders)
+	if err != nil {
+		slog.WarnContext(ctx, "batch monitor report failed", "error", err)
+		return sendText(c, "Не удалось посчитать калькуляцию по выбранным заказам.")
+	}
+
+	return sendHTML(c, responses.BatchMonitorReports(report))
+}

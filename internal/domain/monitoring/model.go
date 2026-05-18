@@ -24,3 +24,16 @@ type IngredientReport struct {
 	Ingredient IngredientUsage           `json:"ingredient"`
 	Breakdown  []IngredientDishBreakdown `json:"breakdown"`
 }
+
+// OrderMonitoringReport хранит расчёт по одному заказу внутри batch-расчёта.
+type OrderMonitoringReport struct {
+	OrderNumber string             `json:"order_number"`
+	Reports     []IngredientReport `json:"reports"`
+}
+
+// BatchMonitoringReport хранит расчёты по каждому заказу отдельно
+// и общий расход ингредиентов по всем заказам.
+type BatchMonitoringReport struct {
+	Orders       []OrderMonitoringReport `json:"orders"`
+	TotalReports []IngredientReport      `json:"total_reports"`
+}

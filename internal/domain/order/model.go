@@ -16,6 +16,24 @@ type Order struct {
 	Items             []OrderItem `json:"items"`
 	CreatedAt         time.Time   `json:"created_at"`
 	FulfillmentDate   time.Time   `json:"fulfillment_date"`
+	History           []OrderHistory
+}
+
+type OrderHistory struct {
+	ID                int64
+	ChangedByUsername string
+	ChangedAt         time.Time
+	Items             []OrderHistoryItem
+}
+
+type OrderHistoryItem struct {
+	ChangeType          string
+	ProductCode         string
+	ProductName         string
+	OldQuantity         *float64
+	NewQuantity         *float64
+	OldReservedQuantity *float64
+	NewReservedQuantity *float64
 }
 
 type OrderTemplate struct {

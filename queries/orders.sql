@@ -68,6 +68,52 @@ ORDER BY oi.id;
 DELETE FROM order_items
 WHERE order_id = sqlc.arg(order_id);
 
+-- name: CreateOrderHistory :one
+INSERT INTO order_history (
+    order_id,
+    changed_by_username,
+    changed_at
+) VALUES (
+    sqlc.arg(order_id),
+    sqlc.arg(changed_by_username),
+    sqlc.arg(changed_at)
+)
+RETURNING *;
+
+-- name: CreateOrderHistoryItem :one
+INSERT INTO order_history_items (
+    history_id,
+    change_type,
+    product_code,
+    product_name,
+    old_quantity,
+    new_quantity,
+    old_reserved_quantity,
+    new_reserved_quantity
+) VALUES (
+    sqlc.arg(history_id),
+    sqlc.arg(change_type),
+    sqlc.arg(product_code),
+    sqlc.arg(product_name),
+    sqlc.narg(old_quantity),
+    sqlc.narg(new_quantity),
+    sqlc.narg(old_reserved_quantity),
+    sqlc.narg(new_reserved_quantity)
+)
+RETURNING *;
+
+-- name: ListOrderHistoryByOrderID :many
+SELECT *
+FROM order_history
+WHERE order_id = sqlc.arg(order_id)
+ORDER BY changed_at DESC, id DESC;
+
+-- name: ListOrderHistoryItemsByHistoryID :many
+SELECT *
+FROM order_history_items
+WHERE history_id = sqlc.arg(history_id)
+ORDER BY id;
+
 -- name: UpdateOrder :one
 UPDATE orders
 SET
@@ -81,13 +127,19 @@ RETURNING *;
 -- name: ListOrders :many
 SELECT *
 FROM orders
+WHERE
+    (sqlc.narg(from_department_id)::BIGINT IS NULL OR from_department_id = sqlc.narg(from_department_id)::BIGINT)
+    AND (sqlc.narg(fulfillment_date)::TEXT IS NULL OR fulfillment_date = sqlc.narg(fulfillment_date)::TEXT)
 ORDER BY id DESC
 LIMIT sqlc.arg(order_limit)
 OFFSET sqlc.arg(order_offset);
 
 -- name: CountOrders :one
 SELECT COUNT(*)
-FROM orders;
+FROM orders
+WHERE
+    (sqlc.narg(from_department_id)::BIGINT IS NULL OR from_department_id = sqlc.narg(from_department_id)::BIGINT)
+    AND (sqlc.narg(fulfillment_date)::TEXT IS NULL OR fulfillment_date = sqlc.narg(fulfillment_date)::TEXT);
 
 -- name: DeleteOrdersCreatedBefore :one
 WITH deleted AS (
