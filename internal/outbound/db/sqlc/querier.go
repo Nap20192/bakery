@@ -12,11 +12,13 @@ import (
 
 type Querier interface {
 	AssignUserDepartment(ctx context.Context, arg AssignUserDepartmentParams) (AuthUser, error)
-	CountOrders(ctx context.Context) (int64, error)
+	CountOrders(ctx context.Context, arg CountOrdersParams) (int64, error)
 	CreateDepartment(ctx context.Context, arg CreateDepartmentParams) (Department, error)
 	CreateIikoSyncRun(ctx context.Context, arg CreateIikoSyncRunParams) (IikoSyncRun, error)
 	CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error)
 	CreateOrderCounterDay(ctx context.Context, day string) error
+	CreateOrderHistory(ctx context.Context, arg CreateOrderHistoryParams) (OrderHistory, error)
+	CreateOrderHistoryItem(ctx context.Context, arg CreateOrderHistoryItemParams) (OrderHistoryItem, error)
 	CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) (OrderItem, error)
 	CreateOrderTemplate(ctx context.Context, arg CreateOrderTemplateParams) (OrderTemplate, error)
 	CreatePasswordAuthUser(ctx context.Context, arg CreatePasswordAuthUserParams) (AuthUser, error)
@@ -46,6 +48,8 @@ type Querier interface {
 	ListAssemblyChartItemsByChartID(ctx context.Context, chartID string) ([]ListAssemblyChartItemsByChartIDRow, error)
 	ListAuthUsersByDepartmentID(ctx context.Context, departmentID *int64) ([]AuthUser, error)
 	ListDepartments(ctx context.Context, type_ *string) ([]Department, error)
+	ListOrderHistoryByOrderID(ctx context.Context, orderID int64) ([]OrderHistory, error)
+	ListOrderHistoryItemsByHistoryID(ctx context.Context, historyID int64) ([]OrderHistoryItem, error)
 	ListOrderTemplates(ctx context.Context) ([]OrderTemplate, error)
 	ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order, error)
 	ListPreparedChartItemsByChartID(ctx context.Context, preparedChartID string) ([]ListPreparedChartItemsByChartIDRow, error)

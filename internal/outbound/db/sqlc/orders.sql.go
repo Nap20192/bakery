@@ -14,10 +14,18 @@ import (
 const countOrders = `-- name: CountOrders :one
 SELECT COUNT(*)
 FROM orders
+WHERE
+    ($1::BIGINT IS NULL OR from_department_id = $1::BIGINT)
+    AND ($2::TEXT IS NULL OR fulfillment_date = $2::TEXT)
 `
 
-func (q *Queries) CountOrders(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, countOrders)
+type CountOrdersParams struct {
+	FromDepartmentID *int64  `json:"from_department_id"`
+	FulfillmentDate  *string `json:"fulfillment_date"`
+}
+
+func (q *Queries) CountOrders(ctx context.Context, arg CountOrdersParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countOrders, arg.FromDepartmentID, arg.FulfillmentDate)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -87,6 +95,97 @@ ON CONFLICT(day) DO NOTHING
 func (q *Queries) CreateOrderCounterDay(ctx context.Context, day string) error {
 	_, err := q.db.Exec(ctx, createOrderCounterDay, day)
 	return err
+}
+
+const createOrderHistory = `-- name: CreateOrderHistory :one
+INSERT INTO order_history (
+    order_id,
+    changed_by_username,
+    changed_at
+) VALUES (
+    $1,
+    $2,
+    $3
+)
+RETURNING id, order_id, changed_by_username, changed_at
+`
+
+type CreateOrderHistoryParams struct {
+	OrderID           int64  `json:"order_id"`
+	ChangedByUsername string `json:"changed_by_username"`
+	ChangedAt         string `json:"changed_at"`
+}
+
+func (q *Queries) CreateOrderHistory(ctx context.Context, arg CreateOrderHistoryParams) (OrderHistory, error) {
+	row := q.db.QueryRow(ctx, createOrderHistory, arg.OrderID, arg.ChangedByUsername, arg.ChangedAt)
+	var i OrderHistory
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.ChangedByUsername,
+		&i.ChangedAt,
+	)
+	return i, err
+}
+
+const createOrderHistoryItem = `-- name: CreateOrderHistoryItem :one
+INSERT INTO order_history_items (
+    history_id,
+    change_type,
+    product_code,
+    product_name,
+    old_quantity,
+    new_quantity,
+    old_reserved_quantity,
+    new_reserved_quantity
+) VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8
+)
+RETURNING id, history_id, change_type, product_code, product_name, old_quantity, new_quantity, old_reserved_quantity, new_reserved_quantity
+`
+
+type CreateOrderHistoryItemParams struct {
+	HistoryID           int64    `json:"history_id"`
+	ChangeType          string   `json:"change_type"`
+	ProductCode         string   `json:"product_code"`
+	ProductName         string   `json:"product_name"`
+	OldQuantity         *float64 `json:"old_quantity"`
+	NewQuantity         *float64 `json:"new_quantity"`
+	OldReservedQuantity *float64 `json:"old_reserved_quantity"`
+	NewReservedQuantity *float64 `json:"new_reserved_quantity"`
+}
+
+func (q *Queries) CreateOrderHistoryItem(ctx context.Context, arg CreateOrderHistoryItemParams) (OrderHistoryItem, error) {
+	row := q.db.QueryRow(ctx, createOrderHistoryItem,
+		arg.HistoryID,
+		arg.ChangeType,
+		arg.ProductCode,
+		arg.ProductName,
+		arg.OldQuantity,
+		arg.NewQuantity,
+		arg.OldReservedQuantity,
+		arg.NewReservedQuantity,
+	)
+	var i OrderHistoryItem
+	err := row.Scan(
+		&i.ID,
+		&i.HistoryID,
+		&i.ChangeType,
+		&i.ProductCode,
+		&i.ProductName,
+		&i.OldQuantity,
+		&i.NewQuantity,
+		&i.OldReservedQuantity,
+		&i.NewReservedQuantity,
+	)
+	return i, err
 }
 
 const createOrderItem = `-- name: CreateOrderItem :one
@@ -311,6 +410,75 @@ func (q *Queries) GetOrderTemplateByID(ctx context.Context, id int64) (OrderTemp
 	return i, err
 }
 
+const listOrderHistoryByOrderID = `-- name: ListOrderHistoryByOrderID :many
+SELECT id, order_id, changed_by_username, changed_at
+FROM order_history
+WHERE order_id = $1
+ORDER BY changed_at DESC, id DESC
+`
+
+func (q *Queries) ListOrderHistoryByOrderID(ctx context.Context, orderID int64) ([]OrderHistory, error) {
+	rows, err := q.db.Query(ctx, listOrderHistoryByOrderID, orderID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []OrderHistory
+	for rows.Next() {
+		var i OrderHistory
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrderID,
+			&i.ChangedByUsername,
+			&i.ChangedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listOrderHistoryItemsByHistoryID = `-- name: ListOrderHistoryItemsByHistoryID :many
+SELECT id, history_id, change_type, product_code, product_name, old_quantity, new_quantity, old_reserved_quantity, new_reserved_quantity
+FROM order_history_items
+WHERE history_id = $1
+ORDER BY id
+`
+
+func (q *Queries) ListOrderHistoryItemsByHistoryID(ctx context.Context, historyID int64) ([]OrderHistoryItem, error) {
+	rows, err := q.db.Query(ctx, listOrderHistoryItemsByHistoryID, historyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []OrderHistoryItem
+	for rows.Next() {
+		var i OrderHistoryItem
+		if err := rows.Scan(
+			&i.ID,
+			&i.HistoryID,
+			&i.ChangeType,
+			&i.ProductCode,
+			&i.ProductName,
+			&i.OldQuantity,
+			&i.NewQuantity,
+			&i.OldReservedQuantity,
+			&i.NewReservedQuantity,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listOrderTemplates = `-- name: ListOrderTemplates :many
 SELECT id, name, body, created_by_user_id, created_at, updated_at
 FROM order_templates
@@ -347,18 +515,28 @@ func (q *Queries) ListOrderTemplates(ctx context.Context) ([]OrderTemplate, erro
 const listOrders = `-- name: ListOrders :many
 SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username
 FROM orders
+WHERE
+    ($1::BIGINT IS NULL OR from_department_id = $1::BIGINT)
+    AND ($2::TEXT IS NULL OR fulfillment_date = $2::TEXT)
 ORDER BY id DESC
-LIMIT $2
-OFFSET $1
+LIMIT $4
+OFFSET $3
 `
 
 type ListOrdersParams struct {
-	OrderOffset int32 `json:"order_offset"`
-	OrderLimit  int32 `json:"order_limit"`
+	FromDepartmentID *int64  `json:"from_department_id"`
+	FulfillmentDate  *string `json:"fulfillment_date"`
+	OrderOffset      int32   `json:"order_offset"`
+	OrderLimit       int32   `json:"order_limit"`
 }
 
 func (q *Queries) ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order, error) {
-	rows, err := q.db.Query(ctx, listOrders, arg.OrderOffset, arg.OrderLimit)
+	rows, err := q.db.Query(ctx, listOrders,
+		arg.FromDepartmentID,
+		arg.FulfillmentDate,
+		arg.OrderOffset,
+		arg.OrderLimit,
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -22,8 +22,10 @@ type OrderService struct {
 }
 
 type ListOrdersInput struct {
-	Limit  int32
-	Offset int32
+	Limit            int32
+	Offset           int32
+	FromDepartmentID *int64
+	FulfillmentDate  time.Time
 }
 
 type ListOrdersResult struct {
@@ -117,6 +119,12 @@ func (s *OrderService) UpdateOrder(ctx context.Context, input UpdateOrderInput) 
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
+	existingItemsRows, err := s.queries.GetOrderItemsByOrderID(ctx, existing.ID)
+	if err != nil {
+		return orderdomain.Order{}, fmt.Errorf("get existing order items: %w", err)
+	}
+	existingItems := mapOrderItems(existingItemsRows)
+	historyItems := diffOrderItems(existingItems, input.Items)
 	if input.FromDepartmentID == nil {
 		input.FromDepartmentID = existing.FromDepartmentID
 	}
@@ -145,6 +153,15 @@ func (s *OrderService) UpdateOrder(ctx context.Context, input UpdateOrderInput) 
 	if err := s.createOrderItems(ctx, row.ID, input.Items); err != nil {
 		return orderdomain.Order{}, err
 	}
+	if len(historyItems) > 0 {
+		if err := s.createOrderHistory(ctx, row.ID, createdBy, historyItems); err != nil {
+			return orderdomain.Order{}, err
+		}
+	}
+	history, err := s.listOrderHistory(ctx, row.ID)
+	if err != nil {
+		return orderdomain.Order{}, err
+	}
 
 	return orderdomain.Order{
 		ID:                fmt.Sprintf("%d", row.ID),
@@ -156,6 +173,7 @@ func (s *OrderService) UpdateOrder(ctx context.Context, input UpdateOrderInput) 
 		Items:             input.Items,
 		CreatedAt:         helpers.ParseRFC3339(row.CreatedAt),
 		FulfillmentDate:   parseDate(row.FulfillmentDate),
+		History:           history,
 	}, nil
 }
 
@@ -178,6 +196,10 @@ func (s *OrderService) GetOrderByNumber(ctx context.Context, number string) (ord
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
+	history, err := s.listOrderHistory(ctx, order.ID)
+	if err != nil {
+		return orderdomain.Order{}, err
+	}
 	return orderdomain.Order{
 		ID:                fmt.Sprintf("%d", order.ID),
 		Number:            order.Number,
@@ -188,6 +210,7 @@ func (s *OrderService) GetOrderByNumber(ctx context.Context, number string) (ord
 		Items:             mapOrderItems(items),
 		CreatedAt:         helpers.ParseRFC3339(order.CreatedAt),
 		FulfillmentDate:   parseDate(order.FulfillmentDate),
+		History:           history,
 	}, nil
 }
 
@@ -201,13 +224,23 @@ func (s *OrderService) ListOrders(ctx context.Context, input ListOrdersInput) (L
 	if input.Offset < 0 {
 		input.Offset = 0
 	}
-	total, err := s.queries.CountOrders(ctx)
+	var fulfillmentDate *string
+	if !input.FulfillmentDate.IsZero() {
+		value := input.FulfillmentDate.Format("2006-01-02")
+		fulfillmentDate = &value
+	}
+	total, err := s.queries.CountOrders(ctx, sqlc.CountOrdersParams{
+		FromDepartmentID: input.FromDepartmentID,
+		FulfillmentDate:  fulfillmentDate,
+	})
 	if err != nil {
 		return ListOrdersResult{}, err
 	}
 	rows, err := s.queries.ListOrders(ctx, sqlc.ListOrdersParams{
-		OrderLimit:  input.Limit,
-		OrderOffset: input.Offset,
+		FromDepartmentID: input.FromDepartmentID,
+		FulfillmentDate:  fulfillmentDate,
+		OrderLimit:       input.Limit,
+		OrderOffset:      input.Offset,
 	})
 	if err != nil {
 		return ListOrdersResult{}, err
@@ -431,6 +464,123 @@ func mapOrderItems(items []sqlc.GetOrderItemsByOrderIDRow) []orderdomain.OrderIt
 		})
 	}
 	return result
+}
+
+func (s *OrderService) createOrderHistory(ctx context.Context, orderID int64, changedBy string, items []orderdomain.OrderHistoryItem) error {
+	history, err := s.queries.CreateOrderHistory(ctx, sqlc.CreateOrderHistoryParams{
+		OrderID:           orderID,
+		ChangedByUsername: strings.TrimSpace(changedBy),
+		ChangedAt:         time.Now().UTC().Format(time.RFC3339Nano),
+	})
+	if err != nil {
+		return fmt.Errorf("create order history: %w", err)
+	}
+	for _, item := range items {
+		if _, err := s.queries.CreateOrderHistoryItem(ctx, sqlc.CreateOrderHistoryItemParams{
+			HistoryID:           history.ID,
+			ChangeType:          item.ChangeType,
+			ProductCode:         item.ProductCode,
+			ProductName:         item.ProductName,
+			OldQuantity:         item.OldQuantity,
+			NewQuantity:         item.NewQuantity,
+			OldReservedQuantity: item.OldReservedQuantity,
+			NewReservedQuantity: item.NewReservedQuantity,
+		}); err != nil {
+			return fmt.Errorf("create order history item: %w", err)
+		}
+	}
+	return nil
+}
+
+func (s *OrderService) listOrderHistory(ctx context.Context, orderID int64) ([]orderdomain.OrderHistory, error) {
+	rows, err := s.queries.ListOrderHistoryByOrderID(ctx, orderID)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]orderdomain.OrderHistory, 0, len(rows))
+	for _, row := range rows {
+		itemRows, err := s.queries.ListOrderHistoryItemsByHistoryID(ctx, row.ID)
+		if err != nil {
+			return nil, err
+		}
+		items := make([]orderdomain.OrderHistoryItem, 0, len(itemRows))
+		for _, item := range itemRows {
+			items = append(items, orderdomain.OrderHistoryItem{
+				ChangeType:          item.ChangeType,
+				ProductCode:         item.ProductCode,
+				ProductName:         item.ProductName,
+				OldQuantity:         item.OldQuantity,
+				NewQuantity:         item.NewQuantity,
+				OldReservedQuantity: item.OldReservedQuantity,
+				NewReservedQuantity: item.NewReservedQuantity,
+			})
+		}
+		result = append(result, orderdomain.OrderHistory{
+			ID:                row.ID,
+			ChangedByUsername: row.ChangedByUsername,
+			ChangedAt:         helpers.ParseRFC3339(row.ChangedAt),
+			Items:             items,
+		})
+	}
+	return result, nil
+}
+
+func diffOrderItems(oldItems []orderdomain.OrderItem, newItems []orderdomain.OrderItem) []orderdomain.OrderHistoryItem {
+	oldByCode := make(map[string]orderdomain.OrderItem, len(oldItems))
+	newByCode := make(map[string]orderdomain.OrderItem, len(newItems))
+	for _, item := range oldItems {
+		oldByCode[item.Code] = item
+	}
+	for _, item := range newItems {
+		newByCode[item.Code] = item
+	}
+
+	result := make([]orderdomain.OrderHistoryItem, 0)
+	for _, item := range newItems {
+		old, ok := oldByCode[item.Code]
+		if !ok {
+			result = append(result, orderHistoryItem("added", orderdomain.OrderItem{}, item))
+			continue
+		}
+		if old.Quantity != item.Quantity || old.ReservedQuantity != item.ReservedQuantity || strings.TrimSpace(old.ProductName) != strings.TrimSpace(item.ProductName) {
+			result = append(result, orderHistoryItem("updated", old, item))
+		}
+	}
+	for _, item := range oldItems {
+		if _, ok := newByCode[item.Code]; !ok {
+			result = append(result, orderHistoryItem("removed", item, orderdomain.OrderItem{}))
+		}
+	}
+	return result
+}
+
+func orderHistoryItem(changeType string, oldItem orderdomain.OrderItem, newItem orderdomain.OrderItem) orderdomain.OrderHistoryItem {
+	productCode := newItem.Code
+	if productCode == "" {
+		productCode = oldItem.Code
+	}
+	productName := strings.TrimSpace(newItem.ProductName)
+	if productName == "" {
+		productName = strings.TrimSpace(oldItem.ProductName)
+	}
+	item := orderdomain.OrderHistoryItem{
+		ChangeType:  changeType,
+		ProductCode: productCode,
+		ProductName: productName,
+	}
+	if changeType != "added" {
+		item.OldQuantity = float64Ptr(oldItem.Quantity)
+		item.OldReservedQuantity = float64Ptr(oldItem.ReservedQuantity)
+	}
+	if changeType != "removed" {
+		item.NewQuantity = float64Ptr(newItem.Quantity)
+		item.NewReservedQuantity = float64Ptr(newItem.ReservedQuantity)
+	}
+	return item
+}
+
+func float64Ptr(value float64) *float64 {
+	return &value
 }
 
 func orderTemplateToDomain(row sqlc.OrderTemplate) orderdomain.OrderTemplate {

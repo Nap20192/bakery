@@ -16,6 +16,8 @@ type session struct {
 	items            []orderdomain.OrderItem
 	fromDepartmentID *int64
 	toDepartmentID   *int64
+	orderFilter      orderFilter
+	monitorOrders    []string
 	fulfillmentDate  time.Time
 	editOrderNumber  string
 	waitingTemplate  bool
@@ -43,7 +45,13 @@ func (b *OrderBot) clearSession(uid int64) {
 		s.editOrderNumber = ""
 		s.waitingTemplate = false
 		s.waitingDelete = false
+		s.monitorOrders = nil
 	})
+}
+
+type orderFilter struct {
+	FromDepartmentID *int64
+	FulfillmentDate  time.Time
 }
 
 func (b *OrderBot) isWaitingDelete(uid int64) bool {
