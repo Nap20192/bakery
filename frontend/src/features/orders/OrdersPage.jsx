@@ -202,7 +202,7 @@ export function OrdersPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f7f5] text-stone-900 lg:grid lg:grid-cols-[24rem_minmax(0,1fr)]">
+    <main className="min-h-screen bg-[#fff7df] text-stone-900 lg:grid lg:grid-cols-[24rem_minmax(0,1fr)]">
       <OrderList
         loading={loading}
         orders={orders}
@@ -232,7 +232,7 @@ export function OrdersPage() {
                   <Button variant="primary" onClick={loadBatchMonitor} disabled={(!selectedOrder && !selectedOrderCount) || loading}>
                     Рассчитать
                   </Button>
-                  {selectedOrderCount > 0 && <span className="text-[13px] leading-5 text-stone-500">Выбрано заказов: {selectedOrderCount}</span>}
+                  {selectedOrderCount > 0 && <span className="text-[13px] leading-5 text-stone-600">Выбрано заказов: {selectedOrderCount}</span>}
                 </div>
                 <MonitorReports monitor={monitor} />
               </section>
