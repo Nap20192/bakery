@@ -5,12 +5,27 @@ export function MonitorReports({ monitor }) {
   if (!monitor) {
     return <EmptyState compact>Нажмите "Рассчитать", чтобы увидеть расход теста.</EmptyState>;
   }
+  if (monitor.total_reports?.length) {
+    return (
+      <div className="mt-3 space-y-3">
+        <ReportBlock title={`Итого по заказам: ${monitor.orders?.length || 0}`} reports={monitor.total_reports} />
+        {monitor.orders?.map((order) => (
+          <ReportBlock key={order.order?.number} title={order.order?.number || 'Заказ'} reports={order.reports || []} compact />
+        ))}
+      </div>
+    );
+  }
   if (!monitor.reports?.length) {
     return <EmptyState compact>Нет данных для расчёта теста.</EmptyState>;
   }
+  return <ReportBlock reports={monitor.reports} />;
+}
+
+function ReportBlock({ title = '', reports, compact = false }) {
   return (
-    <div className="mt-3 overflow-hidden rounded-lg border border-stone-200 bg-white">
-      {monitor.reports.map(({ code, report }) => (
+    <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
+      {title && <h3 className="border-b border-stone-200 bg-white px-2.5 py-2 text-[13px] font-semibold leading-5 text-stone-950 sm:px-3">{title}</h3>}
+      {reports.map(({ code, report }) => (
         <article className="border-b border-stone-200 last:border-b-0" key={code}>
           <header className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 bg-stone-50 px-2.5 py-1.5 sm:px-3">
             <strong className="min-w-0 break-words text-[13px] font-semibold leading-5 text-stone-950">{report.ingredient.product_name}</strong>
@@ -18,7 +33,7 @@ export function MonitorReports({ monitor }) {
               {formatQuantity(report.ingredient.quantity)} {report.ingredient.unit}
             </span>
           </header>
-          <div className="divide-y divide-stone-200">
+          {!compact && <div className="divide-y divide-stone-200">
             {report.breakdown?.map((item) => (
               <div
                 className="grid grid-cols-[4.2rem_minmax(0,1fr)_5.5rem] items-start gap-2 px-2.5 py-1.5 text-[13px] sm:grid-cols-[5rem_minmax(0,1fr)_8rem] sm:px-3"
@@ -31,7 +46,7 @@ export function MonitorReports({ monitor }) {
                 </strong>
               </div>
             ))}
-          </div>
+          </div>}
         </article>
       ))}
     </div>

@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
 import { panelClass, PanelHeader } from '../../components/Panel';
 import { apiBase, buildMode, frontendLogsEnabled } from '../../config/env';
-import { fetchOrder, fetchOrderMonitor, fetchOrders } from '../../api/orders';
+import { fetchBatchOrderMonitor, fetchDepartments, fetchOrder, fetchOrderMonitor, fetchOrders } from '../../api/orders';
 import { logInfo, logWarn } from '../../lib/logger';
 import { orderNumberFromLocation, syncOrderURL, trimString } from '../../lib/url';
 import { MonitorReports } from './MonitorReports';
@@ -19,13 +19,21 @@ const defaultPage = {
 
 export function OrdersPage() {
   const [orders, setOrders] = useState([]);
+  const [shops, setShops] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedOrderNumbers, setSelectedOrderNumbers] = useState([]);
   const [monitor, setMonitor] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [ordersPage, setOrdersPage] = useState(defaultPage);
+  const [filters, setFilters] = useState({
+    fromDepartmentID: '',
+    fulfillmentDate: '',
+  });
+  const filtersRef = useRef(filters);
 
   const selectedNumber = selectedOrder?.number || '';
+  const selectedOrderCount = selectedOrderNumbers.length;
   const pageTitle = useMemo(() => selectedNumber || 'Последние заказы', [selectedNumber]);
 
   useEffect(() => {
@@ -39,6 +47,7 @@ export function OrdersPage() {
       page_search: window.location.search,
       linked_order: linkedOrderNumber,
     });
+    loadShops();
     loadOrders(ordersPage.page, linkedOrderNumber);
     if (linkedOrderNumber) {
       loadOrder(linkedOrderNumber);
@@ -60,17 +69,27 @@ export function OrdersPage() {
     }
   }
 
-  function loadOrders(page = ordersPage.page, linkedOrderNumber = '') {
+  function loadShops() {
     return run(async () => {
-      const result = await fetchOrders(page, ordersPage.limit);
+      const result = await fetchDepartments('shop');
+      setShops(result || []);
+      logInfo('shops.loaded', { count: result?.length || 0 });
+    });
+  }
+
+  function loadOrders(page = ordersPage.page, linkedOrderNumber = '', activeFilters = filtersRef.current) {
+    return run(async () => {
+      const result = await fetchOrders(page, ordersPage.limit, activeFilters);
       const items = result.items || [];
       logInfo('orders.loaded', {
         page: result.page || page,
         limit: result.limit || ordersPage.limit,
         total: result.total || 0,
         count: items.length,
+        filters: activeFilters,
       });
       setOrders(items);
+      setSelectedOrderNumbers((current) => current.filter((number) => items.some((order) => order.number === number)));
       setOrdersPage({
         page: result.page || page,
         limit: result.limit || ordersPage.limit,
@@ -80,6 +99,56 @@ export function OrdersPage() {
       if (!selectedOrder && items.length > 0 && !trimString(linkedOrderNumber)) {
         setSelectedOrder(items[0]);
       }
+    });
+  }
+
+  function updateFilters(next) {
+    const updated = { ...filtersRef.current, ...next };
+    filtersRef.current = updated;
+    setFilters(updated);
+    setMonitor(null);
+    return run(async () => {
+      const result = await fetchOrders(1, ordersPage.limit, updated);
+      const items = result.items || [];
+      setOrders(items);
+      setSelectedOrderNumbers([]);
+      setOrdersPage({
+        page: result.page || 1,
+        limit: result.limit || ordersPage.limit,
+        total: result.total || 0,
+        total_pages: result.total_pages || 0,
+      });
+      setSelectedOrder(items[0] || null);
+      logInfo('orders.filtered', {
+        count: items.length,
+        filters: updated,
+      });
+    });
+  }
+
+  function resetFilters() {
+    const reset = {
+      fromDepartmentID: '',
+      fulfillmentDate: '',
+    };
+    filtersRef.current = reset;
+    setFilters(reset);
+    setMonitor(null);
+    return run(async () => {
+      const result = await fetchOrders(1, ordersPage.limit, reset);
+      const items = result.items || [];
+      setOrders(items);
+      setSelectedOrderNumbers([]);
+      setOrdersPage({
+        page: result.page || 1,
+        limit: result.limit || ordersPage.limit,
+        total: result.total || 0,
+        total_pages: result.total_pages || 0,
+      });
+      setSelectedOrder(items[0] || null);
+      logInfo('orders.filters_reset', {
+        count: items.length,
+      });
     });
   }
 
@@ -96,6 +165,16 @@ export function OrdersPage() {
     });
   }
 
+  function toggleOrderSelection(number) {
+    setMonitor(null);
+    setSelectedOrderNumbers((current) => {
+      if (current.includes(number)) {
+        return current.filter((item) => item !== number);
+      }
+      return [...current, number];
+    });
+  }
+
   function loadMonitor() {
     if (!selectedOrder) return;
     return run(async () => {
@@ -108,16 +187,36 @@ export function OrdersPage() {
     });
   }
 
+  function loadBatchMonitor() {
+    const numbers = selectedOrderNumbers.length ? selectedOrderNumbers : selectedOrder ? [selectedOrder.number] : [];
+    if (!numbers.length) return;
+    return run(async () => {
+      const result = numbers.length === 1 ? await fetchOrderMonitor(numbers[0]) : await fetchBatchOrderMonitor(numbers);
+      logInfo('dough_batch_calculation.loaded', {
+        orders: numbers,
+        selected_count: numbers.length,
+        reports: result.total_reports?.length || result.reports?.length || 0,
+      });
+      setMonitor(result);
+    });
+  }
+
   return (
     <main className="min-h-screen bg-[#f7f7f5] text-stone-900 lg:grid lg:grid-cols-[24rem_minmax(0,1fr)]">
       <OrderList
         loading={loading}
         orders={orders}
         page={ordersPage}
+        shops={shops}
+        filters={filters}
         selectedNumber={selectedNumber}
+        selectedOrderNumbers={selectedOrderNumbers}
         onRefresh={() => loadOrders(ordersPage.page)}
         onSelect={loadOrder}
+        onToggleSelection={toggleOrderSelection}
         onPageChange={loadOrders}
+        onFiltersChange={updateFilters}
+        onResetFilters={resetFilters}
       />
       <section className="min-w-0 p-3 pt-0 sm:p-5 lg:p-6">
         <div className="mx-auto max-w-[1180px]">
@@ -129,9 +228,12 @@ export function OrdersPage() {
               </section>
               <section className={panelClass}>
                 <PanelHeader title="Расчёт теста" />
-                <Button variant="primary" onClick={loadMonitor} disabled={!selectedOrder || loading}>
-                  Рассчитать
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button variant="primary" onClick={loadBatchMonitor} disabled={(!selectedOrder && !selectedOrderCount) || loading}>
+                    Рассчитать
+                  </Button>
+                  {selectedOrderCount > 0 && <span className="text-[13px] leading-5 text-stone-500">Выбрано заказов: {selectedOrderCount}</span>}
+                </div>
                 <MonitorReports monitor={monitor} />
               </section>
             </div>
