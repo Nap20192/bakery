@@ -35,7 +35,7 @@ export function OrderList({
   onResetFilters,
 }) {
   return (
-    <aside className="m-3 flex max-h-[44vh] flex-col gap-2.5 rounded-lg border border-stone-200 bg-white p-3 lg:sticky lg:top-3 lg:ml-3 lg:mr-0 lg:h-[calc(100vh-1.5rem)] lg:max-h-none">
+    <aside className="m-3 flex max-h-[44vh] flex-col gap-2.5 rounded-lg border border-stone-300 bg-[#fff7df] p-3 lg:sticky lg:top-3 lg:ml-3 lg:mr-0 lg:h-[calc(100vh-1.5rem)] lg:max-h-none">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <h1 className="m-0 text-[20px] font-semibold leading-7 text-stone-950">Заказы</h1>
@@ -46,7 +46,7 @@ export function OrderList({
         Обновить
       </Button>
 
-      <div className="rounded-md border border-stone-200 bg-stone-50 p-2">
+      <div className="rounded-md border border-stone-300 bg-[#fff7df] p-2">
         <Stack spacing={1.25}>
           <FormControl size="small" fullWidth>
             <InputLabel id="shop-filter-label">Магазин</InputLabel>
@@ -97,7 +97,7 @@ export function OrderList({
             <div
               key={order.number}
               className={`w-full rounded-md border px-2.5 py-2 text-left transition ${
-                selectedNumber === order.number ? 'border-stone-300 bg-stone-100' : 'border-transparent bg-white hover:border-stone-300 hover:bg-stone-50'
+                selectedNumber === order.number ? 'border-stone-300 bg-[#fff1cb]' : 'border-transparent bg-[#fff7df] hover:border-stone-300 hover:bg-[#fff1cb]'
               }`}
             >
               <div className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-2">
@@ -111,9 +111,9 @@ export function OrderList({
                 <button className="min-w-0 text-left" onClick={() => onSelect(order.number)}>
                   <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5">
                     <strong className="break-words text-[13px] font-semibold leading-5 text-stone-900">{order.number}</strong>
-                    <span className="text-[12px] leading-5 text-stone-500">{order.items?.length || 0} поз.</span>
+                    <span className="text-[12px] leading-5 text-stone-600">{order.items?.length || 0} поз.</span>
                     <strong className="break-words text-[12px] font-semibold leading-5 text-stone-800">Откуда: {orderSource(order)}</strong>
-                    <span className="text-[12px] leading-5 text-stone-500">{formatFulfillmentDate(order.fulfillment_date) || '-'}</span>
+                    <span className="text-[12px] leading-5 text-stone-600">{formatFulfillmentDate(order.fulfillment_date) || '-'}</span>
                   </div>
                 </button>
               </div>

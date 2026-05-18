@@ -31,17 +31,35 @@ type orderItemResponse struct {
 	ProductionQuantity float64 `json:"production_quantity"`
 }
 
+type orderHistoryItemResponse struct {
+	ChangeType          string   `json:"change_type"`
+	ProductCode         string   `json:"product_code"`
+	ProductName         string   `json:"product_name"`
+	OldQuantity         *float64 `json:"old_quantity,omitempty"`
+	NewQuantity         *float64 `json:"new_quantity,omitempty"`
+	OldReservedQuantity *float64 `json:"old_reserved_quantity,omitempty"`
+	NewReservedQuantity *float64 `json:"new_reserved_quantity,omitempty"`
+}
+
+type orderHistoryResponse struct {
+	ID                int64                      `json:"id"`
+	ChangedByUsername string                     `json:"changed_by_username"`
+	ChangedAt         string                     `json:"changed_at"`
+	Items             []orderHistoryItemResponse `json:"items"`
+}
+
 type orderResponse struct {
-	ID                string              `json:"id"`
-	Number            string              `json:"number"`
-	Location          string              `json:"location"`
-	CreatedByUsername string              `json:"created_by_username"`
-	FromDepartment    *departmentResponse `json:"from_department,omitempty"`
-	ToDepartment      *departmentResponse `json:"to_department,omitempty"`
-	Items             []orderItemResponse `json:"items"`
-	CreatedAt         string              `json:"created_at"`
-	FulfillmentDate   string              `json:"fulfillment_date"`
-	MonitorCommand    string              `json:"monitor_command"`
+	ID                string                 `json:"id"`
+	Number            string                 `json:"number"`
+	Location          string                 `json:"location"`
+	CreatedByUsername string                 `json:"created_by_username"`
+	FromDepartment    *departmentResponse    `json:"from_department,omitempty"`
+	ToDepartment      *departmentResponse    `json:"to_department,omitempty"`
+	Items             []orderItemResponse    `json:"items"`
+	CreatedAt         string                 `json:"created_at"`
+	FulfillmentDate   string                 `json:"fulfillment_date"`
+	MonitorCommand    string                 `json:"monitor_command"`
+	History           []orderHistoryResponse `json:"history,omitempty"`
 }
 
 type ordersPageResponse struct {
@@ -369,7 +387,37 @@ func (s *Server) buildOrderResponse(ctx context.Context, order orderdomain.Order
 		CreatedAt:         createdAt,
 		FulfillmentDate:   fulfillmentDate,
 		MonitorCommand:    fmt.Sprintf("/monitor %s", order.Number),
+		History:           buildOrderHistoryResponse(order.History),
 	}
+}
+
+func buildOrderHistoryResponse(history []orderdomain.OrderHistory) []orderHistoryResponse {
+	result := make([]orderHistoryResponse, 0, len(history))
+	for _, row := range history {
+		items := make([]orderHistoryItemResponse, 0, len(row.Items))
+		for _, item := range row.Items {
+			items = append(items, orderHistoryItemResponse{
+				ChangeType:          item.ChangeType,
+				ProductCode:         item.ProductCode,
+				ProductName:         item.ProductName,
+				OldQuantity:         item.OldQuantity,
+				NewQuantity:         item.NewQuantity,
+				OldReservedQuantity: item.OldReservedQuantity,
+				NewReservedQuantity: item.NewReservedQuantity,
+			})
+		}
+		changedAt := ""
+		if !row.ChangedAt.IsZero() {
+			changedAt = row.ChangedAt.Format(time.RFC3339)
+		}
+		result = append(result, orderHistoryResponse{
+			ID:                row.ID,
+			ChangedByUsername: row.ChangedByUsername,
+			ChangedAt:         changedAt,
+			Items:             items,
+		})
+	}
+	return result
 }
 
 func (s *Server) departmentResponse(ctx context.Context, id *int64) *departmentResponse {
