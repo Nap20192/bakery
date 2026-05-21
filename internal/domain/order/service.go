@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode"
 )
 
 type BulkOrderValidationResult struct {
@@ -67,8 +68,37 @@ func (s *OrderService) OrderCounterDay(t time.Time) string {
 	return s.NormalizeCreatedAt(t).Format("02012006")
 }
 
-func (s *OrderService) BuildOrderNumber(day string, counter int64) string {
-	return fmt.Sprintf("%s_ORDER_%04d", day, counter)
+func (s *OrderService) BuildOrderNumber(shopCode string, shopName string, createdAt time.Time, counter int64) string {
+	return fmt.Sprintf("%s.%s.%03d", shopOrderPrefix(shopCode, shopName), s.NormalizeCreatedAt(createdAt).Format("02.01.06"), counter)
+}
+
+func shopOrderPrefix(shopCode string, shopName string) string {
+	switch strings.ToLower(strings.TrimSpace(shopCode)) {
+	case "gagarina":
+		return "Г"
+	case "sholokhova":
+		return "Ш"
+	case "saryarka":
+		return "С"
+	}
+
+	normalizedName := strings.ToLower(strings.TrimSpace(shopName))
+	switch {
+	case strings.Contains(normalizedName, "гагарина"):
+		return "Г"
+	case strings.Contains(normalizedName, "шолохова"):
+		return "Ш"
+	case strings.Contains(normalizedName, "сарыарка"):
+		return "С"
+	}
+
+	for _, r := range strings.TrimSpace(shopName) {
+		if unicode.IsSpace(r) {
+			continue
+		}
+		return string(unicode.ToUpper(r))
+	}
+	return ""
 }
 
 func (s *OrderService) ParseBulkOrder(order string) BulkOrderValidationResult {

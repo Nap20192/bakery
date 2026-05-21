@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:${POSTGRES_VERSION}
+    image: postgres:17
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-bakery}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
