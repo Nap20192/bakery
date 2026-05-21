@@ -1,0 +1,9 @@
+./auth.sql.go
+./db.go
+./departments.sql.go
+./iiko_snapshot.sql.go
+./models.go
+./monitor.sql.go
+./orders.sql.go
+./products.sql.go
+./querier.go

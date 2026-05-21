@@ -24,7 +24,8 @@ func (b *OrderBot) handleTemplates(c tele.Context) error {
 
 	canDelete := b.canManageTemplates(c)
 	markup := &tele.ReplyMarkup{}
-	rows := make([]tele.Row, 0, len(templates))
+	rows := make([]tele.Row, 0, len(templates)+1)
+	rows = append(rows, markup.Row(markup.Data("Все шаблоны", "template_all")))
 	for _, template := range templates {
 		templateID := strconv.FormatInt(template.ID, 10)
 		if canDelete {
@@ -38,6 +39,20 @@ func (b *OrderBot) handleTemplates(c tele.Context) error {
 	}
 	markup.Inline(rows...)
 	return sendText(c, "Шаблоны", markup)
+}
+
+func (b *OrderBot) handleTemplateAll(c tele.Context) error {
+	ctx := requestContext(c)
+	template, err := b.orderSvc.CombinedOrderTemplate(ctx)
+	if err != nil {
+		slog.ErrorContext(ctx, "get combined order template failed", "error", err)
+		return sendText(c, "Не удалось получить общий шаблон.")
+	}
+	if strings.TrimSpace(template) == "" {
+		return sendText(c, "Шаблонов пока нет.")
+	}
+	_ = c.Respond()
+	return sendHTML(c, responses.Template(template), b.actionMarkup(c))
 }
 
 func (b *OrderBot) handleTemplateUse(c tele.Context) error {

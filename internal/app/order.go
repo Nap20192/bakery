@@ -65,6 +65,10 @@ func (s *OrderService) CreateOrder(ctx context.Context, input orderdomain.Create
 	createdAt := s.domain.NormalizeCreatedAt(input.Date)
 	fulfillmentDate := s.domain.NormalizeFulfillmentDate(input.FulfillmentDate, createdAt)
 	day := s.domain.OrderCounterDay(createdAt)
+	shop, err := s.orderShopDepartment(ctx, input.FromDepartmentID)
+	if err != nil {
+		return orderdomain.Order{}, err
+	}
 
 	if err := s.queries.CreateOrderCounterDay(ctx, day); err != nil {
 		return orderdomain.Order{}, fmt.Errorf("init order counter: %w", err)
@@ -74,7 +78,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, input orderdomain.Create
 		return orderdomain.Order{}, fmt.Errorf("increment order counter: %w", err)
 	}
 
-	number := s.domain.BuildOrderNumber(day, counter)
+	number := s.domain.BuildOrderNumber(shop.Code, shop.Name, createdAt, counter)
 	row, err := s.queries.CreateOrder(ctx, sqlc.CreateOrderParams{
 		Number:            number,
 		Location:          input.Location,
@@ -103,6 +107,23 @@ func (s *OrderService) CreateOrder(ctx context.Context, input orderdomain.Create
 		CreatedAt:         helpers.ParseRFC3339(row.CreatedAt),
 		FulfillmentDate:   parseDate(row.FulfillmentDate),
 	}, nil
+}
+
+func (s *OrderService) orderShopDepartment(ctx context.Context, departmentID *int64) (sqlc.Department, error) {
+	if departmentID == nil {
+		return sqlc.Department{}, fmt.Errorf("order shop department is required")
+	}
+	department, err := s.queries.GetDepartmentByID(ctx, *departmentID)
+	if err != nil {
+		return sqlc.Department{}, fmt.Errorf("get order shop department: %w", err)
+	}
+	if !strings.EqualFold(strings.TrimSpace(department.Type), string(enum.DepartmentTypeShop)) {
+		return sqlc.Department{}, fmt.Errorf("order can be created only from shop department")
+	}
+	if strings.TrimSpace(department.Code) == "" && strings.TrimSpace(department.Name) == "" {
+		return sqlc.Department{}, fmt.Errorf("order shop department code or name is required")
+	}
+	return department, nil
 }
 
 func (s *OrderService) UpdateOrder(ctx context.Context, input UpdateOrderInput) (orderdomain.Order, error) {
@@ -353,6 +374,22 @@ func (s *OrderService) ListOrderTemplates(ctx context.Context) ([]orderdomain.Or
 		result = append(result, orderTemplateToDomain(row))
 	}
 	return result, nil
+}
+
+func (s *OrderService) CombinedOrderTemplate(ctx context.Context) (string, error) {
+	templates, err := s.ListOrderTemplates(ctx)
+	if err != nil {
+		return "", err
+	}
+	parts := make([]string, 0, len(templates))
+	for _, template := range templates {
+		body := strings.TrimSpace(template.Body)
+		if body == "" {
+			continue
+		}
+		parts = append(parts, body)
+	}
+	return strings.Join(parts, "\n\n"), nil
 }
 
 func (s *OrderService) GetOrderTemplate(ctx context.Context, id int64) (orderdomain.OrderTemplate, error) {

@@ -59,6 +59,9 @@ func (b *OrderBot) handleText(c tele.Context) error {
 }
 
 func (b *OrderBot) handleActionText(c tele.Context, text string) (bool, error) {
+	if handled, err := b.handleOrdersReplyText(c, text); handled {
+		return true, err
+	}
 	switch strings.TrimSpace(text) {
 	case actionChooseShop:
 		return true, b.handleDepartmentShop(c)
