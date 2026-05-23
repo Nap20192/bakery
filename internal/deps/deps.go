@@ -51,10 +51,10 @@ func WithRbacService() appOption {
 
 func WithOrderService(infra *InfraDeps) appOption {
 	return func(deps *AppDeps) error {
-		if infra == nil || infra.queries == nil {
+		if infra == nil || infra.queries == nil || infra.DB == nil {
 			return fmt.Errorf("missing dependencies for OrderService")
 		}
-		deps.OrderService = app.NewOrderService(infra.queries)
+		deps.OrderService = app.NewOrderServiceWithDB(infra.queries, infra.DB)
 		return nil
 	}
 }

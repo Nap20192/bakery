@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math"
 	"net/http"
 	"strconv"
@@ -96,13 +97,14 @@ func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 
 func (s *Server) handleListDepartments(w http.ResponseWriter, r *http.Request) {
 	if s.departmentSvc == nil {
-		writeJSON(w, http.StatusServiceUnavailable, errorResponse{Error: "department service unavailable"})
+		writeJSON(w, http.StatusServiceUnavailable, errorResponse{Error: "Сервис магазинов временно недоступен."})
 		return
 	}
 	departmentType := enum.DepartmentType(trim(r.URL.Query().Get("type")))
 	departments, err := s.departmentSvc.ListByType(r.Context(), departmentType)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to list departments"})
+		slog.ErrorContext(r.Context(), "list departments failed", "error", err)
+		writeJSON(w, http.StatusInternalServerError, errorResponse{Error: "Не удалось получить список магазинов."})
 		return
 	}
 	response := make([]departmentResponse, 0, len(departments))
@@ -119,7 +121,7 @@ func (s *Server) handleListDepartments(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleListOrders(w http.ResponseWriter, r *http.Request) {
 	if s.orderSvc == nil {
-		writeJSON(w, http.StatusServiceUnavailable, errorResponse{Error: "order service unavailable"})
+		writeJSON(w, http.StatusServiceUnavailable, errorResponse{Error: "Сервис заказов временно недоступен."})
 		return
 	}
 
@@ -127,7 +129,7 @@ func (s *Server) handleListOrders(w http.ResponseWriter, r *http.Request) {
 	if raw := trim(r.URL.Query().Get("limit")); raw != "" {
 		parsed, err := strconv.Atoi(raw)
 		if err != nil || parsed <= 0 {
-			writeJSON(w, http.StatusBadRequest, errorResponse{Error: "invalid limit"})
+			writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Параметр limit должен быть положительным числом."})
 			return
 		}
 		limit = int32(parsed)
@@ -136,7 +138,7 @@ func (s *Server) handleListOrders(w http.ResponseWriter, r *http.Request) {
 	if raw := trim(r.URL.Query().Get("page")); raw != "" {
 		parsed, err := strconv.Atoi(raw)
 		if err != nil || parsed <= 0 {
-			writeJSON(w, http.StatusBadRequest, errorResponse{Error: "invalid page"})
+			writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Параметр page должен быть положительным числом."})
 			return
 		}
 		page = int32(parsed)
@@ -146,14 +148,14 @@ func (s *Server) handleListOrders(w http.ResponseWriter, r *http.Request) {
 	if raw := trim(r.URL.Query().Get("from_department_id")); raw != "" {
 		parsed, err := strconv.ParseInt(raw, 10, 64)
 		if err != nil || parsed <= 0 {
-			writeJSON(w, http.StatusBadRequest, errorResponse{Error: "invalid from_department_id"})
+			writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Параметр from_department_id должен быть положительным числом."})
 			return
 		}
 		fromDepartmentID = &parsed
 	}
 	fulfillmentDate, err := parseRequestDate(r.URL.Query().Get("fulfillment_date"))
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "invalid fulfillment_date"})
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Дата выполнения должна быть в формате YYYY-MM-DD."})
 		return
 	}
 
@@ -164,7 +166,8 @@ func (s *Server) handleListOrders(w http.ResponseWriter, r *http.Request) {
 		FulfillmentDate:  fulfillmentDate,
 	})
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, errorResponse{Error: err.Error()})
+		slog.ErrorContext(r.Context(), "list orders failed", "error", err)
+		writeJSON(w, http.StatusInternalServerError, errorResponse{Error: "Не удалось получить список заказов."})
 		return
 	}
 
@@ -180,19 +183,19 @@ func (s *Server) handleListOrders(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleOrderByID(w http.ResponseWriter, r *http.Request) {
 	if s.orderSvc == nil {
-		writeJSON(w, http.StatusServiceUnavailable, errorResponse{Error: "order service unavailable"})
+		writeJSON(w, http.StatusServiceUnavailable, errorResponse{Error: "Сервис заказов временно недоступен."})
 		return
 	}
 
 	id := trim(r.PathValue("id"))
 	if id == "" {
-		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "order id is required"})
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Укажите номер заказа."})
 		return
 	}
 
 	order, err := s.orderSvc.GetOrderByNumber(r.Context(), id)
 	if err != nil {
-		writeJSON(w, http.StatusNotFound, errorResponse{Error: fmt.Sprintf("order %s not found", id)})
+		writeJSON(w, http.StatusNotFound, errorResponse{Error: fmt.Sprintf("Заказ %s не найден.", id)})
 		return
 	}
 
@@ -201,19 +204,19 @@ func (s *Server) handleOrderByID(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleMonitorDefault(w http.ResponseWriter, r *http.Request) {
 	if s.monitorSvc == nil || s.orderSvc == nil {
-		writeJSON(w, http.StatusServiceUnavailable, errorResponse{Error: "monitor service unavailable"})
+		writeJSON(w, http.StatusServiceUnavailable, errorResponse{Error: "Сервис калькуляции временно недоступен."})
 		return
 	}
 
 	orderID := trim(r.PathValue("id"))
 	if orderID == "" {
-		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "order id is required"})
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Укажите номер заказа."})
 		return
 	}
 
 	order, err := s.orderSvc.GetOrderByNumber(r.Context(), orderID)
 	if err != nil {
-		writeJSON(w, http.StatusNotFound, errorResponse{Error: fmt.Sprintf("order %s not found", orderID)})
+		writeJSON(w, http.StatusNotFound, errorResponse{Error: fmt.Sprintf("Заказ %s не найден.", orderID)})
 		return
 	}
 
@@ -221,7 +224,8 @@ func (s *Server) handleMonitorDefault(w http.ResponseWriter, r *http.Request) {
 	for _, code := range defaultMonitorCodes {
 		report, err := s.monitorSvc.GetIngredientsByCode(r.Context(), code, order)
 		if err != nil {
-			writeJSON(w, http.StatusBadRequest, errorResponse{Error: err.Error()})
+			slog.WarnContext(r.Context(), "default monitor calculation failed", "order_number", orderID, "code", code, "error", err)
+			writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Не удалось посчитать калькуляцию. Проверьте заказ и техкарты."})
 			return
 		}
 		reports = append(reports, monitorReportResponse{Code: code, Report: report})
@@ -232,26 +236,27 @@ func (s *Server) handleMonitorDefault(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleMonitorByProduct(w http.ResponseWriter, r *http.Request) {
 	if s.monitorSvc == nil || s.orderSvc == nil {
-		writeJSON(w, http.StatusServiceUnavailable, errorResponse{Error: "monitor service unavailable"})
+		writeJSON(w, http.StatusServiceUnavailable, errorResponse{Error: "Сервис калькуляции временно недоступен."})
 		return
 	}
 
 	orderID := trim(r.PathValue("id"))
 	productCode := trim(r.PathValue("product_id"))
 	if orderID == "" || productCode == "" {
-		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "order id and product id are required"})
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Укажите номер заказа и код продукта."})
 		return
 	}
 
 	order, err := s.orderSvc.GetOrderByNumber(r.Context(), orderID)
 	if err != nil {
-		writeJSON(w, http.StatusNotFound, errorResponse{Error: fmt.Sprintf("order %s not found", orderID)})
+		writeJSON(w, http.StatusNotFound, errorResponse{Error: fmt.Sprintf("Заказ %s не найден.", orderID)})
 		return
 	}
 
 	report, err := s.monitorSvc.GetIngredientsByCode(r.Context(), productCode, order)
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, errorResponse{Error: err.Error()})
+		slog.WarnContext(r.Context(), "monitor calculation failed", "order_number", orderID, "code", productCode, "error", err)
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Не удалось посчитать калькуляцию по этому продукту. Проверьте код продукта и техкарту."})
 		return
 	}
 
@@ -262,17 +267,17 @@ func (s *Server) handleMonitorByProduct(w http.ResponseWriter, r *http.Request) 
 
 func (s *Server) handleMonitorBatch(w http.ResponseWriter, r *http.Request) {
 	if s.monitorSvc == nil || s.orderSvc == nil {
-		writeJSON(w, http.StatusServiceUnavailable, errorResponse{Error: "monitor service unavailable"})
+		writeJSON(w, http.StatusServiceUnavailable, errorResponse{Error: "Сервис калькуляции временно недоступен."})
 		return
 	}
 
 	orderNumbers := uniqueQueryValues(r.URL.Query()["orders"])
 	if len(orderNumbers) == 0 {
-		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "orders query parameter is required"})
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Укажите хотя бы один заказ в параметре orders."})
 		return
 	}
 	if len(orderNumbers) > 50 {
-		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "too many orders"})
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Слишком много заказов. Выберите не больше 50."})
 		return
 	}
 
@@ -280,7 +285,7 @@ func (s *Server) handleMonitorBatch(w http.ResponseWriter, r *http.Request) {
 	for _, number := range orderNumbers {
 		order, err := s.orderSvc.GetOrderByNumber(r.Context(), number)
 		if err != nil {
-			writeJSON(w, http.StatusNotFound, errorResponse{Error: fmt.Sprintf("order %s not found", number)})
+			writeJSON(w, http.StatusNotFound, errorResponse{Error: fmt.Sprintf("Заказ %s не найден.", number)})
 			return
 		}
 		orders = append(orders, order)
@@ -288,7 +293,8 @@ func (s *Server) handleMonitorBatch(w http.ResponseWriter, r *http.Request) {
 
 	report, err := s.monitorSvc.GetBatchIngredientsByCodes(r.Context(), defaultMonitorCodes, orders)
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, errorResponse{Error: err.Error()})
+		slog.WarnContext(r.Context(), "batch monitor calculation failed", "orders", orderNumbers, "error", err)
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Не удалось посчитать калькуляцию по выбранным заказам. Проверьте заказы и техкарты."})
 		return
 	}
 

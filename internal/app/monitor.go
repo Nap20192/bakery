@@ -14,14 +14,26 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	"golang.org/x/sync/errgroup"
 )
-
-const monitorConcurrencyLimit = 4
 
 type MonitorService struct {
 	queries *sqlc.Queries
 	domain  *monitoringdomain.Service
+}
+
+type monitorIngredient struct {
+	Code    string
+	Product sqlc.GetIikoProductByIDRow
+}
+
+type orderMonitorGraph struct {
+	Graph monitoringdomain.ProductGraph
+	Items []orderMonitorItem
+}
+
+type orderMonitorItem struct {
+	Item      orderdomain.OrderItem
+	ProductID string
 }
 
 func NewMonitorService(queries *sqlc.Queries) *MonitorService {
@@ -40,52 +52,27 @@ func (s *MonitorService) GetIngredientsByCode(ctx context.Context, code string, 
 	if err != nil {
 		return report, err
 	}
-	report.Ingredient = monitoringdomain.IngredientUsage{
-		ProductCode: ingredient.Code,
-		ProductName: ingredient.Name,
-		Unit:        monitorUnit(ingredient),
-	}
-
-	orderDate := order.CreatedAt
-	if !order.FulfillmentDate.IsZero() {
-		orderDate = order.FulfillmentDate
-	}
-	if orderDate.IsZero() {
-		orderDate = time.Now().UTC()
-	}
-	orderDateParam := pgDate(orderDate)
-	breakdowns := make([]monitoringdomain.IngredientDishBreakdown, len(order.Items))
-	group, groupCtx := errgroup.WithContext(ctx)
-	group.SetLimit(monitorConcurrencyLimit)
-
-	for i, item := range order.Items {
-		i, item := i, item
-		group.Go(func() error {
-			breakdown, err := s.calculateOrderItemIngredientUsage(groupCtx, item, ingredient.ID, orderDateParam)
-			if err != nil {
-				return err
-			}
-			breakdowns[i] = breakdown
-			return nil
-		})
-	}
-	if err := group.Wait(); err != nil {
+	orderGraph, err := s.loadOrderMonitorGraph(ctx, order)
+	if err != nil {
 		return report, err
 	}
+	return s.calculateIngredientReport(monitorIngredient{Code: strings.TrimSpace(code), Product: ingredient}, orderGraph)
+}
 
-	for _, breakdown := range breakdowns {
-		if breakdown.IngredientQuantity <= 0 {
-			continue
+func (s *MonitorService) resolveIngredients(ctx context.Context, codes []string) ([]monitorIngredient, error) {
+	ingredients := make([]monitorIngredient, 0, len(codes))
+	for _, code := range codes {
+		code = strings.TrimSpace(code)
+		ingredient, err := s.resolveIngredient(ctx, code)
+		if err != nil {
+			return nil, err
 		}
-		report.Ingredient.Quantity += breakdown.IngredientQuantity
-		report.Breakdown = append(report.Breakdown, breakdown)
+		ingredients = append(ingredients, monitorIngredient{
+			Code:    code,
+			Product: ingredient,
+		})
 	}
-
-	sort.Slice(report.Breakdown, func(i, j int) bool {
-		return report.Breakdown[i].IngredientQuantity > report.Breakdown[j].IngredientQuantity
-	})
-
-	return report, nil
+	return ingredients, nil
 }
 
 func (s *MonitorService) GetBatchIngredientsByCodes(ctx context.Context, codes []string, orders []orderdomain.Order) (monitoringdomain.BatchMonitoringReport, error) {
@@ -93,39 +80,51 @@ func (s *MonitorService) GetBatchIngredientsByCodes(ctx context.Context, codes [
 		Orders:       make([]monitoringdomain.OrderMonitoringReport, 0, len(orders)),
 		TotalReports: make([]monitoringdomain.IngredientReport, 0, len(codes)),
 	}
+	if s == nil || s.queries == nil {
+		return result, fmt.Errorf("monitor service is not initialized")
+	}
 	if len(codes) == 0 || len(orders) == 0 {
 		return result, nil
 	}
 
-	totalByCode := make(map[string]monitoringdomain.IngredientReport, len(codes))
-	breakdownByCode := make(map[string]map[string]monitoringdomain.IngredientDishBreakdown, len(codes))
+	ingredients, err := s.resolveIngredients(ctx, codes)
+	if err != nil {
+		return result, err
+	}
+
+	totalByCode := make(map[string]monitoringdomain.IngredientReport, len(ingredients))
+	breakdownByCode := make(map[string]map[string]monitoringdomain.IngredientDishBreakdown, len(ingredients))
 
 	for _, order := range orders {
+		orderGraph, err := s.loadOrderMonitorGraph(ctx, order)
+		if err != nil {
+			return result, err
+		}
 		orderReport := monitoringdomain.OrderMonitoringReport{
 			OrderNumber: order.Number,
-			Reports:     make([]monitoringdomain.IngredientReport, 0, len(codes)),
+			Reports:     make([]monitoringdomain.IngredientReport, 0, len(ingredients)),
 		}
-		for _, code := range codes {
-			report, err := s.GetIngredientsByCode(ctx, code, order)
+		for _, ingredient := range ingredients {
+			report, err := s.calculateIngredientReport(ingredient, orderGraph)
 			if err != nil {
 				return result, err
 			}
 			orderReport.Reports = append(orderReport.Reports, report)
 
-			total := totalByCode[code]
+			total := totalByCode[ingredient.Code]
 			if total.Ingredient.ProductCode == "" {
 				total.Ingredient = report.Ingredient
 				total.Ingredient.Quantity = 0
 			}
 			total.Ingredient.Quantity += report.Ingredient.Quantity
-			totalByCode[code] = total
+			totalByCode[ingredient.Code] = total
 
-			if _, ok := breakdownByCode[code]; !ok {
-				breakdownByCode[code] = make(map[string]monitoringdomain.IngredientDishBreakdown)
+			if _, ok := breakdownByCode[ingredient.Code]; !ok {
+				breakdownByCode[ingredient.Code] = make(map[string]monitoringdomain.IngredientDishBreakdown)
 			}
 			for _, breakdown := range report.Breakdown {
 				key := breakdown.OrderItemCode + "\x00" + breakdown.OrderItemName
-				existing := breakdownByCode[code][key]
+				existing := breakdownByCode[ingredient.Code][key]
 				if existing.OrderItemCode == "" {
 					existing = monitoringdomain.IngredientDishBreakdown{
 						OrderItemCode: breakdown.OrderItemCode,
@@ -134,18 +133,18 @@ func (s *MonitorService) GetBatchIngredientsByCodes(ctx context.Context, codes [
 				}
 				existing.OrderItemQuantity += breakdown.OrderItemQuantity
 				existing.IngredientQuantity += breakdown.IngredientQuantity
-				breakdownByCode[code][key] = existing
+				breakdownByCode[ingredient.Code][key] = existing
 			}
 		}
 		result.Orders = append(result.Orders, orderReport)
 	}
 
-	for _, code := range codes {
-		total, ok := totalByCode[code]
+	for _, ingredient := range ingredients {
+		total, ok := totalByCode[ingredient.Code]
 		if !ok {
 			continue
 		}
-		for _, breakdown := range breakdownByCode[code] {
+		for _, breakdown := range breakdownByCode[ingredient.Code] {
 			if breakdown.IngredientQuantity > 0 {
 				total.Breakdown = append(total.Breakdown, breakdown)
 			}
@@ -159,12 +158,85 @@ func (s *MonitorService) GetBatchIngredientsByCodes(ctx context.Context, codes [
 	return result, nil
 }
 
+func (s *MonitorService) loadOrderMonitorGraph(ctx context.Context, order orderdomain.Order) (orderMonitorGraph, error) {
+	orderDateParam := pgDate(monitorOrderDate(order))
+	result := orderMonitorGraph{
+		Graph: monitoringdomain.ProductGraph{},
+		Items: make([]orderMonitorItem, 0, len(order.Items)),
+	}
+	productsByCode := make(map[string]sqlc.GetIikoProductByCodeRow, len(order.Items))
+	for _, item := range order.Items {
+		code := strings.TrimSpace(item.Code)
+		product, ok := productsByCode[code]
+		if !ok {
+			var err error
+			product, err = s.queries.GetIikoProductByCode(ctx, code)
+			if err != nil {
+				if err == pgx.ErrNoRows {
+					continue
+				}
+				return result, fmt.Errorf("get product by code %s: %w", item.Code, err)
+			}
+			productsByCode[code] = product
+		}
+		if err := s.LoadMonitorGraph(ctx, result.Graph, product.ID, orderDateParam); err != nil {
+			return result, fmt.Errorf("load monitor graph for product %s: %w", item.Code, err)
+		}
+		result.Items = append(result.Items, orderMonitorItem{
+			Item:      item,
+			ProductID: product.ID,
+		})
+	}
+	return result, nil
+}
+
+func monitorOrderDate(order orderdomain.Order) time.Time {
+	orderDate := order.CreatedAt
+	if !order.FulfillmentDate.IsZero() {
+		orderDate = order.FulfillmentDate
+	}
+	if orderDate.IsZero() {
+		orderDate = time.Now().UTC()
+	}
+	return orderDate
+}
+
+func (s *MonitorService) calculateIngredientReport(
+	ingredient monitorIngredient,
+	orderGraph orderMonitorGraph,
+) (monitoringdomain.IngredientReport, error) {
+	report := monitoringdomain.IngredientReport{
+		Ingredient: monitoringdomain.IngredientUsage{
+			ProductCode: ingredient.Product.Code,
+			ProductName: ingredient.Product.Name,
+			Unit:        monitorUnit(ingredient.Product),
+		},
+	}
+
+	for _, graphItem := range orderGraph.Items {
+		breakdown, err := s.calculateOrderItemIngredientUsage(orderGraph.Graph, graphItem, ingredient.Product.ID)
+		if err != nil {
+			return report, err
+		}
+		if breakdown.IngredientQuantity <= 0 {
+			continue
+		}
+		report.Ingredient.Quantity += breakdown.IngredientQuantity
+		report.Breakdown = append(report.Breakdown, breakdown)
+	}
+
+	sort.Slice(report.Breakdown, func(i, j int) bool {
+		return report.Breakdown[i].IngredientQuantity > report.Breakdown[j].IngredientQuantity
+	})
+	return report, nil
+}
+
 func (s *MonitorService) calculateOrderItemIngredientUsage(
-	ctx context.Context,
-	orderItem orderdomain.OrderItem,
+	graph monitoringdomain.ProductGraph,
+	graphItem orderMonitorItem,
 	ingredientID string,
-	orderDate pgtype.Date,
 ) (monitoringdomain.IngredientDishBreakdown, error) {
+	orderItem := graphItem.Item
 	productionQuantity := orderItem.ProductionQuantity()
 	breakdown := monitoringdomain.IngredientDishBreakdown{
 		OrderItemCode:     orderItem.Code,
@@ -172,20 +244,7 @@ func (s *MonitorService) calculateOrderItemIngredientUsage(
 		OrderItemQuantity: productionQuantity,
 	}
 
-	product, err := s.queries.GetIikoProductByCode(ctx, strings.TrimSpace(orderItem.Code))
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return breakdown, nil
-		}
-		return breakdown, fmt.Errorf("get product by code %s: %w", orderItem.Code, err)
-	}
-
-	graph := monitoringdomain.ProductGraph{}
-	if err := s.LoadMonitorGraph(ctx, graph, product.ID, orderDate); err != nil {
-		return breakdown, fmt.Errorf("load monitor graph for product %s: %w", orderItem.Code, err)
-	}
-
-	used, err := s.domain.CalculateIngredientUsage(graph, product.ID, ingredientID, productionQuantity)
+	used, err := s.domain.CalculateIngredientUsage(graph, graphItem.ProductID, ingredientID, productionQuantity)
 	if err != nil {
 		return breakdown, fmt.Errorf("calculate ingredient usage for product %s: %w", orderItem.Code, err)
 	}
@@ -216,11 +275,14 @@ func (s *MonitorService) loadMonitorGraph(ctx context.Context, graph monitoringd
 	if productID == "" {
 		return nil
 	}
+	if path[productID] {
+		return fmt.Errorf("monitor graph cycle detected at product %s", productID)
+	}
 	if _, ok := graph[productID]; ok {
 		return nil
 	}
-	if path[productID] || len(path) >= monitoringdomain.DefaultMaxDepth {
-		return nil
+	if len(path) >= monitoringdomain.DefaultMaxDepth {
+		return fmt.Errorf("monitor graph max depth exceeded at product %s", productID)
 	}
 
 	assembly, err := s.queries.GetActiveAssemblyChartByProductID(ctx, sqlc.GetActiveAssemblyChartByProductIDParams{

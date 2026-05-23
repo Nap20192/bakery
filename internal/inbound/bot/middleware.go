@@ -2,7 +2,6 @@ package bot
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
 
 	"bakery/internal/app"
@@ -17,16 +16,16 @@ const authUserContextKey = "auth_user"
 func (b *baseBot) requirePermissions(permissions ...enum.Permission) tele.MiddlewareFunc {
 	return func(next tele.HandlerFunc) tele.HandlerFunc {
 		return func(c tele.Context) error {
-		if b.rbacSvc == nil {
-			return sendText(c, "Сервис прав доступа недоступен.")
-		}
+			if b.rbacSvc == nil {
+				return sendText(c, "Сервис прав доступа недоступен.")
+			}
 			user, err := b.authUserFromContext(c)
 			if err != nil {
 				return err
 			}
 			for _, perm := range permissions {
 				if !b.rbacSvc.HasPermission(user.Role, perm) {
-					return sendText(c, fmt.Sprintf("Доступ запрещён: недостаточно прав (%s).", perm))
+					return sendText(c, "Доступ запрещён: у вашего пользователя нет прав на эту команду.")
 				}
 			}
 			return next(c)

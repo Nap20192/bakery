@@ -1,30 +1,42 @@
-DATABASE_URL ?= postgres://postgres:postgres@localhost:5432/bakery?sslmode=disable
-GOOSE ?= goose
-GOOSE_DRIVER ?= postgres
-MIGRATIONS_DIR ?= migrations
 
-.PHONY: migrate-up migrate-down migrate-status migrate-reset docker-build docker-up docker-down docker-logs
+GOCMD = go
+GOBUILD = $(GOCMD) build
+GOMOD = $(GOCMD) mod
+GOTEST = $(GOCMD) test
+BINARY_NAME = goadmin
+CLI = adm
 
-migrate-up:
-	$(GOOSE) -dir $(MIGRATIONS_DIR) $(GOOSE_DRIVER) "$(DATABASE_URL)" up
+all: serve
 
-migrate-down:
-	$(GOOSE) -dir $(MIGRATIONS_DIR) $(GOOSE_DRIVER) "$(DATABASE_URL)" down
+init:
+	$(GOMOD) init $(module)
 
-migrate-status:
-	$(GOOSE) -dir $(MIGRATIONS_DIR) $(GOOSE_DRIVER) "$(DATABASE_URL)" status
+install:
+	$(GOMOD) tidy
 
-migrate-reset:
-	$(GOOSE) -dir $(MIGRATIONS_DIR) $(GOOSE_DRIVER) "$(DATABASE_URL)" reset
+serve:
+	$(GOCMD) run .
 
-docker-build:
-	docker compose build
+build:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -o ./build/$(BINARY_NAME) -v ./
 
-docker-up:
-	docker compose up -d db worker
+generate:
+	$(CLI) generate -c adm.ini
 
-docker-down:
-	docker compose down
+test: black-box-test user-acceptance-test
 
-docker-logs:
-	docker compose logs -f worker
+black-box-test: ready-for-data
+	$(GOTEST) -v -test.run=TestMainBlackBox
+	make clean
+
+user-acceptance-test: ready-for-data
+	$(GOTEST) -v -test.run=TestMainUserAcceptance
+	make clean
+
+ready-for-data:
+	cp admin.db admin_test.db
+
+clean:
+	rm admin_test.db
+
+.PHONY: all serve build generate test black-box-test user-acceptance-test ready-for-data clean

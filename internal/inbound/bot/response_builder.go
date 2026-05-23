@@ -68,59 +68,14 @@ func (responseBuilder) Help() string {
 		"Нажмите <b>Последние заказы</b> или отправьте /orders.\n" +
 		"В заказе можно открыть состав, изменить заказ или запустить калькуляцию.\n\n" +
 		"<b>9. Веб-просмотр</b>\n" +
-		fmt.Sprintf("Все заказы можно открыть здесь:\n%s", ordersWebURL)
+		fmt.Sprintf("Все заказы можно открыть здесь:\n%s\n\n", ordersWebURL) +
+		"<b>10. Тестовые заказы</b>\n" +
+		"Админ-команда создаёт тестовые заказы от всех магазинов на указанное число месяца:\n" +
+		"<code>/test 25</code>"
 }
 
 func (responseBuilder) Template(template string) string {
 	return "<pre>" + html.EscapeString(template) + "</pre>"
-}
-
-func (responseBuilder) OrdersList(orders []orderdomain.Order, departments map[int64]string) string {
-	var sb strings.Builder
-	sb.WriteString("<b>Последние заказы</b>\n\n")
-	for _, order := range orders {
-		sb.WriteString(fmt.Sprintf("<b><code>%s</code></b>\n", html.EscapeString(order.Number)))
-		if !order.FulfillmentDate.IsZero() {
-			sb.WriteString(fmt.Sprintf("Дата выполнения: <code>%s</code>\n", html.EscapeString(order.FulfillmentDate.Format("02.01.2006"))))
-		}
-		if !order.CreatedAt.IsZero() {
-			sb.WriteString(fmt.Sprintf("Создан: <code>%s</code>\n", html.EscapeString(order.CreatedAt.Local().Format("02.01.2006 15:04"))))
-		}
-		if createdBy := orderCreatedBy(order, ""); createdBy != "" {
-			sb.WriteString(fmt.Sprintf("От кого: %s\n", html.EscapeString(createdBy)))
-		}
-		if from := departmentName(departments, order.FromDepartmentID); from != "" {
-			sb.WriteString(fmt.Sprintf("<b>Откуда: %s</b>\n", html.EscapeString(from)))
-		}
-		if to := departmentName(departments, order.ToDepartmentID); to != "" {
-			sb.WriteString(fmt.Sprintf("Куда: %s\n", html.EscapeString(to)))
-		}
-		sb.WriteString(fmt.Sprintf("Позиций: %d\n\n", len(order.Items)))
-	}
-	return sb.String()
-}
-
-func (responseBuilder) ShopOrdersList(orders []orderdomain.Order, departments map[int64]string) string {
-	var sb strings.Builder
-	sb.WriteString("<b>Ваши последние заказы</b>\n\n")
-	for _, order := range orders {
-		sb.WriteString(fmt.Sprintf("<b><code>%s</code></b>\n", html.EscapeString(order.Number)))
-		if !order.FulfillmentDate.IsZero() {
-			sb.WriteString(fmt.Sprintf("Дата: <code>%s</code>\n", html.EscapeString(order.FulfillmentDate.Format("02.01.2006"))))
-		}
-		if from := departmentName(departments, order.FromDepartmentID); from != "" {
-			sb.WriteString(fmt.Sprintf("<b>Откуда: %s</b>\n", html.EscapeString(from)))
-		}
-		sb.WriteString(fmt.Sprintf("Позиций: %d\n\n", len(order.Items)))
-	}
-	return sb.String()
-}
-
-func departmentName(departments map[int64]string, id *int64) string {
-	if id == nil {
-		return ""
-	}
-	return strings.TrimSpace(departments[*id])
 }
 
 func (responseBuilder) BulkOrderCheck(result orderdomain.BulkOrderValidationResult) string {
