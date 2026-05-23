@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"sort"
@@ -473,7 +474,7 @@ func (s *OrderService) EnsureDefaultOrderTemplates(ctx context.Context, path str
 	if strings.TrimSpace(path) == "" {
 		path = "templates/dishes.txt"
 	}
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) //nolint:gosec // path is a configured local template file.
 	if err != nil {
 		if os.IsNotExist(err) {
 			return result, nil
@@ -525,7 +526,7 @@ func (s *OrderService) createOrderItems(ctx context.Context, q sqlc.Querier, ord
 		var productID *string
 		if item.Code != "" {
 			product, err := q.GetIikoProductByCode(ctx, item.Code)
-			if err != nil && err != pgx.ErrNoRows {
+			if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 				return fmt.Errorf("resolve product by code %s: %w", item.Code, err)
 			}
 			if err == nil {

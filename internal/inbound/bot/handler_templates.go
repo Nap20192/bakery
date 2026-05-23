@@ -70,10 +70,6 @@ func (b *OrderBot) handleTemplateUse(c tele.Context) error {
 	return sendHTML(c, responses.Template(template.Body), b.actionMarkup(c))
 }
 
-func (b *OrderBot) handleNoop(c tele.Context) error {
-	return c.Respond()
-}
-
 func (b *OrderBot) handleTemplateDeleteConfirm(c tele.Context) error {
 	ctx := requestContext(c)
 	id, err := templateIDFromCallback(c)

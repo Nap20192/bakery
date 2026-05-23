@@ -1,0 +1,60 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  enable:
+    - bidichk
+    - bodyclose
+    - copyloopvar
+    - durationcheck
+    - errcheck
+    - errorlint
+    - gosec
+    - govet
+    - ineffassign
+    - loggercheck
+    - nilerr
+    - rowserrcheck
+    - sloglint
+    - sqlclosecheck
+    - staticcheck
+    - unused
+    - whitespace
+
+  disable:
+    - cyclop
+    - err113
+    - exhaustruct
+    - funlen
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - lll
+    - mnd
+    - testpackage
+    - wrapcheck
+
+  exclusions:
+    generated: lax
+    paths:
+      - vendor$
+      - frontend/.*
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+    staticcheck:
+      checks:
+        - all
+        - -QF1012
+        - -ST1000
+        - -ST1003
+
+formatters:
+  enable:
+    - gofmt
+  exclusions:
+    generated: lax

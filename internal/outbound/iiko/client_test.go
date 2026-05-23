@@ -116,7 +116,7 @@ func testResultsDir(t *testing.T) string {
 		t.Fatal("cannot resolve test file path")
 	}
 	dir := filepath.Join(filepath.Dir(file), "testdata", "results")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o750); err != nil {
 		t.Fatalf("create results dir: %v", err)
 	}
 	return dir
@@ -129,7 +129,7 @@ func writeJSON(t *testing.T, dir, name string, value any) {
 		t.Fatalf("marshal %s: %v", name, err)
 	}
 	data = append(data, '\n')
-	if err := os.WriteFile(filepath.Join(dir, name), data, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, name), data, 0o600); err != nil { //nolint:gosec // test helper writes fixed fixture names.
 		t.Fatalf("write %s: %v", name, err)
 	}
 }

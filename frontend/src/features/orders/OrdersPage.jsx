@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
 import { panelClass, PanelHeader } from '../../components/Panel';
@@ -34,7 +34,6 @@ export function OrdersPage() {
 
   const selectedNumber = selectedOrder?.number || '';
   const selectedOrderCount = selectedOrderNumbers.length;
-  const pageTitle = useMemo(() => selectedNumber || 'Последние заказы', [selectedNumber]);
 
   useEffect(() => {
     const linkedOrderNumber = orderNumberFromLocation();
@@ -172,18 +171,6 @@ export function OrdersPage() {
         return current.filter((item) => item !== number);
       }
       return [...current, number];
-    });
-  }
-
-  function loadMonitor() {
-    if (!selectedOrder) return;
-    return run(async () => {
-      const result = await fetchOrderMonitor(selectedOrder.number);
-      logInfo('dough_calculation.loaded', {
-        order_number: selectedOrder.number,
-        reports: result.reports?.length || 0,
-      });
-      setMonitor(result);
     });
   }
 

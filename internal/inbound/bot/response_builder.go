@@ -79,20 +79,21 @@ func (responseBuilder) BulkOrderCheck(result orderdomain.BulkOrderValidationResu
 	var sb strings.Builder
 	sb.WriteString("Проверка заказа\n\n")
 	if !result.FulfillmentDate.IsZero() {
-		sb.WriteString(fmt.Sprintf("Дата выполнения: <code>%s</code>\n\n", html.EscapeString(result.FulfillmentDate.Format("02.01.2006"))))
+		fmt.Fprintf(&sb, "Дата выполнения: <code>%s</code>\n\n", html.EscapeString(result.FulfillmentDate.Format("02.01.2006")))
 	}
-	sb.WriteString(fmt.Sprintf("Распознано: %d\n", len(result.ValidItems)))
+	fmt.Fprintf(&sb, "Распознано: %d\n", len(result.ValidItems))
 	for _, item := range result.ValidItems {
-		sb.WriteString(fmt.Sprintf(
+		fmt.Fprintf(
+			&sb,
 			"%s %s %s\n",
 			html.EscapeString(item.Code),
 			html.EscapeString(item.ProductName),
 			html.EscapeString(formatOrderItemQuantity(item)),
-		))
+		)
 	}
 
 	if len(result.Errors) > 0 {
-		sb.WriteString(fmt.Sprintf("\nОшибки: %d\n", len(result.Errors)))
+		fmt.Fprintf(&sb, "\nОшибки: %d\n", len(result.Errors))
 		writeValidationErrors(&sb, result.Errors)
 		sb.WriteString("\nБудут отправлены только корректные позиции.")
 	} else {
@@ -115,14 +116,14 @@ func (responseBuilder) ValidationErrors(errors []orderdomain.BulkOrderValidation
 
 func (responseBuilder) OrderSummary(order orderdomain.Order, fromDepartment string, toDepartment string) string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("<b>Заказ <code>%s</code> отправлен</b>\n\n", html.EscapeString(order.Number)))
+	fmt.Fprintf(&sb, "<b>Заказ <code>%s</code> отправлен</b>\n\n", html.EscapeString(order.Number))
 	writeOrderDetails(&sb, order, fromDepartment, toDepartment)
 	return sb.String()
 }
 
 func (responseBuilder) OrderView(order orderdomain.Order, fromDepartment string, toDepartment string) string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("<b>Заказ <code>%s</code></b>\n\n", html.EscapeString(order.Number)))
+	fmt.Fprintf(&sb, "<b>Заказ <code>%s</code></b>\n\n", html.EscapeString(order.Number))
 	writeOrderDetails(&sb, order, fromDepartment, toDepartment)
 	return sb.String()
 }
@@ -148,7 +149,7 @@ func (responseBuilder) OrderCopy(order orderdomain.Order) string {
 
 func (responseBuilder) OrderUpdated(order orderdomain.Order, fromDepartment string, toDepartment string) string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("<b>Заказ <code>%s</code> обновлен</b>\n\n", html.EscapeString(order.Number)))
+	fmt.Fprintf(&sb, "<b>Заказ <code>%s</code> обновлен</b>\n\n", html.EscapeString(order.Number))
 	writeOrderDetails(&sb, order, fromDepartment, toDepartment)
 	return sb.String()
 }
@@ -156,14 +157,14 @@ func (responseBuilder) OrderUpdated(order orderdomain.Order, fromDepartment stri
 func (responseBuilder) OrderDraft(orderNumber string, items []orderdomain.OrderItem, fulfillmentDate time.Time, errors []orderdomain.BulkOrderValidationError) string {
 	var sb strings.Builder
 	if strings.TrimSpace(orderNumber) != "" {
-		sb.WriteString(fmt.Sprintf("<b>Редактирование <code>%s</code></b>\n\n", html.EscapeString(orderNumber)))
+		fmt.Fprintf(&sb, "<b>Редактирование <code>%s</code></b>\n\n", html.EscapeString(orderNumber))
 	} else {
 		sb.WriteString("<b>Текущий заказ</b>\n\n")
 	}
 	if !fulfillmentDate.IsZero() {
-		sb.WriteString(fmt.Sprintf("Дата выполнения: <code>%s</code>\n", html.EscapeString(fulfillmentDate.Format("02.01.2006"))))
+		fmt.Fprintf(&sb, "Дата выполнения: <code>%s</code>\n", html.EscapeString(fulfillmentDate.Format("02.01.2006")))
 	}
-	sb.WriteString(fmt.Sprintf("Позиций: %d\n\n", len(items)))
+	fmt.Fprintf(&sb, "Позиций: %d\n\n", len(items))
 	if len(items) == 0 {
 		sb.WriteString("Добавьте позиции сообщением или выберите шаблон через /templates.")
 	} else {

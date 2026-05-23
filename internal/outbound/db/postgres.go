@@ -50,7 +50,7 @@ func postgresLogAttrs(config *pgxpool.Config) []any {
 		"port", config.ConnConfig.Port,
 		"database", config.ConnConfig.Database,
 		"user", config.ConnConfig.User,
-		"sslmode", config.ConnConfig.Config.RuntimeParams["sslmode"],
+		"sslmode", config.ConnConfig.RuntimeParams["sslmode"],
 		"min_conns", config.MinConns,
 		"max_conns", config.MaxConns,
 	}
