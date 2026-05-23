@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -33,7 +34,7 @@ func (s *TechCardService) GetByCode(ctx context.Context, code string, date time.
 	}
 	product, err := s.queries.GetIikoProductByCode(ctx, code)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return techcarddomain.TechCard{}, fmt.Errorf("product with code %s not found", code)
 		}
 		return techcarddomain.TechCard{}, fmt.Errorf("get product by code: %w", err)
@@ -67,7 +68,7 @@ func (s *TechCardService) attachAssembly(ctx context.Context, card *techcarddoma
 		AssembledProductID: productID,
 		OrderDate:          date,
 	})
-	if err == pgx.ErrNoRows {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil
 	}
 	if err != nil {
@@ -90,7 +91,7 @@ func (s *TechCardService) attachPrepared(ctx context.Context, card *techcarddoma
 		AssembledProductID: productID,
 		OrderDate:          date,
 	})
-	if err == pgx.ErrNoRows {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil
 	}
 	if err != nil {

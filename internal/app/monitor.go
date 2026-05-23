@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -172,7 +173,7 @@ func (s *MonitorService) loadOrderMonitorGraph(ctx context.Context, order orderd
 			var err error
 			product, err = s.queries.GetIikoProductByCode(ctx, code)
 			if err != nil {
-				if err == pgx.ErrNoRows {
+				if errors.Is(err, pgx.ErrNoRows) {
 					continue
 				}
 				return result, fmt.Errorf("get product by code %s: %w", item.Code, err)
@@ -318,7 +319,7 @@ func (s *MonitorService) loadMonitorGraph(ctx context.Context, graph monitoringd
 		}
 		return nil
 	}
-	if err != pgx.ErrNoRows {
+	if !errors.Is(err, pgx.ErrNoRows) {
 		return fmt.Errorf("get active assembly chart: %w", err)
 	}
 
@@ -326,7 +327,7 @@ func (s *MonitorService) loadMonitorGraph(ctx context.Context, graph monitoringd
 		AssembledProductID: productID,
 		OrderDate:          orderDate,
 	})
-	if err == pgx.ErrNoRows {
+	if errors.Is(err, pgx.ErrNoRows) {
 		graph[productID] = monitoringdomain.ProductRecipe{}
 		return nil
 	}
@@ -366,7 +367,7 @@ func (s *MonitorService) resolveIngredient(ctx context.Context, code string) (sq
 	if err == nil {
 		return sqlc.GetIikoProductByIDRow(product), nil
 	}
-	if err != pgx.ErrNoRows {
+	if !errors.Is(err, pgx.ErrNoRows) {
 		return sqlc.GetIikoProductByIDRow{}, fmt.Errorf("get ingredient by code %s: %w", code, err)
 	}
 	return sqlc.GetIikoProductByIDRow{}, fmt.Errorf("ingredient not found by code %s", code)

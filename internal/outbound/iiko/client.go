@@ -51,15 +51,13 @@ func NewClient(login, password string, api *Api) (*Client, error) {
 }
 
 func (c *Client) Auth() error {
-
 	url := c.api.AuthURL(c.login, c.password)
 
 	resp, err := c.client.Get(url)
-
 	if err != nil {
 		return fmt.Errorf("iiko: auth request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("iiko: auth: unexpected status %d", resp.StatusCode)
@@ -84,11 +82,10 @@ func (c *Client) Logout() error {
 	}
 
 	resp, err := c.client.Get(c.api.LogoutByKeyURL(c.key))
-
 	if err != nil {
 		return fmt.Errorf("iiko: logout request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("iiko: logout: unexpected status %d", resp.StatusCode)
@@ -115,7 +112,7 @@ func (c *Client) get(url string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("iiko: request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp.Body)
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -126,6 +123,12 @@ func (c *Client) get(url string) ([]byte, error) {
 		return nil, fmt.Errorf("iiko: unexpected status %d: %s", resp.StatusCode, string(body))
 	}
 	return body, nil
+}
+
+func closeBody(body io.Closer) {
+	if err := body.Close(); err != nil {
+		return
+	}
 }
 
 func (c *Client) getJSON(url string, out any) error {

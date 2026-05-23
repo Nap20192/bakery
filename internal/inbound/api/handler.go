@@ -127,7 +127,7 @@ func (s *Server) handleListOrders(w http.ResponseWriter, r *http.Request) {
 
 	limit := int32(10)
 	if raw := trim(r.URL.Query().Get("limit")); raw != "" {
-		parsed, err := strconv.Atoi(raw)
+		parsed, err := strconv.ParseInt(raw, 10, 32)
 		if err != nil || parsed <= 0 {
 			writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Параметр limit должен быть положительным числом."})
 			return
@@ -136,7 +136,7 @@ func (s *Server) handleListOrders(w http.ResponseWriter, r *http.Request) {
 	}
 	page := int32(1)
 	if raw := trim(r.URL.Query().Get("page")); raw != "" {
-		parsed, err := strconv.Atoi(raw)
+		parsed, err := strconv.ParseInt(raw, 10, 32)
 		if err != nil || parsed <= 0 {
 			writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Параметр page должен быть положительным числом."})
 			return

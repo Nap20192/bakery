@@ -95,11 +95,13 @@ func ParseFulfillmentDateLine(line string) (time.Time, bool, error) {
 	value := matches[1] + "." + matches[2] + "." + matches[3]
 	date, err := time.Parse("02.01.2006", value)
 	if err != nil {
+		//nolint:staticcheck // user-facing validation message is shown directly in Telegram/API responses.
 		return time.Time{}, true, fmt.Errorf("Дата %q не распознана. Укажите дату в формате дд.мм.гггг.", value)
 	}
 	today := time.Now().UTC()
 	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC)
 	if date.Before(today) {
+		//nolint:staticcheck // user-facing validation message is shown directly in Telegram/API responses.
 		return time.Time{}, true, fmt.Errorf("Дата выполнения %s уже прошла. Укажите сегодняшнюю или будущую дату.", value)
 	}
 	return date, true, nil
@@ -125,6 +127,7 @@ func DuplicateOrderItemErrors(items []OrderItem) []error {
 	for _, item := range items {
 		key := item.Code
 		if _, exists := seen[key]; exists {
+			//nolint:staticcheck // user-facing validation message is shown directly in Telegram/API responses.
 			errs = append(errs, fmt.Errorf("Позиция с кодом %s повторяется. Оставьте одну строку с этим кодом.", item.Code))
 			continue
 		}

@@ -64,7 +64,7 @@ func applyMigration(ctx context.Context, db *pgxpool.Pool, log *slog.Logger, fil
 		return nil
 	}
 
-	content, err := os.ReadFile(file)
+	content, err := os.ReadFile(file) //nolint:gosec // migration files are loaded from the configured migrations directory.
 	if err != nil {
 		return fmt.Errorf("read migration %s: %w", file, err)
 	}

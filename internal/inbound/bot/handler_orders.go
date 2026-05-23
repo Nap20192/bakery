@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -20,7 +21,7 @@ func (b *OrderBot) handleOrders(c tele.Context) error {
 	ctx := requestContext(c)
 	orders, mode, err := b.listVisibleOrders(c, orderListLimit)
 	if err != nil {
-		if err == errOrderLocationRequired {
+		if errors.Is(err, errOrderLocationRequired) {
 			return sendText(c, "Сначала выберите локацию через /start.", b.actionMarkup(c))
 		}
 		slog.ErrorContext(ctx, "list orders failed", "error", err)
@@ -73,7 +74,7 @@ func (b *OrderBot) handleMonitorFilteredOrdersCallback(c tele.Context) error {
 	ctx := requestContext(c)
 	orders, _, err := b.listVisibleOrders(c, orderListLimit)
 	if err != nil {
-		if err == errOrderLocationRequired {
+		if errors.Is(err, errOrderLocationRequired) {
 			return sendText(c, "Сначала выберите локацию через /start.", b.actionMarkup(c))
 		}
 		slog.ErrorContext(ctx, "list orders for filtered monitor failed", "error", err)

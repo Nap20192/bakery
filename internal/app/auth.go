@@ -20,7 +20,7 @@ import (
 
 const (
 	defaultAuthRole       = accessdomain.RoleAdmin
-	passwordHashAlgorithm = "pbkdf2-sha256"
+	passwordHashAlgorithm = "pbkdf2-sha256" //nolint:gosec // algorithm name, not a credential.
 	passwordHashVersion   = "v1"
 	passwordSaltSize      = 16
 	passwordKeySize       = 32

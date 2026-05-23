@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -40,10 +41,11 @@ func (s *Server) Start() error {
 	mux := http.NewServeMux()
 	s.registerRoutes(mux)
 	s.server = &http.Server{
-		Addr:    s.config.Addr,
-		Handler: s.withMiddleware(mux),
+		Addr:              s.config.Addr,
+		Handler:           s.withMiddleware(mux),
+		ReadHeaderTimeout: 5 * time.Second,
 	}
-	if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
 	return nil

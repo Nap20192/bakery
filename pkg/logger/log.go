@@ -21,7 +21,6 @@ func InitLogger(level string, pretty bool, logDir string) (*slog.Logger, error) 
 		logLevel = slog.LevelError
 	default:
 		fmt.Printf("Unknown log level %s, defaulting to INFO\n", level)
-		logLevel = slog.LevelInfo
 	}
 	opts := &slog.HandlerOptions{
 		Level: logLevel,
@@ -38,12 +37,12 @@ func InitLogger(level string, pretty bool, logDir string) (*slog.Logger, error) 
 
 	if logDir != "" {
 		if _, err := os.Stat(logDir); os.IsNotExist(err) {
-			if err := os.MkdirAll(logDir, 0o755); err != nil {
+			if err := os.MkdirAll(logDir, 0o750); err != nil {
 				return nil, fmt.Errorf("failed to create log directory: %w", err)
 			}
 		}
 		logFile := fmt.Sprintf("%s/shipment_service.log", logDir)
-		f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+		f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600) //nolint:gosec // log file path comes from service configuration.
 		if err != nil {
 			return nil, fmt.Errorf("failed to open log file: %w", err)
 		}

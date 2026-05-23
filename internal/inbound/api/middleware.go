@@ -61,11 +61,9 @@ func (s *Server) requestLogger(next http.Handler) http.Handler {
 func writeJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(payload)
-}
-
-func readJSON(r *http.Request, dst any) error {
-	return json.NewDecoder(r.Body).Decode(dst)
+	if err := json.NewEncoder(w).Encode(payload); err != nil {
+		slog.Warn("write json response failed", "error", err)
+	}
 }
 
 func trim(value string) string {

@@ -1,7 +1,7 @@
 package iiko
 
 import (
-	"crypto/sha1"
+	"crypto/sha1" //nolint:gosec // iiko API requires SHA-1 password hash.
 	"fmt"
 )
 
@@ -22,6 +22,8 @@ func (s *Api) base() string {
 }
 
 func (s *Api) AuthURL(login, password string) string {
+	// iiko expects the password to be sent as a SHA-1 hash.
+	//nolint:gosec // this is required by the external iiko API contract.
 	h := sha1.New()
 	h.Write([]byte(password))
 	hash := fmt.Sprintf("%x", h.Sum(nil))
