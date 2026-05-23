@@ -36,10 +36,9 @@ function ReportBlock({ title = '', reports, compact = false }) {
           {!compact && <div className="divide-y divide-stone-300">
             {report.breakdown?.map((item) => (
               <div
-                className="grid grid-cols-[4.2rem_minmax(0,1fr)_5.5rem] items-start gap-2 px-2.5 py-1.5 text-[13px] sm:grid-cols-[5rem_minmax(0,1fr)_8rem] sm:px-3"
+                className="grid grid-cols-[minmax(0,1fr)_5.5rem] items-start gap-2 px-2.5 py-1.5 text-[13px] sm:grid-cols-[minmax(0,1fr)_8rem] sm:px-3"
                 key={`${code}-${item.order_item_code}`}
               >
-                <code className="break-words text-[12px] leading-5 text-stone-600">{item.order_item_code}</code>
                 <span className="min-w-0 break-words leading-5 text-stone-700">{item.order_item_name}</span>
                 <strong className="text-right text-[12px] font-semibold leading-5 text-stone-950 sm:text-[13px]">
                   {formatQuantity(item.ingredient_quantity)} {report.ingredient.unit}

@@ -338,8 +338,7 @@ func (responseBuilder) MonitorReports(order orderdomain.Order, reports []monitor
 
 	for _, report := range reports {
 		sb.WriteString(fmt.Sprintf(
-			"<b><code>%s</code> %s</b>\n",
-			html.EscapeString(report.Ingredient.ProductCode),
+			"<b>%s</b>\n",
 			html.EscapeString(report.Ingredient.ProductName),
 		))
 		sb.WriteString(fmt.Sprintf(
@@ -350,8 +349,7 @@ func (responseBuilder) MonitorReports(order orderdomain.Order, reports []monitor
 
 		for _, item := range report.Breakdown {
 			sb.WriteString(fmt.Sprintf(
-				"• <code>%s</code> %s: %s / %s %s\n",
-				html.EscapeString(item.OrderItemCode),
+				"• %s: %s / %s %s\n",
 				html.EscapeString(item.OrderItemName),
 				helpers.FormatQuantity(item.OrderItemQuantity),
 				helpers.FormatQuantity(item.IngredientQuantity),
@@ -389,8 +387,7 @@ func (responseBuilder) BatchMonitorReports(report monitoringdomain.BatchMonitori
 func writeMonitorReports(sb *strings.Builder, reports []monitoringdomain.IngredientReport, totalsOnly bool) {
 	for _, report := range reports {
 		sb.WriteString(fmt.Sprintf(
-			"<b><code>%s</code> %s</b>\n",
-			html.EscapeString(report.Ingredient.ProductCode),
+			"<b>%s</b>\n",
 			html.EscapeString(report.Ingredient.ProductName),
 		))
 		sb.WriteString(fmt.Sprintf(
@@ -402,8 +399,7 @@ func writeMonitorReports(sb *strings.Builder, reports []monitoringdomain.Ingredi
 		if !totalsOnly {
 			for _, item := range report.Breakdown {
 				sb.WriteString(fmt.Sprintf(
-					"• <code>%s</code> %s: %s / %s %s\n",
-					html.EscapeString(item.OrderItemCode),
+					"• %s: %s / %s %s\n",
 					html.EscapeString(item.OrderItemName),
 					helpers.FormatQuantity(item.OrderItemQuantity),
 					helpers.FormatQuantity(item.IngredientQuantity),
