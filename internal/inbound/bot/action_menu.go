@@ -18,7 +18,6 @@ const (
 	actionUpdateOrder    = "Обновить заказ"
 	actionCancelOrder    = "Отменить заказ"
 	actionCurrentOrder   = "Текущий заказ"
-	actionAddTemplate    = "Добавить шаблон"
 	actionSync           = "Sync iiko"
 )
 
@@ -32,7 +31,7 @@ func (b *OrderBot) actionMarkup(c tele.Context) *tele.ReplyMarkup {
 	if strings.EqualFold(user.Role, accessdomain.RoleAdmin) {
 		rows := [][]string{
 			{actionOrders, actionTemplates},
-			{actionAddTemplate, actionSync},
+			{actionSync},
 		}
 		if action, ok := b.currentOrderAction(c); ok {
 			rows = append(rows, []string{actionCurrentOrder})

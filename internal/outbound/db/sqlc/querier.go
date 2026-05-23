@@ -20,12 +20,10 @@ type Querier interface {
 	CreateOrderHistory(ctx context.Context, arg CreateOrderHistoryParams) (OrderHistory, error)
 	CreateOrderHistoryItem(ctx context.Context, arg CreateOrderHistoryItemParams) (OrderHistoryItem, error)
 	CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) (OrderItem, error)
-	CreateOrderTemplate(ctx context.Context, arg CreateOrderTemplateParams) (OrderTemplate, error)
 	CreatePasswordAuthUser(ctx context.Context, arg CreatePasswordAuthUserParams) (AuthUser, error)
 	DeleteIikoAssemblyChartItemsByChartID(ctx context.Context, chartID string) error
 	DeleteIikoPreparedChartItemsByChartID(ctx context.Context, preparedChartID string) error
 	DeleteOrderItemsByOrderID(ctx context.Context, orderID int64) error
-	DeleteOrderTemplateByID(ctx context.Context, id int64) error
 	DeleteOrdersCreatedBefore(ctx context.Context, createdAtBefore pgtype.Timestamptz) (int64, error)
 	DishExistsByCode(ctx context.Context, code string) (int64, error)
 	FinishIikoSyncRun(ctx context.Context, arg FinishIikoSyncRunParams) (IikoSyncRun, error)
@@ -41,21 +39,22 @@ type Querier interface {
 	GetIikoProductsByName(ctx context.Context, name string) ([]GetIikoProductsByNameRow, error)
 	GetOrderByNumber(ctx context.Context, number string) (Order, error)
 	GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]GetOrderItemsByOrderIDRow, error)
-	GetOrderTemplateByID(ctx context.Context, id int64) (OrderTemplate, error)
 	InsertIikoAssemblyChartItem(ctx context.Context, arg InsertIikoAssemblyChartItemParams) error
 	InsertIikoPreparedChartItem(ctx context.Context, arg InsertIikoPreparedChartItemParams) error
 	LinkTelegramAuthUser(ctx context.Context, arg LinkTelegramAuthUserParams) (AuthUser, error)
 	ListAssemblyChartItemsByChartID(ctx context.Context, chartID string) ([]ListAssemblyChartItemsByChartIDRow, error)
 	ListAuthUsersByDepartmentID(ctx context.Context, departmentID *int64) ([]AuthUser, error)
 	ListDepartments(ctx context.Context, type_ *string) ([]Department, error)
+	ListDishCatalogItems(ctx context.Context) ([]DishCatalog, error)
+	ListDishCatalogItemsByName(ctx context.Context, name string) ([]DishCatalog, error)
 	ListOrderHistoryByOrderID(ctx context.Context, orderID int64) ([]OrderHistory, error)
 	ListOrderHistoryItemsByHistoryID(ctx context.Context, historyID int64) ([]OrderHistoryItem, error)
-	ListOrderTemplates(ctx context.Context) ([]OrderTemplate, error)
 	ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order, error)
 	ListPreparedChartItemsByChartID(ctx context.Context, preparedChartID string) ([]ListPreparedChartItemsByChartIDRow, error)
 	NextOrderCounter(ctx context.Context, day string) (int64, error)
 	UnlinkTelegramAuthUser(ctx context.Context, arg UnlinkTelegramAuthUserParams) error
 	UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order, error)
+	UpsertDishCatalogItem(ctx context.Context, arg UpsertDishCatalogItemParams) (DishCatalog, error)
 	UpsertIikoAssemblyChart(ctx context.Context, arg UpsertIikoAssemblyChartParams) error
 	UpsertIikoPreparedChart(ctx context.Context, arg UpsertIikoPreparedChartParams) error
 	UpsertIikoProduct(ctx context.Context, arg UpsertIikoProductParams) error

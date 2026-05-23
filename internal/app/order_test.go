@@ -61,6 +61,94 @@ func TestOrderServiceValidateBulkOrderReportsDBError(t *testing.T) {
 	assertContains(t, messages, "Не удалось проверить код продукта")
 }
 
+func TestOrderServiceValidateBulkOrderResolvesDishNames(t *testing.T) {
+	queries := &fakeOrderQueries{
+		dishExistsByCode: map[string]int64{"15647": 1},
+		dishCatalogByName: map[string][]sqlc.DishCatalog{
+			"сосиска в тесте": {{Code: "15647", Name: "Сосиска в тесте", Theme: "ПИРОЖКИ И САМСА"}},
+		},
+	}
+	svc := NewOrderService(queries)
+
+	result := svc.ValidateBulkOrder(context.Background(), "Сосиска в тесте 5")
+
+	if len(result.Errors) != 0 {
+		t.Fatalf("unexpected errors: %#v", result.Errors)
+	}
+	if len(result.ValidItems) != 1 {
+		t.Fatalf("valid items = %d, want 1", len(result.ValidItems))
+	}
+	item := result.ValidItems[0]
+	if item.Code != "15647" || item.ProductName != "Сосиска в тесте" || item.Quantity != 5 {
+		t.Fatalf("resolved item = %#v", item)
+	}
+}
+
+func TestOrderServiceValidateBulkOrderReportsUnknownDishName(t *testing.T) {
+	queries := &fakeOrderQueries{dishCatalogByName: map[string][]sqlc.DishCatalog{}}
+	svc := NewOrderService(queries)
+
+	result := svc.ValidateBulkOrder(context.Background(), "Неизвестное блюдо 2")
+
+	if len(result.ValidItems) != 0 {
+		t.Fatalf("valid items = %d, want 0", len(result.ValidItems))
+	}
+	messages := validationMessages(result.Errors)
+	assertContains(t, messages, "не найдено в справочнике")
+}
+
+func TestOrderServiceValidateBulkOrderReportsAmbiguousDishName(t *testing.T) {
+	queries := &fakeOrderQueries{
+		dishCatalogByName: map[string][]sqlc.DishCatalog{
+			"булочка": {
+				{Code: "1", Name: "Булочка", Theme: "A"},
+				{Code: "2", Name: "Булочка", Theme: "B"},
+			},
+		},
+	}
+	svc := NewOrderService(queries)
+
+	result := svc.ValidateBulkOrder(context.Background(), "Булочка 2")
+
+	if len(result.ValidItems) != 0 {
+		t.Fatalf("valid items = %d, want 0", len(result.ValidItems))
+	}
+	messages := validationMessages(result.Errors)
+	assertContains(t, messages, "найдено несколько раз")
+}
+
+func TestOrderServiceListOrderTemplatesBuildsFromDishCatalog(t *testing.T) {
+	queries := &fakeOrderQueries{
+		dishCatalogItems: []sqlc.DishCatalog{
+			{Code: "15542", Name: "Кокрок с картофелем", Theme: "КОКРОКИ"},
+			{Code: "15544", Name: "Кокрок с творогом", Theme: "КОКРОКИ"},
+			{Code: "15646", Name: "Самса с курицей", Theme: "САМСА И УЧПУЧМАК"},
+		},
+	}
+	svc := NewOrderService(queries)
+
+	templates, err := svc.ListOrderTemplates(context.Background())
+	if err != nil {
+		t.Fatalf("ListOrderTemplates returned error: %v", err)
+	}
+	if len(templates) != 2 {
+		t.Fatalf("templates = %d, want 2: %#v", len(templates), templates)
+	}
+	if templates[0].Body != "КОКРОКИ\nКокрок с картофелем 0\nКокрок с творогом 0" {
+		t.Fatalf("first template body = %q", templates[0].Body)
+	}
+	if strings.Contains(templates[0].Body, "15542") || strings.Contains(templates[1].Body, "15646") {
+		t.Fatalf("template bodies must not contain dish codes: %#v", templates)
+	}
+
+	combined, err := svc.CombinedOrderTemplate(context.Background())
+	if err != nil {
+		t.Fatalf("CombinedOrderTemplate returned error: %v", err)
+	}
+	assertContains(t, combined, "КОКРОКИ\nКокрок с картофелем 0")
+	assertContains(t, combined, "САМСА И УЧПУЧМАК\nСамса с курицей 0")
+}
+
 func TestOrderServiceDeleteOrdersOlderThan(t *testing.T) {
 	queries := &fakeOrderQueries{}
 	svc := NewOrderService(queries)
@@ -99,6 +187,9 @@ type fakeOrderQueries struct {
 	sqlc.Querier
 	dishExistsByCode          map[string]int64
 	dishErrorsByCode          map[string]error
+	dishCatalogByName         map[string][]sqlc.DishCatalog
+	dishCatalogItems          []sqlc.DishCatalog
+	dishCatalogErrorsByName   map[string]error
 	deleteOrdersCreatedBefore pgtype.Timestamptz
 }
 
@@ -107,6 +198,23 @@ func (q *fakeOrderQueries) DishExistsByCode(_ context.Context, code string) (int
 		return 0, err
 	}
 	return q.dishExistsByCode[code], nil
+}
+
+func (q *fakeOrderQueries) ListDishCatalogItems(_ context.Context) ([]sqlc.DishCatalog, error) {
+	result := make([]sqlc.DishCatalog, len(q.dishCatalogItems))
+	copy(result, q.dishCatalogItems)
+	return result, nil
+}
+
+func (q *fakeOrderQueries) ListDishCatalogItemsByName(_ context.Context, name string) ([]sqlc.DishCatalog, error) {
+	key := strings.ToLower(strings.TrimSpace(name))
+	if err := q.dishCatalogErrorsByName[key]; err != nil {
+		return nil, err
+	}
+	items := q.dishCatalogByName[key]
+	result := make([]sqlc.DishCatalog, len(items))
+	copy(result, items)
+	return result, nil
 }
 
 func (q *fakeOrderQueries) DeleteOrdersCreatedBefore(_ context.Context, createdAtBefore pgtype.Timestamptz) (int64, error) {

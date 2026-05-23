@@ -145,3 +145,119 @@ func (q *Queries) GetIikoProductsByName(ctx context.Context, name string) ([]Get
 	}
 	return items, nil
 }
+
+const listDishCatalogItems = `-- name: ListDishCatalogItems :many
+SELECT id, code, name, theme, created_at, updated_at
+FROM dish_catalog
+ORDER BY theme, name, code
+`
+
+func (q *Queries) ListDishCatalogItems(ctx context.Context) ([]DishCatalog, error) {
+	rows, err := q.db.Query(ctx, listDishCatalogItems)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DishCatalog
+	for rows.Next() {
+		var i DishCatalog
+		if err := rows.Scan(
+			&i.ID,
+			&i.Code,
+			&i.Name,
+			&i.Theme,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDishCatalogItemsByName = `-- name: ListDishCatalogItemsByName :many
+SELECT id, code, name, theme, created_at, updated_at
+FROM dish_catalog
+WHERE lower(trim(name)) = lower(trim($1))
+ORDER BY theme, name, code
+`
+
+func (q *Queries) ListDishCatalogItemsByName(ctx context.Context, name string) ([]DishCatalog, error) {
+	rows, err := q.db.Query(ctx, listDishCatalogItemsByName, name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DishCatalog
+	for rows.Next() {
+		var i DishCatalog
+		if err := rows.Scan(
+			&i.ID,
+			&i.Code,
+			&i.Name,
+			&i.Theme,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const upsertDishCatalogItem = `-- name: UpsertDishCatalogItem :one
+INSERT INTO dish_catalog (
+    code,
+    name,
+    theme,
+    created_at,
+    updated_at
+) VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5
+)
+ON CONFLICT (code) DO UPDATE SET
+    name = excluded.name,
+    theme = excluded.theme,
+    updated_at = excluded.updated_at
+RETURNING id, code, name, theme, created_at, updated_at
+`
+
+type UpsertDishCatalogItemParams struct {
+	Code      string `json:"code"`
+	Name      string `json:"name"`
+	Theme     string `json:"theme"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+func (q *Queries) UpsertDishCatalogItem(ctx context.Context, arg UpsertDishCatalogItemParams) (DishCatalog, error) {
+	row := q.db.QueryRow(ctx, upsertDishCatalogItem,
+		arg.Code,
+		arg.Name,
+		arg.Theme,
+		arg.CreatedAt,
+		arg.UpdatedAt,
+	)
+	var i DishCatalog
+	err := row.Scan(
+		&i.ID,
+		&i.Code,
+		&i.Name,
+		&i.Theme,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}

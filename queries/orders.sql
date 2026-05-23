@@ -149,33 +149,3 @@ WITH deleted AS (
 )
 SELECT COUNT(*)::BIGINT
 FROM deleted;
-
--- name: CreateOrderTemplate :one
-INSERT INTO order_templates (
-    name,
-    body,
-    created_by_user_id,
-    created_at,
-    updated_at
-) VALUES (
-    sqlc.arg(name),
-    sqlc.arg(body),
-    sqlc.narg(created_by_user_id),
-    sqlc.arg(created_at),
-    sqlc.arg(updated_at)
-)
-RETURNING *;
-
--- name: ListOrderTemplates :many
-SELECT *
-FROM order_templates
-ORDER BY name, id;
-
--- name: GetOrderTemplateByID :one
-SELECT *
-FROM order_templates
-WHERE id = sqlc.arg(id);
-
--- name: DeleteOrderTemplateByID :exec
-DELETE FROM order_templates
-WHERE id = sqlc.arg(id);

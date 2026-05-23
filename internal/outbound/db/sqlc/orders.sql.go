@@ -233,51 +233,6 @@ func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams
 	return i, err
 }
 
-const createOrderTemplate = `-- name: CreateOrderTemplate :one
-INSERT INTO order_templates (
-    name,
-    body,
-    created_by_user_id,
-    created_at,
-    updated_at
-) VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5
-)
-RETURNING id, name, body, created_by_user_id, created_at, updated_at
-`
-
-type CreateOrderTemplateParams struct {
-	Name            string `json:"name"`
-	Body            string `json:"body"`
-	CreatedByUserID *int64 `json:"created_by_user_id"`
-	CreatedAt       string `json:"created_at"`
-	UpdatedAt       string `json:"updated_at"`
-}
-
-func (q *Queries) CreateOrderTemplate(ctx context.Context, arg CreateOrderTemplateParams) (OrderTemplate, error) {
-	row := q.db.QueryRow(ctx, createOrderTemplate,
-		arg.Name,
-		arg.Body,
-		arg.CreatedByUserID,
-		arg.CreatedAt,
-		arg.UpdatedAt,
-	)
-	var i OrderTemplate
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.Body,
-		&i.CreatedByUserID,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
 const deleteOrderItemsByOrderID = `-- name: DeleteOrderItemsByOrderID :exec
 DELETE FROM order_items
 WHERE order_id = $1
@@ -285,16 +240,6 @@ WHERE order_id = $1
 
 func (q *Queries) DeleteOrderItemsByOrderID(ctx context.Context, orderID int64) error {
 	_, err := q.db.Exec(ctx, deleteOrderItemsByOrderID, orderID)
-	return err
-}
-
-const deleteOrderTemplateByID = `-- name: DeleteOrderTemplateByID :exec
-DELETE FROM order_templates
-WHERE id = $1
-`
-
-func (q *Queries) DeleteOrderTemplateByID(ctx context.Context, id int64) error {
-	_, err := q.db.Exec(ctx, deleteOrderTemplateByID, id)
 	return err
 }
 
@@ -390,26 +335,6 @@ func (q *Queries) GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]
 	return items, nil
 }
 
-const getOrderTemplateByID = `-- name: GetOrderTemplateByID :one
-SELECT id, name, body, created_by_user_id, created_at, updated_at
-FROM order_templates
-WHERE id = $1
-`
-
-func (q *Queries) GetOrderTemplateByID(ctx context.Context, id int64) (OrderTemplate, error) {
-	row := q.db.QueryRow(ctx, getOrderTemplateByID, id)
-	var i OrderTemplate
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.Body,
-		&i.CreatedByUserID,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
 const listOrderHistoryByOrderID = `-- name: ListOrderHistoryByOrderID :many
 SELECT id, order_id, changed_by_username, changed_at
 FROM order_history
@@ -468,39 +393,6 @@ func (q *Queries) ListOrderHistoryItemsByHistoryID(ctx context.Context, historyI
 			&i.NewQuantity,
 			&i.OldReservedQuantity,
 			&i.NewReservedQuantity,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listOrderTemplates = `-- name: ListOrderTemplates :many
-SELECT id, name, body, created_by_user_id, created_at, updated_at
-FROM order_templates
-ORDER BY name, id
-`
-
-func (q *Queries) ListOrderTemplates(ctx context.Context) ([]OrderTemplate, error) {
-	rows, err := q.db.Query(ctx, listOrderTemplates)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []OrderTemplate
-	for rows.Next() {
-		var i OrderTemplate
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.Body,
-			&i.CreatedByUserID,
-			&i.CreatedAt,
-			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}

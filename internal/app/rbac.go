@@ -7,9 +7,8 @@ import (
 )
 
 const (
-	PermissionTechCard       = enum.PermissionTechCard
-	PermissionSync           = enum.PermissionSync
-	PermissionTemplateManage = enum.PermissionTemplateManage
+	PermissionTechCard = enum.PermissionTechCard
+	PermissionSync     = enum.PermissionSync
 )
 
 type RbacService struct {
@@ -20,9 +19,8 @@ func NewRbacService() *RbacService {
 	return &RbacService{
 		rolePermissions: map[enum.Role]map[enum.Permission]struct{}{
 			enum.RoleAdmin: {
-				PermissionTechCard:       {},
-				PermissionSync:           {},
-				PermissionTemplateManage: {},
+				PermissionTechCard: {},
+				PermissionSync:     {},
 			},
 		},
 	}

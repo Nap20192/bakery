@@ -39,12 +39,8 @@ func (b *OrderBot) handleCancel(c tele.Context) error {
 
 func (b *OrderBot) handleText(c tele.Context) error {
 	text := strings.TrimSpace(c.Text())
-	sender := c.Sender()
 	if handled, err := b.handleActionText(c, text); handled {
 		return err
-	}
-	if sender != nil && b.isWaitingTemplate(sender.ID) {
-		return b.createTemplateFromMessage(c, text)
 	}
 	if strings.HasPrefix(text, "/") {
 		return sendText(c, "Неизвестная команда.\n\n/help - список команд и правила заказа")
@@ -57,41 +53,26 @@ func (b *OrderBot) handleText(c tele.Context) error {
 
 func (b *OrderBot) handleActionText(c tele.Context, text string) (bool, error) {
 	if handled, err := b.handleOrdersReplyText(c, text); handled {
-		b.clearPendingTextModes(c)
 		return true, err
 	}
 	switch strings.TrimSpace(text) {
 	case actionChooseShop:
-		b.clearPendingTextModes(c)
 		return true, b.handleDepartmentShop(c)
 	case actionChooseWorkshop:
-		b.clearPendingTextModes(c)
 		return true, b.handleDepartmentWorkshop(c)
 	case actionTemplates:
-		b.clearPendingTextModes(c)
 		return true, b.handleTemplates(c)
 	case actionOrders:
-		b.clearPendingTextModes(c)
 		return true, b.handleOrders(c)
 	case actionSubmitOrder:
-		b.clearPendingTextModes(c)
 		return true, b.handleConfirm(c)
 	case actionUpdateOrder:
-		b.clearPendingTextModes(c)
 		return true, b.handleUpdateOrder(c)
 	case actionCancelOrder:
 		return true, b.handleCancel(c)
 	case actionCurrentOrder:
-		b.clearPendingTextModes(c)
 		return true, b.handleCurrentOrder(c)
-	case actionAddTemplate:
-		b.clearPendingTextModes(c)
-		if err := b.ensureActionPermission(c, app.PermissionTemplateManage); err != nil {
-			return true, err
-		}
-		return true, b.handleAddTemplate(c)
 	case actionSync:
-		b.clearPendingTextModes(c)
 		if err := b.ensureActionPermission(c, app.PermissionSync); err != nil {
 			return true, err
 		}
@@ -99,16 +80,6 @@ func (b *OrderBot) handleActionText(c tele.Context, text string) (bool, error) {
 	default:
 		return false, nil
 	}
-}
-
-func (b *OrderBot) clearPendingTextModes(c tele.Context) {
-	sender := c.Sender()
-	if sender == nil {
-		return
-	}
-	b.updateSession(sender.ID, func(s *session) {
-		s.waitingTemplate = false
-	})
 }
 
 func (b *OrderBot) handleCurrentOrder(c tele.Context) error {

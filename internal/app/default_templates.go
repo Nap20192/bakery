@@ -6,23 +6,20 @@ import (
 	orderdomain "bakery/internal/domain/order"
 )
 
-func parseDefaultOrderTemplates(raw string) []orderdomain.OrderTemplate {
-	var templates []orderdomain.OrderTemplate
-	var currentName string
-	var currentLines []string
+func normalizeTemplateName(name string) string {
+	return strings.ToUpper(strings.TrimSpace(name))
+}
 
-	flush := func() {
-		if currentName == "" || len(currentLines) == 0 {
-			return
-		}
-		bodyLines := make([]string, 0, len(currentLines)+1)
-		bodyLines = append(bodyLines, currentName)
-		bodyLines = append(bodyLines, currentLines...)
-		templates = append(templates, orderdomain.OrderTemplate{
-			Name: currentName,
-			Body: strings.Join(bodyLines, "\n"),
-		})
-	}
+type defaultDishCatalogItem struct {
+	Code  string
+	Name  string
+	Theme string
+}
+
+func parseDefaultDishCatalogItems(raw string) []defaultDishCatalogItem {
+	var items []defaultDishCatalogItem
+	currentTheme := ""
+	spec := orderdomain.NewOrderSpec()
 
 	for _, line := range strings.Split(raw, "\n") {
 		line = strings.TrimSpace(line)
@@ -30,21 +27,22 @@ func parseDefaultOrderTemplates(raw string) []orderdomain.OrderTemplate {
 			continue
 		}
 		if orderdomain.IsTemplateHeaderLine(line) {
-			flush()
-			currentName = line
-			currentLines = currentLines[:0]
+			currentTheme = line
 			continue
 		}
-		if currentName == "" {
+		if currentTheme == "" {
 			continue
 		}
-		currentLines = append(currentLines, line)
+		parsed := orderdomain.ParseOrderLine(orderdomain.BulkOrderLine{Raw: line})
+		if parsed.Code == "" || parsed.Name == "" || !spec.Quantity.IsValid(parsed) {
+			continue
+		}
+		items = append(items, defaultDishCatalogItem{
+			Code:  parsed.Code,
+			Name:  parsed.Name,
+			Theme: currentTheme,
+		})
 	}
-	flush()
 
-	return templates
-}
-
-func normalizeTemplateName(name string) string {
-	return strings.ToUpper(strings.TrimSpace(name))
+	return items
 }

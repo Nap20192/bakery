@@ -19,6 +19,7 @@ func TestOrderServiceParseBulkOrder(t *testing.T) {
 ПИРОЖКИ
 ПИРОГИ СЫТНЫЕ/СЛАДКИЕ
 15635 Пирожок с капустой 15
+Сосиска в тесте 4
 20495 Пирожок с картошкой 2,5+1,5
 broken line
 15647 Сосиска в тесте abc
@@ -26,26 +27,27 @@ broken line
 15648 Сосиска с сыром в тесте 0+3
 `, fulfillmentDateInput))
 
-	if len(result.ValidItems) != 2 {
-		t.Fatalf("valid items = %d, want 2: %#v", len(result.ValidItems), result.ValidItems)
+	if len(result.ValidItems) != 3 {
+		t.Fatalf("valid items = %d, want 3: %#v", len(result.ValidItems), result.ValidItems)
 	}
 	if got := result.FulfillmentDate.Format("2006-01-02"); got != fulfillmentDateText {
 		t.Fatalf("fulfillment date = %s, want %s", got, fulfillmentDateText)
 	}
 
 	assertItem(t, result.ValidItems[0], "15635", "Пирожок с капустой", 15, 0)
-	assertItem(t, result.ValidItems[1], "15648", "Сосиска с сыром в тесте", 0, 3)
+	assertItem(t, result.ValidItems[1], "", "Сосиска в тесте", 4, 0)
+	assertItem(t, result.ValidItems[2], "15648", "Сосиска с сыром в тесте", 0, 3)
 
 	if len(result.Errors) != 3 {
 		t.Fatalf("errors = %d, want 3: %#v", len(result.Errors), result.Errors)
 	}
-	if result.Errors[0].Line != 6 || result.Errors[0].Code != "20495" || !strings.Contains(result.Errors[0].Message, "целое число") {
+	if result.Errors[0].Line != 7 || result.Errors[0].Code != "20495" || !strings.Contains(result.Errors[0].Message, "целое число") {
 		t.Fatalf("unexpected first error: %#v", result.Errors[0])
 	}
-	if result.Errors[1].Line != 7 || result.Errors[1].Raw != "broken line" || !strings.Contains(result.Errors[1].Message, "Строка не распознана") {
+	if result.Errors[1].Line != 8 || result.Errors[1].Raw != "broken line" || !strings.Contains(result.Errors[1].Message, "Строка не распознана") {
 		t.Fatalf("unexpected second error: %#v", result.Errors[1])
 	}
-	if result.Errors[2].Line != 8 || result.Errors[2].Raw != "15647 Сосиска в тесте abc" || !strings.Contains(result.Errors[2].Message, "Строка не распознана") {
+	if result.Errors[2].Line != 9 || result.Errors[2].Raw != "15647 Сосиска в тесте abc" || !strings.Contains(result.Errors[2].Message, "Строка не распознана") {
 		t.Fatalf("unexpected third error: %#v", result.Errors[2])
 	}
 }
@@ -119,31 +121,6 @@ func TestOrderServiceOrderNumberRules(t *testing.T) {
 	}
 }
 
-func TestOrderServiceIsTemplateHeader(t *testing.T) {
-	svc := NewOrderService()
-
-	tests := []struct {
-		line string
-		want bool
-	}{
-		{line: "ПИРОЖКИ", want: true},
-		{line: "ПИРОГИ СЫТНЫЕ/СЛАДКИЕ", want: true},
-		{line: "РЖАНЫЕ ПИРОЖКИ", want: true},
-		{line: "СДОБНЫЕ ИЗДЕЛИЯ", want: true},
-		{line: "Кокрок с картофелем", want: false},
-		{line: "15635 Пирожок с капустой 15", want: false},
-		{line: "12345", want: false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.line, func(t *testing.T) {
-			if got := svc.IsTemplateHeader(tt.line); got != tt.want {
-				t.Fatalf("IsTemplateHeader(%q) = %v, want %v", tt.line, got, tt.want)
-			}
-		})
-	}
-}
-
 func TestOrderLineProcessableSpecificationSkipsUppercaseHeaders(t *testing.T) {
 	spec := OrderLineProcessableSpecification{}
 
@@ -195,37 +172,6 @@ func TestPositiveQuantitySpecification(t *testing.T) {
 	}
 }
 
-func TestOrderServiceParseOrderTemplate(t *testing.T) {
-	svc := NewOrderService()
-
-	template, validation := svc.ParseOrderTemplate(`
-ПИРОЖКИ
-15635 Пирожок с капустой 0
-20495 Пирожок с картошкой 0
-`)
-	if len(validation.Errors) != 0 {
-		t.Fatalf("unexpected errors: %#v", validation.Errors)
-	}
-	if template.Name != "ПИРОЖКИ" {
-		t.Fatalf("unexpected template: %#v", template)
-	}
-	if len(template.Items) != 2 {
-		t.Fatalf("items = %d, want 2", len(template.Items))
-	}
-}
-
-func TestOrderServiceParseOrderTemplateRequiresZeroQuantity(t *testing.T) {
-	svc := NewOrderService()
-
-	_, validation := svc.ParseOrderTemplate(`
-ПИРОЖКИ
-15635 Пирожок с капустой 1
-`)
-	if len(validation.Errors) != 1 || !strings.Contains(validation.Errors[0].Message, "количество должно быть 0") {
-		t.Fatalf("unexpected errors: %#v", validation.Errors)
-	}
-}
-
 func TestOrderLineFormatSpecificationReservedQuantity(t *testing.T) {
 	spec := OrderLineFormatSpecification{}
 
@@ -233,6 +179,7 @@ func TestOrderLineFormatSpecificationReservedQuantity(t *testing.T) {
 		"15647 Сосиска в тесте 5",
 		"15647 Сосиска в тесте 5+5",
 		"15647 Сосиска в тесте 0+5",
+		"Сосиска в тесте 5",
 	}
 	for _, line := range valid {
 		if !spec.IsValid(BulkOrderLine{Raw: line}) {

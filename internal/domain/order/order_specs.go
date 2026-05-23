@@ -23,7 +23,7 @@ type ParsedOrderLine struct {
 }
 
 var (
-	orderLineRe         = regexp.MustCompile(`^(\S+)\s+(.+?)\s+(\d+(?:[.,]\d+)?(?:\+\d+(?:[.,]\d+)?)?)$`)
+	orderLineRe         = regexp.MustCompile(`^(.+?)\s+(\d+(?:[.,]\d+)?(?:\+\d+(?:[.,]\d+)?)?)$`)
 	integerQuantityRe   = regexp.MustCompile(`^\d+(?:\+\d+)?$`)
 	fulfillmentDateRe   = regexp.MustCompile(`^(\d{2})\.(\d{2})\.(\d{4})$`)
 	singleWordLineRe    = regexp.MustCompile(`^\p{L}+$`)
@@ -44,16 +44,37 @@ func (s OrderLineFormatSpecification) IsValid(line BulkOrderLine) bool {
 
 func ParseOrderLine(line BulkOrderLine) ParsedOrderLine {
 	matches := orderLineRe.FindStringSubmatch(line.Raw)
-	if len(matches) != 4 {
+	if len(matches) != 3 {
 		return ParsedOrderLine{Line: line.Number, Raw: line.Raw}
 	}
+
+	name := strings.TrimSpace(matches[1])
+	code := ""
+	fields := strings.Fields(name)
+	if len(fields) > 1 && isOrderCode(fields[0]) {
+		code = fields[0]
+		name = strings.TrimSpace(strings.TrimPrefix(name, code))
+	}
+
 	return ParsedOrderLine{
 		Line:     line.Number,
 		Raw:      line.Raw,
-		Code:     matches[1],
-		Name:     matches[2],
-		Quantity: matches[3],
+		Code:     code,
+		Name:     name,
+		Quantity: matches[2],
 	}
+}
+
+func isOrderCode(value string) bool {
+	if strings.TrimSpace(value) == "" {
+		return false
+	}
+	for _, r := range value {
+		if !unicode.IsDigit(r) {
+			return false
+		}
+	}
+	return true
 }
 
 type PositiveQuantitySpecification struct{}

@@ -29,6 +29,15 @@ type Department struct {
 	UpdatedAt        string  `json:"updated_at"`
 }
 
+type DishCatalog struct {
+	ID        int64  `json:"id"`
+	Code      string `json:"code"`
+	Name      string `json:"name"`
+	Theme     string `json:"theme"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
 type IikoAssemblyChart struct {
 	ID                                   string  `json:"id"`
 	AssembledProductID                   string  `json:"assembled_product_id"`
@@ -149,13 +158,4 @@ type OrderItem struct {
 	ProductName      string  `json:"product_name"`
 	Quantity         float64 `json:"quantity"`
 	ReservedQuantity float64 `json:"reserved_quantity"`
-}
-
-type OrderTemplate struct {
-	ID              int64  `json:"id"`
-	Name            string `json:"name"`
-	Body            string `json:"body"`
-	CreatedByUserID *int64 `json:"created_by_user_id"`
-	CreatedAt       string `json:"created_at"`
-	UpdatedAt       string `json:"updated_at"`
 }

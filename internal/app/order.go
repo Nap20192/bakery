@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 	"time"
 
@@ -49,9 +48,13 @@ type UpdateOrderInput struct {
 }
 
 type EnsureDefaultTemplatesResult struct {
-	Created int
-	Skipped int
+	CatalogItems int
 }
+
+var (
+	errDishCatalogItemNotFound  = errors.New("dish catalog item not found")
+	errDishCatalogItemAmbiguous = errors.New("dish catalog item ambiguous")
+)
 
 func NewOrderService(queries sqlc.Querier) *OrderService {
 	return &OrderService{
@@ -68,7 +71,11 @@ func NewOrderServiceWithDB(queries *sqlc.Queries, db *pgxpool.Pool) *OrderServic
 }
 
 func (s *OrderService) CreateOrder(ctx context.Context, input orderdomain.CreateOrderInput) (orderdomain.Order, error) {
-	input.Items = positiveOrderItems(input.Items)
+	resolvedItems, err := s.resolveOrderItems(ctx, input.Items)
+	if err != nil {
+		return orderdomain.Order{}, err
+	}
+	input.Items = positiveOrderItems(resolvedItems)
 	if len(input.Items) == 0 {
 		return orderdomain.Order{}, fmt.Errorf("order must contain items")
 	}
@@ -183,7 +190,11 @@ func (s *OrderService) orderShopDepartment(ctx context.Context, departmentID *in
 }
 
 func (s *OrderService) UpdateOrder(ctx context.Context, input UpdateOrderInput) (orderdomain.Order, error) {
-	input.Items = positiveOrderItems(input.Items)
+	resolvedItems, err := s.resolveOrderItems(ctx, input.Items)
+	if err != nil {
+		return orderdomain.Order{}, err
+	}
+	input.Items = positiveOrderItems(resolvedItems)
 	input.Number = strings.TrimSpace(input.Number)
 	if input.Number == "" {
 		return orderdomain.Order{}, fmt.Errorf("order number is required")
@@ -252,6 +263,91 @@ func (s *OrderService) UpdateOrder(ctx context.Context, input UpdateOrderInput) 
 		FulfillmentDate:   parseDate(row.FulfillmentDate),
 		History:           history,
 	}, nil
+}
+
+func (s *OrderService) resolveValidOrderItems(
+	ctx context.Context,
+	items []orderdomain.OrderItem,
+	result *orderdomain.BulkOrderValidationResult,
+) []orderdomain.OrderItem {
+	resolvedItems := make([]orderdomain.OrderItem, 0, len(items))
+	for _, item := range items {
+		resolved, err := s.resolveOrderItem(ctx, item)
+		if err != nil {
+			result.Errors = append(result.Errors, orderdomain.BulkOrderValidationError{
+				Code:    item.Code,
+				Name:    item.ProductName,
+				Message: dishCatalogValidationMessage(item.ProductName, err),
+			})
+			continue
+		}
+		resolvedItems = append(resolvedItems, resolved)
+	}
+	return resolvedItems
+}
+
+func (s *OrderService) resolveOrderItems(ctx context.Context, items []orderdomain.OrderItem) ([]orderdomain.OrderItem, error) {
+	resolvedItems := make([]orderdomain.OrderItem, 0, len(items))
+	for _, item := range items {
+		resolved, err := s.resolveOrderItem(ctx, item)
+		if err != nil {
+			return nil, err
+		}
+		resolvedItems = append(resolvedItems, resolved)
+	}
+	return resolvedItems, nil
+}
+
+func (s *OrderService) resolveOrderItem(ctx context.Context, item orderdomain.OrderItem) (orderdomain.OrderItem, error) {
+	item.Code = strings.TrimSpace(item.Code)
+	item.ProductName = strings.TrimSpace(item.ProductName)
+	if item.Code != "" {
+		return item, nil
+	}
+	if item.ProductName == "" {
+		return item, errDishCatalogItemNotFound
+	}
+
+	catalogItem, err := s.resolveDishCatalogItem(ctx, item.ProductName)
+	if err != nil {
+		return item, err
+	}
+	item.Code = catalogItem.Code
+	item.ProductName = catalogItem.Name
+	return item, nil
+}
+
+func (s *OrderService) resolveDishCatalogItem(ctx context.Context, name string) (sqlc.DishCatalog, error) {
+	rows, err := s.queries.ListDishCatalogItemsByName(ctx, strings.TrimSpace(name))
+	if err != nil {
+		return sqlc.DishCatalog{}, fmt.Errorf("list dish catalog items by name: %w", err)
+	}
+	if len(rows) == 0 {
+		return sqlc.DishCatalog{}, errDishCatalogItemNotFound
+	}
+
+	byCode := make(map[string]sqlc.DishCatalog, len(rows))
+	for _, row := range rows {
+		byCode[strings.TrimSpace(row.Code)] = row
+	}
+	if len(byCode) > 1 {
+		return sqlc.DishCatalog{}, errDishCatalogItemAmbiguous
+	}
+	for _, row := range byCode {
+		return row, nil
+	}
+	return sqlc.DishCatalog{}, errDishCatalogItemNotFound
+}
+
+func dishCatalogValidationMessage(name string, err error) string {
+	switch {
+	case errors.Is(err, errDishCatalogItemNotFound):
+		return fmt.Sprintf("Блюдо %q не найдено в справочнике. Проверьте название или выберите позицию из шаблона.", strings.TrimSpace(name))
+	case errors.Is(err, errDishCatalogItemAmbiguous):
+		return fmt.Sprintf("Блюдо %q найдено несколько раз. Уточните название или отправьте строку с кодом.", strings.TrimSpace(name))
+	default:
+		return "Не удалось проверить блюдо по справочнику. Попробуйте позже."
+	}
 }
 
 func positiveOrderItems(items []orderdomain.OrderItem) []orderdomain.OrderItem {
@@ -350,6 +446,7 @@ func (s *OrderService) ListOrders(ctx context.Context, input ListOrdersInput) (L
 
 func (s *OrderService) ValidateBulkOrder(ctx context.Context, order string) orderdomain.BulkOrderValidationResult {
 	result := s.domain.ParseBulkOrder(order)
+	result.ValidItems = s.resolveValidOrderItems(ctx, result.ValidItems, &result)
 
 	for _, item := range result.ValidItems {
 		exists, err := s.queries.DishExistsByCode(ctx, item.Code)
@@ -379,57 +476,12 @@ func (s *OrderService) ValidateBulkOrder(ctx context.Context, order string) orde
 	return result
 }
 
-func (s *OrderService) CreateOrderTemplate(ctx context.Context, creatorID *int64, raw string) (orderdomain.OrderTemplate, orderdomain.BulkOrderValidationResult, error) {
-	template, validation := s.domain.ParseOrderTemplate(raw)
-	if len(validation.Errors) > 0 {
-		return orderdomain.OrderTemplate{}, validation, nil
-	}
-	for _, item := range template.Items {
-		exists, err := s.queries.DishExistsByCode(ctx, item.Code)
-		if err != nil {
-			validation.Errors = append(validation.Errors, orderdomain.BulkOrderValidationError{
-				Code:    item.Code,
-				Name:    item.ProductName,
-				Message: "Не удалось проверить код продукта. Попробуйте позже.",
-			})
-			continue
-		}
-		if exists == 0 {
-			validation.Errors = append(validation.Errors, orderdomain.BulkOrderValidationError{
-				Code:    item.Code,
-				Name:    item.ProductName,
-				Message: "Код продукта не найден. Проверьте код в шаблоне или заказе.",
-			})
-		}
-	}
-	if len(validation.Errors) > 0 {
-		return orderdomain.OrderTemplate{}, validation, nil
-	}
-
-	now := time.Now().UTC().Format(time.RFC3339Nano)
-	row, err := s.queries.CreateOrderTemplate(ctx, sqlc.CreateOrderTemplateParams{
-		Name:            template.Name,
-		Body:            template.Body,
-		CreatedByUserID: creatorID,
-		CreatedAt:       now,
-		UpdatedAt:       now,
-	})
-	if err != nil {
-		return orderdomain.OrderTemplate{}, validation, fmt.Errorf("create order template: %w", err)
-	}
-	return orderTemplateToDomain(row), validation, nil
-}
-
 func (s *OrderService) ListOrderTemplates(ctx context.Context) ([]orderdomain.OrderTemplate, error) {
-	rows, err := s.queries.ListOrderTemplates(ctx)
+	rows, err := s.queries.ListDishCatalogItems(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list dish catalog items: %w", err)
 	}
-	result := make([]orderdomain.OrderTemplate, 0, len(rows))
-	for _, row := range rows {
-		result = append(result, orderTemplateToDomain(row))
-	}
-	return result, nil
+	return dishCatalogTemplates(rows), nil
 }
 
 func (s *OrderService) CombinedOrderTemplate(ctx context.Context) (string, error) {
@@ -448,25 +500,21 @@ func (s *OrderService) CombinedOrderTemplate(ctx context.Context) (string, error
 	return strings.Join(parts, "\n\n"), nil
 }
 
-func (s *OrderService) GetOrderTemplate(ctx context.Context, id int64) (orderdomain.OrderTemplate, error) {
-	row, err := s.queries.GetOrderTemplateByID(ctx, id)
+func (s *OrderService) GetOrderTemplate(ctx context.Context, theme string) (orderdomain.OrderTemplate, error) {
+	theme = normalizeTemplateName(theme)
+	if theme == "" {
+		return orderdomain.OrderTemplate{}, fmt.Errorf("template name is required")
+	}
+	templates, err := s.ListOrderTemplates(ctx)
 	if err != nil {
 		return orderdomain.OrderTemplate{}, err
 	}
-	return orderTemplateToDomain(row), nil
-}
-
-func (s *OrderService) DeleteOrderTemplate(ctx context.Context, id int64) error {
-	if id <= 0 {
-		return fmt.Errorf("template id is required")
+	for _, template := range templates {
+		if normalizeTemplateName(template.Name) == theme {
+			return template, nil
+		}
 	}
-	if _, err := s.queries.GetOrderTemplateByID(ctx, id); err != nil {
-		return fmt.Errorf("get order template: %w", err)
-	}
-	if err := s.queries.DeleteOrderTemplateByID(ctx, id); err != nil {
-		return fmt.Errorf("delete order template: %w", err)
-	}
-	return nil
+	return orderdomain.OrderTemplate{}, fmt.Errorf("template %q not found", theme)
 }
 
 func (s *OrderService) EnsureDefaultOrderTemplates(ctx context.Context, path string) (EnsureDefaultTemplatesResult, error) {
@@ -482,40 +530,59 @@ func (s *OrderService) EnsureDefaultOrderTemplates(ctx context.Context, path str
 		return result, fmt.Errorf("read default templates: %w", err)
 	}
 
-	defaults := parseDefaultOrderTemplates(string(data))
-	if len(defaults) == 0 {
-		return result, nil
-	}
-
-	existingRows, err := s.queries.ListOrderTemplates(ctx)
-	if err != nil {
-		return result, fmt.Errorf("list templates: %w", err)
-	}
-	existing := make(map[string]struct{}, len(existingRows))
-	for _, row := range existingRows {
-		existing[normalizeTemplateName(row.Name)] = struct{}{}
-	}
-
+	catalogItems := parseDefaultDishCatalogItems(string(data))
 	now := time.Now().UTC().Format(time.RFC3339Nano)
-	for _, template := range defaults {
-		key := normalizeTemplateName(template.Name)
-		if _, ok := existing[key]; ok {
-			result.Skipped++
-			continue
-		}
-		if _, err := s.queries.CreateOrderTemplate(ctx, sqlc.CreateOrderTemplateParams{
-			Name:            template.Name,
-			Body:            template.Body,
-			CreatedByUserID: nil,
-			CreatedAt:       now,
-			UpdatedAt:       now,
+	for _, item := range catalogItems {
+		if _, err := s.queries.UpsertDishCatalogItem(ctx, sqlc.UpsertDishCatalogItemParams{
+			Code:      item.Code,
+			Name:      item.Name,
+			Theme:     item.Theme,
+			CreatedAt: now,
+			UpdatedAt: now,
 		}); err != nil {
-			return result, fmt.Errorf("create default template %q: %w", template.Name, err)
+			return result, fmt.Errorf("upsert dish catalog item %s: %w", item.Code, err)
 		}
-		existing[key] = struct{}{}
-		result.Created++
+		result.CatalogItems++
 	}
 	return result, nil
+}
+
+func dishCatalogTemplates(items []sqlc.DishCatalog) []orderdomain.OrderTemplate {
+	const fallbackTheme = "БЕЗ ТЕМЫ"
+
+	order := make([]string, 0)
+	linesByTheme := make(map[string][]string)
+	seenThemes := make(map[string]string)
+	for _, item := range items {
+		name := strings.TrimSpace(item.Name)
+		if name == "" {
+			continue
+		}
+		theme := strings.TrimSpace(item.Theme)
+		if theme == "" {
+			theme = fallbackTheme
+		}
+		key := normalizeTemplateName(theme)
+		if _, ok := seenThemes[key]; !ok {
+			seenThemes[key] = theme
+			order = append(order, key)
+		}
+		linesByTheme[key] = append(linesByTheme[key], fmt.Sprintf("%s 0", name))
+	}
+
+	result := make([]orderdomain.OrderTemplate, 0, len(order))
+	for _, key := range order {
+		theme := seenThemes[key]
+		lines := make([]string, 0, len(linesByTheme[key])+1)
+		lines = append(lines, theme)
+		lines = append(lines, linesByTheme[key]...)
+		result = append(result, orderdomain.OrderTemplate{
+			ID:   int64(len(result) + 1),
+			Name: theme,
+			Body: strings.Join(lines, "\n"),
+		})
+	}
+	return result
 }
 
 func (s *OrderService) createOrderItems(ctx context.Context, q sqlc.Querier, orderID int64, items []orderdomain.OrderItem) error {
@@ -676,17 +743,6 @@ func float64Ptr(value float64) *float64 {
 	return &value
 }
 
-func orderTemplateToDomain(row sqlc.OrderTemplate) orderdomain.OrderTemplate {
-	return orderdomain.OrderTemplate{
-		ID:              row.ID,
-		Name:            row.Name,
-		Body:            row.Body,
-		CreatedByUserID: row.CreatedByUserID,
-		CreatedAt:       helpers.ParseRFC3339(row.CreatedAt),
-		UpdatedAt:       helpers.ParseRFC3339(row.UpdatedAt),
-	}
-}
-
 func parseDate(value string) time.Time {
 	t, err := time.Parse("2006-01-02", value)
 	if err != nil {
@@ -696,47 +752,5 @@ func parseDate(value string) time.Time {
 }
 
 func (s *OrderService) GetTemplate(ctx context.Context) (string, error) {
-	lines := strings.Split(defaultOrderTemplate, "\n")
-	result := make([]string, 0, len(lines))
-	var missing []string
-
-	for _, line := range lines {
-		name := strings.TrimSpace(line)
-		if name == "" {
-			if len(result) > 0 && result[len(result)-1] != "" {
-				result = append(result, "")
-			}
-			continue
-		}
-		if s.domain.IsTemplateHeader(name) {
-			result = append(result, name)
-			continue
-		}
-
-		products, err := s.queries.GetIikoProductsByName(ctx, name)
-		if err != nil {
-			return "", fmt.Errorf("get product %q: %w", name, err)
-		}
-
-		dishes := make([]sqlc.GetIikoProductsByNameRow, 0, len(products))
-		for _, product := range products {
-			if product.Type != nil && enum.IsIikoProductType(*product.Type, enum.IikoProductTypeDish) {
-				dishes = append(dishes, product)
-			}
-		}
-		if len(dishes) == 0 {
-			missing = append(missing, name)
-			continue
-		}
-		sort.Slice(dishes, func(i, j int) bool {
-			return dishes[i].Code < dishes[j].Code
-		})
-
-		result = append(result, fmt.Sprintf("%s %s 0", dishes[0].Code, dishes[0].Name))
-	}
-	if len(missing) > 0 {
-		return "", fmt.Errorf("template dishes not found: %s", strings.Join(missing, ", "))
-	}
-
-	return strings.TrimSpace(strings.Join(result, "\n")), nil
+	return s.CombinedOrderTemplate(ctx)
 }
