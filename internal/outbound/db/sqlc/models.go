@@ -36,6 +36,7 @@ type DishCatalog struct {
 	Theme     string `json:"theme"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
+	SortOrder int64  `json:"sort_order"`
 }
 
 type IikoAssemblyChart struct {

@@ -147,9 +147,9 @@ func (q *Queries) GetIikoProductsByName(ctx context.Context, name string) ([]Get
 }
 
 const listDishCatalogItems = `-- name: ListDishCatalogItems :many
-SELECT id, code, name, theme, created_at, updated_at
+SELECT id, code, name, theme, created_at, updated_at, sort_order
 FROM dish_catalog
-ORDER BY theme, name, code
+ORDER BY CASE WHEN sort_order = 0 THEN 1 ELSE 0 END, sort_order, id, theme, name, code
 `
 
 func (q *Queries) ListDishCatalogItems(ctx context.Context) ([]DishCatalog, error) {
@@ -168,6 +168,7 @@ func (q *Queries) ListDishCatalogItems(ctx context.Context) ([]DishCatalog, erro
 			&i.Theme,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.SortOrder,
 		); err != nil {
 			return nil, err
 		}
@@ -180,10 +181,10 @@ func (q *Queries) ListDishCatalogItems(ctx context.Context) ([]DishCatalog, erro
 }
 
 const listDishCatalogItemsByName = `-- name: ListDishCatalogItemsByName :many
-SELECT id, code, name, theme, created_at, updated_at
+SELECT id, code, name, theme, created_at, updated_at, sort_order
 FROM dish_catalog
 WHERE lower(trim(name)) = lower(trim($1))
-ORDER BY theme, name, code
+ORDER BY CASE WHEN sort_order = 0 THEN 1 ELSE 0 END, sort_order, id, theme, name, code
 `
 
 func (q *Queries) ListDishCatalogItemsByName(ctx context.Context, name string) ([]DishCatalog, error) {
@@ -202,6 +203,7 @@ func (q *Queries) ListDishCatalogItemsByName(ctx context.Context, name string) (
 			&i.Theme,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.SortOrder,
 		); err != nil {
 			return nil, err
 		}
@@ -218,6 +220,7 @@ INSERT INTO dish_catalog (
     code,
     name,
     theme,
+    sort_order,
     created_at,
     updated_at
 ) VALUES (
@@ -225,19 +228,22 @@ INSERT INTO dish_catalog (
     $2,
     $3,
     $4,
-    $5
+    $5,
+    $6
 )
 ON CONFLICT (code) DO UPDATE SET
     name = excluded.name,
     theme = excluded.theme,
+    sort_order = excluded.sort_order,
     updated_at = excluded.updated_at
-RETURNING id, code, name, theme, created_at, updated_at
+RETURNING id, code, name, theme, created_at, updated_at, sort_order
 `
 
 type UpsertDishCatalogItemParams struct {
 	Code      string `json:"code"`
 	Name      string `json:"name"`
 	Theme     string `json:"theme"`
+	SortOrder int64  `json:"sort_order"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 }
@@ -247,6 +253,7 @@ func (q *Queries) UpsertDishCatalogItem(ctx context.Context, arg UpsertDishCatal
 		arg.Code,
 		arg.Name,
 		arg.Theme,
+		arg.SortOrder,
 		arg.CreatedAt,
 		arg.UpdatedAt,
 	)
@@ -258,6 +265,7 @@ func (q *Queries) UpsertDishCatalogItem(ctx context.Context, arg UpsertDishCatal
 		&i.Theme,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SortOrder,
 	)
 	return i, err
 }

@@ -11,9 +11,10 @@ func normalizeTemplateName(name string) string {
 }
 
 type defaultDishCatalogItem struct {
-	Code  string
-	Name  string
-	Theme string
+	Code      string
+	Name      string
+	Theme     string
+	SortOrder int64
 }
 
 func parseDefaultDishCatalogItems(raw string) []defaultDishCatalogItem {
@@ -38,9 +39,10 @@ func parseDefaultDishCatalogItems(raw string) []defaultDishCatalogItem {
 			continue
 		}
 		items = append(items, defaultDishCatalogItem{
-			Code:  parsed.Code,
-			Name:  parsed.Name,
-			Theme: currentTheme,
+			Code:      parsed.Code,
+			Name:      parsed.Name,
+			Theme:     currentTheme,
+			SortOrder: int64(len(items) + 1),
 		})
 	}
 
