@@ -128,7 +128,7 @@ func (s *OrderService) ParseBulkOrder(order string) BulkOrderValidationResult {
 			result.Errors = append(result.Errors, BulkOrderValidationError{
 				Line:    i + 1,
 				Raw:     line,
-				Message: "Строка не распознана. Формат: код название количество. Например: 15647 Сосиска в тесте 5. Заказное количество пишите через плюс: 5+2.",
+				Message: "Строка не распознана. Формат: название количество. Например: Сосиска в тесте 5. Заказное количество пишите через плюс: 5+2.",
 			})
 			continue
 		}
@@ -163,63 +163,4 @@ func (s *OrderService) ValidateUniqueItems(items []OrderItem) error {
 		return nil
 	}
 	return errors.Join(DuplicateOrderItemErrors(items)...)
-}
-
-func (s *OrderService) IsTemplateHeader(line string) bool {
-	return IsTemplateHeaderLine(line)
-}
-
-func (s *OrderService) ParseOrderTemplate(raw string) (ParsedOrderTemplate, BulkOrderValidationResult) {
-	lines := strings.Split(strings.TrimSpace(raw), "\n")
-	var title string
-	var bodyLines []string
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		if title == "" {
-			title = line
-			continue
-		}
-		bodyLines = append(bodyLines, line)
-	}
-
-	var result BulkOrderValidationResult
-	if title == "" || !s.IsTemplateHeader(title) {
-		result.Errors = append(result.Errors, BulkOrderValidationError{
-			Line:    1,
-			Raw:     title,
-			Message: "Первая строка шаблона должна быть названием большими буквами.",
-		})
-		return ParsedOrderTemplate{}, result
-	}
-
-	result = s.ParseBulkOrder(strings.Join(bodyLines, "\n"))
-	if len(result.ValidItems) == 0 {
-		result.Errors = append(result.Errors, BulkOrderValidationError{
-			Message: "В шаблоне должна быть хотя бы одна позиция.",
-		})
-	}
-	for _, item := range result.ValidItems {
-		if item.Quantity != 0 || item.ReservedQuantity != 0 {
-			result.Errors = append(result.Errors, BulkOrderValidationError{
-				Code:    item.Code,
-				Name:    item.ProductName,
-				Message: "В шаблоне количество должно быть 0, чтобы магазин сам заполнил заказ.",
-			})
-		}
-	}
-	if len(result.Errors) > 0 {
-		return ParsedOrderTemplate{}, result
-	}
-	body := title
-	if len(bodyLines) > 0 {
-		body += "\n" + strings.Join(bodyLines, "\n")
-	}
-	return ParsedOrderTemplate{
-		Name:  title,
-		Body:  body,
-		Items: result.ValidItems,
-	}, result
 }

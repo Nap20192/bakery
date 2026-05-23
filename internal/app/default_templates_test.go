@@ -2,25 +2,23 @@ package app
 
 import "testing"
 
-func TestParseDefaultOrderTemplates(t *testing.T) {
-	templates := parseDefaultOrderTemplates(`
+func TestParseDefaultDishCatalogItems(t *testing.T) {
+	items := parseDefaultDishCatalogItems(`
 КОКРОКИ
 15542 Кокрок с картофелем 0
 15544 Кокрок с творогом 0
 
 САМСА И УЧПУЧМАК
 15646 Самса с курицей 0
+broken line
 `)
-	if len(templates) != 2 {
-		t.Fatalf("templates = %d, want 2", len(templates))
+	if len(items) != 3 {
+		t.Fatalf("items = %d, want 3: %#v", len(items), items)
 	}
-	if templates[0].Name != "КОКРОКИ" {
-		t.Fatalf("name = %q, want КОКРОКИ", templates[0].Name)
+	if items[0].Code != "15542" || items[0].Name != "Кокрок с картофелем" || items[0].Theme != "КОКРОКИ" {
+		t.Fatalf("first item = %#v", items[0])
 	}
-	if templates[0].Body != "КОКРОКИ\n15542 Кокрок с картофелем 0\n15544 Кокрок с творогом 0" {
-		t.Fatalf("body = %q", templates[0].Body)
-	}
-	if templates[1].Name != "САМСА И УЧПУЧМАК" {
-		t.Fatalf("name = %q, want САМСА И УЧПУЧМАК", templates[1].Name)
+	if items[2].Code != "15646" || items[2].Name != "Самса с курицей" || items[2].Theme != "САМСА И УЧПУЧМАК" {
+		t.Fatalf("third item = %#v", items[2])
 	}
 }

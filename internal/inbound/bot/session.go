@@ -19,7 +19,6 @@ type session struct {
 	orderFilter      orderFilter
 	fulfillmentDate  time.Time
 	editOrderNumber  string
-	waitingTemplate  bool
 	updatedAt        time.Time // время последнего изменения
 }
 
@@ -41,7 +40,6 @@ func (b *OrderBot) clearSession(uid int64) {
 		s.items = nil
 		s.fulfillmentDate = time.Time{}
 		s.editOrderNumber = ""
-		s.waitingTemplate = false
 	})
 }
 

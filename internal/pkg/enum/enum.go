@@ -24,9 +24,8 @@ func IsValidRole(role string) bool {
 type Permission string
 
 const (
-	PermissionTechCard       Permission = "techcard:view"
-	PermissionSync           Permission = "sync:run"
-	PermissionTemplateManage Permission = "template:manage"
+	PermissionTechCard Permission = "techcard:view"
+	PermissionSync     Permission = "sync:run"
 )
 
 type DepartmentType string

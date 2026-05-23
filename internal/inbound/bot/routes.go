@@ -16,7 +16,6 @@ const requestContextKey = "request_context"
 func (b *OrderBot) register() {
 	bt := b.tele
 	bt.Use(b.logMiddleware)
-	bt.Use(b.clearPendingModesOnCallbackMiddleware)
 
 	bt.Handle("/start", b.handleStart)
 	bt.Handle("/help", b.handleHelp)
@@ -26,7 +25,6 @@ func (b *OrderBot) register() {
 	bt.Handle("/order", b.handleOrder)
 	bt.Handle("/orders", b.handleOrders)
 	bt.Handle("/templates", b.handleTemplates)
-	bt.Handle("/addtemplate", b.handleAddTemplate, b.requirePermissions(app.PermissionTemplateManage))
 	bt.Handle("/monitor", b.handleMonitor)
 	bt.Handle("/sync", b.handleSync, b.requirePermissions(app.PermissionSync))
 	// Авторизация оставлена только на служебные команды iiko.
@@ -41,8 +39,6 @@ func (b *OrderBot) register() {
 	bt.Handle("\fmonitor_filtered_orders", b.handleMonitorFilteredOrdersCallback)
 	bt.Handle("\ftemplate_use", b.handleTemplateUse)
 	bt.Handle("\ftemplate_all", b.handleTemplateAll)
-	bt.Handle("\ftemplate_delete_confirm", b.handleTemplateDeleteConfirm, b.requirePermissions(app.PermissionTemplateManage))
-	bt.Handle("\ftemplate_delete", b.handleTemplateDelete, b.requirePermissions(app.PermissionTemplateManage))
 	bt.Handle("\fopen_templates", b.handleTemplates)
 	bt.Handle("\fdept_select", b.handleDepartmentSelect)
 

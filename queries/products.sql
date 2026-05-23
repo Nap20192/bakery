@@ -41,3 +41,34 @@ SELECT
     raw_json
 FROM iiko_products
 WHERE trim(name) = trim(sqlc.arg(name));
+
+-- name: UpsertDishCatalogItem :one
+INSERT INTO dish_catalog (
+    code,
+    name,
+    theme,
+    created_at,
+    updated_at
+) VALUES (
+    sqlc.arg(code),
+    sqlc.arg(name),
+    sqlc.arg(theme),
+    sqlc.arg(created_at),
+    sqlc.arg(updated_at)
+)
+ON CONFLICT (code) DO UPDATE SET
+    name = excluded.name,
+    theme = excluded.theme,
+    updated_at = excluded.updated_at
+RETURNING *;
+
+-- name: ListDishCatalogItems :many
+SELECT *
+FROM dish_catalog
+ORDER BY theme, name, code;
+
+-- name: ListDishCatalogItemsByName :many
+SELECT *
+FROM dish_catalog
+WHERE lower(trim(name)) = lower(trim(sqlc.arg(name)))
+ORDER BY theme, name, code;

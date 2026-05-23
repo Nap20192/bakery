@@ -85,7 +85,7 @@ func main() {
 		log.Error("ensure default templates failed", "error", err)
 		os.Exit(1)
 	}
-	log.Info("default order templates ready", "created", templateSeed.Created, "skipped", templateSeed.Skipped)
+	log.Info("dish catalog ready", "catalog_items", templateSeed.CatalogItems)
 
 	group, groupCtx := errgroup.WithContext(ctx)
 	group.Go(func() error {

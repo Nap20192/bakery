@@ -45,12 +45,6 @@ type OrderTemplate struct {
 	UpdatedAt       time.Time
 }
 
-type ParsedOrderTemplate struct {
-	Name  string
-	Body  string
-	Items []OrderItem
-}
-
 // CreateOrderInput — входная модель для создания нового заказа.
 // Date может быть пустой: тогда сервис подставляет текущее время.
 type CreateOrderInput struct {
