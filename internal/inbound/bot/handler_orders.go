@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"strings"
 	"time"
 
@@ -247,7 +246,6 @@ func (b *OrderBot) setOrderReplyDateFilter(c tele.Context, date time.Time) error
 	}
 	b.updateSession(sender.ID, func(s *session) {
 		s.orderFilter.FulfillmentDate = date
-		s.monitorOrders = nil
 	})
 	return b.handleOrders(c)
 }
@@ -259,7 +257,6 @@ func (b *OrderBot) clearOrderReplyDateFilter(c tele.Context) error {
 	}
 	b.updateSession(sender.ID, func(s *session) {
 		s.orderFilter.FulfillmentDate = time.Time{}
-		s.monitorOrders = nil
 	})
 	return b.handleOrders(c)
 }
@@ -271,7 +268,6 @@ func (b *OrderBot) setOrderReplyShopFilter(c tele.Context, shopID int64) error {
 	}
 	b.updateSession(sender.ID, func(s *session) {
 		s.orderFilter.FromDepartmentID = &shopID
-		s.monitorOrders = nil
 	})
 	return b.handleOrders(c)
 }
@@ -283,7 +279,6 @@ func (b *OrderBot) clearOrderReplyShopFilter(c tele.Context) error {
 	}
 	b.updateSession(sender.ID, func(s *session) {
 		s.orderFilter.FromDepartmentID = nil
-		s.monitorOrders = nil
 	})
 	return b.handleOrders(c)
 }
@@ -302,16 +297,6 @@ func (b *OrderBot) shopIDByReplyName(c tele.Context, name string) (int64, bool) 
 	return 0, false
 }
 
-func (b *OrderBot) ordersFilterMarkup(ctx context.Context, orders []orderdomain.Order) *tele.ReplyMarkup {
-	markup := &tele.ReplyMarkup{}
-	rows := orderFilterRows(ctx, b, markup)
-	for _, order := range orders {
-		rows = append(rows, markup.Row(markup.Data(order.Number, "open_order", order.Number)))
-	}
-	markup.Inline(rows...)
-	return markup
-}
-
 type ordersMode string
 
 const (
@@ -324,78 +309,6 @@ func (b *OrderBot) ordersMode(c tele.Context, user accessdomain.AuthUser) orders
 		return ordersModeShop
 	}
 	return ordersModeWorkshop
-}
-
-func (b *OrderBot) handleSelectMonitorOrderCallback(c tele.Context) error {
-	sender := c.Sender()
-	if sender == nil {
-		return sendText(c, "Не удалось определить пользователя.")
-	}
-	number := strings.TrimSpace(c.Callback().Data)
-	if number == "" {
-		return sendText(c, "Не удалось определить заказ.")
-	}
-	b.updateSession(sender.ID, func(s *session) {
-		if containsString(s.monitorOrders, number) {
-			s.monitorOrders = removeString(s.monitorOrders, number)
-			return
-		}
-		s.monitorOrders = append(s.monitorOrders, number)
-	})
-	_ = c.Respond()
-	return b.handleOrders(c)
-}
-
-func (b *OrderBot) handleMonitorSelectedOrdersCallback(c tele.Context) error {
-	ctx := requestContext(c)
-	selected := b.currentMonitorOrders(c)
-	if len(selected) == 0 {
-		return sendText(c, "Выберите заказы в списке /orders.")
-	}
-	_ = c.Respond()
-	return b.sendBatchMonitorReports(ctx, c, selected)
-}
-
-func (b *OrderBot) handleClearMonitorOrdersCallback(c tele.Context) error {
-	sender := c.Sender()
-	if sender == nil {
-		return sendText(c, "Не удалось определить пользователя.")
-	}
-	b.updateSession(sender.ID, func(s *session) {
-		s.monitorOrders = nil
-	})
-	_ = c.Respond()
-	return b.handleOrders(c)
-}
-
-func orderFilterRows(ctx context.Context, b *OrderBot, markup *tele.ReplyMarkup) []tele.Row {
-	rows := []tele.Row{
-		markup.Row(
-			markup.Data("Сегодня", "order_filter_date", time.Now().Format("2006-01-02")),
-			markup.Data("Завтра", "order_filter_date", time.Now().AddDate(0, 0, 1).Format("2006-01-02")),
-			markup.Data("Все даты", "order_filter_all_dates"),
-		),
-	}
-
-	shops, err := b.departmentSvc.ListByType(ctx, enum.DepartmentTypeShop)
-	if err != nil {
-		slog.WarnContext(ctx, "list shop departments for order filters failed", "error", err)
-		return rows
-	}
-	shopButtons := make([]tele.Btn, 0, len(shops)+1)
-	shopButtons = append(shopButtons, markup.Data("Все магазины", "order_filter_all_shops"))
-	for _, shop := range shops {
-		shopButtons = append(shopButtons, markup.Data(shop.Name, "order_filter_shop", strconv.FormatInt(shop.ID, 10)))
-	}
-	for len(shopButtons) > 0 {
-		end := 2
-		if len(shopButtons) < end {
-			end = len(shopButtons)
-		}
-		rows = append(rows, markup.Row(shopButtons[:end]...))
-		shopButtons = shopButtons[end:]
-	}
-	return rows
 }
 
 func (b *OrderBot) currentOrderFilter(c tele.Context) orderFilter {
@@ -412,118 +325,6 @@ func (b *OrderBot) currentOrderFilter(c tele.Context) orderFilter {
 		FromDepartmentID: cloneInt64Ptr(s.orderFilter.FromDepartmentID),
 		FulfillmentDate:  s.orderFilter.FulfillmentDate,
 	}
-}
-
-func (b *OrderBot) handleOrderFilterShop(c tele.Context) error {
-	sender := c.Sender()
-	if sender == nil {
-		return sendText(c, "Не удалось определить пользователя.")
-	}
-	id, err := strconv.ParseInt(strings.TrimSpace(c.Callback().Data), 10, 64)
-	if err != nil || id <= 0 {
-		return sendText(c, "Не удалось определить магазин.")
-	}
-	b.updateSession(sender.ID, func(s *session) {
-		s.orderFilter.FromDepartmentID = &id
-		s.monitorOrders = nil
-	})
-	_ = c.Respond()
-	return b.handleOrders(c)
-}
-
-func (b *OrderBot) handleOrderFilterDate(c tele.Context) error {
-	sender := c.Sender()
-	if sender == nil {
-		return sendText(c, "Не удалось определить пользователя.")
-	}
-	date, err := time.Parse("2006-01-02", strings.TrimSpace(c.Callback().Data))
-	if err != nil {
-		return sendText(c, "Не удалось определить дату.")
-	}
-	b.updateSession(sender.ID, func(s *session) {
-		s.orderFilter.FulfillmentDate = date
-		s.monitorOrders = nil
-	})
-	_ = c.Respond()
-	return b.handleOrders(c)
-}
-
-func (b *OrderBot) handleOrderFilterAllShops(c tele.Context) error {
-	sender := c.Sender()
-	if sender == nil {
-		return sendText(c, "Не удалось определить пользователя.")
-	}
-	b.updateSession(sender.ID, func(s *session) {
-		s.orderFilter.FromDepartmentID = nil
-		s.monitorOrders = nil
-	})
-	_ = c.Respond()
-	return b.handleOrders(c)
-}
-
-func (b *OrderBot) handleOrderFilterAllDates(c tele.Context) error {
-	sender := c.Sender()
-	if sender == nil {
-		return sendText(c, "Не удалось определить пользователя.")
-	}
-	b.updateSession(sender.ID, func(s *session) {
-		s.orderFilter.FulfillmentDate = time.Time{}
-		s.monitorOrders = nil
-	})
-	_ = c.Respond()
-	return b.handleOrders(c)
-}
-
-func (b *OrderBot) currentMonitorOrders(c tele.Context) []string {
-	sender := c.Sender()
-	if sender == nil {
-		return nil
-	}
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	s := b.sessions[sender.ID]
-	if s == nil || len(s.monitorOrders) == 0 {
-		return nil
-	}
-	return append([]string(nil), s.monitorOrders...)
-}
-
-func containsString(values []string, target string) bool {
-	for _, value := range values {
-		if value == target {
-			return true
-		}
-	}
-	return false
-}
-
-func removeString(values []string, target string) []string {
-	result := values[:0]
-	for _, value := range values {
-		if value != target {
-			result = append(result, value)
-		}
-	}
-	return result
-}
-
-func (b *OrderBot) orderListDepartments(ctx context.Context, orders []orderdomain.Order) map[int64]string {
-	departments := make(map[int64]string)
-	for _, order := range orders {
-		b.addOrderDepartmentName(ctx, departments, order.FromDepartmentID)
-		b.addOrderDepartmentName(ctx, departments, order.ToDepartmentID)
-	}
-	return departments
-}
-
-func (b *OrderBot) addOrderDepartmentName(ctx context.Context, departments map[int64]string, id *int64) {
-	if id == nil {
-		return
-	}
-	if _, ok := departments[*id]; ok {
-		return
-	}
-	departments[*id] = b.departmentDisplayName(ctx, id)
 }
 
 func (b *OrderBot) orderActionsMarkup(c tele.Context, orderNumber string) *tele.ReplyMarkup {

@@ -128,7 +128,7 @@ func (s *OrderService) ParseBulkOrder(order string) BulkOrderValidationResult {
 			result.Errors = append(result.Errors, BulkOrderValidationError{
 				Line:    i + 1,
 				Raw:     line,
-				Message: "invalid format: expected code product_name quantity or code product_name quantity+reserved_quantity",
+				Message: "Строка не распознана. Формат: код название количество. Например: 15647 Сосиска в тесте 5. Заказное количество пишите через плюс: 5+2.",
 			})
 			continue
 		}
@@ -139,7 +139,7 @@ func (s *OrderService) ParseBulkOrder(order string) BulkOrderValidationResult {
 				Line:    parsed.Line,
 				Code:    parsed.Code,
 				Name:    parsed.Name,
-				Message: fmt.Sprintf("invalid quantity %q: quantity and reserved_quantity must be non-negative integers", parsed.Quantity),
+				Message: fmt.Sprintf("Количество %q не подходит. Укажите целое число без дробей, например 5 или 5+2.", parsed.Quantity),
 			})
 			continue
 		}
@@ -190,7 +190,7 @@ func (s *OrderService) ParseOrderTemplate(raw string) (ParsedOrderTemplate, Bulk
 		result.Errors = append(result.Errors, BulkOrderValidationError{
 			Line:    1,
 			Raw:     title,
-			Message: "template first line must be an uppercase title",
+			Message: "Первая строка шаблона должна быть названием большими буквами.",
 		})
 		return ParsedOrderTemplate{}, result
 	}
@@ -198,7 +198,7 @@ func (s *OrderService) ParseOrderTemplate(raw string) (ParsedOrderTemplate, Bulk
 	result = s.ParseBulkOrder(strings.Join(bodyLines, "\n"))
 	if len(result.ValidItems) == 0 {
 		result.Errors = append(result.Errors, BulkOrderValidationError{
-			Message: "template must contain at least one product line",
+			Message: "В шаблоне должна быть хотя бы одна позиция.",
 		})
 	}
 	for _, item := range result.ValidItems {
@@ -206,7 +206,7 @@ func (s *OrderService) ParseOrderTemplate(raw string) (ParsedOrderTemplate, Bulk
 			result.Errors = append(result.Errors, BulkOrderValidationError{
 				Code:    item.Code,
 				Name:    item.ProductName,
-				Message: "template quantity must be 0",
+				Message: "В шаблоне количество должно быть 0, чтобы магазин сам заполнил заказ.",
 			})
 		}
 	}

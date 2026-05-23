@@ -36,10 +36,10 @@ bad line
 	}
 
 	messages := validationMessages(result.Errors)
-	assertContains(t, messages, "non-negative integers")
-	assertContains(t, messages, "product code not found")
-	assertContains(t, messages, "invalid format")
-	assertContains(t, messages, `duplicate item with code 15635`)
+	assertContains(t, messages, "целое число")
+	assertContains(t, messages, "Код продукта не найден")
+	assertContains(t, messages, "Строка не распознана")
+	assertContains(t, messages, `Позиция с кодом 15635 повторяется`)
 }
 
 func TestOrderServiceValidateBulkOrderReportsDBError(t *testing.T) {
@@ -58,7 +58,7 @@ func TestOrderServiceValidateBulkOrderReportsDBError(t *testing.T) {
 		t.Fatalf("valid items = %d, want 2", len(result.ValidItems))
 	}
 	messages := validationMessages(result.Errors)
-	assertContains(t, messages, "failed to validate code: db unavailable")
+	assertContains(t, messages, "Не удалось проверить код продукта")
 }
 
 func TestOrderServiceDeleteOrdersOlderThan(t *testing.T) {

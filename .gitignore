@@ -8,6 +8,8 @@ cookies.txt
 *.test
 *.out
 bin/
+.gocache/
+.gotmp/
 dist/
 node_modules/
 

@@ -14,11 +14,14 @@ import (
 	"bakery/internal/pkg/helpers"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type OrderService struct {
-	queries sqlc.Querier
-	domain  *orderdomain.OrderService
+	queries   sqlc.Querier
+	txQueries *sqlc.Queries
+	db        *pgxpool.Pool
+	domain    *orderdomain.OrderService
 }
 
 type ListOrdersInput struct {
@@ -56,6 +59,13 @@ func NewOrderService(queries sqlc.Querier) *OrderService {
 	}
 }
 
+func NewOrderServiceWithDB(queries *sqlc.Queries, db *pgxpool.Pool) *OrderService {
+	svc := NewOrderService(queries)
+	svc.txQueries = queries
+	svc.db = db
+	return svc
+}
+
 func (s *OrderService) CreateOrder(ctx context.Context, input orderdomain.CreateOrderInput) (orderdomain.Order, error) {
 	input.Items = positiveOrderItems(input.Items)
 	if len(input.Items) == 0 {
@@ -70,16 +80,61 @@ func (s *OrderService) CreateOrder(ctx context.Context, input orderdomain.Create
 		return orderdomain.Order{}, err
 	}
 
-	if err := s.queries.CreateOrderCounterDay(ctx, day); err != nil {
+	if s.db != nil && s.txQueries != nil {
+		return s.createOrderTx(ctx, input, shop, createdAt, fulfillmentDate, day)
+	}
+	return s.createOrderWithQueries(ctx, s.queries, input, shop, createdAt, fulfillmentDate, day)
+}
+
+func (s *OrderService) createOrderTx(
+	ctx context.Context,
+	input orderdomain.CreateOrderInput,
+	shop sqlc.Department,
+	createdAt time.Time,
+	fulfillmentDate time.Time,
+	day string,
+) (orderdomain.Order, error) {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return orderdomain.Order{}, fmt.Errorf("begin order tx: %w", err)
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback(ctx)
+		}
+	}()
+
+	order, err := s.createOrderWithQueries(ctx, s.txQueries.WithTx(tx), input, shop, createdAt, fulfillmentDate, day)
+	if err != nil {
+		return orderdomain.Order{}, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return orderdomain.Order{}, fmt.Errorf("commit order tx: %w", err)
+	}
+	committed = true
+	return order, nil
+}
+
+func (s *OrderService) createOrderWithQueries(
+	ctx context.Context,
+	q sqlc.Querier,
+	input orderdomain.CreateOrderInput,
+	shop sqlc.Department,
+	createdAt time.Time,
+	fulfillmentDate time.Time,
+	day string,
+) (orderdomain.Order, error) {
+	if err := q.CreateOrderCounterDay(ctx, day); err != nil {
 		return orderdomain.Order{}, fmt.Errorf("init order counter: %w", err)
 	}
-	counter, err := s.queries.NextOrderCounter(ctx, day)
+	counter, err := q.NextOrderCounter(ctx, day)
 	if err != nil {
 		return orderdomain.Order{}, fmt.Errorf("increment order counter: %w", err)
 	}
 
 	number := s.domain.BuildOrderNumber(shop.Code, shop.Name, createdAt, counter)
-	row, err := s.queries.CreateOrder(ctx, sqlc.CreateOrderParams{
+	row, err := q.CreateOrder(ctx, sqlc.CreateOrderParams{
 		Number:            number,
 		Location:          input.Location,
 		FromDepartmentID:  input.FromDepartmentID,
@@ -92,7 +147,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, input orderdomain.Create
 		return orderdomain.Order{}, fmt.Errorf("create order: %w", err)
 	}
 
-	if err := s.createOrderItems(ctx, row.ID, input.Items); err != nil {
+	if err := s.createOrderItems(ctx, q, row.ID, input.Items); err != nil {
 		return orderdomain.Order{}, err
 	}
 
@@ -171,7 +226,7 @@ func (s *OrderService) UpdateOrder(ctx context.Context, input UpdateOrderInput) 
 	if err := s.queries.DeleteOrderItemsByOrderID(ctx, row.ID); err != nil {
 		return orderdomain.Order{}, fmt.Errorf("delete order items: %w", err)
 	}
-	if err := s.createOrderItems(ctx, row.ID, input.Items); err != nil {
+	if err := s.createOrderItems(ctx, s.queries, row.ID, input.Items); err != nil {
 		return orderdomain.Order{}, err
 	}
 	if len(historyItems) > 0 {
@@ -301,7 +356,7 @@ func (s *OrderService) ValidateBulkOrder(ctx context.Context, order string) orde
 			result.Errors = append(result.Errors, orderdomain.BulkOrderValidationError{
 				Code:    item.Code,
 				Name:    item.ProductName,
-				Message: fmt.Sprintf("failed to validate code: %v", err),
+				Message: "Не удалось проверить код продукта. Попробуйте позже.",
 			})
 			continue
 		}
@@ -309,7 +364,7 @@ func (s *OrderService) ValidateBulkOrder(ctx context.Context, order string) orde
 			result.Errors = append(result.Errors, orderdomain.BulkOrderValidationError{
 				Code:    item.Code,
 				Name:    item.ProductName,
-				Message: "product code not found",
+				Message: "Код продукта не найден. Проверьте код в шаблоне или заказе.",
 			})
 		}
 	}
@@ -334,7 +389,7 @@ func (s *OrderService) CreateOrderTemplate(ctx context.Context, creatorID *int64
 			validation.Errors = append(validation.Errors, orderdomain.BulkOrderValidationError{
 				Code:    item.Code,
 				Name:    item.ProductName,
-				Message: fmt.Sprintf("failed to validate code: %v", err),
+				Message: "Не удалось проверить код продукта. Попробуйте позже.",
 			})
 			continue
 		}
@@ -342,7 +397,7 @@ func (s *OrderService) CreateOrderTemplate(ctx context.Context, creatorID *int64
 			validation.Errors = append(validation.Errors, orderdomain.BulkOrderValidationError{
 				Code:    item.Code,
 				Name:    item.ProductName,
-				Message: "product code not found",
+				Message: "Код продукта не найден. Проверьте код в шаблоне или заказе.",
 			})
 		}
 	}
@@ -462,14 +517,14 @@ func (s *OrderService) EnsureDefaultOrderTemplates(ctx context.Context, path str
 	return result, nil
 }
 
-func (s *OrderService) createOrderItems(ctx context.Context, orderID int64, items []orderdomain.OrderItem) error {
+func (s *OrderService) createOrderItems(ctx context.Context, q sqlc.Querier, orderID int64, items []orderdomain.OrderItem) error {
 	for _, item := range items {
 		if item.ProductionQuantity() <= 0 {
 			continue
 		}
 		var productID *string
 		if item.Code != "" {
-			product, err := s.queries.GetIikoProductByCode(ctx, item.Code)
+			product, err := q.GetIikoProductByCode(ctx, item.Code)
 			if err != nil && err != pgx.ErrNoRows {
 				return fmt.Errorf("resolve product by code %s: %w", item.Code, err)
 			}
@@ -477,7 +532,7 @@ func (s *OrderService) createOrderItems(ctx context.Context, orderID int64, item
 				productID = &product.ID
 			}
 		}
-		if _, err := s.queries.CreateOrderItem(ctx, sqlc.CreateOrderItemParams{
+		if _, err := q.CreateOrderItem(ctx, sqlc.CreateOrderItemParams{
 			OrderID:          orderID,
 			IikoProductID:    productID,
 			ProductName:      item.ProductName,
