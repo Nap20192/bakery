@@ -71,15 +71,16 @@ export function OrdersPage() {
   function loadShops() {
     return run(async () => {
       const result = await fetchDepartments('shop');
-      setShops(result || []);
-      logInfo('shops.loaded', { count: result?.length || 0 });
+      const items = Array.isArray(result) ? result : [];
+      setShops(items);
+      logInfo('shops.loaded', { count: items.length });
     });
   }
 
   function loadOrders(page = ordersPage.page, linkedOrderNumber = '', activeFilters = filtersRef.current) {
     return run(async () => {
       const result = await fetchOrders(page, ordersPage.limit, activeFilters);
-      const items = result.items || [];
+      const items = Array.isArray(result.items) ? result.items : [];
       logInfo('orders.loaded', {
         page: result.page || page,
         limit: result.limit || ordersPage.limit,
@@ -108,7 +109,7 @@ export function OrdersPage() {
     setMonitor(null);
     return run(async () => {
       const result = await fetchOrders(1, ordersPage.limit, updated);
-      const items = result.items || [];
+      const items = Array.isArray(result.items) ? result.items : [];
       setOrders(items);
       setSelectedOrderNumbers([]);
       setOrdersPage({
@@ -135,7 +136,7 @@ export function OrdersPage() {
     setMonitor(null);
     return run(async () => {
       const result = await fetchOrders(1, ordersPage.limit, reset);
-      const items = result.items || [];
+      const items = Array.isArray(result.items) ? result.items : [];
       setOrders(items);
       setSelectedOrderNumbers([]);
       setOrdersPage({

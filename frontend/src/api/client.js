@@ -26,25 +26,37 @@ export async function apiRequest(path) {
     throw err;
   }
 
-  const payload = await response.json().catch(() => ({}));
+  const contentType = response.headers.get('content-type') || '';
+  const payload = contentType.includes('application/json') ? await response.json().catch(() => ({})) : {};
   if (!response.ok) {
     logWarn('api.error', {
       path,
       url,
       api_base: apiBase,
       status: response.status,
-      content_type: response.headers.get('content-type') || '',
+      content_type: contentType,
       duration_ms: Math.round(performance.now() - started),
       error: payload.error || `HTTP ${response.status}`,
     });
     throw new Error(payload.error || `HTTP ${response.status}`);
+  }
+  if (!contentType.includes('application/json')) {
+    logWarn('api.invalid_content_type', {
+      path,
+      url,
+      api_base: apiBase,
+      status: response.status,
+      content_type: contentType,
+      duration_ms: Math.round(performance.now() - started),
+    });
+    throw new Error('API returned non-JSON response. Check Vite proxy or VITE_API_BASE_URL.');
   }
 
   logInfo('api.response', {
     path,
     url,
     status: response.status,
-    content_type: response.headers.get('content-type') || '',
+    content_type: contentType,
     duration_ms: Math.round(performance.now() - started),
   });
   return payload;
