@@ -30,8 +30,7 @@ function OrderItems({ items, history }) {
   const latestChanges = latestHistoryByCode(history);
   return (
     <div className="overflow-hidden rounded-lg border border-stone-300 bg-[#fff7df]">
-      <div className="grid grid-cols-[4.2rem_minmax(0,1fr)_4.6rem] gap-2 bg-[#fff1cb] px-2.5 py-1.5 text-[11px] font-medium uppercase leading-5 text-stone-600 sm:grid-cols-[5rem_minmax(0,1fr)_5rem] sm:px-3">
-        <span>Код</span>
+      <div className="grid grid-cols-[minmax(0,1fr)_4.6rem] gap-2 bg-[#fff1cb] px-2.5 py-1.5 text-[11px] font-medium uppercase leading-5 text-stone-600 sm:grid-cols-[minmax(0,1fr)_5rem] sm:px-3">
         <span>Позиция</span>
         <span className="text-right">Кол-во</span>
       </div>
@@ -40,14 +39,13 @@ function OrderItems({ items, history }) {
           const change = latestChanges[item.code];
           return (
             <div
-              className="grid grid-cols-[4.2rem_minmax(0,1fr)_4.6rem] items-start gap-2 border-l-4 px-2.5 py-1.5 text-[13px] sm:grid-cols-[5rem_minmax(0,1fr)_5rem] sm:px-3"
+              className="grid grid-cols-[minmax(0,1fr)_4.6rem] items-start gap-2 border-l-4 px-2.5 py-1.5 text-[13px] sm:grid-cols-[minmax(0,1fr)_5rem] sm:px-3"
               style={{
                 borderLeftColor: change ? changeColor(change.change_type) : 'transparent',
                 backgroundColor: change ? changeBackground(change.change_type) : 'transparent',
               }}
               key={item.code}
             >
-              <code className="break-words text-[12px] leading-5 text-stone-600">{item.code}</code>
               <span className="min-w-0 break-words leading-5 text-stone-800">
                 {item.product_name}
                 {change && (
@@ -79,8 +77,7 @@ function OrderHistory({ history }) {
             </div>
             <div className="space-y-1">
               {(entry.items || []).map((item) => (
-                <div className="grid grid-cols-[4.2rem_minmax(0,1fr)] gap-2 text-[13px] leading-5 sm:grid-cols-[5rem_minmax(0,1fr)]" key={`${entry.id}-${item.product_code}-${item.change_type}`}>
-                  <code className="break-words text-[12px] text-stone-600">{item.product_code}</code>
+                <div className="text-[13px] leading-5" key={`${entry.id}-${item.product_code}-${item.change_type}`}>
                   <span className="min-w-0 break-words text-stone-800">
                     <span className="font-semibold" style={{ color: changeColor(item.change_type) }}>
                       {changeLabel(item.change_type)}
