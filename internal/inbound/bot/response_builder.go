@@ -68,10 +68,7 @@ func (responseBuilder) Help() string {
 		"Нажмите <b>Последние заказы</b> или отправьте /orders.\n" +
 		"В заказе можно открыть состав, изменить заказ или запустить калькуляцию.\n\n" +
 		"<b>9. Веб-просмотр</b>\n" +
-		fmt.Sprintf("Все заказы можно открыть здесь:\n%s\n\n", ordersWebURL) +
-		"<b>10. Тестовые заказы</b>\n" +
-		"Админ-команда создаёт тестовые заказы от всех магазинов на указанное число месяца:\n" +
-		"<code>/test 25</code>"
+		fmt.Sprintf("Все заказы можно открыть здесь:\n%s", ordersWebURL)
 }
 
 func (responseBuilder) Template(template string) string {

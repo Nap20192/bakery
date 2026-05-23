@@ -33,6 +33,15 @@ func (b *baseBot) requirePermissions(permissions ...enum.Permission) tele.Middle
 	}
 }
 
+func (b *OrderBot) clearPendingModesOnCallbackMiddleware(next tele.HandlerFunc) tele.HandlerFunc {
+	return func(c tele.Context) error {
+		if c.Callback() != nil {
+			b.clearPendingTextModes(c)
+		}
+		return next(c)
+	}
+}
+
 func (b *baseBot) authUserFromContext(c tele.Context) (accessdomain.AuthUser, error) {
 	if raw := c.Get(authUserContextKey); raw != nil {
 		if user, ok := raw.(accessdomain.AuthUser); ok {
