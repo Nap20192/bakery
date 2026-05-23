@@ -47,28 +47,31 @@ INSERT INTO dish_catalog (
     code,
     name,
     theme,
+    sort_order,
     created_at,
     updated_at
 ) VALUES (
     sqlc.arg(code),
     sqlc.arg(name),
     sqlc.arg(theme),
+    sqlc.arg(sort_order),
     sqlc.arg(created_at),
     sqlc.arg(updated_at)
 )
 ON CONFLICT (code) DO UPDATE SET
     name = excluded.name,
     theme = excluded.theme,
+    sort_order = excluded.sort_order,
     updated_at = excluded.updated_at
 RETURNING *;
 
 -- name: ListDishCatalogItems :many
 SELECT *
 FROM dish_catalog
-ORDER BY theme, name, code;
+ORDER BY CASE WHEN sort_order = 0 THEN 1 ELSE 0 END, sort_order, id, theme, name, code;
 
 -- name: ListDishCatalogItemsByName :many
 SELECT *
 FROM dish_catalog
 WHERE lower(trim(name)) = lower(trim(sqlc.arg(name)))
-ORDER BY theme, name, code;
+ORDER BY CASE WHEN sort_order = 0 THEN 1 ELSE 0 END, sort_order, id, theme, name, code;

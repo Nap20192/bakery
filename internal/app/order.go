@@ -537,6 +537,7 @@ func (s *OrderService) EnsureDefaultOrderTemplates(ctx context.Context, path str
 			Code:      item.Code,
 			Name:      item.Name,
 			Theme:     item.Theme,
+			SortOrder: item.SortOrder,
 			CreatedAt: now,
 			UpdatedAt: now,
 		}); err != nil {
