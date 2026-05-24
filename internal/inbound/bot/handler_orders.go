@@ -31,13 +31,13 @@ func (b *OrderBot) handleOrders(c tele.Context) error {
 		if mode == ordersModeShop {
 			return sendText(c, "Ваших последних заказов пока нет.", b.actionMarkup(c))
 		}
-		return sendText(c, "Заказов по выбранным фильтрам нет.", b.ordersFilterReplyMarkup(ctx))
+		return sendText(c, "Заказов по выбранным фильтрам нет.", b.actionMarkup(c))
 	}
 
 	if mode == ordersModeShop {
 		return sendText(c, "Последние заказы текущего магазина", b.ordersInlineMarkup(orders))
 	}
-	if err := sendText(c, "Фильтры заказов", b.ordersFilterReplyMarkup(ctx)); err != nil {
+	if err := sendText(c, "Фильтры заказов", b.actionMarkup(c)); err != nil {
 		return err
 	}
 	return sendText(c, "Заказы после фильтрации", b.ordersInlineMarkup(orders))
@@ -172,44 +172,6 @@ func orderListButtonText(order orderdomain.Order) string {
 		return order.Number
 	}
 	return fmt.Sprintf("%s / %s", order.Number, order.FulfillmentDate.Format("02.01.2006"))
-}
-
-const (
-	orderFilterTodayText     = "Сегодня"
-	orderFilterTomorrowText  = "Завтра"
-	orderFilterAllDatesText  = "Все даты"
-	orderFilterAllShopsText  = "Все магазины"
-	orderReplyShopButtonSize = 2
-)
-
-func (b *OrderBot) ordersFilterReplyMarkup(ctx context.Context) *tele.ReplyMarkup {
-	rows := make([][]string, 0, 4)
-	rows = append(rows, []string{orderFilterTodayText, orderFilterTomorrowText, orderFilterAllDatesText})
-	rows = append(rows, b.orderShopFilterReplyRows(ctx)...)
-	return replyKeyboard(rows...)
-}
-
-func (b *OrderBot) orderShopFilterReplyRows(ctx context.Context) [][]string {
-	shops, err := b.departmentSvc.ListByType(ctx, enum.DepartmentTypeShop)
-	if err != nil {
-		slog.WarnContext(ctx, "list shop departments for order filters failed", "error", err)
-		return nil
-	}
-	buttons := make([]string, 0, len(shops)+1)
-	buttons = append(buttons, orderFilterAllShopsText)
-	for _, shop := range shops {
-		buttons = append(buttons, shop.Name)
-	}
-	rows := make([][]string, 0, (len(buttons)+1)/orderReplyShopButtonSize)
-	for len(buttons) > 0 {
-		end := orderReplyShopButtonSize
-		if len(buttons) < end {
-			end = len(buttons)
-		}
-		rows = append(rows, buttons[:end])
-		buttons = buttons[end:]
-	}
-	return rows
 }
 
 func (b *OrderBot) handleOrdersReplyText(c tele.Context, text string) (bool, error) {

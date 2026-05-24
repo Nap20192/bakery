@@ -11,6 +11,16 @@ import (
 )
 
 func (b *OrderBot) handleStart(c tele.Context) error {
+	ctx := requestContext(c)
+	sender := c.Sender()
+	if sender != nil {
+		if err := b.authSvc.LogoutTelegramUser(ctx, sender.ID); err != nil {
+			slog.ErrorContext(ctx, "start logout failed", "error", err)
+			return sendText(c, "Не удалось сбросить выбор. Попробуйте позже.")
+		}
+		c.Set(authUserContextKey, nil)
+		b.resetSession(sender.ID)
+	}
 	return sendHTML(c, responses.Start(), b.actionMarkup(c))
 }
 

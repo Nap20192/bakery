@@ -19,6 +19,10 @@ import (
 const workshopDepartmentCode = "pekari"
 
 func (b *OrderBot) handleTemplate(c tele.Context) error {
+	if err := b.ensureTemplatesAvailable(c); err != nil {
+		return err
+	}
+
 	ctx := requestContext(c)
 	template, err := b.orderSvc.GetTemplate(ctx)
 	if err != nil {
@@ -55,6 +59,12 @@ func (b *OrderBot) handleActionText(c tele.Context, text string) (bool, error) {
 	if handled, err := b.handleOrdersReplyText(c, text); handled {
 		return true, err
 	}
+	if b.isCurrentOrderStateButton(c, text) {
+		return true, b.handleCurrentOrder(c)
+	}
+	if b.isOrderFilterStateButton(c, text) {
+		return true, b.handleOrders(c)
+	}
 	switch strings.TrimSpace(text) {
 	case actionChooseShop:
 		return true, b.handleDepartmentShop(c)
@@ -70,8 +80,6 @@ func (b *OrderBot) handleActionText(c tele.Context, text string) (bool, error) {
 		return true, b.handleUpdateOrder(c)
 	case actionCancelOrder:
 		return true, b.handleCancel(c)
-	case actionCurrentOrder:
-		return true, b.handleCurrentOrder(c)
 	case actionSync:
 		if err := b.ensureActionPermission(c, app.PermissionSync); err != nil {
 			return true, err

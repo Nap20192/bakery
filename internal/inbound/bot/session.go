@@ -43,6 +43,17 @@ func (b *OrderBot) clearSession(uid int64) {
 	})
 }
 
+func (b *OrderBot) resetSession(uid int64) {
+	b.updateSession(uid, func(s *session) {
+		s.items = nil
+		s.fromDepartmentID = nil
+		s.toDepartmentID = nil
+		s.orderFilter = orderFilter{}
+		s.fulfillmentDate = time.Time{}
+		s.editOrderNumber = ""
+	})
+}
+
 type orderFilter struct {
 	FromDepartmentID *int64
 	FulfillmentDate  time.Time
