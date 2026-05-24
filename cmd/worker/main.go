@@ -22,6 +22,7 @@ func main() {
 	_ = godotenv.Load()
 
 	cfg := config.New()
+
 	log, err := logger.InitLogger(cfg.Log.Level, cfg.Log.Pretty, cfg.Log.Dir)
 	if err != nil {
 		panic(err)
@@ -37,7 +38,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer helpers.ClosePool(db)
-	if err := dbmigrate.ApplyMigrations(ctx, db, log, cfg.Migration.Dir); err != nil {
+	if err = dbmigrate.ApplyMigrations(ctx, db, log, cfg.Migration.Dir); err != nil {
 		log.Error("apply db migrations failed", "error", err)
 		os.Exit(1)
 	}

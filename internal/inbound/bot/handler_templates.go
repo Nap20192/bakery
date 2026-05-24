@@ -4,10 +4,16 @@ import (
 	"log/slog"
 	"strings"
 
+	"bakery/internal/app"
+
 	tele "gopkg.in/telebot.v3"
 )
 
 func (b *OrderBot) handleTemplates(c tele.Context) error {
+	if err := b.ensureTemplatesAvailable(c); err != nil {
+		return err
+	}
+
 	ctx := requestContext(c)
 	templates, err := b.orderSvc.ListOrderTemplates(ctx)
 	if err != nil {
@@ -29,6 +35,10 @@ func (b *OrderBot) handleTemplates(c tele.Context) error {
 }
 
 func (b *OrderBot) handleTemplateAll(c tele.Context) error {
+	if err := b.ensureTemplatesAvailable(c); err != nil {
+		return err
+	}
+
 	ctx := requestContext(c)
 	template, err := b.orderSvc.CombinedOrderTemplate(ctx)
 	if err != nil {
@@ -43,6 +53,10 @@ func (b *OrderBot) handleTemplateAll(c tele.Context) error {
 }
 
 func (b *OrderBot) handleTemplateUse(c tele.Context) error {
+	if err := b.ensureTemplatesAvailable(c); err != nil {
+		return err
+	}
+
 	ctx := requestContext(c)
 	theme := strings.TrimSpace(c.Callback().Data)
 	if theme == "" {
@@ -55,4 +69,12 @@ func (b *OrderBot) handleTemplateUse(c tele.Context) error {
 	}
 	_ = c.Respond()
 	return sendHTML(c, responses.Template(template.Body), b.actionMarkup(c))
+}
+
+func (b *OrderBot) ensureTemplatesAvailable(c tele.Context) error {
+	user, ok := b.currentUser(c)
+	if !ok || b.userDepartmentType(c, user) != string(app.DepartmentTypeWorkshop) {
+		return nil
+	}
+	return sendText(c, "В цеху шаблоны не используются. Откройте последние заказы и фильтры.", b.actionMarkup(c))
 }

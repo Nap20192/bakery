@@ -74,14 +74,8 @@ func (responseBuilder) BulkOrderCheck(result orderdomain.BulkOrderValidationResu
 		fmt.Fprintf(&sb, "Дата выполнения: <code>%s</code>\n\n", html.EscapeString(result.FulfillmentDate.Format("02.01.2006")))
 	}
 	fmt.Fprintf(&sb, "Распознано: %d\n", len(result.ValidItems))
-	for _, item := range result.ValidItems {
-		fmt.Fprintf(
-			&sb,
-			"%s %s %s\n",
-			html.EscapeString(item.Code),
-			html.EscapeString(item.ProductName),
-			html.EscapeString(formatOrderItemQuantity(item)),
-		)
+	if len(result.ValidItems) > 0 {
+		writeOrderItemsCodeBlock(&sb, result.ValidItems, nil)
 	}
 
 	if len(result.Errors) > 0 {
@@ -160,14 +154,7 @@ func (responseBuilder) OrderDraft(orderNumber string, items []orderdomain.OrderI
 	if len(items) == 0 {
 		sb.WriteString("Добавьте позиции сообщением или выберите шаблон через /templates.")
 	} else {
-		for _, it := range items {
-			sb.WriteString(fmt.Sprintf(
-				"<code>%s</code> %s %s\n",
-				html.EscapeString(it.Code),
-				html.EscapeString(it.ProductName),
-				html.EscapeString(formatOrderItemQuantity(it)),
-			))
-		}
+		writeOrderItemsCodeBlock(&sb, items, nil)
 	}
 	if len(errors) > 0 {
 		sb.WriteString(fmt.Sprintf("\nОшибки: %d\n", len(errors)))
@@ -194,25 +181,33 @@ func writeOrderDetails(sb *strings.Builder, order orderdomain.Order, fromDepartm
 	}
 	sb.WriteString("\n<b>Состав заказа:</b>\n")
 	latestChanges := latestOrderChanges(order)
-	for _, it := range order.Items {
-		mark := ""
-		if changeType := latestChanges[it.Code]; changeType != "" {
-			mark = " " + orderChangeLabel(changeType)
-		}
-		sb.WriteString(fmt.Sprintf(
-			"<code>%s</code> %s %s%s\n",
-			html.EscapeString(it.Code),
-			html.EscapeString(it.ProductName),
-			html.EscapeString(formatOrderItemQuantity(it)),
-			mark,
-		))
-	}
+	writeOrderItemsCodeBlock(sb, order.Items, latestChanges)
 	writeOrderHistorySummary(sb, order)
 	sb.WriteString(fmt.Sprintf(
 		"\nКалькуляция: <code>/monitor %s</code>",
 		html.EscapeString(order.Number),
 	))
 	sb.WriteString(fmt.Sprintf("\nОткрыть заказ: %s", html.EscapeString(orderWebURL(order.Number))))
+}
+
+func writeOrderItemsCodeBlock(sb *strings.Builder, items []orderdomain.OrderItem, latestChanges map[string]string) {
+	sb.WriteString("<pre>")
+	for _, item := range items {
+		sb.WriteString(html.EscapeString(orderItemCodeLine(item, latestChanges)))
+		sb.WriteByte('\n')
+	}
+	sb.WriteString("</pre>\n")
+}
+
+func orderItemCodeLine(item orderdomain.OrderItem, latestChanges map[string]string) string {
+	line := fmt.Sprintf("%s %s %s", item.Code, item.ProductName, formatOrderItemQuantity(item))
+	if latestChanges == nil {
+		return line
+	}
+	if changeType := latestChanges[item.Code]; changeType != "" {
+		line += " " + orderChangeLabel(changeType)
+	}
+	return line
 }
 
 func latestOrderChanges(order orderdomain.Order) map[string]string {
