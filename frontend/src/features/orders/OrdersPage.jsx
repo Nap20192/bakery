@@ -3,11 +3,12 @@ import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
 import { panelClass, PanelHeader } from '../../components/Panel';
 import { apiBase, buildMode, frontendLogsEnabled } from '../../config/env';
-import { fetchBatchOrderMonitor, fetchDepartments, fetchOrder, fetchOrderMonitor, fetchOrders } from '../../api/orders';
+import { createOrder, fetchBatchOrderMonitor, fetchCatalog, fetchDepartments, fetchMe, fetchOrder, fetchOrderMonitor, fetchOrders, updateOrder } from '../../api/orders';
 import { logInfo, logWarn } from '../../lib/logger';
-import { orderNumberFromLocation, syncOrderURL, trimString } from '../../lib/url';
+import { miniAppModeFromLocation, orderNumberFromLocation, orderNumbersFromLocation, syncOrderURL, trimString } from '../../lib/url';
 import { MonitorReports } from './MonitorReports';
 import { OrderDetails } from './OrderDetails';
+import { OrderEditor } from './OrderEditor';
 import { OrderList } from './OrderList';
 
 const defaultPage = {
@@ -20,6 +21,9 @@ const defaultPage = {
 export function OrdersPage() {
   const [orders, setOrders] = useState([]);
   const [shops, setShops] = useState([]);
+  const [catalog, setCatalog] = useState([]);
+  const [viewer, setViewer] = useState(null);
+  const [editor, setEditor] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [selectedOrderNumbers, setSelectedOrderNumbers] = useState([]);
   const [monitor, setMonitor] = useState(null);
@@ -36,7 +40,9 @@ export function OrdersPage() {
   const selectedOrderCount = selectedOrderNumbers.length;
 
   useEffect(() => {
+    const launchMode = miniAppModeFromLocation();
     const linkedOrderNumber = orderNumberFromLocation();
+    const linkedOrderNumbers = orderNumbersFromLocation();
     logInfo('app.config', {
       mode: buildMode,
       api_base: apiBase,
@@ -44,11 +50,17 @@ export function OrdersPage() {
       page_origin: window.location.origin,
       page_path: window.location.pathname,
       page_search: window.location.search,
+      launch_mode: launchMode,
       linked_order: linkedOrderNumber,
+      linked_orders: linkedOrderNumbers,
     });
-    loadShops();
+    loadViewer(launchMode, linkedOrderNumber);
     loadOrders(ordersPage.page, linkedOrderNumber);
-    if (linkedOrderNumber) {
+    if (launchMode === 'monitor' && linkedOrderNumbers.length) {
+      loadMonitor(linkedOrderNumbers, true);
+    } else if (launchMode === 'monitor' && linkedOrderNumber) {
+      loadOrder(linkedOrderNumber, true);
+    } else if (linkedOrderNumber && launchMode !== 'edit') {
       loadOrder(linkedOrderNumber);
     }
   }, []);
@@ -68,12 +80,26 @@ export function OrdersPage() {
     }
   }
 
-  function loadShops() {
+  function loadViewer(launchMode = '', linkedOrderNumber = '') {
     return run(async () => {
-      const result = await fetchDepartments('shop');
-      const items = Array.isArray(result) ? result : [];
-      setShops(items);
-      logInfo('shops.loaded', { count: items.length });
+      const current = await fetchMe();
+      setViewer(current);
+      if (current.department_type === 'workshop') {
+        const result = await fetchDepartments('shop');
+        const items = Array.isArray(result) ? result : [];
+        setShops(items);
+        logInfo('shops.loaded', { count: items.length });
+      } else if (current.department_type === 'shop') {
+        const items = await fetchCatalog();
+        setCatalog(Array.isArray(items) ? items : []);
+        if (launchMode === 'create') {
+          setEditor({ mode: 'create', order: null });
+        } else if (launchMode === 'edit' && linkedOrderNumber) {
+          const order = await fetchOrder(linkedOrderNumber);
+          setSelectedOrder(order);
+          setEditor({ mode: 'update', order });
+        }
+      }
     });
   }
 
@@ -152,16 +178,20 @@ export function OrdersPage() {
     });
   }
 
-  function loadOrder(number) {
+  function loadOrder(number, withMonitor = false) {
     return run(async () => {
-      syncOrderURL(number);
+      syncOrderURL(number, withMonitor ? 'monitor' : 'view');
       const order = await fetchOrder(number);
       logInfo('order.loaded', {
         number,
         items: order.items?.length || 0,
       });
       setSelectedOrder(order);
-      setMonitor(null);
+      if (withMonitor) {
+        setMonitor(await fetchOrderMonitor(number));
+      } else {
+        setMonitor(null);
+      }
     });
   }
 
@@ -175,8 +205,7 @@ export function OrdersPage() {
     });
   }
 
-  function loadBatchMonitor() {
-    const numbers = selectedOrderNumbers.length ? selectedOrderNumbers : selectedOrder ? [selectedOrder.number] : [];
+  function loadMonitor(numbers, selectOrders = false) {
     if (!numbers.length) return;
     return run(async () => {
       const result = numbers.length === 1 ? await fetchOrderMonitor(numbers[0]) : await fetchBatchOrderMonitor(numbers);
@@ -185,9 +214,50 @@ export function OrdersPage() {
         selected_count: numbers.length,
         reports: result.total_reports?.length || result.reports?.length || 0,
       });
+      if (selectOrders) {
+        setSelectedOrderNumbers(numbers);
+      }
       setMonitor(result);
     });
   }
+
+  function loadBatchMonitor() {
+    const numbers = selectedOrderNumbers.length ? selectedOrderNumbers : selectedOrder ? [selectedOrder.number] : [];
+    return loadMonitor(numbers);
+  }
+
+  function openCreateOrder() {
+    setEditor({ mode: 'create', order: null });
+    setMonitor(null);
+  }
+
+  function openUpdateOrder() {
+    if (!selectedOrder) return;
+    setEditor({ mode: 'update', order: selectedOrder });
+    setMonitor(null);
+  }
+
+  function saveOrder(request) {
+    return run(async () => {
+      const saved = editor?.mode === 'update'
+        ? await updateOrder(editor.order.number, request)
+        : await createOrder(request);
+      setSelectedOrder(saved);
+      setEditor(null);
+      syncOrderURL(saved.number);
+      const result = await fetchOrders(1, ordersPage.limit, filtersRef.current);
+      const items = Array.isArray(result.items) ? result.items : [];
+      setOrders(items);
+      setOrdersPage({
+        page: result.page || 1,
+        limit: result.limit || ordersPage.limit,
+        total: result.total || 0,
+        total_pages: result.total_pages || 0,
+      });
+    });
+  }
+
+  const canWriteOrders = viewer?.department_type === 'shop';
 
   return (
     <main className="min-h-screen bg-[#fff7df] text-stone-900 lg:grid lg:grid-cols-[24rem_minmax(0,1fr)]">
@@ -196,10 +266,14 @@ export function OrdersPage() {
         orders={orders}
         page={ordersPage}
         shops={shops}
+        viewer={viewer}
+        canFilterShops={viewer?.department_type === 'workshop'}
+        canWriteOrders={canWriteOrders}
         filters={filters}
         selectedNumber={selectedNumber}
         selectedOrderNumbers={selectedOrderNumbers}
         onRefresh={() => loadOrders(ordersPage.page)}
+        onCreate={openCreateOrder}
         onSelect={loadOrder}
         onToggleSelection={toggleOrderSelection}
         onPageChange={loadOrders}
@@ -209,9 +283,27 @@ export function OrdersPage() {
       <section className="min-w-0 p-3 pt-0 sm:p-5 lg:p-6">
         <div className="mx-auto max-w-[1180px]">
           {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800">{error}</div>}
-          {selectedOrder ? (
+          {editor ? (
+            <section className={panelClass}>
+              <OrderEditor
+                key={`${editor.mode}-${editor.order?.number || 'new'}`}
+                catalog={catalog}
+                order={editor.order}
+                loading={loading}
+                onCancel={() => setEditor(null)}
+                onSave={saveOrder}
+              />
+            </section>
+          ) : selectedOrder ? (
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.9fr)]">
               <section className={panelClass}>
+                {canWriteOrders && (
+                  <div className="mb-3 flex justify-end">
+                    <Button onClick={openUpdateOrder} disabled={loading}>
+                      Изменить
+                    </Button>
+                  </div>
+                )}
                 <OrderDetails order={selectedOrder} />
               </section>
               <section className={panelClass}>

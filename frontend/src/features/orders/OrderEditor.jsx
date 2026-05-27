@@ -1,0 +1,144 @@
+import { useMemo, useState } from 'react';
+import TextField from '@mui/material/TextField';
+import { Button } from '../../components/Button';
+import { EmptyState } from '../../components/EmptyState';
+import { PanelHeader } from '../../components/Panel';
+
+function tomorrowValue() {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function initialQuantities(order) {
+  const quantities = {};
+  for (const item of order?.items || []) {
+    quantities[item.product_name] = {
+      quantity: String(item.quantity || ''),
+      reserved_quantity: String(item.reserved_quantity || ''),
+    };
+  }
+  return quantities;
+}
+
+export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
+  const [query, setQuery] = useState('');
+  const [date, setDate] = useState(order?.fulfillment_date || tomorrowValue());
+  const [quantities, setQuantities] = useState(() => initialQuantities(order));
+
+  const groups = useMemo(() => {
+    const value = query.trim().toLowerCase();
+    const result = [];
+    const byTheme = new Map();
+    for (const item of catalog) {
+      if (value && !item.name.toLowerCase().includes(value)) continue;
+      if (!byTheme.has(item.theme)) {
+        const group = { theme: item.theme || 'Без группы', items: [] };
+        byTheme.set(item.theme, group);
+        result.push(group);
+      }
+      byTheme.get(item.theme).items.push(item);
+    }
+    return result;
+  }, [catalog, query]);
+
+  function updateQuantity(name, key, value) {
+    setQuantities((current) => ({
+      ...current,
+      [name]: { ...current[name], [key]: value },
+    }));
+  }
+
+  function submit(event) {
+    event.preventDefault();
+    const items = catalog
+      .map((item) => {
+        const values = quantities[item.name] || {};
+        return {
+          product_name: item.name,
+          quantity: Number(values.quantity || 0),
+          reserved_quantity: Number(values.reserved_quantity || 0),
+        };
+      })
+      .filter((item) => item.quantity + item.reserved_quantity > 0);
+    onSave({ fulfillment_date: date, items });
+  }
+
+  return (
+    <form className="space-y-3" onSubmit={submit}>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <PanelHeader title={order ? `Изменить ${order.number}` : 'Новый заказ'} />
+        <Button type="button" onClick={onCancel}>
+          Закрыть
+        </Button>
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        <TextField
+          size="small"
+          label="Дата выполнения"
+          type="date"
+          value={date}
+          onChange={(event) => setDate(event.target.value)}
+          slotProps={{ inputLabel: { shrink: true } }}
+          required
+          fullWidth
+        />
+        <TextField
+          size="small"
+          label="Поиск блюда"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          fullWidth
+        />
+      </div>
+
+      <div className="max-h-[58vh] space-y-3 overflow-y-auto pr-1">
+        {groups.length ? (
+          groups.map((group) => (
+            <section className="overflow-hidden rounded-md border border-stone-300" key={group.theme}>
+              <h4 className="m-0 bg-[#fff1cb] px-3 py-2 text-[13px] font-semibold text-stone-900">{group.theme}</h4>
+              <div className="divide-y divide-stone-200">
+                {group.items.map((item) => {
+                  const value = quantities[item.name] || {};
+                  return (
+                    <div className="grid grid-cols-[minmax(0,1fr)_4.7rem_4.7rem] items-center gap-2 px-3 py-2" key={item.name}>
+                      <span className="min-w-0 text-[13px] leading-5 text-stone-800">{item.name}</span>
+                      <TextField
+                        size="small"
+                        type="number"
+                        label="Кол-во"
+                        value={value.quantity || ''}
+                        onChange={(event) => updateQuantity(item.name, 'quantity', event.target.value)}
+                        slotProps={{ htmlInput: { min: 0, step: 1 } }}
+                      />
+                      <TextField
+                        size="small"
+                        type="number"
+                        label="Заказ."
+                        value={value.reserved_quantity || ''}
+                        onChange={(event) => updateQuantity(item.name, 'reserved_quantity', event.target.value)}
+                        slotProps={{ htmlInput: { min: 0, step: 1 } }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ))
+        ) : (
+          <EmptyState compact>Блюда не найдены.</EmptyState>
+        )}
+      </div>
+
+      <div className="flex justify-end gap-2 border-t border-stone-300 pt-3">
+        <Button type="button" onClick={onCancel}>
+          Отмена
+        </Button>
+        <Button type="submit" variant="primary" disabled={loading}>
+          {order ? 'Сохранить изменения' : 'Создать заказ'}
+        </Button>
+      </div>
+    </form>
+  );
+}

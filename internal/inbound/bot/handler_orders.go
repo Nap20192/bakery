@@ -159,10 +159,20 @@ func (b *OrderBot) sendOrderByNumber(ctx context.Context, c tele.Context, number
 func (b *OrderBot) ordersInlineMarkup(orders []orderdomain.Order) *tele.ReplyMarkup {
 	markup := &tele.ReplyMarkup{}
 	rows := make([]tele.Row, 0, len(orders)+1)
+	numbers := make([]string, 0, len(orders))
 	for _, order := range orders {
-		rows = append(rows, markup.Row(markup.Data(orderListButtonText(order), "open_order", order.Number)))
+		numbers = append(numbers, order.Number)
+		button := markup.Data(orderListButtonText(order), "open_order", order.Number)
+		if webAppButton, ok := b.miniAppButton(markup, orderListButtonText(order), miniAppModeView, order.Number, nil); ok {
+			button = webAppButton
+		}
+		rows = append(rows, markup.Row(button))
 	}
-	rows = append(rows, markup.Row(markup.Data("Посчитать тесто по заказам", "monitor_filtered_orders")))
+	monitorButton := markup.Data("Посчитать тесто по заказам", "monitor_filtered_orders")
+	if webAppButton, ok := b.miniAppButton(markup, "Посчитать тесто по заказам", miniAppModeMonitor, "", numbers); ok {
+		monitorButton = webAppButton
+	}
+	rows = append(rows, markup.Row(monitorButton))
 	markup.Inline(rows...)
 	return markup
 }
@@ -294,17 +304,25 @@ func (b *OrderBot) orderActionsMarkup(c tele.Context, orderNumber string) *tele.
 	markup := &tele.ReplyMarkup{}
 	user, ok := b.currentUser(c)
 	if ok && b.ordersMode(c, user) == ordersModeShop {
+		editButton := markup.Data("Изменить", "edit_order", orderNumber)
+		if webAppButton, available := b.miniAppButton(markup, "Изменить", miniAppModeEdit, orderNumber, nil); available {
+			editButton = webAppButton
+		}
 		markup.Inline(
 			markup.Row(
-				markup.Data("Изменить", "edit_order", orderNumber),
+				editButton,
 				markup.Data("Копировать", "copy_order", orderNumber),
 			),
 		)
 		return markup
 	}
+	monitorButton := markup.Data("Калькуляция", "monitor_order", orderNumber)
+	if webAppButton, available := b.miniAppButton(markup, "Калькуляция", miniAppModeMonitor, orderNumber, nil); available {
+		monitorButton = webAppButton
+	}
 	markup.Inline(
 		markup.Row(
-			markup.Data("Калькуляция", "monitor_order", orderNumber),
+			monitorButton,
 			markup.Data("Копировать", "copy_order", orderNumber),
 		),
 	)

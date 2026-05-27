@@ -89,5 +89,11 @@ func (b *OrderBot) saveDepartmentByCode(c tele.Context, code string) error {
 	})
 
 	_ = c.Respond()
-	return sendText(c, fmt.Sprintf("Локация сохранена: %s.", department.Name), b.actionMarkup(c))
+	if err := sendText(c, fmt.Sprintf("Локация сохранена: %s.", department.Name), b.actionMarkup(c)); err != nil {
+		return err
+	}
+	if markup := b.miniAppMarkup(); markup != nil {
+		return sendText(c, "Откройте приложение для просмотра заказов и расчёта теста.", markup)
+	}
+	return nil
 }

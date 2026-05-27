@@ -12,6 +12,7 @@ type TelegramConfig struct {
 	TestBotToken string
 	ProdBotToken string
 	BotToken     string
+	MiniAppURL   string
 }
 
 type LogConfig struct {
@@ -98,6 +99,7 @@ func New() *Config {
 			TestBotToken: testBotToken,
 			ProdBotToken: prodBotToken,
 			BotToken:     selectBotToken(botEnv, testBotToken, prodBotToken),
+			MiniAppURL:   helpers.Env("MINI_APP_URL", ""),
 		},
 		Iiko: IikoConfig{
 			Host:     helpers.Env("IIKO_HOST", ""),

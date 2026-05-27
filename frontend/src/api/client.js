@@ -1,8 +1,9 @@
 import { apiBase } from '../config/env';
 import { logInfo, logWarn } from '../lib/logger';
+import { telegramInitData } from '../lib/telegram';
 import { apiURL } from '../lib/url';
 
-export async function apiRequest(path) {
+export async function apiRequest(path, options = {}) {
   const url = apiURL(apiBase, path);
   const started = performance.now();
   logInfo('api.request', {
@@ -14,7 +15,14 @@ export async function apiRequest(path) {
 
   let response;
   try {
-    response = await fetch(url);
+    const initData = telegramInitData();
+    response = await fetch(url, {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        ...(initData ? { Authorization: `tma ${initData}` } : {}),
+      },
+    });
   } catch (err) {
     logWarn('api.network_error', {
       path,
