@@ -13,12 +13,14 @@ import (
 type ServerConfig struct {
 	Addr           string
 	AllowedOrigins string
+	BotToken       string
 }
 
 type Server struct {
 	orderSvc      *app.OrderService
 	monitorSvc    *app.MonitorService
 	departmentSvc *app.DepartmentService
+	authSvc       *app.AuthService
 	config        ServerConfig
 	server        *http.Server
 }
@@ -27,12 +29,14 @@ func NewServer(
 	orderSvc *app.OrderService,
 	monitorSvc *app.MonitorService,
 	departmentSvc *app.DepartmentService,
+	authSvc *app.AuthService,
 	config ServerConfig,
 ) *Server {
 	return &Server{
 		orderSvc:      orderSvc,
 		monitorSvc:    monitorSvc,
 		departmentSvc: departmentSvc,
+		authSvc:       authSvc,
 		config:        config,
 	}
 }

@@ -60,7 +60,7 @@ type actionMenuSnapshot struct {
 }
 
 func (b *OrderBot) actionMarkup(c tele.Context) *tele.ReplyMarkup {
-	return replyKeyboard(b.actionMenuRows(c)...)
+	return b.actionKeyboard(b.actionMenuRows(c)...)
 }
 
 func (b *OrderBot) actionMenu(c tele.Context) actionMenuSnapshot {
@@ -240,12 +240,24 @@ func (b *OrderBot) orderShopFilterReplyRows(ctx context.Context) [][]string {
 	return rows
 }
 
-func replyKeyboard(rows ...[]string) *tele.ReplyMarkup {
+func (b *OrderBot) actionKeyboard(rows ...[]string) *tele.ReplyMarkup {
 	markup := &tele.ReplyMarkup{ResizeKeyboard: true}
 	replyRows := make([]tele.Row, 0, len(rows))
 	for _, labels := range rows {
 		buttons := make([]tele.Btn, 0, len(labels))
 		for _, label := range labels {
+			switch label {
+			case actionTemplates:
+				if button, ok := b.miniAppButton(markup, "Новый заказ", miniAppModeCreate, "", nil); ok {
+					buttons = append(buttons, button)
+					continue
+				}
+			case actionOrders:
+				if button, ok := b.miniAppButton(markup, label, miniAppModeOrders, "", nil); ok {
+					buttons = append(buttons, button)
+					continue
+				}
+			}
 			buttons = append(buttons, markup.Text(label))
 		}
 		replyRows = append(replyRows, markup.Row(buttons...))

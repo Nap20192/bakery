@@ -117,7 +117,17 @@ func WithOrderBot(infra *InfraDeps) appOption {
 				return fmt.Errorf("TEST_BOT_TOKEN не задан")
 			}
 		}
-		orderBot, err := bot.NewOrderBot(infra.config.Telegram.BotToken, deps.OrderService, deps.AuthService, deps.RbacService, deps.DepartmentService, deps.MonitorService, deps.SyncService, deps.TechCardService)
+		orderBot, err := bot.NewOrderBot(
+			infra.config.Telegram.BotToken,
+			deps.OrderService,
+			deps.AuthService,
+			deps.RbacService,
+			deps.DepartmentService,
+			deps.MonitorService,
+			deps.SyncService,
+			deps.TechCardService,
+			infra.config.Telegram.MiniAppURL,
+		)
 		if err != nil {
 			return err
 		}
@@ -131,12 +141,13 @@ func WithAPIServerConfig(infra *InfraDeps) appOption {
 		if infra == nil || infra.config == nil {
 			return fmt.Errorf("missing dependencies for APIServer config")
 		}
-		if deps.OrderService == nil || deps.MonitorService == nil || deps.DepartmentService == nil {
+		if deps.OrderService == nil || deps.MonitorService == nil || deps.DepartmentService == nil || deps.AuthService == nil {
 			return fmt.Errorf("missing dependencies for APIServer")
 		}
-		deps.APIServer = api.NewServer(deps.OrderService, deps.MonitorService, deps.DepartmentService, api.ServerConfig{
+		deps.APIServer = api.NewServer(deps.OrderService, deps.MonitorService, deps.DepartmentService, deps.AuthService, api.ServerConfig{
 			Addr:           infra.config.Server.Addr(),
 			AllowedOrigins: infra.config.Server.AllowedOrigins,
+			BotToken:       infra.config.Telegram.BotToken,
 		})
 		return nil
 	}

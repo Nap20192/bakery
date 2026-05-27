@@ -1,5 +1,13 @@
 import { apiRequest } from './client';
 
+export function fetchMe() {
+  return apiRequest('/me');
+}
+
+export function fetchCatalog() {
+  return apiRequest('/catalog');
+}
+
 export function fetchDepartments(type = '') {
   const params = new URLSearchParams();
   if (type) params.set('type', type);
@@ -23,6 +31,22 @@ export function fetchOrders(page, limit, filters = {}) {
 
 export function fetchOrder(number) {
   return apiRequest(`/orders/${encodeURIComponent(number)}`);
+}
+
+export function createOrder(order) {
+  return apiRequest('/orders', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(order),
+  });
+}
+
+export function updateOrder(number, order) {
+  return apiRequest(`/orders/${encodeURIComponent(number)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(order),
+  });
 }
 
 export function fetchOrderMonitor(number) {

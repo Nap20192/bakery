@@ -45,6 +45,12 @@ type OrderTemplate struct {
 	UpdatedAt       time.Time
 }
 
+type DishCatalogItem struct {
+	Name      string `json:"name"`
+	Theme     string `json:"theme"`
+	SortOrder int64  `json:"sort_order"`
+}
+
 // CreateOrderInput — входная модель для создания нового заказа.
 // Date может быть пустой: тогда сервис подставляет текущее время.
 type CreateOrderInput struct {

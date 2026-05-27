@@ -24,10 +24,14 @@ export function OrderList({
   orders,
   page,
   shops,
+  viewer,
+  canFilterShops,
+  canWriteOrders,
   filters,
   selectedNumber,
   selectedOrderNumbers,
   onRefresh,
+  onCreate,
   onSelect,
   onToggleSelection,
   onPageChange,
@@ -39,31 +43,46 @@ export function OrderList({
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <h1 className="m-0 text-[20px] font-semibold leading-7 text-stone-950">Заказы</h1>
+          {viewer?.department_name && (
+            <p className="m-0 truncate text-[12px] leading-5 text-stone-600">
+              {viewer.department_name}
+              {viewer.telegram_username && ` / @${viewer.telegram_username}`}
+            </p>
+          )}
         </div>
       </div>
 
-      <Button variant="primary" className="self-start" onClick={onRefresh} disabled={loading}>
-        Обновить
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        {canWriteOrders && (
+          <Button variant="primary" onClick={onCreate} disabled={loading}>
+            Новый заказ
+          </Button>
+        )}
+        <Button onClick={onRefresh} disabled={loading}>
+          Обновить
+        </Button>
+      </div>
 
       <div className="rounded-md border border-stone-300 bg-[#fff7df] p-2">
         <Stack spacing={1.25}>
-          <FormControl size="small" fullWidth>
-            <InputLabel id="shop-filter-label">Магазин</InputLabel>
-            <Select
-              labelId="shop-filter-label"
-              label="Магазин"
-              value={filters.fromDepartmentID || ''}
-              onChange={(event) => onFiltersChange({ fromDepartmentID: event.target.value })}
-            >
-              <MenuItem value="">Все магазины</MenuItem>
-              {shops.map((shop) => (
-                <MenuItem value={String(shop.id)} key={shop.id}>
-                  {shop.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          {canFilterShops && (
+            <FormControl size="small" fullWidth>
+              <InputLabel id="shop-filter-label">Магазин</InputLabel>
+              <Select
+                labelId="shop-filter-label"
+                label="Магазин"
+                value={filters.fromDepartmentID || ''}
+                onChange={(event) => onFiltersChange({ fromDepartmentID: event.target.value })}
+              >
+                <MenuItem value="">Все магазины</MenuItem>
+                {shops.map((shop) => (
+                  <MenuItem value={String(shop.id)} key={shop.id}>
+                    {shop.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
 
           <TextField
             size="small"

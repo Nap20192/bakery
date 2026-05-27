@@ -7,6 +7,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"bakery/internal/app"
@@ -22,6 +23,15 @@ type departmentResponse struct {
 	Code string `json:"code"`
 	Name string `json:"name"`
 	Type string `json:"type"`
+}
+
+type meResponse struct {
+	TelegramID     int64  `json:"telegram_id"`
+	TelegramUser   string `json:"telegram_username"`
+	DepartmentID   int64  `json:"department_id"`
+	DepartmentCode string `json:"department_code"`
+	DepartmentName string `json:"department_name"`
+	DepartmentType string `json:"department_type"`
 }
 
 type orderItemResponse struct {
@@ -95,12 +105,39 @@ func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
+func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
+	user, _ := miniAppUserFromContext(r.Context())
+	writeJSON(w, http.StatusOK, meResponse{
+		TelegramID:     user.TelegramID,
+		TelegramUser:   user.TelegramUser,
+		DepartmentID:   user.DepartmentID,
+		DepartmentCode: user.DepartmentCode,
+		DepartmentName: user.DepartmentName,
+		DepartmentType: user.DepartmentType,
+	})
+}
+
 func (s *Server) handleListDepartments(w http.ResponseWriter, r *http.Request) {
 	if s.departmentSvc == nil {
 		writeJSON(w, http.StatusServiceUnavailable, errorResponse{Error: "Сервис магазинов временно недоступен."})
 		return
 	}
 	departmentType := enum.DepartmentType(trim(r.URL.Query().Get("type")))
+	user, _ := miniAppUserFromContext(r.Context())
+	if isShopMiniAppUser(user) {
+		if departmentType != "" && departmentType != enum.DepartmentTypeShop {
+			writeJSON(w, http.StatusOK, []departmentResponse{})
+			return
+		}
+		writeJSON(w, http.StatusOK, []departmentResponse{{
+			ID:   user.DepartmentID,
+			Code: user.DepartmentCode,
+			Name: user.DepartmentName,
+			Type: user.DepartmentType,
+		}})
+		return
+	}
+
 	departments, err := s.departmentSvc.ListByType(r.Context(), departmentType)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "list departments failed", "error", err)
@@ -125,6 +162,7 @@ func (s *Server) handleListOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user, _ := miniAppUserFromContext(r.Context())
 	limit := int32(10)
 	if raw := trim(r.URL.Query().Get("limit")); raw != "" {
 		parsed, err := strconv.ParseInt(raw, 10, 32)
@@ -145,7 +183,9 @@ func (s *Server) handleListOrders(w http.ResponseWriter, r *http.Request) {
 	}
 	offset := (page - 1) * limit
 	var fromDepartmentID *int64
-	if raw := trim(r.URL.Query().Get("from_department_id")); raw != "" {
+	if isShopMiniAppUser(user) {
+		fromDepartmentID = &user.DepartmentID
+	} else if raw := trim(r.URL.Query().Get("from_department_id")); raw != "" {
 		parsed, err := strconv.ParseInt(raw, 10, 64)
 		if err != nil || parsed <= 0 {
 			writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Параметр from_department_id должен быть положительным числом."})
@@ -198,6 +238,10 @@ func (s *Server) handleOrderByID(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, errorResponse{Error: fmt.Sprintf("Заказ %s не найден.", id)})
 		return
 	}
+	if !miniAppUserCanReadOrder(r.Context(), order) {
+		writeJSON(w, http.StatusNotFound, errorResponse{Error: fmt.Sprintf("Заказ %s не найден.", id)})
+		return
+	}
 
 	writeJSON(w, http.StatusOK, s.buildOrderResponse(r.Context(), order))
 }
@@ -216,6 +260,10 @@ func (s *Server) handleMonitorDefault(w http.ResponseWriter, r *http.Request) {
 
 	order, err := s.orderSvc.GetOrderByNumber(r.Context(), orderID)
 	if err != nil {
+		writeJSON(w, http.StatusNotFound, errorResponse{Error: fmt.Sprintf("Заказ %s не найден.", orderID)})
+		return
+	}
+	if !miniAppUserCanReadOrder(r.Context(), order) {
 		writeJSON(w, http.StatusNotFound, errorResponse{Error: fmt.Sprintf("Заказ %s не найден.", orderID)})
 		return
 	}
@@ -249,6 +297,10 @@ func (s *Server) handleMonitorByProduct(w http.ResponseWriter, r *http.Request) 
 
 	order, err := s.orderSvc.GetOrderByNumber(r.Context(), orderID)
 	if err != nil {
+		writeJSON(w, http.StatusNotFound, errorResponse{Error: fmt.Sprintf("Заказ %s не найден.", orderID)})
+		return
+	}
+	if !miniAppUserCanReadOrder(r.Context(), order) {
 		writeJSON(w, http.StatusNotFound, errorResponse{Error: fmt.Sprintf("Заказ %s не найден.", orderID)})
 		return
 	}
@@ -288,6 +340,10 @@ func (s *Server) handleMonitorBatch(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusNotFound, errorResponse{Error: fmt.Sprintf("Заказ %s не найден.", number)})
 			return
 		}
+		if !miniAppUserCanReadOrder(r.Context(), order) {
+			writeJSON(w, http.StatusNotFound, errorResponse{Error: fmt.Sprintf("Заказ %s не найден.", number)})
+			return
+		}
 		orders = append(orders, order)
 	}
 
@@ -299,6 +355,25 @@ func (s *Server) handleMonitorBatch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, s.buildBatchMonitorResponse(r.Context(), orders, report))
+}
+
+func isShopMiniAppUser(user miniAppUser) bool {
+	return strings.EqualFold(strings.TrimSpace(user.DepartmentType), string(enum.DepartmentTypeShop))
+}
+
+func isWorkshopMiniAppUser(user miniAppUser) bool {
+	return strings.EqualFold(strings.TrimSpace(user.DepartmentType), string(enum.DepartmentTypeWorkshop))
+}
+
+func miniAppUserCanReadOrder(ctx context.Context, order orderdomain.Order) bool {
+	user, ok := miniAppUserFromContext(ctx)
+	if !ok {
+		return false
+	}
+	if !isShopMiniAppUser(user) {
+		return isWorkshopMiniAppUser(user)
+	}
+	return order.FromDepartmentID != nil && *order.FromDepartmentID == user.DepartmentID
 }
 
 func (s *Server) buildMonitorResponse(ctx context.Context, order orderdomain.Order, reports []monitorReportResponse) monitorResponse {

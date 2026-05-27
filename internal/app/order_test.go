@@ -149,6 +149,23 @@ func TestOrderServiceListOrderTemplatesBuildsFromDishCatalog(t *testing.T) {
 	assertContains(t, combined, "САМСА И УЧПУЧМАК\nСамса с курицей 0")
 }
 
+func TestOrderServiceListDishCatalogHidesCodes(t *testing.T) {
+	queries := &fakeOrderQueries{
+		dishCatalogItems: []sqlc.DishCatalog{
+			{Code: "15542", Name: "Кокрок с картофелем", Theme: "КОКРОКИ", SortOrder: 2},
+		},
+	}
+	svc := NewOrderService(queries)
+
+	items, err := svc.ListDishCatalog(context.Background())
+	if err != nil {
+		t.Fatalf("ListDishCatalog returned error: %v", err)
+	}
+	if len(items) != 1 || items[0].Name != "Кокрок с картофелем" || items[0].Theme != "КОКРОКИ" || items[0].SortOrder != 2 {
+		t.Fatalf("catalog items = %#v", items)
+	}
+}
+
 func TestOrderServiceDeleteOrdersOlderThan(t *testing.T) {
 	queries := &fakeOrderQueries{}
 	svc := NewOrderService(queries)

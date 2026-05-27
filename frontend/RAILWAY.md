@@ -28,9 +28,11 @@ Set this on the `bakery` service:
 
 ```env
 PORT=8080
+MINI_APP_URL=https://<frontend-domain>
 ```
 
 `HTTP_ALLOWED_ORIGINS` is not needed when the browser only calls the frontend domain and the Node server proxies to `bakery` privately.
+`MINI_APP_URL` enables the `Открыть приложение` button after a user selects a shop or workshop in the bot.
 
 ## Frontend Service Settings
 
@@ -66,3 +68,6 @@ Expected response:
 ```json
 {"status":"ok"}
 ```
+
+Open the bot, run `/start`, select a location, then use `Открыть приложение`.
+All application API endpoints except `/api/health` require signed Telegram Mini App data.

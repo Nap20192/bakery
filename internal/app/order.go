@@ -484,6 +484,22 @@ func (s *OrderService) ListOrderTemplates(ctx context.Context) ([]orderdomain.Or
 	return dishCatalogTemplates(rows), nil
 }
 
+func (s *OrderService) ListDishCatalog(ctx context.Context) ([]orderdomain.DishCatalogItem, error) {
+	rows, err := s.queries.ListDishCatalogItems(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list dish catalog items: %w", err)
+	}
+	items := make([]orderdomain.DishCatalogItem, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, orderdomain.DishCatalogItem{
+			Name:      row.Name,
+			Theme:     row.Theme,
+			SortOrder: row.SortOrder,
+		})
+	}
+	return items, nil
+}
+
 func (s *OrderService) CombinedOrderTemplate(ctx context.Context) (string, error) {
 	templates, err := s.ListOrderTemplates(ctx)
 	if err != nil {

@@ -28,6 +28,7 @@ services:
       BOT_ENV: ${BOT_ENV:-test}
       TEST_BOT_TOKEN: ${TEST_BOT_TOKEN:-}
       PROD_BOT_TOKEN: ${PROD_BOT_TOKEN:-}
+      MINI_APP_URL: ${MINI_APP_URL:-}
       DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-bakery}?sslmode=${POSTGRES_SSLMODE:-disable}
       LOG_PRETTY: ${DOCKER_LOG_PRETTY:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
