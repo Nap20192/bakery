@@ -29,7 +29,7 @@ func (b *OrderBot) handleMonitor(c tele.Context) error {
 	}
 
 	if len(args) == 1 {
-		return b.sendMonitorReports(ctx, c, order, defaultMonitorCodes)
+		return b.sendMonitorReports(ctx, c, order, monitoringdomain.DefaultMonitorCodes)
 	}
 	return b.sendMonitorReports(ctx, c, order, []string{args[1]})
 }
@@ -97,7 +97,7 @@ func (b *OrderBot) sendBatchMonitorReports(ctx context.Context, c tele.Context, 
 		return sendText(c, "Выберите заказы в списке /orders.")
 	}
 
-	report, err := b.monitorSvc.GetBatchIngredientsByCodes(ctx, defaultMonitorCodes, orders)
+	report, err := b.monitorSvc.GetBatchIngredientsByCodes(ctx, monitoringdomain.DefaultMonitorCodes, orders)
 	if err != nil {
 		slog.WarnContext(ctx, "batch monitor report failed", "error", err)
 		return sendText(c, "Не удалось посчитать калькуляцию по выбранным заказам.")

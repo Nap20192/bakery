@@ -1,4 +1,4 @@
-package app
+package monitorsvc
 
 import (
 	"context"
@@ -17,7 +17,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type MonitorService struct {
+type Service struct {
 	queries *sqlc.Queries
 	domain  *monitoringdomain.Service
 }
@@ -37,14 +37,14 @@ type orderMonitorItem struct {
 	ProductID string
 }
 
-func NewMonitorService(queries *sqlc.Queries) *MonitorService {
-	return &MonitorService{
+func New(queries *sqlc.Queries) *Service {
+	return &Service{
 		queries: queries,
 		domain:  monitoringdomain.NewService(),
 	}
 }
 
-func (s *MonitorService) GetIngredientsByCode(ctx context.Context, code string, order orderdomain.Order) (monitoringdomain.IngredientReport, error) {
+func (s *Service) GetIngredientsByCode(ctx context.Context, code string, order orderdomain.Order) (monitoringdomain.IngredientReport, error) {
 	report := monitoringdomain.IngredientReport{}
 	if s == nil || s.queries == nil {
 		return report, fmt.Errorf("monitor service is not initialized")
@@ -60,7 +60,7 @@ func (s *MonitorService) GetIngredientsByCode(ctx context.Context, code string, 
 	return s.calculateIngredientReport(monitorIngredient{Code: strings.TrimSpace(code), Product: ingredient}, orderGraph)
 }
 
-func (s *MonitorService) resolveIngredients(ctx context.Context, codes []string) ([]monitorIngredient, error) {
+func (s *Service) resolveIngredients(ctx context.Context, codes []string) ([]monitorIngredient, error) {
 	ingredients := make([]monitorIngredient, 0, len(codes))
 	for _, code := range codes {
 		code = strings.TrimSpace(code)
@@ -76,7 +76,7 @@ func (s *MonitorService) resolveIngredients(ctx context.Context, codes []string)
 	return ingredients, nil
 }
 
-func (s *MonitorService) GetBatchIngredientsByCodes(ctx context.Context, codes []string, orders []orderdomain.Order) (monitoringdomain.BatchMonitoringReport, error) {
+func (s *Service) GetBatchIngredientsByCodes(ctx context.Context, codes []string, orders []orderdomain.Order) (monitoringdomain.BatchMonitoringReport, error) {
 	result := monitoringdomain.BatchMonitoringReport{
 		Orders:       make([]monitoringdomain.OrderMonitoringReport, 0, len(orders)),
 		TotalReports: make([]monitoringdomain.IngredientReport, 0, len(codes)),
@@ -159,7 +159,7 @@ func (s *MonitorService) GetBatchIngredientsByCodes(ctx context.Context, codes [
 	return result, nil
 }
 
-func (s *MonitorService) loadOrderMonitorGraph(ctx context.Context, order orderdomain.Order) (orderMonitorGraph, error) {
+func (s *Service) loadOrderMonitorGraph(ctx context.Context, order orderdomain.Order) (orderMonitorGraph, error) {
 	orderDateParam := pgDate(monitorOrderDate(order))
 	result := orderMonitorGraph{
 		Graph: monitoringdomain.ProductGraph{},
@@ -202,7 +202,7 @@ func monitorOrderDate(order orderdomain.Order) time.Time {
 	return orderDate
 }
 
-func (s *MonitorService) calculateIngredientReport(
+func (s *Service) calculateIngredientReport(
 	ingredient monitorIngredient,
 	orderGraph orderMonitorGraph,
 ) (monitoringdomain.IngredientReport, error) {
@@ -232,7 +232,7 @@ func (s *MonitorService) calculateIngredientReport(
 	return report, nil
 }
 
-func (s *MonitorService) calculateOrderItemIngredientUsage(
+func (s *Service) calculateOrderItemIngredientUsage(
 	graph monitoringdomain.ProductGraph,
 	graphItem orderMonitorItem,
 	ingredientID string,
@@ -268,11 +268,11 @@ func pgDate(t time.Time) pgtype.Date {
 	return pgtype.Date{Time: t, Valid: true}
 }
 
-func (s *MonitorService) LoadMonitorGraph(ctx context.Context, graph monitoringdomain.ProductGraph, productID string, orderDate pgtype.Date) error {
+func (s *Service) LoadMonitorGraph(ctx context.Context, graph monitoringdomain.ProductGraph, productID string, orderDate pgtype.Date) error {
 	return s.loadMonitorGraph(ctx, graph, productID, orderDate, make(map[string]bool, monitoringdomain.DefaultMaxDepth))
 }
 
-func (s *MonitorService) loadMonitorGraph(ctx context.Context, graph monitoringdomain.ProductGraph, productID string, orderDate pgtype.Date, path map[string]bool) error {
+func (s *Service) loadMonitorGraph(ctx context.Context, graph monitoringdomain.ProductGraph, productID string, orderDate pgtype.Date, path map[string]bool) error {
 	if productID == "" {
 		return nil
 	}
@@ -361,7 +361,7 @@ func (s *MonitorService) loadMonitorGraph(ctx context.Context, graph monitoringd
 	return nil
 }
 
-func (s *MonitorService) resolveIngredient(ctx context.Context, code string) (sqlc.GetIikoProductByIDRow, error) {
+func (s *Service) resolveIngredient(ctx context.Context, code string) (sqlc.GetIikoProductByIDRow, error) {
 	code = strings.TrimSpace(code)
 	product, err := s.queries.GetIikoProductByCode(ctx, code)
 	if err == nil {

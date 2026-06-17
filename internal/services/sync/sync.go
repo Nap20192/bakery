@@ -1,4 +1,4 @@
-package app
+package syncsvc
 
 import (
 	"context"
@@ -17,7 +17,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type SyncService struct {
+type Service struct {
 	client   *iiko.Client
 	db       *pgxpool.Pool
 	queries  *sqlcrepo.Queries
@@ -29,8 +29,8 @@ const (
 	nullJSON  = "null"
 )
 
-func NewSyncService(client *iiko.Client, db *pgxpool.Pool, queries *sqlcrepo.Queries, interval time.Duration) *SyncService {
-	return &SyncService{
+func New(client *iiko.Client, db *pgxpool.Pool, queries *sqlcrepo.Queries, interval time.Duration) *Service {
+	return &Service{
 		client:   client,
 		db:       db,
 		queries:  queries,
@@ -38,7 +38,7 @@ func NewSyncService(client *iiko.Client, db *pgxpool.Pool, queries *sqlcrepo.Que
 	}
 }
 
-func (s *SyncService) Run(ctx context.Context) error {
+func (s *Service) Run(ctx context.Context) error {
 	if s == nil {
 		return nil
 	}
@@ -61,7 +61,7 @@ func (s *SyncService) Run(ctx context.Context) error {
 	}
 }
 
-func (s *SyncService) syncOnce(ctx context.Context) {
+func (s *Service) syncOnce(ctx context.Context) {
 	start := time.Now()
 	if err := s.SyncOnce(ctx); err != nil {
 		slog.Error("iiko sync failed", "error", err)
@@ -70,7 +70,7 @@ func (s *SyncService) syncOnce(ctx context.Context) {
 	slog.Info("iiko sync completed", "duration", time.Since(start).Round(time.Millisecond).String())
 }
 
-func (s *SyncService) SyncOnce(ctx context.Context) error {
+func (s *Service) SyncOnce(ctx context.Context) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -120,7 +120,7 @@ func (s *SyncService) SyncOnce(ctx context.Context) error {
 	return nil
 }
 
-func (s *SyncService) SaveSnapshot(ctx context.Context, catalog *iiko.NomenclatureResponse, charts *iiko.ChartResultDto, syncDate string) error {
+func (s *Service) SaveSnapshot(ctx context.Context, catalog *iiko.NomenclatureResponse, charts *iiko.ChartResultDto, syncDate string) error {
 	if s.db == nil || s.queries == nil {
 		return fmt.Errorf("missing sync repository dependencies")
 	}
@@ -164,7 +164,7 @@ func (s *SyncService) SaveSnapshot(ctx context.Context, catalog *iiko.Nomenclatu
 	return s.finishSyncRun(ctx, run.ID, int64(charts.KnownRevision), enum.SyncStatusOK, "")
 }
 
-func (s *SyncService) finishSyncRun(ctx context.Context, runID int64, revision int64, status enum.SyncStatus, message string) error {
+func (s *Service) finishSyncRun(ctx context.Context, runID int64, revision int64, status enum.SyncStatus, message string) error {
 	_, err := s.queries.FinishIikoSyncRun(ctx, sqlcrepo.FinishIikoSyncRunParams{
 		KnownRevision: revision,
 		Status:        string(status),
@@ -175,7 +175,7 @@ func (s *SyncService) finishSyncRun(ctx context.Context, runID int64, revision i
 	return err
 }
 
-func (s *SyncService) saveSnapshotData(ctx context.Context, catalog *iiko.NomenclatureResponse, charts *iiko.ChartResultDto) error {
+func (s *Service) saveSnapshotData(ctx context.Context, catalog *iiko.NomenclatureResponse, charts *iiko.ChartResultDto) error {
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)

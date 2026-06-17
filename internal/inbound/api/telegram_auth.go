@@ -16,9 +16,9 @@ import (
 	"strings"
 	"time"
 
-	"bakery/internal/app"
 	accessdomain "bakery/internal/domain/access"
 	"bakery/internal/pkg/authtoken"
+	"bakery/internal/pkg/enum"
 	authuc "bakery/internal/services/auth/usecase/auth"
 )
 
@@ -169,7 +169,7 @@ func (s *Server) buildDepartmentViewer(ctx context.Context, user accessdomain.Au
 		slog.ErrorContext(ctx, "api department lookup failed", "error", err)
 		return miniAppUser{}, &viewerError{http.StatusInternalServerError, "Не удалось определить локацию пользователя."}
 	}
-	if department.Type != string(app.DepartmentTypeShop) && department.Type != string(app.DepartmentTypeWorkshop) {
+	if department.Type != string(enum.DepartmentTypeShop) && department.Type != string(enum.DepartmentTypeWorkshop) {
 		return miniAppUser{}, &viewerError{http.StatusForbidden, "Выбранная локация не поддерживается в приложении."}
 	}
 	telegramID := int64(0)

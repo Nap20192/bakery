@@ -17,8 +17,6 @@ import (
 	orderuc "bakery/internal/services/order/usecase/order"
 )
 
-var defaultMonitorCodes = []string{"17642", "17644", "17650", "19694"}
-
 type departmentResponse struct {
 	ID   int64  `json:"id"`
 	Code string `json:"code"`
@@ -286,8 +284,8 @@ func (s *Server) handleMonitorDefault(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	reports := make([]monitorReportResponse, 0, len(defaultMonitorCodes))
-	for _, code := range defaultMonitorCodes {
+	reports := make([]monitorReportResponse, 0, len(monitoringdomain.DefaultMonitorCodes))
+	for _, code := range monitoringdomain.DefaultMonitorCodes {
 		report, err := s.monitorSvc.GetIngredientsByCode(r.Context(), code, order)
 		if err != nil {
 			slog.WarnContext(r.Context(), "default monitor calculation failed", "order_number", orderID, "code", code, "error", err)
@@ -365,7 +363,7 @@ func (s *Server) handleMonitorBatch(w http.ResponseWriter, r *http.Request) {
 		orders = append(orders, order)
 	}
 
-	report, err := s.monitorSvc.GetBatchIngredientsByCodes(r.Context(), defaultMonitorCodes, orders)
+	report, err := s.monitorSvc.GetBatchIngredientsByCodes(r.Context(), monitoringdomain.DefaultMonitorCodes, orders)
 	if err != nil {
 		slog.WarnContext(r.Context(), "batch monitor calculation failed", "orders", orderNumbers, "error", err)
 		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Не удалось посчитать калькуляцию по выбранным заказам. Проверьте заказы и техкарты."})
@@ -417,8 +415,8 @@ func (s *Server) buildBatchMonitorResponse(
 	}
 	for i, total := range report.TotalReports {
 		code := ""
-		if i < len(defaultMonitorCodes) {
-			code = defaultMonitorCodes[i]
+		if i < len(monitoringdomain.DefaultMonitorCodes) {
+			code = monitoringdomain.DefaultMonitorCodes[i]
 		}
 		response.TotalReports = append(response.TotalReports, monitorReportResponse{
 			Code:   code,
@@ -430,8 +428,8 @@ func (s *Server) buildBatchMonitorResponse(
 		reports := make([]monitorReportResponse, 0, len(orderReport.Reports))
 		for i, item := range orderReport.Reports {
 			code := ""
-			if i < len(defaultMonitorCodes) {
-				code = defaultMonitorCodes[i]
+			if i < len(monitoringdomain.DefaultMonitorCodes) {
+				code = monitoringdomain.DefaultMonitorCodes[i]
 			}
 			reports = append(reports, monitorReportResponse{
 				Code:   code,

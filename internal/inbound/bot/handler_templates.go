@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"bakery/internal/app"
+	"bakery/internal/pkg/enum"
 
 	tele "gopkg.in/telebot.v3"
 )
@@ -73,7 +73,7 @@ func (b *OrderBot) handleTemplateUse(c tele.Context) error {
 
 func (b *OrderBot) ensureTemplatesAvailable(c tele.Context) error {
 	user, ok := b.currentUser(c)
-	if !ok || b.userDepartmentType(c, user) != string(app.DepartmentTypeWorkshop) {
+	if !ok || b.userDepartmentType(c, user) != string(enum.DepartmentTypeWorkshop) {
 		return nil
 	}
 	return sendText(c, "В цеху шаблоны не используются. Откройте последние заказы и фильтры.", b.actionMarkup(c))
