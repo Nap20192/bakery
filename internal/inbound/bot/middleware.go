@@ -40,11 +40,19 @@ func (b *baseBot) privateChatOnly(next tele.HandlerFunc) tele.HandlerFunc {
 			// Group/channel updates are not handled, but log the chat id so the
 			// workshop group id can be discovered for TELEGRAM_WORKSHOP_CHAT_ID.
 			if chat != nil {
-				slog.Info("non-private chat update ignored",
-					"chat_id", chat.ID,
-					"chat_type", chat.Type,
-					"chat_title", chat.Title,
-				)
+				switch chat.Type {
+				case tele.ChatGroup, tele.ChatSuperGroup:
+					slog.Info("GROUP CHAT ID — use this for TELEGRAM_WORKSHOP_CHAT_ID",
+						"chat_id", chat.ID,
+						"chat_type", chat.Type,
+						"chat_title", chat.Title,
+					)
+				default:
+					slog.Info("non-private chat update ignored",
+						"chat_id", chat.ID,
+						"chat_type", chat.Type,
+					)
+				}
 			}
 			return nil
 		}
