@@ -374,26 +374,42 @@ func (b *OrderBot) departmentDisplayName(ctx context.Context, departmentID *int6
 	return department.Name
 }
 
-func (b *OrderBot) notifyWorkshop(ctx context.Context, message string) error {
-	if b.workshopChatID != 0 {
-		return b.sendHTMLToChat(b.workshopChatID, message)
+// notifyOrder delivers an order notification to the order's creator, every
+// baker, and the workshop group chat. Best-effort: per-recipient failures are
+// logged, not propagated (a failed send must not requeue the event).
+func (b *OrderBot) notifyOrder(ctx context.Context, order orderdomain.Order, message string) {
+	recipients := make(map[int64]struct{})
+
+	if username := strings.TrimSpace(order.CreatedByUsername); username != "" {
+		creator, err := b.authSvc.GetUserByTelegramUsername(ctx, username)
+		if err != nil {
+			if !errors.Is(err, authuc.ErrAuthUserNotFound) {
+				slog.WarnContext(ctx, "resolve order creator failed", "username", username, "error", err)
+			}
+		} else if creator.TelegramID != nil {
+			recipients[*creator.TelegramID] = struct{}{}
+		}
 	}
 
-	workshop, err := b.departmentSvc.GetByCode(ctx, workshopDepartmentCode)
+	bakers, err := b.authSvc.ListUsersByRole(ctx, string(enum.RoleBaker))
 	if err != nil {
-		return fmt.Errorf("get workshop department: %w", err)
+		slog.WarnContext(ctx, "list bakers for order notification failed", "error", err)
 	}
-	users, err := b.authSvc.ListUsersByDepartmentID(ctx, workshop.ID)
-	if err != nil {
-		return err
-	}
-	for _, user := range users {
-		if user.TelegramID == nil {
-			continue
-		}
-		if err := b.sendHTMLToChat(*user.TelegramID, message); err != nil {
-			slog.WarnContext(ctx, "send workshop order notification failed", "telegram_id", *user.TelegramID, "error", err)
+	for _, baker := range bakers {
+		if baker.TelegramID != nil {
+			recipients[*baker.TelegramID] = struct{}{}
 		}
 	}
-	return nil
+
+	for telegramID := range recipients {
+		if err := b.sendHTMLToChat(telegramID, message); err != nil {
+			slog.WarnContext(ctx, "send order notification failed", "telegram_id", telegramID, "error", err)
+		}
+	}
+
+	if b.workshopChatID != 0 {
+		if err := b.sendHTMLToChat(b.workshopChatID, message); err != nil {
+			slog.WarnContext(ctx, "send order notification to group failed", "chat_id", b.workshopChatID, "error", err)
+		}
+	}
 }

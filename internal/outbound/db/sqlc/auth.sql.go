@@ -98,6 +98,33 @@ func (q *Queries) GetAuthUserByTelegramID(ctx context.Context, telegramID *int64
 	return i, err
 }
 
+const getAuthUserByTelegramUsername = `-- name: GetAuthUserByTelegramUsername :one
+SELECT id, telegram_id, username, password_hash, metadata_json, role, created_at, updated_at, department_id, telegram_username
+FROM auth_users
+WHERE telegram_username = $1::text
+  AND telegram_id IS NOT NULL
+ORDER BY id
+LIMIT 1
+`
+
+func (q *Queries) GetAuthUserByTelegramUsername(ctx context.Context, telegramUsername string) (AuthUser, error) {
+	row := q.db.QueryRow(ctx, getAuthUserByTelegramUsername, telegramUsername)
+	var i AuthUser
+	err := row.Scan(
+		&i.ID,
+		&i.TelegramID,
+		&i.Username,
+		&i.PasswordHash,
+		&i.MetadataJson,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DepartmentID,
+		&i.TelegramUsername,
+	)
+	return i, err
+}
+
 const getAuthUserByUsername = `-- name: GetAuthUserByUsername :one
 SELECT id, telegram_id, username, password_hash, metadata_json, role, created_at, updated_at, department_id, telegram_username
 FROM auth_users
@@ -172,6 +199,45 @@ ORDER BY id
 
 func (q *Queries) ListAuthUsersByDepartmentID(ctx context.Context, departmentID *int64) ([]AuthUser, error) {
 	rows, err := q.db.Query(ctx, listAuthUsersByDepartmentID, departmentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AuthUser
+	for rows.Next() {
+		var i AuthUser
+		if err := rows.Scan(
+			&i.ID,
+			&i.TelegramID,
+			&i.Username,
+			&i.PasswordHash,
+			&i.MetadataJson,
+			&i.Role,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DepartmentID,
+			&i.TelegramUsername,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAuthUsersByRole = `-- name: ListAuthUsersByRole :many
+SELECT id, telegram_id, username, password_hash, metadata_json, role, created_at, updated_at, department_id, telegram_username
+FROM auth_users
+WHERE role = $1
+  AND telegram_id IS NOT NULL
+ORDER BY id
+`
+
+func (q *Queries) ListAuthUsersByRole(ctx context.Context, role string) ([]AuthUser, error) {
+	rows, err := q.db.Query(ctx, listAuthUsersByRole, role)
 	if err != nil {
 		return nil, err
 	}
