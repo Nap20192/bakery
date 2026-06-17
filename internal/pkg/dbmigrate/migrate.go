@@ -102,6 +102,7 @@ func applyMigration(ctx context.Context, db *pgxpool.Pool, log *slog.Logger, fil
 }
 
 func migrationFiles(dir string) ([]string, error) {
+	dir = resolveMigrationDir(dir)
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, fmt.Errorf("read migrations dir: %w", err)
@@ -118,6 +119,43 @@ func migrationFiles(dir string) ([]string, error) {
 	}
 	sort.Strings(files)
 	return files, nil
+}
+
+func resolveMigrationDir(dir string) string {
+	if dir == "" {
+		dir = "migrations"
+	}
+	if info, err := os.Stat(dir); err == nil && info.IsDir() {
+		return dir
+	}
+	if filepath.IsAbs(dir) {
+		return dir
+	}
+
+	searchRoots := make([]string, 0, 2)
+	if wd, err := os.Getwd(); err == nil {
+		searchRoots = append(searchRoots, wd)
+	}
+	if exe, err := os.Executable(); err == nil {
+		searchRoots = append(searchRoots, filepath.Dir(exe))
+	}
+
+	for _, root := range searchRoots {
+		current := root
+		for {
+			candidate := filepath.Join(current, dir)
+			if info, err := os.Stat(candidate); err == nil && info.IsDir() {
+				return candidate
+			}
+			parent := filepath.Dir(current)
+			if parent == current {
+				break
+			}
+			current = parent
+		}
+	}
+
+	return dir
 }
 
 func migrationVersion(path string) (int64, error) {

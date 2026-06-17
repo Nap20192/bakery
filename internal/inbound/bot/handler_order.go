@@ -213,9 +213,6 @@ func (b *OrderBot) handleConfirm(c tele.Context) error {
 	fromName := b.departmentDisplayName(ctx, order.FromDepartmentID)
 	toName := b.departmentDisplayName(ctx, order.ToDepartmentID)
 	summary := responses.OrderSummary(order, fromName, toName)
-	if err := b.notifyWorkshop(ctx, sender.ID, summary); err != nil {
-		slog.WarnContext(ctx, "notify workshop about order failed", "order_number", order.Number, "error", err)
-	}
 
 	slog.InfoContext(applog.WithOrderNumber(ctx, order.Number), "order created", "items", len(items))
 	return sendHTML(c, summary, b.actionMarkup(c))
@@ -307,9 +304,6 @@ func (b *OrderBot) handleUpdateOrder(c tele.Context) error {
 	fromName := b.departmentDisplayName(ctx, order.FromDepartmentID)
 	toName := b.departmentDisplayName(ctx, order.ToDepartmentID)
 	summary := responses.OrderUpdated(order, fromName, toName)
-	if err := b.notifyWorkshop(ctx, sender.ID, summary); err != nil {
-		slog.WarnContext(ctx, "notify workshop about order update failed", "order_number", order.Number, "error", err)
-	}
 	return sendHTML(c, summary, b.actionMarkup(c))
 }
 
@@ -378,7 +372,11 @@ func (b *OrderBot) departmentDisplayName(ctx context.Context, departmentID *int6
 	return department.Name
 }
 
-func (b *OrderBot) notifyWorkshop(ctx context.Context, senderID int64, message string) error {
+func (b *OrderBot) notifyWorkshop(ctx context.Context, message string) error {
+	if b.workshopChatID != 0 {
+		return b.sendHTMLToChat(b.workshopChatID, message)
+	}
+
 	workshop, err := b.departmentSvc.GetByCode(ctx, workshopDepartmentCode)
 	if err != nil {
 		return fmt.Errorf("get workshop department: %w", err)
@@ -388,7 +386,7 @@ func (b *OrderBot) notifyWorkshop(ctx context.Context, senderID int64, message s
 		return err
 	}
 	for _, user := range users {
-		if user.TelegramID == nil || *user.TelegramID == senderID {
+		if user.TelegramID == nil {
 			continue
 		}
 		if err := b.sendHTMLToChat(*user.TelegramID, message); err != nil {

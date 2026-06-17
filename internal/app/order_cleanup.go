@@ -21,6 +21,9 @@ func (s *OrderService) DeleteOrdersOlderThan(ctx context.Context, now time.Time,
 	if err != nil {
 		return 0, fmt.Errorf("delete old orders: %w", err)
 	}
+	if s.events != nil {
+		s.events.PublishOldOrdersDeleted(count, cutoff.Time, retention)
+	}
 	return count, nil
 }
 

@@ -22,6 +22,7 @@ type OrderService struct {
 	txQueries *sqlc.Queries
 	db        *pgxpool.Pool
 	domain    *orderdomain.OrderService
+	events    OrderEventBus
 }
 
 type ListOrdersInput struct {
@@ -63,10 +64,11 @@ func NewOrderService(queries sqlc.Querier) *OrderService {
 	}
 }
 
-func NewOrderServiceWithDB(queries *sqlc.Queries, db *pgxpool.Pool) *OrderService {
+func NewOrderServiceWithDB(queries *sqlc.Queries, db *pgxpool.Pool, events OrderEventBus) *OrderService {
 	svc := NewOrderService(queries)
 	svc.txQueries = queries
 	svc.db = db
+	svc.events = events
 	return svc
 }
 
@@ -89,9 +91,17 @@ func (s *OrderService) CreateOrder(ctx context.Context, input orderdomain.Create
 	}
 
 	if s.db != nil && s.txQueries != nil {
-		return s.createOrderTx(ctx, input, shop, createdAt, fulfillmentDate, day)
+		order, err := s.createOrderTx(ctx, input, shop, createdAt, fulfillmentDate, day)
+		if err == nil && s.events != nil {
+			s.events.PublishOrderCreated(order)
+		}
+		return order, err
 	}
-	return s.createOrderWithQueries(ctx, s.queries, input, shop, createdAt, fulfillmentDate, day)
+	order, err := s.createOrderWithQueries(ctx, s.queries, input, shop, createdAt, fulfillmentDate, day)
+	if err == nil && s.events != nil {
+		s.events.PublishOrderCreated(order)
+	}
+	return order, err
 }
 
 func (s *OrderService) createOrderTx(
@@ -251,7 +261,7 @@ func (s *OrderService) UpdateOrder(ctx context.Context, input UpdateOrderInput) 
 		return orderdomain.Order{}, err
 	}
 
-	return orderdomain.Order{
+	order := orderdomain.Order{
 		ID:                fmt.Sprintf("%d", row.ID),
 		Number:            row.Number,
 		Location:          row.Location,
@@ -262,7 +272,11 @@ func (s *OrderService) UpdateOrder(ctx context.Context, input UpdateOrderInput) 
 		CreatedAt:         helpers.ParseRFC3339(row.CreatedAt),
 		FulfillmentDate:   parseDate(row.FulfillmentDate),
 		History:           history,
-	}, nil
+	}
+	if s.events != nil {
+		s.events.PublishOrderUpdated(order)
+	}
+	return order, nil
 }
 
 func (s *OrderService) resolveValidOrderItems(

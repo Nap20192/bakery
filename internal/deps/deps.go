@@ -10,6 +10,7 @@ import (
 
 type AppDeps struct {
 	AuthService       *app.AuthService
+	OrderEvents       app.OrderEventBus
 	RbacService       *app.RbacService
 	DepartmentService *app.DepartmentService
 	MonitorService    *app.MonitorService
@@ -30,6 +31,13 @@ func NewAppDeps(opts ...appOption) (*AppDeps, error) {
 		}
 	}
 	return deps, nil
+}
+
+func WithOrderEventBus() appOption {
+	return func(deps *AppDeps) error {
+		deps.OrderEvents = app.NewOrderEventBus()
+		return nil
+	}
 }
 
 func WithAuthService(infra *InfraDeps) appOption {
@@ -54,7 +62,7 @@ func WithOrderService(infra *InfraDeps) appOption {
 		if infra == nil || infra.queries == nil || infra.DB == nil {
 			return fmt.Errorf("missing dependencies for OrderService")
 		}
-		deps.OrderService = app.NewOrderServiceWithDB(infra.queries, infra.DB)
+		deps.OrderService = app.NewOrderServiceWithDB(infra.queries, infra.DB, deps.OrderEvents)
 		return nil
 	}
 }
@@ -126,7 +134,9 @@ func WithOrderBot(infra *InfraDeps) appOption {
 			deps.MonitorService,
 			deps.SyncService,
 			deps.TechCardService,
+			deps.OrderEvents,
 			infra.config.Telegram.MiniAppURL,
+			infra.config.Telegram.WorkshopChatID,
 		)
 		if err != nil {
 			return err
