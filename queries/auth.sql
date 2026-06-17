@@ -78,3 +78,18 @@ ON CONFLICT(telegram_id) DO UPDATE SET
     department_id = excluded.department_id,
     updated_at = excluded.updated_at
 RETURNING *;
+
+-- name: GetAuthUserByTelegramUsername :one
+SELECT *
+FROM auth_users
+WHERE telegram_username = sqlc.arg(telegram_username)::text
+  AND telegram_id IS NOT NULL
+ORDER BY id
+LIMIT 1;
+
+-- name: ListAuthUsersByRole :many
+SELECT *
+FROM auth_users
+WHERE role = sqlc.arg(role)
+  AND telegram_id IS NOT NULL
+ORDER BY id;

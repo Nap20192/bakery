@@ -157,8 +157,6 @@ func (b *OrderBot) handleOrderEvent(ctx context.Context, body []byte) error {
 		slog.WarnContext(ctx, "unknown order event type", "type", env.Type)
 		return nil
 	}
-	if err := b.notifyWorkshop(ctx, message); err != nil {
-		return fmt.Errorf("notify workshop: %w", err)
-	}
+	b.notifyOrder(ctx, order, message)
 	return nil
 }

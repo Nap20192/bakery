@@ -66,6 +66,29 @@ func (r *AuthRepository) GetByTelegramID(ctx context.Context, telegramID int64) 
 	return authUserToDomain(user), nil
 }
 
+func (r *AuthRepository) GetByTelegramUsername(ctx context.Context, telegramUsername string) (accessdomain.AuthUser, error) {
+	user, err := r.queries.GetAuthUserByTelegramUsername(ctx, telegramUsername)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return accessdomain.AuthUser{}, authuc.ErrAuthUserNotFound
+		}
+		return accessdomain.AuthUser{}, fmt.Errorf("get auth user by telegram username: %w", err)
+	}
+	return authUserToDomain(user), nil
+}
+
+func (r *AuthRepository) ListByRole(ctx context.Context, role string) ([]accessdomain.AuthUser, error) {
+	users, err := r.queries.ListAuthUsersByRole(ctx, role)
+	if err != nil {
+		return nil, fmt.Errorf("list auth users by role: %w", err)
+	}
+	result := make([]accessdomain.AuthUser, 0, len(users))
+	for _, user := range users {
+		result = append(result, authUserToDomain(user))
+	}
+	return result, nil
+}
+
 func (r *AuthRepository) ListByDepartmentID(ctx context.Context, departmentID int64) ([]accessdomain.AuthUser, error) {
 	users, err := r.queries.ListAuthUsersByDepartmentID(ctx, &departmentID)
 	if err != nil {

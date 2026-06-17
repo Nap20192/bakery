@@ -152,8 +152,16 @@ func (s *Service) GetUserByTelegramID(ctx context.Context, telegramID int64) (ac
 	return s.repo.GetByTelegramID(ctx, telegramID)
 }
 
+func (s *Service) GetUserByTelegramUsername(ctx context.Context, telegramUsername string) (accessdomain.AuthUser, error) {
+	return s.repo.GetByTelegramUsername(ctx, strings.TrimSpace(telegramUsername))
+}
+
 func (s *Service) ListUsersByDepartmentID(ctx context.Context, departmentID int64) ([]accessdomain.AuthUser, error) {
 	return s.repo.ListByDepartmentID(ctx, departmentID)
+}
+
+func (s *Service) ListUsersByRole(ctx context.Context, role string) ([]accessdomain.AuthUser, error) {
+	return s.repo.ListByRole(ctx, accessdomain.NormalizeRole(role))
 }
 
 func hashPassword(password string) (string, error) {
