@@ -65,10 +65,41 @@ func TestSplitTelegramMessageKeepsPreTagsBalanced(t *testing.T) {
 	}
 }
 
+func TestPrivateChatOnlyBlocksGroupChats(t *testing.T) {
+	var called bool
+	handler := (&baseBot{}).privateChatOnly(func(tele.Context) error {
+		called = true
+		return nil
+	})
+
+	if err := handler(newTestContext(tele.ChatPrivate)); err != nil {
+		t.Fatalf("handler returned error: %v", err)
+	}
+	if !called {
+		t.Fatal("handler was not called for private chat")
+	}
+
+	called = false
+	if err := handler(newTestContext(tele.ChatGroup)); err != nil {
+		t.Fatalf("handler returned error: %v", err)
+	}
+	if called {
+		t.Fatal("handler was called for group chat")
+	}
+}
+
 func stringsOfLen(size int) string {
 	var b strings.Builder
 	for b.Len() < size {
 		b.WriteByte('x')
 	}
 	return b.String()
+}
+
+func newTestContext(chatType tele.ChatType) tele.Context {
+	return (&tele.Bot{}).NewContext(tele.Update{
+		Message: &tele.Message{
+			Chat: &tele.Chat{Type: chatType},
+		},
+	})
 }
