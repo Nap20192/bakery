@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	accessdomain "bakery/internal/domain/access"
 	monitoringdomain "bakery/internal/domain/monitoring"
 	orderdomain "bakery/internal/domain/order"
 	"bakery/internal/pkg/enum"
@@ -26,6 +27,7 @@ type departmentResponse struct {
 }
 
 type meResponse struct {
+	Role           string `json:"role"`
 	TelegramID     int64  `json:"telegram_id"`
 	TelegramUser   string `json:"telegram_username"`
 	DepartmentID   int64  `json:"department_id"`
@@ -106,15 +108,31 @@ func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
-	user, _ := miniAppUserFromContext(r.Context())
-	writeJSON(w, http.StatusOK, meResponse{
-		TelegramID:     user.TelegramID,
-		TelegramUser:   user.TelegramUser,
-		DepartmentID:   user.DepartmentID,
-		DepartmentCode: user.DepartmentCode,
-		DepartmentName: user.DepartmentName,
-		DepartmentType: user.DepartmentType,
-	})
+	viewer, _ := miniAppUserFromContext(r.Context())
+	resp := meResponse{
+		Role:         viewer.Auth.Role,
+		TelegramUser: strings.TrimSpace(telegramUsernameOf(viewer.Auth)),
+	}
+	if viewer.Auth.TelegramID != nil {
+		resp.TelegramID = *viewer.Auth.TelegramID
+	}
+	// Department is optional (admins may have none). Resolve it when present.
+	if viewer.Auth.DepartmentID != nil {
+		if department, err := s.departmentSvc.GetByID(r.Context(), *viewer.Auth.DepartmentID); err == nil {
+			resp.DepartmentID = department.ID
+			resp.DepartmentCode = department.Code
+			resp.DepartmentName = department.Name
+			resp.DepartmentType = department.Type
+		}
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func telegramUsernameOf(u accessdomain.AuthUser) string {
+	if u.TelegramUsername != nil {
+		return *u.TelegramUsername
+	}
+	return ""
 }
 
 func (s *Server) handleListDepartments(w http.ResponseWriter, r *http.Request) {

@@ -30,6 +30,7 @@ type Querier interface {
 	GetActiveAssemblyChartByProductID(ctx context.Context, arg GetActiveAssemblyChartByProductIDParams) (GetActiveAssemblyChartByProductIDRow, error)
 	GetActiveAssemblyChartFullByProductID(ctx context.Context, arg GetActiveAssemblyChartFullByProductIDParams) (IikoAssemblyChart, error)
 	GetActivePreparedChartFullByProductID(ctx context.Context, arg GetActivePreparedChartFullByProductIDParams) (IikoPreparedChart, error)
+	GetAuthUserByID(ctx context.Context, id int64) (AuthUser, error)
 	GetAuthUserByTelegramID(ctx context.Context, telegramID *int64) (AuthUser, error)
 	GetAuthUserByTelegramUsername(ctx context.Context, telegramUsername string) (AuthUser, error)
 	GetAuthUserByUsername(ctx context.Context, username string) (AuthUser, error)
@@ -44,6 +45,7 @@ type Querier interface {
 	InsertIikoPreparedChartItem(ctx context.Context, arg InsertIikoPreparedChartItemParams) error
 	LinkTelegramAuthUser(ctx context.Context, arg LinkTelegramAuthUserParams) (AuthUser, error)
 	ListAssemblyChartItemsByChartID(ctx context.Context, chartID string) ([]ListAssemblyChartItemsByChartIDRow, error)
+	ListAuthUsers(ctx context.Context) ([]AuthUser, error)
 	ListAuthUsersByDepartmentID(ctx context.Context, departmentID *int64) ([]AuthUser, error)
 	ListAuthUsersByRole(ctx context.Context, role string) ([]AuthUser, error)
 	ListDepartments(ctx context.Context, type_ *string) ([]Department, error)
@@ -55,6 +57,7 @@ type Querier interface {
 	ListPreparedChartItemsByChartID(ctx context.Context, preparedChartID string) ([]ListPreparedChartItemsByChartIDRow, error)
 	NextOrderCounter(ctx context.Context, arg NextOrderCounterParams) (int64, error)
 	UnlinkTelegramAuthUser(ctx context.Context, arg UnlinkTelegramAuthUserParams) error
+	UpdateAuthUserRole(ctx context.Context, arg UpdateAuthUserRoleParams) (AuthUser, error)
 	UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order, error)
 	UpsertDishCatalogItem(ctx context.Context, arg UpsertDishCatalogItemParams) (DishCatalog, error)
 	UpsertIikoAssemblyChart(ctx context.Context, arg UpsertIikoAssemblyChartParams) error

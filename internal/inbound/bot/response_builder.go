@@ -67,27 +67,6 @@ func (responseBuilder) Template(template string) string {
 	return "<pre>" + html.EscapeString(template) + "</pre>"
 }
 
-func (responseBuilder) BulkOrderCheck(result orderdomain.BulkOrderValidationResult) string {
-	var sb strings.Builder
-	sb.WriteString("Проверка заказа\n\n")
-	if !result.FulfillmentDate.IsZero() {
-		fmt.Fprintf(&sb, "Дата выполнения: <code>%s</code>\n\n", html.EscapeString(result.FulfillmentDate.Format("02.01.2006")))
-	}
-	fmt.Fprintf(&sb, "Распознано: %d\n", len(result.ValidItems))
-	if len(result.ValidItems) > 0 {
-		writeOrderItemsCodeBlock(&sb, result.ValidItems, nil)
-	}
-
-	if len(result.Errors) > 0 {
-		fmt.Fprintf(&sb, "\nОшибки: %d\n", len(result.Errors))
-		writeValidationErrors(&sb, result.Errors)
-		sb.WriteString("\nБудут отправлены только корректные позиции.")
-	} else {
-		sb.WriteString("\nОшибок нет.")
-	}
-	return sb.String()
-}
-
 func (responseBuilder) ValidationErrors(errors []orderdomain.BulkOrderValidationError) string {
 	if len(errors) == 0 {
 		return "Не удалось распознать позиции в сообщении."

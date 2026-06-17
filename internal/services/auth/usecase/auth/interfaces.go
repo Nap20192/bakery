@@ -21,10 +21,13 @@ type UseCase interface {
 	LogoutTelegramUser(ctx context.Context, telegramID int64) error
 	AssignUserDepartment(ctx context.Context, userID int64, departmentID *int64) (accessdomain.AuthUser, error)
 	SetTelegramUserDepartment(ctx context.Context, telegramID int64, telegramUsername string, departmentID int64) (accessdomain.AuthUser, error)
+	GetUserByID(ctx context.Context, id int64) (accessdomain.AuthUser, error)
 	GetUserByTelegramID(ctx context.Context, telegramID int64) (accessdomain.AuthUser, error)
 	GetUserByTelegramUsername(ctx context.Context, telegramUsername string) (accessdomain.AuthUser, error)
+	ListUsers(ctx context.Context) ([]accessdomain.AuthUser, error)
 	ListUsersByDepartmentID(ctx context.Context, departmentID int64) ([]accessdomain.AuthUser, error)
 	ListUsersByRole(ctx context.Context, role string) ([]accessdomain.AuthUser, error)
+	SetUserRole(ctx context.Context, id int64, role string) (accessdomain.AuthUser, error)
 }
 
 // Repository is the persistence port implemented by infra/repo. It owns row
@@ -34,10 +37,13 @@ type Repository interface {
 	// GetByUsername returns the user and their stored password hash (the hash is
 	// kept out of the domain model and only surfaced here for verification).
 	GetByUsername(ctx context.Context, username string) (accessdomain.AuthUser, string, error)
+	GetByID(ctx context.Context, id int64) (accessdomain.AuthUser, error)
 	GetByTelegramID(ctx context.Context, telegramID int64) (accessdomain.AuthUser, error)
 	GetByTelegramUsername(ctx context.Context, telegramUsername string) (accessdomain.AuthUser, error)
+	ListAll(ctx context.Context) ([]accessdomain.AuthUser, error)
 	ListByDepartmentID(ctx context.Context, departmentID int64) ([]accessdomain.AuthUser, error)
 	ListByRole(ctx context.Context, role string) ([]accessdomain.AuthUser, error)
+	SetRole(ctx context.Context, id int64, role string) (accessdomain.AuthUser, error)
 	LinkTelegramUser(ctx context.Context, input LinkTelegramUserInput) (accessdomain.AuthUser, error)
 	UnlinkTelegramUser(ctx context.Context, telegramID int64) error
 	UpsertTelegramUserDepartment(ctx context.Context, input UpsertTelegramDepartmentInput) (accessdomain.AuthUser, error)

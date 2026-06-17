@@ -74,6 +74,30 @@ func (q *Queries) CreatePasswordAuthUser(ctx context.Context, arg CreatePassword
 	return i, err
 }
 
+const getAuthUserByID = `-- name: GetAuthUserByID :one
+SELECT id, telegram_id, username, password_hash, metadata_json, role, created_at, updated_at, department_id, telegram_username
+FROM auth_users
+WHERE id = $1
+`
+
+func (q *Queries) GetAuthUserByID(ctx context.Context, id int64) (AuthUser, error) {
+	row := q.db.QueryRow(ctx, getAuthUserByID, id)
+	var i AuthUser
+	err := row.Scan(
+		&i.ID,
+		&i.TelegramID,
+		&i.Username,
+		&i.PasswordHash,
+		&i.MetadataJson,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DepartmentID,
+		&i.TelegramUsername,
+	)
+	return i, err
+}
+
 const getAuthUserByTelegramID = `-- name: GetAuthUserByTelegramID :one
 SELECT id, telegram_id, username, password_hash, metadata_json, role, created_at, updated_at, department_id, telegram_username
 FROM auth_users
@@ -189,6 +213,43 @@ func (q *Queries) LinkTelegramAuthUser(ctx context.Context, arg LinkTelegramAuth
 	return i, err
 }
 
+const listAuthUsers = `-- name: ListAuthUsers :many
+SELECT id, telegram_id, username, password_hash, metadata_json, role, created_at, updated_at, department_id, telegram_username
+FROM auth_users
+ORDER BY id
+`
+
+func (q *Queries) ListAuthUsers(ctx context.Context) ([]AuthUser, error) {
+	rows, err := q.db.Query(ctx, listAuthUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AuthUser
+	for rows.Next() {
+		var i AuthUser
+		if err := rows.Scan(
+			&i.ID,
+			&i.TelegramID,
+			&i.Username,
+			&i.PasswordHash,
+			&i.MetadataJson,
+			&i.Role,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DepartmentID,
+			&i.TelegramUsername,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAuthUsersByDepartmentID = `-- name: ListAuthUsersByDepartmentID :many
 SELECT id, telegram_id, username, password_hash, metadata_json, role, created_at, updated_at, department_id, telegram_username
 FROM auth_users
@@ -283,6 +344,38 @@ type UnlinkTelegramAuthUserParams struct {
 func (q *Queries) UnlinkTelegramAuthUser(ctx context.Context, arg UnlinkTelegramAuthUserParams) error {
 	_, err := q.db.Exec(ctx, unlinkTelegramAuthUser, arg.UpdatedAt, arg.TelegramID)
 	return err
+}
+
+const updateAuthUserRole = `-- name: UpdateAuthUserRole :one
+UPDATE auth_users
+SET role = $1,
+    updated_at = $2
+WHERE id = $3
+RETURNING id, telegram_id, username, password_hash, metadata_json, role, created_at, updated_at, department_id, telegram_username
+`
+
+type UpdateAuthUserRoleParams struct {
+	Role      string             `json:"role"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	ID        int64              `json:"id"`
+}
+
+func (q *Queries) UpdateAuthUserRole(ctx context.Context, arg UpdateAuthUserRoleParams) (AuthUser, error) {
+	row := q.db.QueryRow(ctx, updateAuthUserRole, arg.Role, arg.UpdatedAt, arg.ID)
+	var i AuthUser
+	err := row.Scan(
+		&i.ID,
+		&i.TelegramID,
+		&i.Username,
+		&i.PasswordHash,
+		&i.MetadataJson,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DepartmentID,
+		&i.TelegramUsername,
+	)
+	return i, err
 }
 
 const upsertTelegramAuthUserDepartment = `-- name: UpsertTelegramAuthUserDepartment :one
