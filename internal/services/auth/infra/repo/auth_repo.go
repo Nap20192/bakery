@@ -55,6 +55,44 @@ func (r *AuthRepository) GetByUsername(ctx context.Context, username string) (ac
 	return authUserToDomain(user), user.PasswordHash, nil
 }
 
+func (r *AuthRepository) GetByID(ctx context.Context, id int64) (accessdomain.AuthUser, error) {
+	user, err := r.queries.GetAuthUserByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return accessdomain.AuthUser{}, authuc.ErrAuthUserNotFound
+		}
+		return accessdomain.AuthUser{}, fmt.Errorf("get auth user by id: %w", err)
+	}
+	return authUserToDomain(user), nil
+}
+
+func (r *AuthRepository) ListAll(ctx context.Context) ([]accessdomain.AuthUser, error) {
+	users, err := r.queries.ListAuthUsers(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list auth users: %w", err)
+	}
+	result := make([]accessdomain.AuthUser, 0, len(users))
+	for _, user := range users {
+		result = append(result, authUserToDomain(user))
+	}
+	return result, nil
+}
+
+func (r *AuthRepository) SetRole(ctx context.Context, id int64, role string) (accessdomain.AuthUser, error) {
+	user, err := r.queries.UpdateAuthUserRole(ctx, sqlc.UpdateAuthUserRoleParams{
+		Role:      role,
+		UpdatedAt: helpers.TimestamptzNow(),
+		ID:        id,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return accessdomain.AuthUser{}, authuc.ErrAuthUserNotFound
+		}
+		return accessdomain.AuthUser{}, fmt.Errorf("update auth user role: %w", err)
+	}
+	return authUserToDomain(user), nil
+}
+
 func (r *AuthRepository) GetByTelegramID(ctx context.Context, telegramID int64) (accessdomain.AuthUser, error) {
 	user, err := r.queries.GetAuthUserByTelegramID(ctx, &telegramID)
 	if err != nil {

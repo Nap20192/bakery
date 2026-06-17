@@ -47,21 +47,20 @@ type telegramInitUser struct {
 // requireMiniAppAuth authenticates every API request from either surface:
 // a Telegram Mini App (initData, "tma" scheme) or the plain web client
 // (bearer session token issued by /login). Both resolve to the same viewer.
+// requireMiniAppAuth authenticates a request (Mini App initData or web bearer)
+// and requires the user to be attached to a supported department.
 func (s *Server) requireMiniAppAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if s.authSvc == nil || s.departmentSvc == nil || strings.TrimSpace(s.config.BotToken) == "" {
 			writeJSON(w, http.StatusServiceUnavailable, errorResponse{Error: "Приложение временно недоступно."})
 			return
 		}
-
-		telegramID, telegramUsername, err := s.authenticateRequest(r)
-		if err != nil {
-			slog.WarnContext(r.Context(), "api authentication rejected", "error", err)
-			writeJSON(w, http.StatusUnauthorized, errorResponse{Error: "Не удалось подтвердить вход. Войдите заново."})
+		user, apiErr := s.resolveUser(r.Context(), r)
+		if apiErr != nil {
+			writeJSON(w, apiErr.status, errorResponse{Error: apiErr.message})
 			return
 		}
-
-		viewer, apiErr := s.buildViewer(r.Context(), telegramID, telegramUsername)
+		viewer, apiErr := s.buildDepartmentViewer(r.Context(), user)
 		if apiErr != nil {
 			writeJSON(w, apiErr.status, errorResponse{Error: apiErr.message})
 			return
@@ -71,29 +70,44 @@ func (s *Server) requireMiniAppAuth(next http.Handler) http.Handler {
 	})
 }
 
-// authenticateRequest resolves the caller's Telegram identity from either the
-// Mini App initData header ("tma ...") or a web bearer session ("Bearer ...").
-func (s *Server) authenticateRequest(r *http.Request) (int64, string, error) {
-	scheme, data, ok := authorizationCredentials(r.Header.Get("Authorization"))
-	if !ok {
-		return 0, "", fmt.Errorf("authorization header is missing")
-	}
-	switch strings.ToLower(scheme) {
-	case miniAppAuthorizationScheme:
-		user, err := validateMiniAppInitData(data, s.config.BotToken, time.Now(), miniAppAuthMaxAge)
-		if err != nil {
-			return 0, "", err
+// requireAuth authenticates a request without requiring a department. Used by
+// endpoints that work for any logged-in user, including admins with no location.
+func (s *Server) requireAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.authSvc == nil || strings.TrimSpace(s.config.BotToken) == "" {
+			writeJSON(w, http.StatusServiceUnavailable, errorResponse{Error: "Приложение временно недоступно."})
+			return
 		}
-		return user.ID, strings.TrimSpace(user.Username), nil
-	case "bearer":
-		claims, err := authtoken.Parse(s.config.BotToken, data, time.Now())
-		if err != nil {
-			return 0, "", err
+		user, apiErr := s.resolveUser(r.Context(), r)
+		if apiErr != nil {
+			writeJSON(w, apiErr.status, errorResponse{Error: apiErr.message})
+			return
 		}
-		return claims.TelegramID, "", nil
-	default:
-		return 0, "", fmt.Errorf("unsupported authorization scheme %q", scheme)
-	}
+		ctx := context.WithValue(r.Context(), miniAppUserContextKey{}, miniAppUser{Auth: user})
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// requireAdmin authenticates a request and requires the admin role. Used for
+// user management; no department is required.
+func (s *Server) requireAdmin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.authSvc == nil || strings.TrimSpace(s.config.BotToken) == "" {
+			writeJSON(w, http.StatusServiceUnavailable, errorResponse{Error: "Приложение временно недоступно."})
+			return
+		}
+		user, apiErr := s.resolveUser(r.Context(), r)
+		if apiErr != nil {
+			writeJSON(w, apiErr.status, errorResponse{Error: apiErr.message})
+			return
+		}
+		if accessdomain.NormalizeRole(user.Role) != accessdomain.RoleAdmin {
+			writeJSON(w, http.StatusForbidden, errorResponse{Error: "Доступ только для администратора."})
+			return
+		}
+		ctx := context.WithValue(r.Context(), miniAppUserContextKey{}, miniAppUser{Auth: user})
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 type viewerError struct {
@@ -101,17 +115,52 @@ type viewerError struct {
 	message string
 }
 
-// buildViewer loads the authenticated user and their department, enforcing that
-// the account exists and is attached to a supported location.
-func (s *Server) buildViewer(ctx context.Context, telegramID int64, telegramUsername string) (miniAppUser, *viewerError) {
-	user, err := s.authSvc.GetUserByTelegramID(ctx, telegramID)
+// resolveUser authenticates the caller from either the Mini App initData header
+// ("tma ...") or a web bearer session ("Bearer ...") and loads the user.
+func (s *Server) resolveUser(ctx context.Context, r *http.Request) (accessdomain.AuthUser, *viewerError) {
+	scheme, data, ok := authorizationCredentials(r.Header.Get("Authorization"))
+	if !ok {
+		return accessdomain.AuthUser{}, &viewerError{http.StatusUnauthorized, "Войдите, чтобы продолжить."}
+	}
+	switch strings.ToLower(scheme) {
+	case miniAppAuthorizationScheme:
+		init, err := validateMiniAppInitData(data, s.config.BotToken, time.Now(), miniAppAuthMaxAge)
+		if err != nil {
+			slog.WarnContext(ctx, "mini app auth rejected", "error", err)
+			return accessdomain.AuthUser{}, &viewerError{http.StatusUnauthorized, "Не удалось подтвердить вход. Откройте приложение заново."}
+		}
+		return s.lookupUser(ctx, func() (accessdomain.AuthUser, error) {
+			return s.authSvc.GetUserByTelegramID(ctx, init.ID)
+		})
+	case "bearer":
+		claims, err := authtoken.Parse(s.config.BotToken, data, time.Now())
+		if err != nil {
+			slog.WarnContext(ctx, "bearer auth rejected", "error", err)
+			return accessdomain.AuthUser{}, &viewerError{http.StatusUnauthorized, "Сессия истекла. Войдите заново."}
+		}
+		return s.lookupUser(ctx, func() (accessdomain.AuthUser, error) {
+			return s.authSvc.GetUserByID(ctx, claims.UserID)
+		})
+	default:
+		return accessdomain.AuthUser{}, &viewerError{http.StatusUnauthorized, "Неподдерживаемый способ авторизации."}
+	}
+}
+
+func (s *Server) lookupUser(ctx context.Context, load func() (accessdomain.AuthUser, error)) (accessdomain.AuthUser, *viewerError) {
+	user, err := load()
 	if err != nil {
 		if errors.Is(err, authuc.ErrAuthUserNotFound) {
-			return miniAppUser{}, &viewerError{http.StatusForbidden, "Сначала выберите магазин или цех в боте через /start."}
+			return accessdomain.AuthUser{}, &viewerError{http.StatusForbidden, "Пользователь не найден."}
 		}
 		slog.ErrorContext(ctx, "api user lookup failed", "error", err)
-		return miniAppUser{}, &viewerError{http.StatusInternalServerError, "Не удалось определить пользователя."}
+		return accessdomain.AuthUser{}, &viewerError{http.StatusInternalServerError, "Не удалось определить пользователя."}
 	}
+	return user, nil
+}
+
+// buildDepartmentViewer enriches an authenticated user with their department,
+// requiring a supported location.
+func (s *Server) buildDepartmentViewer(ctx context.Context, user accessdomain.AuthUser) (miniAppUser, *viewerError) {
 	if user.DepartmentID == nil {
 		return miniAppUser{}, &viewerError{http.StatusForbidden, "Сначала выберите магазин или цех в боте через /start."}
 	}
@@ -123,13 +172,18 @@ func (s *Server) buildViewer(ctx context.Context, telegramID int64, telegramUser
 	if department.Type != string(app.DepartmentTypeShop) && department.Type != string(app.DepartmentTypeWorkshop) {
 		return miniAppUser{}, &viewerError{http.StatusForbidden, "Выбранная локация не поддерживается в приложении."}
 	}
-	if telegramUsername == "" && user.TelegramUsername != nil {
+	telegramID := int64(0)
+	if user.TelegramID != nil {
+		telegramID = *user.TelegramID
+	}
+	telegramUsername := ""
+	if user.TelegramUsername != nil {
 		telegramUsername = strings.TrimSpace(*user.TelegramUsername)
 	}
 	return miniAppUser{
 		Auth:           user,
 		TelegramID:     telegramID,
-		TelegramUser:   strings.TrimSpace(telegramUsername),
+		TelegramUser:   telegramUsername,
 		DepartmentID:   department.ID,
 		DepartmentCode: department.Code,
 		DepartmentName: department.Name,

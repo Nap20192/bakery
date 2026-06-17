@@ -20,18 +20,19 @@ import (
 
 const version = "v1"
 
-// Claims is the verified payload of a session token.
+// Claims is the verified payload of a session token. Subject is the
+// auth_users.id of the logged-in user.
 type Claims struct {
-	TelegramID int64 `json:"tid"`
-	ExpiresAt  int64 `json:"exp"`
+	UserID    int64 `json:"uid"`
+	ExpiresAt int64 `json:"exp"`
 }
 
-// Issue creates a signed token for the given Telegram user.
-func Issue(secret string, telegramID int64, ttl time.Duration, now time.Time) (string, error) {
+// Issue creates a signed session token for the given user id.
+func Issue(secret string, userID int64, ttl time.Duration, now time.Time) (string, error) {
 	if strings.TrimSpace(secret) == "" {
 		return "", fmt.Errorf("session secret is empty")
 	}
-	claims := Claims{TelegramID: telegramID, ExpiresAt: now.Add(ttl).Unix()}
+	claims := Claims{UserID: userID, ExpiresAt: now.Add(ttl).Unix()}
 	payload, err := json.Marshal(claims)
 	if err != nil {
 		return "", fmt.Errorf("marshal session claims: %w", err)
@@ -57,7 +58,7 @@ func Parse(secret, token string, now time.Time) (Claims, error) {
 	if err := json.Unmarshal(payload, &claims); err != nil {
 		return Claims{}, fmt.Errorf("decode session claims: %w", err)
 	}
-	if claims.TelegramID == 0 {
+	if claims.UserID == 0 {
 		return Claims{}, fmt.Errorf("session token has no subject")
 	}
 	if claims.ExpiresAt <= now.Unix() {

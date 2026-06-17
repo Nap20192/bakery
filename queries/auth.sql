@@ -93,3 +93,20 @@ FROM auth_users
 WHERE role = sqlc.arg(role)
   AND telegram_id IS NOT NULL
 ORDER BY id;
+
+-- name: GetAuthUserByID :one
+SELECT *
+FROM auth_users
+WHERE id = sqlc.arg(id);
+
+-- name: ListAuthUsers :many
+SELECT *
+FROM auth_users
+ORDER BY id;
+
+-- name: UpdateAuthUserRole :one
+UPDATE auth_users
+SET role = sqlc.arg(role),
+    updated_at = sqlc.arg(updated_at)
+WHERE id = sqlc.arg(id)
+RETURNING *;

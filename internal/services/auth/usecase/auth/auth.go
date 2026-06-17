@@ -148,8 +148,24 @@ func (s *Service) SetTelegramUserDepartment(ctx context.Context, telegramID int6
 	})
 }
 
+func (s *Service) GetUserByID(ctx context.Context, id int64) (accessdomain.AuthUser, error) {
+	return s.repo.GetByID(ctx, id)
+}
+
 func (s *Service) GetUserByTelegramID(ctx context.Context, telegramID int64) (accessdomain.AuthUser, error) {
 	return s.repo.GetByTelegramID(ctx, telegramID)
+}
+
+func (s *Service) ListUsers(ctx context.Context) ([]accessdomain.AuthUser, error) {
+	return s.repo.ListAll(ctx)
+}
+
+func (s *Service) SetUserRole(ctx context.Context, id int64, role string) (accessdomain.AuthUser, error) {
+	role = accessdomain.NormalizeRole(role)
+	if !accessdomain.IsValidRole(role) {
+		return accessdomain.AuthUser{}, fmt.Errorf("%w: %s", ErrInvalidRole, role)
+	}
+	return s.repo.SetRole(ctx, id, role)
 }
 
 func (s *Service) GetUserByTelegramUsername(ctx context.Context, telegramUsername string) (accessdomain.AuthUser, error) {

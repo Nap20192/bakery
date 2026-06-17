@@ -17,8 +17,8 @@ func TestRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Parse returned error: %v", err)
 	}
-	if claims.TelegramID != 4242 {
-		t.Fatalf("telegram id = %d, want 4242", claims.TelegramID)
+	if claims.UserID != 4242 {
+		t.Fatalf("user id = %d, want 4242", claims.UserID)
 	}
 	if _, err := Parse(secret, token, now.Add(2*time.Hour)); err == nil {
 		t.Fatal("expected expired token error")

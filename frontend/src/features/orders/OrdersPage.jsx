@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
 import { Login } from '../../components/Login';
+import { AdminUsers } from '../admin/AdminUsers';
 import { panelClass, PanelHeader } from '../../components/Panel';
 import { apiBase, buildMode, frontendLogsEnabled } from '../../config/env';
 import { ApiError } from '../../api/client';
@@ -77,6 +78,12 @@ export function OrdersPage() {
   function handleAuthenticated() {
     setAuthNeeded(false);
     bootstrap();
+  }
+
+  function handleLogout() {
+    clearToken();
+    setViewer(null);
+    setAuthNeeded(true);
   }
 
   async function run(task) {
@@ -280,6 +287,10 @@ export function OrdersPage() {
 
   if (authNeeded) {
     return <Login onAuthenticated={handleAuthenticated} />;
+  }
+
+  if (viewer?.role === 'admin') {
+    return <AdminUsers onLogout={handleLogout} />;
   }
 
   return (
