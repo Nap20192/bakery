@@ -15,6 +15,7 @@ const createPasswordAuthUser = `-- name: CreatePasswordAuthUser :one
 INSERT INTO auth_users (
     department_id,
     username,
+    telegram_username,
     password_hash,
     metadata_json,
     role,
@@ -27,10 +28,12 @@ INSERT INTO auth_users (
     $4,
     $5,
     $6,
-    $7
+    $7,
+    $8
 )
 ON CONFLICT(username) WHERE username <> '' DO UPDATE SET
     department_id = excluded.department_id,
+    telegram_username = excluded.telegram_username,
     password_hash = excluded.password_hash,
     metadata_json = excluded.metadata_json,
     role = excluded.role,
@@ -39,19 +42,21 @@ RETURNING id, telegram_id, username, password_hash, metadata_json, role, created
 `
 
 type CreatePasswordAuthUserParams struct {
-	DepartmentID *int64             `json:"department_id"`
-	Username     string             `json:"username"`
-	PasswordHash string             `json:"password_hash"`
-	MetadataJson string             `json:"metadata_json"`
-	Role         string             `json:"role"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	DepartmentID     *int64             `json:"department_id"`
+	Username         string             `json:"username"`
+	TelegramUsername *string            `json:"telegram_username"`
+	PasswordHash     string             `json:"password_hash"`
+	MetadataJson     string             `json:"metadata_json"`
+	Role             string             `json:"role"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
 }
 
 func (q *Queries) CreatePasswordAuthUser(ctx context.Context, arg CreatePasswordAuthUserParams) (AuthUser, error) {
 	row := q.db.QueryRow(ctx, createPasswordAuthUser,
 		arg.DepartmentID,
 		arg.Username,
+		arg.TelegramUsername,
 		arg.PasswordHash,
 		arg.MetadataJson,
 		arg.Role,
@@ -157,46 +162,6 @@ WHERE username = $1
 
 func (q *Queries) GetAuthUserByUsername(ctx context.Context, username string) (AuthUser, error) {
 	row := q.db.QueryRow(ctx, getAuthUserByUsername, username)
-	var i AuthUser
-	err := row.Scan(
-		&i.ID,
-		&i.TelegramID,
-		&i.Username,
-		&i.PasswordHash,
-		&i.MetadataJson,
-		&i.Role,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.DepartmentID,
-		&i.TelegramUsername,
-	)
-	return i, err
-}
-
-const linkTelegramAuthUser = `-- name: LinkTelegramAuthUser :one
-UPDATE auth_users
-SET
-    telegram_id = $1,
-    telegram_username = $2,
-    updated_at = $3
-WHERE id = $4
-RETURNING id, telegram_id, username, password_hash, metadata_json, role, created_at, updated_at, department_id, telegram_username
-`
-
-type LinkTelegramAuthUserParams struct {
-	TelegramID       *int64             `json:"telegram_id"`
-	TelegramUsername *string            `json:"telegram_username"`
-	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
-	ID               int64              `json:"id"`
-}
-
-func (q *Queries) LinkTelegramAuthUser(ctx context.Context, arg LinkTelegramAuthUserParams) (AuthUser, error) {
-	row := q.db.QueryRow(ctx, linkTelegramAuthUser,
-		arg.TelegramID,
-		arg.TelegramUsername,
-		arg.UpdatedAt,
-		arg.ID,
-	)
 	var i AuthUser
 	err := row.Scan(
 		&i.ID,
@@ -328,24 +293,6 @@ func (q *Queries) ListAuthUsersByRole(ctx context.Context, role string) ([]AuthU
 	return items, nil
 }
 
-const unlinkTelegramAuthUser = `-- name: UnlinkTelegramAuthUser :exec
-UPDATE auth_users
-SET
-    telegram_id = NULL,
-    updated_at = $1
-WHERE telegram_id = $2
-`
-
-type UnlinkTelegramAuthUserParams struct {
-	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
-	TelegramID *int64             `json:"telegram_id"`
-}
-
-func (q *Queries) UnlinkTelegramAuthUser(ctx context.Context, arg UnlinkTelegramAuthUserParams) error {
-	_, err := q.db.Exec(ctx, unlinkTelegramAuthUser, arg.UpdatedAt, arg.TelegramID)
-	return err
-}
-
 const updateAuthUserRole = `-- name: UpdateAuthUserRole :one
 UPDATE auth_users
 SET role = $1,
@@ -362,61 +309,6 @@ type UpdateAuthUserRoleParams struct {
 
 func (q *Queries) UpdateAuthUserRole(ctx context.Context, arg UpdateAuthUserRoleParams) (AuthUser, error) {
 	row := q.db.QueryRow(ctx, updateAuthUserRole, arg.Role, arg.UpdatedAt, arg.ID)
-	var i AuthUser
-	err := row.Scan(
-		&i.ID,
-		&i.TelegramID,
-		&i.Username,
-		&i.PasswordHash,
-		&i.MetadataJson,
-		&i.Role,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.DepartmentID,
-		&i.TelegramUsername,
-	)
-	return i, err
-}
-
-const upsertTelegramAuthUserDepartment = `-- name: UpsertTelegramAuthUserDepartment :one
-INSERT INTO auth_users (
-    telegram_id,
-    telegram_username,
-    department_id,
-    role,
-    created_at,
-    updated_at
-) VALUES (
-    $1,
-    $2,
-    $3,
-    'user',
-    $4,
-    $5
-)
-ON CONFLICT(telegram_id) DO UPDATE SET
-    telegram_username = excluded.telegram_username,
-    department_id = excluded.department_id,
-    updated_at = excluded.updated_at
-RETURNING id, telegram_id, username, password_hash, metadata_json, role, created_at, updated_at, department_id, telegram_username
-`
-
-type UpsertTelegramAuthUserDepartmentParams struct {
-	TelegramID       *int64             `json:"telegram_id"`
-	TelegramUsername *string            `json:"telegram_username"`
-	DepartmentID     *int64             `json:"department_id"`
-	CreatedAt        pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
-}
-
-func (q *Queries) UpsertTelegramAuthUserDepartment(ctx context.Context, arg UpsertTelegramAuthUserDepartmentParams) (AuthUser, error) {
-	row := q.db.QueryRow(ctx, upsertTelegramAuthUserDepartment,
-		arg.TelegramID,
-		arg.TelegramUsername,
-		arg.DepartmentID,
-		arg.CreatedAt,
-		arg.UpdatedAt,
-	)
 	var i AuthUser
 	err := row.Scan(
 		&i.ID,

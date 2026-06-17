@@ -16,9 +16,9 @@ func TestActionMenuSnapshotRows(t *testing.T) {
 		want [][]string
 	}{
 		{
-			name: "guest chooses location",
+			name: "guest has no menu",
 			snap: actionMenuSnapshot{state: actionStateGuest},
-			want: [][]string{{actionChooseShop, actionChooseWorkshop}},
+			want: nil,
 		},
 		{
 			name: "shop idle",

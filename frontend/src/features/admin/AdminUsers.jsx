@@ -4,7 +4,7 @@ import { logWarn } from '../../lib/logger';
 
 const ROLES = ['admin', 'shop', 'baker', 'user'];
 
-const emptyForm = { username: '', password: '', role: 'shop', department_code: '' };
+const emptyForm = { username: '', password: '', telegram_username: '', role: 'shop', department_code: '' };
 
 export function AdminUsers({ onLogout }) {
   const [users, setUsers] = useState([]);
@@ -38,6 +38,7 @@ export function AdminUsers({ onLogout }) {
       await createUser({
         username: form.username.trim(),
         password: form.password,
+        telegram_username: form.telegram_username.trim(),
         role: form.role,
         department_code: form.department_code,
       });
@@ -76,9 +77,10 @@ export function AdminUsers({ onLogout }) {
 
         {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800">{error}</div>}
 
-        <form onSubmit={onCreate} className="mb-6 grid gap-2 rounded-xl border border-amber-200 bg-white p-4 sm:grid-cols-5">
+        <form onSubmit={onCreate} className="mb-6 grid gap-2 rounded-xl border border-amber-200 bg-white p-4 sm:grid-cols-6">
           <input className="rounded-md border border-stone-300 px-2 py-1.5 text-sm" placeholder="логин" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
           <input className="rounded-md border border-stone-300 px-2 py-1.5 text-sm" placeholder="пароль" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+          <input className="rounded-md border border-stone-300 px-2 py-1.5 text-sm" placeholder="telegram @username" value={form.telegram_username} onChange={(e) => setForm({ ...form, telegram_username: e.target.value })} />
           <select className="rounded-md border border-stone-300 px-2 py-1.5 text-sm" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
             {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>

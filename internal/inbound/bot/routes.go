@@ -19,9 +19,6 @@ func (b *OrderBot) register() {
 
 	bt.Handle("/start", b.handleStart)
 	bt.Handle("/help", b.handleHelp)
-	bt.Handle("/login", b.handleLogin)
-	bt.Handle("/logout", b.handleLogout)
-	bt.Handle("/adduser", b.handleAddUser)
 	bt.Handle("/order", b.handleOrder)
 	bt.Handle("/orders", b.handleOrders)
 	bt.Handle("/templates", b.handleTemplates)
@@ -40,7 +37,6 @@ func (b *OrderBot) register() {
 	bt.Handle("\ftemplate_use", b.handleTemplateUse)
 	bt.Handle("\ftemplate_all", b.handleTemplateAll)
 	bt.Handle("\fopen_templates", b.handleTemplates)
-	bt.Handle("\fdept_select", b.handleDepartmentSelect)
 
 	bt.Handle(tele.OnText, b.handleText)
 }

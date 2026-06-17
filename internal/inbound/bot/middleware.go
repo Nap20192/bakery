@@ -3,6 +3,7 @@ package bot
 import (
 	"errors"
 	"log/slog"
+	"strings"
 
 	accessdomain "bakery/internal/domain/access"
 	"bakery/internal/pkg/enum"
@@ -73,8 +74,12 @@ func (b *baseBot) authUserFromContext(c tele.Context) (accessdomain.AuthUser, er
 	if sender == nil {
 		return accessdomain.AuthUser{}, sendText(c, "Не удалось определить пользователя.")
 	}
+	username := strings.TrimSpace(sender.Username)
+	if username == "" {
+		return accessdomain.AuthUser{}, sendText(c, "У вас не задан username в Telegram. Обратитесь к администратору.")
+	}
 	ctx := requestContext(c)
-	user, err := b.authSvc.GetUserByTelegramID(ctx, sender.ID)
+	user, err := b.authSvc.GetUserByTelegramUsername(ctx, username)
 	if err != nil {
 		if errors.Is(err, authuc.ErrAuthUserNotFound) {
 			return accessdomain.AuthUser{}, sendText(c, "Пользователь не зарегистрирован. Обратитесь к администратору.")

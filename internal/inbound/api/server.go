@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"bakery/internal/app"
+	adminuc "bakery/internal/services/admin/usecase/admin"
 	authuc "bakery/internal/services/auth/usecase/auth"
 	orderuc "bakery/internal/services/order/usecase/order"
 )
@@ -23,6 +24,7 @@ type Server struct {
 	monitorSvc    *app.MonitorService
 	departmentSvc *app.DepartmentService
 	authSvc       authuc.UseCase
+	adminSvc      adminuc.UseCase
 	config        ServerConfig
 	server        *http.Server
 }
@@ -32,6 +34,7 @@ func NewServer(
 	monitorSvc *app.MonitorService,
 	departmentSvc *app.DepartmentService,
 	authSvc authuc.UseCase,
+	adminSvc adminuc.UseCase,
 	config ServerConfig,
 ) *Server {
 	return &Server{
@@ -39,6 +42,7 @@ func NewServer(
 		monitorSvc:    monitorSvc,
 		departmentSvc: departmentSvc,
 		authSvc:       authSvc,
+		adminSvc:      adminSvc,
 		config:        config,
 	}
 }
