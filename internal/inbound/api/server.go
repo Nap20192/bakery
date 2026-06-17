@@ -9,8 +9,8 @@ import (
 
 	adminuc "bakery/internal/services/admin/usecase/admin"
 	authuc "bakery/internal/services/auth/usecase/auth"
-	"bakery/internal/services/department"
-	"bakery/internal/services/monitor"
+	departmentuc "bakery/internal/services/department/usecase/department"
+	monitoruc "bakery/internal/services/monitor/usecase/monitor"
 	orderuc "bakery/internal/services/order/usecase/order"
 )
 
@@ -22,8 +22,8 @@ type ServerConfig struct {
 
 type Server struct {
 	orderSvc      orderuc.UseCase
-	monitorSvc    *monitorsvc.Service
-	departmentSvc *departmentsvc.Service
+	monitorSvc    monitoruc.UseCase
+	departmentSvc departmentuc.UseCase
 	authSvc       authuc.UseCase
 	adminSvc      adminuc.UseCase
 	config        ServerConfig
@@ -32,8 +32,8 @@ type Server struct {
 
 func NewServer(
 	orderSvc orderuc.UseCase,
-	monitorSvc *monitorsvc.Service,
-	departmentSvc *departmentsvc.Service,
+	monitorSvc monitoruc.UseCase,
+	departmentSvc departmentuc.UseCase,
 	authSvc authuc.UseCase,
 	adminSvc adminuc.UseCase,
 	config ServerConfig,
