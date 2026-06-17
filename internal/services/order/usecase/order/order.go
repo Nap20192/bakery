@@ -39,6 +39,17 @@ func NewService(repo Repository, events EventPublisher) *Service {
 	}
 }
 
+func domainEventOrderNumber(event sharedkernel.DomainEvent) string {
+	switch e := event.(type) {
+	case orderdomain.OrderCreatedEvent:
+		return e.Order.Number
+	case orderdomain.OrderUpdatedEvent:
+		return e.Order.Number
+	default:
+		return ""
+	}
+}
+
 // publishDomainEvents publishes the aggregate's recorded events to the bus.
 // Failures are logged, not fatal — persistence already succeeded.
 func (s *Service) publishDomainEvents(ctx context.Context, events []sharedkernel.DomainEvent) {
@@ -48,10 +59,21 @@ func (s *Service) publishDomainEvents(ctx context.Context, events []sharedkernel
 	payload := make([]any, len(events))
 	for i, event := range events {
 		payload[i] = event
+		slog.DebugContext(ctx, "order usecase recorded domain event",
+			"component", "order.usecase",
+			"type", event.Identity(),
+			"order_number", domainEventOrderNumber(event),
+			"created_at", event.CreatedAt(),
+		)
 	}
 	if err := s.events.PublishEvents(ctx, payload); err != nil {
 		slog.WarnContext(ctx, "publish order events failed", "error", err)
+		return
 	}
+	slog.DebugContext(ctx, "order usecase published domain events",
+		"component", "order.usecase",
+		"events", len(payload),
+	)
 }
 
 func (s *Service) CreateOrder(ctx context.Context, input orderdomain.CreateOrderInput) (orderdomain.Order, error) {

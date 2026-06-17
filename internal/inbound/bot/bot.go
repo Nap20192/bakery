@@ -144,6 +144,12 @@ func (b *OrderBot) handleOrderEvent(ctx context.Context, body []byte) error {
 		return fmt.Errorf("decode order event payload: %w", err)
 	}
 	order := payload.Order
+	slog.DebugContext(ctx, "bot received order event",
+		"component", "bot.consumer",
+		"type", env.Type,
+		"order_number", order.Number,
+		"created_by", order.CreatedByUsername,
+	)
 	fromName := b.departmentDisplayName(ctx, order.FromDepartmentID)
 	toName := b.departmentDisplayName(ctx, order.ToDepartmentID)
 

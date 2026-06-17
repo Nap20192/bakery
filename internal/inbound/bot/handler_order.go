@@ -382,12 +382,14 @@ func (b *OrderBot) notifyOrder(ctx context.Context, order orderdomain.Order, mes
 
 	if username := strings.TrimSpace(order.CreatedByUsername); username != "" {
 		creator, err := b.authSvc.GetUserByTelegramUsername(ctx, username)
-		if err != nil {
-			if !errors.Is(err, authuc.ErrAuthUserNotFound) {
-				slog.WarnContext(ctx, "resolve order creator failed", "username", username, "error", err)
-			}
-		} else if creator.TelegramID != nil {
+		switch {
+		case err != nil && !errors.Is(err, authuc.ErrAuthUserNotFound):
+			slog.WarnContext(ctx, "resolve order creator failed", "username", username, "error", err)
+		case err != nil:
+			slog.DebugContext(ctx, "order creator not registered, skipping DM", "component", "bot.notify", "username", username)
+		case creator.TelegramID != nil:
 			recipients[*creator.TelegramID] = struct{}{}
+			slog.DebugContext(ctx, "notify recipient: creator", "component", "bot.notify", "username", username, "telegram_id", *creator.TelegramID)
 		}
 	}
 
@@ -395,21 +397,36 @@ func (b *OrderBot) notifyOrder(ctx context.Context, order orderdomain.Order, mes
 	if err != nil {
 		slog.WarnContext(ctx, "list bakers for order notification failed", "error", err)
 	}
+	bakerCount := 0
 	for _, baker := range bakers {
 		if baker.TelegramID != nil {
 			recipients[*baker.TelegramID] = struct{}{}
+			bakerCount++
+			slog.DebugContext(ctx, "notify recipient: baker", "component", "bot.notify", "telegram_id", *baker.TelegramID)
 		}
 	}
+
+	slog.DebugContext(ctx, "notifying order",
+		"component", "bot.notify",
+		"order_number", order.Number,
+		"dm_recipients", len(recipients),
+		"bakers", bakerCount,
+		"group_chat_id", b.workshopChatID,
+	)
 
 	for telegramID := range recipients {
 		if err := b.sendHTMLToChat(telegramID, message); err != nil {
 			slog.WarnContext(ctx, "send order notification failed", "telegram_id", telegramID, "error", err)
+			continue
 		}
+		slog.DebugContext(ctx, "order notification sent (dm)", "component", "bot.notify", "telegram_id", telegramID, "order_number", order.Number)
 	}
 
 	if b.workshopChatID != 0 {
 		if err := b.sendHTMLToChat(b.workshopChatID, message); err != nil {
 			slog.WarnContext(ctx, "send order notification to group failed", "chat_id", b.workshopChatID, "error", err)
+			return
 		}
+		slog.DebugContext(ctx, "order notification sent (group)", "component", "bot.notify", "chat_id", b.workshopChatID, "order_number", order.Number)
 	}
 }
