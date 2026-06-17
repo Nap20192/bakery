@@ -18,10 +18,10 @@ services:
   worker:
     build:
       context: ${DOCKER_BUILD_CONTEXT:-.}
-      dockerfile: ${DOCKERFILE:-Dockerfile}
+      dockerfile: ${DOCKERFILE:-deploy/Dockerfile.worker}
       args:
-        GO_IMAGE: ${GO_IMAGE:-golang:alpine}
-        RUNTIME_IMAGE: ${RUNTIME_IMAGE:-alpine:latest}
+        GO_IMAGE: ${GO_IMAGE:-golang:1.26-alpine}
+        RUNTIME_IMAGE: ${RUNTIME_IMAGE:-alpine:3.20}
     environment:
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}

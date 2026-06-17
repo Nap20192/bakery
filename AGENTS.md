@@ -110,7 +110,8 @@
 ## Docker And Railway
 
 - There is one main service: `worker`.
-- `Dockerfile` builds `./cmd/worker`.
+- `deploy/Dockerfile.worker` builds `./cmd/worker`.
+- `deploy/Dockerfile.bot` builds `./cmd/bot`.
 - `railway.json` starts `/app/bakery`.
 - On Railway, env vars are configured through Variables. `.env` is not needed there.
 
