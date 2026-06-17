@@ -2,11 +2,15 @@ package order
 
 import (
 	"time"
+
+	sharedkernel "bakery/internal/pkg/sharedkernel"
 )
 
 // Order — агрегат заказа.
 // Содержит шапку заказа и набор позиций, который используется в расчётах и отчётах.
 type Order struct {
+	sharedkernel.AggregateRoot `json:"-"`
+
 	ID                string      `json:"id"`
 	Number            string      `json:"number"`
 	Location          string      `json:"location"`

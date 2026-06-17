@@ -11,6 +11,7 @@ import (
 
 	orderdomain "bakery/internal/domain/order"
 	"bakery/internal/pkg/enum"
+	sharedkernel "bakery/internal/pkg/sharedkernel"
 )
 
 var (
@@ -35,6 +36,21 @@ func NewService(repo Repository, events EventPublisher) *Service {
 		repo:   repo,
 		events: events,
 		domain: orderdomain.NewOrderService(),
+	}
+}
+
+// publishDomainEvents publishes the aggregate's recorded events to the bus.
+// Failures are logged, not fatal — persistence already succeeded.
+func (s *Service) publishDomainEvents(ctx context.Context, events []sharedkernel.DomainEvent) {
+	if s.events == nil || len(events) == 0 {
+		return
+	}
+	payload := make([]any, len(events))
+	for i, event := range events {
+		payload[i] = event
+	}
+	if err := s.events.PublishEvents(ctx, payload); err != nil {
+		slog.WarnContext(ctx, "publish order events failed", "error", err)
 	}
 }
 
@@ -68,9 +84,8 @@ func (s *Service) CreateOrder(ctx context.Context, input orderdomain.CreateOrder
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
-	if s.events != nil {
-		s.events.PublishOrderCreated(order)
-	}
+	order.RecordCreated()
+	s.publishDomainEvents(ctx, order.PullDomainEvents())
 	return order, nil
 }
 
@@ -120,9 +135,8 @@ func (s *Service) UpdateOrder(ctx context.Context, input UpdateOrderInput) (orde
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
-	if s.events != nil {
-		s.events.PublishOrderUpdated(order)
-	}
+	order.RecordUpdated()
+	s.publishDomainEvents(ctx, order.PullDomainEvents())
 	return order, nil
 }
 
@@ -272,9 +286,6 @@ func (s *Service) DeleteOrdersOlderThan(ctx context.Context, now time.Time, rete
 	count, err := s.repo.DeleteOrdersOlderThan(ctx, cutoff)
 	if err != nil {
 		return 0, fmt.Errorf("delete old orders: %w", err)
-	}
-	if s.events != nil {
-		s.events.PublishOldOrdersDeleted(count, cutoff, retention)
 	}
 	return count, nil
 }

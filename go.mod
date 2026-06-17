@@ -3,10 +3,10 @@ module bakery
 go 1.26.1
 
 require (
-	github.com/asaskevich/EventBus v0.0.0-20200907212545-49d423059eef
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.9.2
 	github.com/joho/godotenv v1.5.1
+	github.com/rabbitmq/amqp091-go v1.12.0
 	golang.org/x/net v0.52.0
 	golang.org/x/sync v0.20.0
 	gopkg.in/telebot.v3 v3.3.8
