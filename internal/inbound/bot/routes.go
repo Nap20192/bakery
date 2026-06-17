@@ -15,7 +15,7 @@ const requestContextKey = "request_context"
 
 func (b *OrderBot) register() {
 	bt := b.tele
-	bt.Use(b.logMiddleware)
+	bt.Use(b.privateChatOnly, b.logMiddleware)
 
 	bt.Handle("/start", b.handleStart)
 	bt.Handle("/help", b.handleHelp)
