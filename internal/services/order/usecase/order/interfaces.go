@@ -46,11 +46,9 @@ type Repository interface {
 	DeleteOrdersOlderThan(ctx context.Context, cutoff time.Time) (int64, error)
 }
 
-// EventPublisher is the domain-event port. The app event bus implements it.
+// EventPublisher is the domain-event port. The RabbitMQ publisher implements it.
 type EventPublisher interface {
-	PublishOrderCreated(order orderdomain.Order)
-	PublishOrderUpdated(order orderdomain.Order)
-	PublishOldOrdersDeleted(deleted int64, cutoff time.Time, retention time.Duration)
+	PublishEvents(ctx context.Context, events []any) error
 }
 
 // Department is the persistence view of a department needed to create an order.

@@ -15,6 +15,22 @@ services:
       timeout: ${POSTGRES_HEALTHCHECK_TIMEOUT:-5s}
       retries: ${POSTGRES_HEALTHCHECK_RETRIES:-10}
 
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
+    volumes:
+      - ${RABBITMQ_VOLUME:-rabbitmq_data}:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: ${RABBITMQ_HEALTHCHECK_INTERVAL:-10s}
+      timeout: ${RABBITMQ_HEALTHCHECK_TIMEOUT:-5s}
+      retries: ${RABBITMQ_HEALTHCHECK_RETRIES:-10}
+
   worker:
     build:
       context: ${DOCKER_BUILD_CONTEXT:-.}
@@ -30,6 +46,7 @@ services:
       PROD_BOT_TOKEN: ${PROD_BOT_TOKEN:-}
       MINI_APP_URL: ${MINI_APP_URL:-}
       DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-bakery}?sslmode=${POSTGRES_SSLMODE:-disable}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
       LOG_PRETTY: ${DOCKER_LOG_PRETTY:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       LOG_DIR: ${LOG_DIR:-}
@@ -42,8 +59,42 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     restart: ${WORKER_RESTART:-unless-stopped}
+
+  bot:
+    build:
+      context: ${DOCKER_BUILD_CONTEXT:-.}
+      dockerfile: ${DOCKERFILE_BOT:-deploy/Dockerfile.bot}
+      args:
+        GO_IMAGE: ${GO_IMAGE:-golang:1.26-alpine}
+        RUNTIME_IMAGE: ${RUNTIME_IMAGE:-alpine:3.20}
+    environment:
+      BOT_ENV: ${BOT_ENV:-test}
+      TEST_BOT_TOKEN: ${TEST_BOT_TOKEN:-}
+      PROD_BOT_TOKEN: ${PROD_BOT_TOKEN:-}
+      MINI_APP_URL: ${MINI_APP_URL:-}
+      TELEGRAM_WORKSHOP_CHAT_ID: ${TELEGRAM_WORKSHOP_CHAT_ID:-}
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-bakery}?sslmode=${POSTGRES_SSLMODE:-disable}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+      LOG_PRETTY: ${DOCKER_LOG_PRETTY:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_DIR: ${LOG_DIR:-}
+      MIGRATIONS_DIR: ${DOCKER_MIGRATIONS_DIR:-/app/migrations}
+      IIKO_HOST: ${IIKO_HOST:-}
+      IIKO_PORT: ${IIKO_PORT:-443}
+      IIKO_LOGIN: ${IIKO_LOGIN:-}
+      IIKO_PASSWORD: ${IIKO_PASSWORD:-}
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: ${BOT_RESTART:-unless-stopped}
 
 volumes:
   postgres_data:
     name: ${POSTGRES_VOLUME:-postgres_data}
+  rabbitmq_data:
+    name: ${RABBITMQ_VOLUME:-rabbitmq_data}

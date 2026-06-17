@@ -7,15 +7,20 @@ import (
 	"bakery/internal/config"
 	"bakery/internal/outbound/db/sqlc"
 	"bakery/internal/outbound/iiko"
+	"bakery/pkg/rabbitmq/consumer"
+	"bakery/pkg/rabbitmq/publisher"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type InfraDeps struct {
-	config     *config.Config
-	DB         *pgxpool.Pool
-	iikoClient *iiko.Client
-	queries    *sqlc.Queries
+	config         *config.Config
+	DB             *pgxpool.Pool
+	iikoClient     *iiko.Client
+	queries        *sqlc.Queries
+	eventPublisher *publisher.Publisher
+	eventConsumer  *consumer.Consumer
 }
 
 type infraOption func(*InfraDeps) error
@@ -59,6 +64,17 @@ func WithRepositories() infraOption {
 			return fmt.Errorf("missing dependencies for repositories")
 		}
 		deps.queries = sqlc.New(deps.DB)
+		return nil
+	}
+}
+
+func WithRabbitMQ(conn *amqp.Connection) infraOption {
+	return func(deps *InfraDeps) error {
+		if conn == nil {
+			return fmt.Errorf("missing rabbitmq connection")
+		}
+		deps.eventPublisher = publisher.New(conn)
+		deps.eventConsumer = consumer.New(conn)
 		return nil
 	}
 }

@@ -15,6 +15,7 @@ import (
 	"bakery/internal/pkg/dbmigrate"
 	"bakery/internal/pkg/helpers"
 	"bakery/pkg/logger"
+	"bakery/pkg/rabbitmq"
 )
 
 func main() {
@@ -42,10 +43,18 @@ func main() {
 		os.Exit(1)
 	}
 
+	rabbitConn, err := rabbitmq.NewConn(rabbitmq.ConnString(cfg.RabbitMQ.URL))
+	if err != nil {
+		log.Error("connect rabbitmq failed", "error", err)
+		os.Exit(1)
+	}
+	defer func() { _ = rabbitConn.Close() }()
+
 	infra, err := deps.NewInfraDeps(
 		deps.WithConfig(cfg),
 		deps.WithPostgres(db),
 		deps.WithRepositories(),
+		deps.WithRabbitMQ(rabbitConn),
 		deps.WithIikoClient(),
 	)
 	if err != nil {
@@ -54,7 +63,6 @@ func main() {
 	}
 
 	appDeps, err := deps.NewAppDeps(
-		deps.WithOrderEventBus(),
 		deps.WithAuthService(infra),
 		deps.WithRbacService(),
 		deps.WithOrderService(infra),

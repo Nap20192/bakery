@@ -14,7 +14,6 @@ import (
 
 type AppDeps struct {
 	AuthService       authuc.UseCase
-	OrderEvents       app.OrderEventBus
 	RbacService       *authuc.RBAC
 	DepartmentService *app.DepartmentService
 	MonitorService    *app.MonitorService
@@ -37,13 +36,6 @@ func NewAppDeps(opts ...appOption) (*AppDeps, error) {
 	return deps, nil
 }
 
-func WithOrderEventBus() appOption {
-	return func(deps *AppDeps) error {
-		deps.OrderEvents = app.NewOrderEventBus()
-		return nil
-	}
-}
-
 func WithAuthService(infra *InfraDeps) appOption {
 	return func(deps *AppDeps) error {
 		if infra == nil || infra.queries == nil {
@@ -63,10 +55,10 @@ func WithRbacService() appOption {
 
 func WithOrderService(infra *InfraDeps) appOption {
 	return func(deps *AppDeps) error {
-		if infra == nil || infra.queries == nil || infra.DB == nil {
+		if infra == nil || infra.queries == nil || infra.DB == nil || infra.eventPublisher == nil {
 			return fmt.Errorf("missing dependencies for OrderService")
 		}
-		deps.OrderService = orderuc.NewService(orderrepo.New(infra.queries, infra.DB), deps.OrderEvents)
+		deps.OrderService = orderuc.NewService(orderrepo.New(infra.queries, infra.DB), infra.eventPublisher)
 		return nil
 	}
 }
@@ -138,7 +130,7 @@ func WithOrderBot(infra *InfraDeps) appOption {
 			deps.MonitorService,
 			deps.SyncService,
 			deps.TechCardService,
-			deps.OrderEvents,
+			infra.eventConsumer,
 			infra.config.Telegram.MiniAppURL,
 			infra.config.Telegram.WorkshopChatID,
 		)

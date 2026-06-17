@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/url"
@@ -10,8 +11,10 @@ import (
 	"time"
 
 	"bakery/internal/app"
+	orderdomain "bakery/internal/domain/order"
 	authuc "bakery/internal/services/auth/usecase/auth"
 	orderuc "bakery/internal/services/order/usecase/order"
+	"bakery/pkg/rabbitmq/consumer"
 
 	tele "gopkg.in/telebot.v3"
 )
@@ -25,7 +28,7 @@ type baseBot struct {
 	monitorSvc     *app.MonitorService
 	syncSvc        *app.SyncService
 	techCardSvc    *app.TechCardService
-	orderEvents    app.OrderEventBus
+	eventConsumer  *consumer.Consumer
 	miniAppURL     string
 	workshopChatID int64
 }
@@ -45,7 +48,7 @@ func NewOrderBot(
 	monitorSvc *app.MonitorService,
 	syncSvc *app.SyncService,
 	techCardSvc *app.TechCardService,
-	orderEvents app.OrderEventBus,
+	eventConsumer *consumer.Consumer,
 	miniAppURL string,
 	workshopChatID int64,
 ) (*OrderBot, error) {
@@ -72,16 +75,13 @@ func NewOrderBot(
 			monitorSvc:     monitorSvc,
 			syncSvc:        syncSvc,
 			techCardSvc:    techCardSvc,
-			orderEvents:    orderEvents,
+			eventConsumer:  eventConsumer,
 			miniAppURL:     miniAppURL,
 			workshopChatID: workshopChatID,
 		},
 		sessions: make(map[int64]*session),
 	}
 	bot.register()
-	if err := bot.subscribeOrderEvents(); err != nil {
-		return nil, err
-	}
 	return bot, nil
 }
 
@@ -115,35 +115,50 @@ func (b *OrderBot) Stop() {
 	b.tele.Stop()
 }
 
-func (b *OrderBot) subscribeOrderEvents() error {
-	if b == nil || b.orderEvents == nil {
+// ConsumeOrderEvents runs the RabbitMQ consumer that delivers order events to
+// the workshop chat. Blocks until ctx is cancelled.
+func (b *OrderBot) ConsumeOrderEvents(ctx context.Context) error {
+	if b == nil || b.eventConsumer == nil {
+		<-ctx.Done()
 		return nil
 	}
-	if err := b.orderEvents.SubscribeOrderCreated(b.handleOrderCreatedEvent); err != nil {
-		return fmt.Errorf("subscribe order created: %w", err)
+	return b.eventConsumer.StartConsumer(ctx, b.handleOrderEvent)
+}
+
+type orderEventEnvelope struct {
+	Type    string          `json:"type"`
+	Payload json.RawMessage `json:"payload"`
+}
+
+type orderEventPayload struct {
+	Order orderdomain.Order `json:"order"`
+}
+
+func (b *OrderBot) handleOrderEvent(ctx context.Context, body []byte) error {
+	var env orderEventEnvelope
+	if err := json.Unmarshal(body, &env); err != nil {
+		return fmt.Errorf("decode order event envelope: %w", err)
 	}
-	if err := b.orderEvents.SubscribeOrderUpdated(b.handleOrderUpdatedEvent); err != nil {
-		return fmt.Errorf("subscribe order updated: %w", err)
+	var payload orderEventPayload
+	if err := json.Unmarshal(env.Payload, &payload); err != nil {
+		return fmt.Errorf("decode order event payload: %w", err)
+	}
+	order := payload.Order
+	fromName := b.departmentDisplayName(ctx, order.FromDepartmentID)
+	toName := b.departmentDisplayName(ctx, order.ToDepartmentID)
+
+	var message string
+	switch env.Type {
+	case orderdomain.EventOrderCreated:
+		message = responses.OrderSummary(order, fromName, toName)
+	case orderdomain.EventOrderUpdated:
+		message = responses.OrderUpdated(order, fromName, toName)
+	default:
+		slog.WarnContext(ctx, "unknown order event type", "type", env.Type)
+		return nil
+	}
+	if err := b.notifyWorkshop(ctx, message); err != nil {
+		return fmt.Errorf("notify workshop: %w", err)
 	}
 	return nil
-}
-
-func (b *OrderBot) handleOrderCreatedEvent(event app.OrderEvent) {
-	ctx := context.Background()
-	order := event.Order
-	fromName := b.departmentDisplayName(ctx, order.FromDepartmentID)
-	toName := b.departmentDisplayName(ctx, order.ToDepartmentID)
-	if err := b.notifyWorkshop(ctx, responses.OrderSummary(order, fromName, toName)); err != nil {
-		slog.WarnContext(ctx, "notify workshop about order event failed", "topic", event.Topic, "order_number", order.Number, "error", err)
-	}
-}
-
-func (b *OrderBot) handleOrderUpdatedEvent(event app.OrderEvent) {
-	ctx := context.Background()
-	order := event.Order
-	fromName := b.departmentDisplayName(ctx, order.FromDepartmentID)
-	toName := b.departmentDisplayName(ctx, order.ToDepartmentID)
-	if err := b.notifyWorkshop(ctx, responses.OrderUpdated(order, fromName, toName)); err != nil {
-		slog.WarnContext(ctx, "notify workshop about order event failed", "topic", event.Topic, "order_number", order.Number, "error", err)
-	}
 }
