@@ -1,5 +1,8 @@
 package monitoring
 
+// DefaultMonitorCodes — коды теста по умолчанию для расчёта (бот и API).
+var DefaultMonitorCodes = []string{"17642", "17644", "17650", "19694"}
+
 // IngredientUsage описывает расход конкретного ингредиента.
 // Quantity хранится в Unit (например, кг/шт/л).
 type IngredientUsage struct {

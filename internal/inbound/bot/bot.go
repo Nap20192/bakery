@@ -10,10 +10,13 @@ import (
 	"sync"
 	"time"
 
-	"bakery/internal/app"
 	orderdomain "bakery/internal/domain/order"
 	authuc "bakery/internal/services/auth/usecase/auth"
+	"bakery/internal/services/department"
+	"bakery/internal/services/monitor"
 	orderuc "bakery/internal/services/order/usecase/order"
+	"bakery/internal/services/sync"
+	"bakery/internal/services/techcard"
 	"bakery/pkg/rabbitmq/consumer"
 
 	tele "gopkg.in/telebot.v3"
@@ -24,10 +27,10 @@ type baseBot struct {
 	orderSvc       orderuc.UseCase
 	authSvc        authuc.UseCase
 	rbacSvc        *authuc.RBAC
-	departmentSvc  *app.DepartmentService
-	monitorSvc     *app.MonitorService
-	syncSvc        *app.SyncService
-	techCardSvc    *app.TechCardService
+	departmentSvc  *departmentsvc.Service
+	monitorSvc     *monitorsvc.Service
+	syncSvc        *syncsvc.Service
+	techCardSvc    *techcardsvc.Service
 	eventConsumer  *consumer.Consumer
 	miniAppURL     string
 	workshopChatID int64
@@ -44,10 +47,10 @@ func NewOrderBot(
 	orderSvc orderuc.UseCase,
 	authSvc authuc.UseCase,
 	rbacSvc *authuc.RBAC,
-	departmentSvc *app.DepartmentService,
-	monitorSvc *app.MonitorService,
-	syncSvc *app.SyncService,
-	techCardSvc *app.TechCardService,
+	departmentSvc *departmentsvc.Service,
+	monitorSvc *monitorsvc.Service,
+	syncSvc *syncsvc.Service,
+	techCardSvc *techcardsvc.Service,
 	eventConsumer *consumer.Consumer,
 	miniAppURL string,
 	workshopChatID int64,

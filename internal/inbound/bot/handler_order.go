@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"bakery/internal/app"
 	orderdomain "bakery/internal/domain/order"
 	"bakery/internal/pkg/enum"
 	authuc "bakery/internal/services/auth/usecase/auth"
@@ -342,11 +341,11 @@ func (b *OrderBot) orderDepartmentsForSelected(ctx context.Context, departmentID
 	}
 
 	switch department.Type {
-	case string(app.DepartmentTypeShop):
+	case string(enum.DepartmentTypeShop):
 		fromID := department.ID
 		toID := workshop.ID
 		return &fromID, &toID, nil
-	case string(app.DepartmentTypeWorkshop):
+	case string(enum.DepartmentTypeWorkshop):
 		return nil, nil, nil
 	default:
 		return nil, nil, nil

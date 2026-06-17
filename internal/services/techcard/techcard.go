@@ -1,4 +1,4 @@
-package app
+package techcardsvc
 
 import (
 	"context"
@@ -16,15 +16,15 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type TechCardService struct {
+type Service struct {
 	queries *sqlc.Queries
 }
 
-func NewTechCardService(queries *sqlc.Queries) *TechCardService {
-	return &TechCardService{queries: queries}
+func New(queries *sqlc.Queries) *Service {
+	return &Service{queries: queries}
 }
 
-func (s *TechCardService) GetByCode(ctx context.Context, code string, date time.Time) (techcarddomain.TechCard, error) {
+func (s *Service) GetByCode(ctx context.Context, code string, date time.Time) (techcarddomain.TechCard, error) {
 	code = strings.TrimSpace(code)
 	if code == "" {
 		return techcarddomain.TechCard{}, fmt.Errorf("code is required")
@@ -63,7 +63,7 @@ func (s *TechCardService) GetByCode(ctx context.Context, code string, date time.
 	return card, nil
 }
 
-func (s *TechCardService) attachAssembly(ctx context.Context, card *techcarddomain.TechCard, productID string, date pgtype.Date) error {
+func (s *Service) attachAssembly(ctx context.Context, card *techcarddomain.TechCard, productID string, date pgtype.Date) error {
 	row, err := s.queries.GetActiveAssemblyChartFullByProductID(ctx, sqlc.GetActiveAssemblyChartFullByProductIDParams{
 		AssembledProductID: productID,
 		OrderDate:          date,
@@ -86,7 +86,7 @@ func (s *TechCardService) attachAssembly(ctx context.Context, card *techcarddoma
 	return nil
 }
 
-func (s *TechCardService) attachPrepared(ctx context.Context, card *techcarddomain.TechCard, productID string, date pgtype.Date) error {
+func (s *Service) attachPrepared(ctx context.Context, card *techcarddomain.TechCard, productID string, date pgtype.Date) error {
 	row, err := s.queries.GetActivePreparedChartFullByProductID(ctx, sqlc.GetActivePreparedChartFullByProductIDParams{
 		AssembledProductID: productID,
 		OrderDate:          date,
@@ -109,7 +109,7 @@ func (s *TechCardService) attachPrepared(ctx context.Context, card *techcarddoma
 	return nil
 }
 
-func (s *TechCardService) addProduct(ctx context.Context, card *techcarddomain.TechCard, productID string) {
+func (s *Service) addProduct(ctx context.Context, card *techcarddomain.TechCard, productID string) {
 	if productID == "" {
 		return
 	}

@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"bakery/internal/app"
 	accessdomain "bakery/internal/domain/access"
 	"bakery/internal/pkg/enum"
 
@@ -95,7 +94,7 @@ func (b *OrderBot) actionMenu(c tele.Context) actionMenuSnapshot {
 
 func (s actionMenuSnapshot) resolveState() actionMenuState {
 	if s.admin {
-		if s.departmentType == string(app.DepartmentTypeWorkshop) {
+		if s.departmentType == string(enum.DepartmentTypeWorkshop) {
 			if s.hasFilter() {
 				return actionStateAdminWorkshopFilt
 			}
@@ -110,7 +109,7 @@ func (s actionMenuSnapshot) resolveState() actionMenuState {
 		return actionStateAdminIdle
 	}
 
-	if s.departmentType == string(app.DepartmentTypeWorkshop) {
+	if s.departmentType == string(enum.DepartmentTypeWorkshop) {
 		if s.hasFilter() {
 			return actionStateWorkshopFilter
 		}
@@ -192,7 +191,7 @@ func (s actionMenuSnapshot) filterStateText() string {
 func (b *OrderBot) actionMenuRows(c tele.Context) [][]string {
 	snapshot := b.actionMenu(c)
 	rows := snapshot.rows()
-	if snapshot.departmentType != string(app.DepartmentTypeWorkshop) {
+	if snapshot.departmentType != string(enum.DepartmentTypeWorkshop) {
 		return rows
 	}
 	return append(rows, b.orderShopFilterReplyRows(requestContext(c))...)
@@ -206,7 +205,7 @@ func (b *OrderBot) isCurrentOrderStateButton(c tele.Context, text string) bool {
 
 func (b *OrderBot) isOrderFilterStateButton(c tele.Context, text string) bool {
 	snapshot := b.actionMenu(c)
-	if snapshot.departmentType != string(app.DepartmentTypeWorkshop) {
+	if snapshot.departmentType != string(enum.DepartmentTypeWorkshop) {
 		return false
 	}
 	return strings.EqualFold(strings.TrimSpace(text), snapshot.filterStateText())

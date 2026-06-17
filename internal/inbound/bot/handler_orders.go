@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"bakery/internal/app"
 	accessdomain "bakery/internal/domain/access"
+	monitoringdomain "bakery/internal/domain/monitoring"
 	orderdomain "bakery/internal/domain/order"
 	"bakery/internal/pkg/enum"
 	orderuc "bakery/internal/services/order/usecase/order"
@@ -125,7 +125,7 @@ func (b *OrderBot) handleMonitorOrderCallback(c tele.Context) error {
 		return sendText(c, fmt.Sprintf("Заказ %s не найден.", number))
 	}
 	_ = c.Respond()
-	return b.sendMonitorReports(ctx, c, order, defaultMonitorCodes)
+	return b.sendMonitorReports(ctx, c, order, monitoringdomain.DefaultMonitorCodes)
 }
 
 func (b *OrderBot) handleCopyOrderCallback(c tele.Context) error {
@@ -279,7 +279,7 @@ const (
 )
 
 func (b *OrderBot) ordersMode(c tele.Context, user accessdomain.AuthUser) ordersMode {
-	if b.userDepartmentType(c, user) == string(app.DepartmentTypeShop) {
+	if b.userDepartmentType(c, user) == string(enum.DepartmentTypeShop) {
 		return ordersModeShop
 	}
 	return ordersModeWorkshop
