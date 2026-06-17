@@ -53,6 +53,9 @@ func main() {
 		os.Exit(1)
 	}
 	defer func() { _ = rabbitConn.Close() }()
+	slog.Info("connected to rabbitmq", "url", cfg.RabbitMQ.URL)
+	slog.Info("starting bot", "bot_env", cfg.Telegram.BotEnv)
+	slog.Info("chat_id", "chat_id", cfg.Telegram.WorkshopChatID)
 
 	infra, err := deps.NewInfraDeps(
 		deps.WithConfig(cfg),

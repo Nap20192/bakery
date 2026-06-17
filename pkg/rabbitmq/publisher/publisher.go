@@ -44,14 +44,35 @@ func New(amqpConn *amqp.Connection) *Publisher {
 
 // PublishEvents marshals each event into a transport envelope and publishes it.
 func (p *Publisher) PublishEvents(ctx context.Context, events []any) error {
+	slog.DebugContext(ctx, "rabbitmq publish batch",
+		"component", "rabbitmq.publisher",
+		"exchange", p.exchangeName,
+		"events", len(events),
+	)
 	for _, e := range events {
+		identity := ""
+		if ev, ok := e.(interface{ Identity() string }); ok {
+			identity = ev.Identity()
+		}
 		body, err := json.Marshal(envelope(e))
 		if err != nil {
 			return fmt.Errorf("marshal event envelope: %w", err)
 		}
+		slog.DebugContext(ctx, "rabbitmq publishing event",
+			"component", "rabbitmq.publisher",
+			"exchange", p.exchangeName,
+			"type", identity,
+			"bytes", len(body),
+			"body", string(body),
+		)
 		if err := p.publish(ctx, body); err != nil {
 			return err
 		}
+		slog.DebugContext(ctx, "rabbitmq event published",
+			"component", "rabbitmq.publisher",
+			"exchange", p.exchangeName,
+			"type", identity,
+		)
 	}
 	return nil
 }
@@ -91,12 +112,13 @@ func (p *Publisher) publish(ctx context.Context, body []byte) error {
 		return fmt.Errorf("declare exchange: %w", err)
 	}
 
+	messageID := uuid.New().String()
 	if err := ch.PublishWithContext(
 		ctx, p.exchangeName, p.bindingKey, publishMandatory, publishImmediate,
 		amqp.Publishing{
 			ContentType:  "application/json",
 			DeliveryMode: amqp.Persistent,
-			MessageId:    uuid.New().String(),
+			MessageId:    messageID,
 			Timestamp:    time.Now(),
 			Body:         body,
 			Type:         messageTypeName,
@@ -104,5 +126,12 @@ func (p *Publisher) publish(ctx context.Context, body []byte) error {
 	); err != nil {
 		return fmt.Errorf("publish: %w", err)
 	}
+	slog.DebugContext(ctx, "rabbitmq message sent to exchange",
+		"component", "rabbitmq.publisher",
+		"exchange", p.exchangeName,
+		"routing_key", p.bindingKey,
+		"message_id", messageID,
+		"bytes", len(body),
+	)
 	return nil
 }

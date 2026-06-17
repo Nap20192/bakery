@@ -127,6 +127,14 @@ func (c *Consumer) consume(ctx context.Context, deliveries <-chan amqp.Delivery,
 			if !ok {
 				return
 			}
+			slog.DebugContext(ctx, "rabbitmq message received",
+				"component", "rabbitmq.consumer",
+				"queue", c.queueName,
+				"message_id", delivery.MessageId,
+				"type", delivery.Type,
+				"bytes", len(delivery.Body),
+				"body", string(delivery.Body),
+			)
 			if err := handler(ctx, delivery.Body); err != nil {
 				ackMu.Lock()
 				if nackErr := delivery.Nack(false, false); nackErr != nil {
@@ -139,6 +147,12 @@ func (c *Consumer) consume(ctx context.Context, deliveries <-chan amqp.Delivery,
 			ackMu.Lock()
 			if err := delivery.Ack(false); err != nil {
 				slog.WarnContext(ctx, "ack rabbitmq message failed", "error", err)
+			} else {
+				slog.DebugContext(ctx, "rabbitmq message acked",
+					"component", "rabbitmq.consumer",
+					"queue", c.queueName,
+					"message_id", delivery.MessageId,
+				)
 			}
 			ackMu.Unlock()
 		}
