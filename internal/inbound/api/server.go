@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"bakery/internal/app"
+	authuc "bakery/internal/services/auth/usecase/auth"
 	orderuc "bakery/internal/services/order/usecase/order"
 )
 
@@ -21,7 +22,7 @@ type Server struct {
 	orderSvc      orderuc.UseCase
 	monitorSvc    *app.MonitorService
 	departmentSvc *app.DepartmentService
-	authSvc       *app.AuthService
+	authSvc       authuc.UseCase
 	config        ServerConfig
 	server        *http.Server
 }
@@ -30,7 +31,7 @@ func NewServer(
 	orderSvc orderuc.UseCase,
 	monitorSvc *app.MonitorService,
 	departmentSvc *app.DepartmentService,
-	authSvc *app.AuthService,
+	authSvc authuc.UseCase,
 	config ServerConfig,
 ) *Server {
 	return &Server{

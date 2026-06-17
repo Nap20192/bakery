@@ -70,24 +70,25 @@ func TestValidateMiniAppInitData(t *testing.T) {
 	}
 }
 
-func TestMiniAppAuthorizationData(t *testing.T) {
+func TestAuthorizationCredentials(t *testing.T) {
 	tests := []struct {
-		name   string
-		header string
-		want   string
-		ok     bool
+		name       string
+		header     string
+		wantScheme string
+		wantData   string
+		ok         bool
 	}{
-		{name: "valid scheme", header: "tma auth_date=1&hash=a", want: "auth_date=1&hash=a", ok: true},
-		{name: "case insensitive scheme", header: "TMA data", want: "data", ok: true},
-		{name: "wrong scheme", header: "Bearer data", ok: false},
+		{name: "tma scheme", header: "tma auth_date=1&hash=a", wantScheme: "tma", wantData: "auth_date=1&hash=a", ok: true},
+		{name: "bearer scheme", header: "Bearer v1.body.sig", wantScheme: "Bearer", wantData: "v1.body.sig", ok: true},
 		{name: "empty data", header: "tma ", ok: false},
+		{name: "no scheme", header: "garbage", ok: false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, ok := miniAppAuthorizationData(tt.header)
-			if got != tt.want || ok != tt.ok {
-				t.Fatalf("miniAppAuthorizationData() = (%q, %v), want (%q, %v)", got, ok, tt.want, tt.ok)
+			scheme, data, ok := authorizationCredentials(tt.header)
+			if ok != tt.ok || (ok && (scheme != tt.wantScheme || data != tt.wantData)) {
+				t.Fatalf("authorizationCredentials() = (%q, %q, %v), want (%q, %q, %v)", scheme, data, ok, tt.wantScheme, tt.wantData, tt.ok)
 			}
 		})
 	}

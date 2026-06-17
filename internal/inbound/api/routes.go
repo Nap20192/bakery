@@ -4,6 +4,7 @@ import "net/http"
 
 func (s *Server) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /health", s.handleHealth)
+	mux.HandleFunc("POST /login", s.handleTelegramLogin)
 	mux.Handle("GET /me", s.requireMiniAppAuth(http.HandlerFunc(s.handleMe)))
 	mux.Handle("GET /catalog", s.requireMiniAppAuth(http.HandlerFunc(s.handleCatalog)))
 	mux.Handle("GET /departments", s.requireMiniAppAuth(http.HandlerFunc(s.handleListDepartments)))

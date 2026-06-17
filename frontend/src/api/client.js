@@ -1,7 +1,15 @@
 import { apiBase } from '../config/env';
+import { authHeader } from '../lib/auth';
 import { logInfo, logWarn } from '../lib/logger';
-import { telegramInitData } from '../lib/telegram';
 import { apiURL } from '../lib/url';
+
+export class ApiError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
 
 export async function apiRequest(path, options = {}) {
   const url = apiURL(apiBase, path);
@@ -15,12 +23,11 @@ export async function apiRequest(path, options = {}) {
 
   let response;
   try {
-    const initData = telegramInitData();
     response = await fetch(url, {
       ...options,
       headers: {
         ...(options.headers || {}),
-        ...(initData ? { Authorization: `tma ${initData}` } : {}),
+        ...authHeader(),
       },
     });
   } catch (err) {
@@ -46,7 +53,7 @@ export async function apiRequest(path, options = {}) {
       duration_ms: Math.round(performance.now() - started),
       error: payload.error || `HTTP ${response.status}`,
     });
-    throw new Error(payload.error || `HTTP ${response.status}`);
+    throw new ApiError(payload.error || `HTTP ${response.status}`, response.status);
   }
   if (!contentType.includes('application/json')) {
     logWarn('api.invalid_content_type', {

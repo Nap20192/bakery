@@ -1,3 +1,7 @@
+// Command bot runs the Telegram bot as a standalone process, separate from the
+// HTTP API / sync worker. For now it still builds the data-backed services it
+// needs directly; a later stage swaps that backend for an HTTP API client so
+// the bot talks to the application only over the API.
 package main
 
 import (
@@ -62,58 +66,33 @@ func main() {
 		deps.WithMonitorService(infra),
 		deps.WithTechCardService(infra),
 		deps.WithSyncService(infra),
-		deps.WithAPIServerConfig(infra),
+		deps.WithOrderBot(infra),
 	)
 	if err != nil {
-		log.Error("build app deps failed", "error", err)
+		log.Error("build bot deps failed", "error", err)
 		os.Exit(1)
 	}
-
-	admin, created, err := appDeps.AuthService.EnsureAdminUser(
-		ctx,
-		cfg.Admin.Username,
-		cfg.Admin.Password,
-	)
-	if err != nil {
-		log.Error("ensure admin failed", "error", err)
-		os.Exit(1)
-	}
-	log.Info("admin user ready", "username", admin.Username, "role", admin.Role, "created", created)
-
-	templateSeed, err := appDeps.OrderService.EnsureDefaultOrderTemplates(ctx, "templates/dishes.txt")
-	if err != nil {
-		log.Error("ensure default templates failed", "error", err)
-		os.Exit(1)
-	}
-	log.Info("dish catalog ready", "catalog_items", templateSeed.CatalogItems)
 
 	group, groupCtx := errgroup.WithContext(ctx)
 	group.Go(func() error {
-		log.Info("sync service started")
-		return appDeps.SyncService.Run(groupCtx)
-	})
-	group.Go(func() error {
 		log.Info(
-			"order cleanup started",
-			"interval", cfg.OrderCleanup.Interval.String(),
-			"retention", cfg.OrderCleanup.Retention.String(),
+			"orderbot started",
+			"bot_env", cfg.Telegram.BotEnv,
+			"bot_name", appDeps.OrderBot.Name(),
+			"bot_username", appDeps.OrderBot.Username(),
 		)
-		return appDeps.OrderService.RunCleanupTicker(groupCtx, cfg.OrderCleanup.Interval, cfg.OrderCleanup.Retention)
-	})
-	group.Go(func() error {
-		log.Info("http api started", "addr", cfg.Server.Addr())
-		return appDeps.APIServer.Start()
+		appDeps.OrderBot.Start()
+		return nil
 	})
 	group.Go(func() error {
 		<-groupCtx.Done()
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
-		defer cancel()
-		return appDeps.APIServer.Shutdown(shutdownCtx)
+		appDeps.OrderBot.Stop()
+		return nil
 	})
 
 	if err := group.Wait(); err != nil {
-		log.Error("worker stopped with error", "error", err)
+		log.Error("bot stopped with error", "error", err)
 		os.Exit(1)
 	}
-	log.Info("worker stopped")
+	log.Info("bot stopped")
 }

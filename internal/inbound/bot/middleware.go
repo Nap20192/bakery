@@ -4,9 +4,9 @@ import (
 	"errors"
 	"log/slog"
 
-	"bakery/internal/app"
 	accessdomain "bakery/internal/domain/access"
 	"bakery/internal/pkg/enum"
+	authuc "bakery/internal/services/auth/usecase/auth"
 
 	tele "gopkg.in/telebot.v3"
 )
@@ -59,7 +59,7 @@ func (b *baseBot) authUserFromContext(c tele.Context) (accessdomain.AuthUser, er
 	ctx := requestContext(c)
 	user, err := b.authSvc.GetUserByTelegramID(ctx, sender.ID)
 	if err != nil {
-		if errors.Is(err, app.ErrAuthUserNotFound) {
+		if errors.Is(err, authuc.ErrAuthUserNotFound) {
 			return accessdomain.AuthUser{}, sendText(c, "Пользователь не зарегистрирован. Обратитесь к администратору.")
 		}
 		slog.ErrorContext(ctx, "auth user lookup failed", "error", err)

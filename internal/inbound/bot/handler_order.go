@@ -11,6 +11,7 @@ import (
 	"bakery/internal/app"
 	orderdomain "bakery/internal/domain/order"
 	"bakery/internal/pkg/enum"
+	authuc "bakery/internal/services/auth/usecase/auth"
 	orderuc "bakery/internal/services/order/usecase/order"
 	applog "bakery/pkg/logger"
 
@@ -82,7 +83,7 @@ func (b *OrderBot) handleActionText(c tele.Context, text string) (bool, error) {
 	case actionCancelOrder:
 		return true, b.handleCancel(c)
 	case actionSync:
-		if err := b.ensureActionPermission(c, app.PermissionSync); err != nil {
+		if err := b.ensureActionPermission(c, enum.PermissionSync); err != nil {
 			return true, err
 		}
 		return true, b.handleSync(c)
@@ -315,7 +316,7 @@ func (b *OrderBot) orderDepartmentsForSender(ctx context.Context, c tele.Context
 	}
 	user, err := b.authSvc.GetUserByTelegramID(ctx, sender.ID)
 	if err != nil {
-		if !errors.Is(err, app.ErrAuthUserNotFound) {
+		if !errors.Is(err, authuc.ErrAuthUserNotFound) {
 			slog.WarnContext(ctx, "get user department failed", "error", err)
 		}
 		return nil, nil

@@ -6,14 +6,16 @@ import (
 	"bakery/internal/app"
 	"bakery/internal/inbound/api"
 	"bakery/internal/inbound/bot"
+	authrepo "bakery/internal/services/auth/infra/repo"
+	authuc "bakery/internal/services/auth/usecase/auth"
 	orderrepo "bakery/internal/services/order/infra/repo"
 	orderuc "bakery/internal/services/order/usecase/order"
 )
 
 type AppDeps struct {
-	AuthService       *app.AuthService
+	AuthService       authuc.UseCase
 	OrderEvents       app.OrderEventBus
-	RbacService       *app.RbacService
+	RbacService       *authuc.RBAC
 	DepartmentService *app.DepartmentService
 	MonitorService    *app.MonitorService
 	OrderService      orderuc.UseCase
@@ -47,14 +49,14 @@ func WithAuthService(infra *InfraDeps) appOption {
 		if infra == nil || infra.queries == nil {
 			return fmt.Errorf("missing dependencies for AuthService")
 		}
-		deps.AuthService = app.NewAuthService(infra.queries)
+		deps.AuthService = authuc.NewService(authrepo.New(infra.queries))
 		return nil
 	}
 }
 
 func WithRbacService() appOption {
 	return func(deps *AppDeps) error {
-		deps.RbacService = app.NewRbacService()
+		deps.RbacService = authuc.NewRBAC()
 		return nil
 	}
 }

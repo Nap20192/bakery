@@ -5,7 +5,16 @@ import "strings"
 type Role string
 
 const (
+	// RoleAdmin — полный доступ: iiko sync, управление пользователями, техкарты,
+	// все заказы и мониторинг.
 	RoleAdmin Role = "admin"
+	// RoleShop — магазин: создаёт и редактирует заказы, видит только заказы
+	// своего магазина.
+	RoleShop Role = "shop"
+	// RoleBaker — цех: видит все заказы и считает мониторинг по тесту.
+	RoleBaker Role = "baker"
+	// RoleUser — роль по умолчанию для нового пользователя без выданных прав.
+	RoleUser Role = "user"
 )
 
 func NormalizeRole(role string) Role {
@@ -14,7 +23,7 @@ func NormalizeRole(role string) Role {
 
 func IsValidRole(role string) bool {
 	switch NormalizeRole(role) {
-	case RoleAdmin:
+	case RoleAdmin, RoleShop, RoleBaker, RoleUser:
 		return true
 	default:
 		return false
@@ -24,8 +33,12 @@ func IsValidRole(role string) bool {
 type Permission string
 
 const (
-	PermissionTechCard Permission = "techcard:view"
-	PermissionSync     Permission = "sync:run"
+	PermissionTechCard     Permission = "techcard:view"
+	PermissionSync         Permission = "sync:run"
+	PermissionManageUsers  Permission = "user:manage"
+	PermissionOrderWrite   Permission = "order:write"
+	PermissionOrderViewAll Permission = "order:view_all"
+	PermissionMonitorDough Permission = "monitor:dough"
 )
 
 type DepartmentType string
