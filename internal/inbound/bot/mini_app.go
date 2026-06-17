@@ -49,13 +49,3 @@ func (b *OrderBot) miniAppButton(markup *tele.ReplyMarkup, label, mode, orderNum
 	}
 	return markup.WebApp(label, &tele.WebApp{URL: link}), true
 }
-
-func (b *OrderBot) miniAppMarkup() *tele.ReplyMarkup {
-	markup := &tele.ReplyMarkup{}
-	button, ok := b.miniAppButton(markup, "Открыть приложение", miniAppModeOrders, "", nil)
-	if !ok {
-		return nil
-	}
-	markup.Inline(markup.Row(button))
-	return markup
-}

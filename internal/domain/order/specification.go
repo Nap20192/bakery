@@ -17,15 +17,3 @@ type BulkOrderLineSpecificationFunc func(line BulkOrderLine) bool
 func (s BulkOrderLineSpecificationFunc) IsValid(line BulkOrderLine) bool {
 	return s(line)
 }
-
-type ParsedOrderLineSpecificationFunc func(line ParsedOrderLine) bool
-
-func (s ParsedOrderLineSpecificationFunc) IsValid(line ParsedOrderLine) bool {
-	return s(line)
-}
-
-type OrderItemsSpecificationFunc func(items []OrderItem) bool
-
-func (s OrderItemsSpecificationFunc) IsValid(items []OrderItem) bool {
-	return s(items)
-}

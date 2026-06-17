@@ -25,12 +25,3 @@ const (
 )
 
 func (q QueueName) String() string { return string(q) }
-
-type MessageType string
-
-const (
-	MessageTypeOrderCreated MessageType = "order.created"
-	MessageTypeOrderUpdated MessageType = "order.updated"
-)
-
-func (m MessageType) String() string { return string(m) }
