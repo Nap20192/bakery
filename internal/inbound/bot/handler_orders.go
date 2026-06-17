@@ -12,6 +12,7 @@ import (
 	accessdomain "bakery/internal/domain/access"
 	orderdomain "bakery/internal/domain/order"
 	"bakery/internal/pkg/enum"
+	orderuc "bakery/internal/services/order/usecase/order"
 	applog "bakery/pkg/logger"
 
 	tele "gopkg.in/telebot.v3"
@@ -55,7 +56,7 @@ func (b *OrderBot) listVisibleOrders(c tele.Context, limit int32) ([]orderdomain
 		filter.FromDepartmentID = cloneInt64Ptr(user.DepartmentID)
 	}
 
-	result, err := b.orderSvc.ListOrders(requestContext(c), app.ListOrdersInput{
+	result, err := b.orderSvc.ListOrders(requestContext(c), orderuc.ListOrdersInput{
 		Limit:            limit,
 		FromDepartmentID: filter.FromDepartmentID,
 		FulfillmentDate:  filter.FulfillmentDate,

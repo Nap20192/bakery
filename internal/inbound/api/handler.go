@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"bakery/internal/app"
 	monitoringdomain "bakery/internal/domain/monitoring"
 	orderdomain "bakery/internal/domain/order"
 	"bakery/internal/pkg/enum"
+	orderuc "bakery/internal/services/order/usecase/order"
 )
 
 var defaultMonitorCodes = []string{"17642", "17644", "17650", "19694"}
@@ -199,7 +199,7 @@ func (s *Server) handleListOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := s.orderSvc.ListOrders(r.Context(), app.ListOrdersInput{
+	result, err := s.orderSvc.ListOrders(r.Context(), orderuc.ListOrdersInput{
 		Limit:            limit,
 		Offset:           offset,
 		FromDepartmentID: fromDepartmentID,

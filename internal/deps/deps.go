@@ -6,6 +6,8 @@ import (
 	"bakery/internal/app"
 	"bakery/internal/inbound/api"
 	"bakery/internal/inbound/bot"
+	orderrepo "bakery/internal/services/order/infra/repo"
+	orderuc "bakery/internal/services/order/usecase/order"
 )
 
 type AppDeps struct {
@@ -14,7 +16,7 @@ type AppDeps struct {
 	RbacService       *app.RbacService
 	DepartmentService *app.DepartmentService
 	MonitorService    *app.MonitorService
-	OrderService      *app.OrderService
+	OrderService      orderuc.UseCase
 	SyncService       *app.SyncService
 	TechCardService   *app.TechCardService
 	APIServer         *api.Server
@@ -62,7 +64,7 @@ func WithOrderService(infra *InfraDeps) appOption {
 		if infra == nil || infra.queries == nil || infra.DB == nil {
 			return fmt.Errorf("missing dependencies for OrderService")
 		}
-		deps.OrderService = app.NewOrderServiceWithDB(infra.queries, infra.DB, deps.OrderEvents)
+		deps.OrderService = orderuc.NewService(orderrepo.New(infra.queries, infra.DB), deps.OrderEvents)
 		return nil
 	}
 }

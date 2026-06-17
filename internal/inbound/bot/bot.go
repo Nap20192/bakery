@@ -10,13 +10,14 @@ import (
 	"time"
 
 	"bakery/internal/app"
+	orderuc "bakery/internal/services/order/usecase/order"
 
 	tele "gopkg.in/telebot.v3"
 )
 
 type baseBot struct {
 	tele           *tele.Bot
-	orderSvc       *app.OrderService
+	orderSvc       orderuc.UseCase
 	authSvc        *app.AuthService
 	rbacSvc        *app.RbacService
 	departmentSvc  *app.DepartmentService
@@ -36,7 +37,7 @@ type OrderBot struct {
 
 func NewOrderBot(
 	token string,
-	orderSvc *app.OrderService,
+	orderSvc orderuc.UseCase,
 	authSvc *app.AuthService,
 	rbacSvc *app.RbacService,
 	departmentSvc *app.DepartmentService,

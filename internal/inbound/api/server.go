@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"bakery/internal/app"
+	orderuc "bakery/internal/services/order/usecase/order"
 )
 
 type ServerConfig struct {
@@ -17,7 +18,7 @@ type ServerConfig struct {
 }
 
 type Server struct {
-	orderSvc      *app.OrderService
+	orderSvc      orderuc.UseCase
 	monitorSvc    *app.MonitorService
 	departmentSvc *app.DepartmentService
 	authSvc       *app.AuthService
@@ -26,7 +27,7 @@ type Server struct {
 }
 
 func NewServer(
-	orderSvc *app.OrderService,
+	orderSvc orderuc.UseCase,
 	monitorSvc *app.MonitorService,
 	departmentSvc *app.DepartmentService,
 	authSvc *app.AuthService,
