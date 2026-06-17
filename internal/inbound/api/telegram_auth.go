@@ -18,6 +18,8 @@ import (
 
 	"bakery/internal/app"
 	accessdomain "bakery/internal/domain/access"
+	"bakery/internal/pkg/authtoken"
+	authuc "bakery/internal/services/auth/usecase/auth"
 )
 
 const (
@@ -42,62 +44,97 @@ type telegramInitUser struct {
 	Username string `json:"username"`
 }
 
+// requireMiniAppAuth authenticates every API request from either surface:
+// a Telegram Mini App (initData, "tma" scheme) or the plain web client
+// (bearer session token issued by /login). Both resolve to the same viewer.
 func (s *Server) requireMiniAppAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if s.authSvc == nil || s.departmentSvc == nil || strings.TrimSpace(s.config.BotToken) == "" {
-			writeJSON(w, http.StatusServiceUnavailable, errorResponse{Error: "Mini App временно недоступен."})
+			writeJSON(w, http.StatusServiceUnavailable, errorResponse{Error: "Приложение временно недоступно."})
 			return
 		}
 
-		initData, ok := miniAppAuthorizationData(r.Header.Get("Authorization"))
-		if !ok {
-			writeJSON(w, http.StatusUnauthorized, errorResponse{Error: "Откройте приложение через кнопку в Telegram."})
-			return
-		}
-		telegramUser, err := validateMiniAppInitData(initData, s.config.BotToken, time.Now(), miniAppAuthMaxAge)
+		telegramID, telegramUsername, err := s.authenticateRequest(r)
 		if err != nil {
-			slog.WarnContext(r.Context(), "telegram mini app authentication rejected", "error", err)
-			writeJSON(w, http.StatusUnauthorized, errorResponse{Error: "Не удалось подтвердить вход через Telegram. Откройте приложение заново."})
+			slog.WarnContext(r.Context(), "api authentication rejected", "error", err)
+			writeJSON(w, http.StatusUnauthorized, errorResponse{Error: "Не удалось подтвердить вход. Войдите заново."})
 			return
 		}
 
-		user, err := s.authSvc.GetUserByTelegramID(r.Context(), telegramUser.ID)
-		if err != nil {
-			if errors.Is(err, app.ErrAuthUserNotFound) {
-				writeJSON(w, http.StatusForbidden, errorResponse{Error: "Сначала выберите магазин или цех в боте через /start."})
-				return
-			}
-			slog.ErrorContext(r.Context(), "mini app user lookup failed", "error", err)
-			writeJSON(w, http.StatusInternalServerError, errorResponse{Error: "Не удалось определить пользователя."})
+		viewer, apiErr := s.buildViewer(r.Context(), telegramID, telegramUsername)
+		if apiErr != nil {
+			writeJSON(w, apiErr.status, errorResponse{Error: apiErr.message})
 			return
-		}
-		if user.DepartmentID == nil {
-			writeJSON(w, http.StatusForbidden, errorResponse{Error: "Сначала выберите магазин или цех в боте через /start."})
-			return
-		}
-		department, err := s.departmentSvc.GetByID(r.Context(), *user.DepartmentID)
-		if err != nil {
-			slog.ErrorContext(r.Context(), "mini app department lookup failed", "error", err)
-			writeJSON(w, http.StatusInternalServerError, errorResponse{Error: "Не удалось определить локацию пользователя."})
-			return
-		}
-		if department.Type != string(app.DepartmentTypeShop) && department.Type != string(app.DepartmentTypeWorkshop) {
-			writeJSON(w, http.StatusForbidden, errorResponse{Error: "Выбранная локация не поддерживается в приложении."})
-			return
-		}
-
-		viewer := miniAppUser{
-			Auth:           user,
-			TelegramID:     telegramUser.ID,
-			TelegramUser:   strings.TrimSpace(telegramUser.Username),
-			DepartmentID:   department.ID,
-			DepartmentCode: department.Code,
-			DepartmentName: department.Name,
-			DepartmentType: department.Type,
 		}
 		ctx := context.WithValue(r.Context(), miniAppUserContextKey{}, viewer)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+// authenticateRequest resolves the caller's Telegram identity from either the
+// Mini App initData header ("tma ...") or a web bearer session ("Bearer ...").
+func (s *Server) authenticateRequest(r *http.Request) (int64, string, error) {
+	scheme, data, ok := authorizationCredentials(r.Header.Get("Authorization"))
+	if !ok {
+		return 0, "", fmt.Errorf("authorization header is missing")
+	}
+	switch strings.ToLower(scheme) {
+	case miniAppAuthorizationScheme:
+		user, err := validateMiniAppInitData(data, s.config.BotToken, time.Now(), miniAppAuthMaxAge)
+		if err != nil {
+			return 0, "", err
+		}
+		return user.ID, strings.TrimSpace(user.Username), nil
+	case "bearer":
+		claims, err := authtoken.Parse(s.config.BotToken, data, time.Now())
+		if err != nil {
+			return 0, "", err
+		}
+		return claims.TelegramID, "", nil
+	default:
+		return 0, "", fmt.Errorf("unsupported authorization scheme %q", scheme)
+	}
+}
+
+type viewerError struct {
+	status  int
+	message string
+}
+
+// buildViewer loads the authenticated user and their department, enforcing that
+// the account exists and is attached to a supported location.
+func (s *Server) buildViewer(ctx context.Context, telegramID int64, telegramUsername string) (miniAppUser, *viewerError) {
+	user, err := s.authSvc.GetUserByTelegramID(ctx, telegramID)
+	if err != nil {
+		if errors.Is(err, authuc.ErrAuthUserNotFound) {
+			return miniAppUser{}, &viewerError{http.StatusForbidden, "Сначала выберите магазин или цех в боте через /start."}
+		}
+		slog.ErrorContext(ctx, "api user lookup failed", "error", err)
+		return miniAppUser{}, &viewerError{http.StatusInternalServerError, "Не удалось определить пользователя."}
+	}
+	if user.DepartmentID == nil {
+		return miniAppUser{}, &viewerError{http.StatusForbidden, "Сначала выберите магазин или цех в боте через /start."}
+	}
+	department, err := s.departmentSvc.GetByID(ctx, *user.DepartmentID)
+	if err != nil {
+		slog.ErrorContext(ctx, "api department lookup failed", "error", err)
+		return miniAppUser{}, &viewerError{http.StatusInternalServerError, "Не удалось определить локацию пользователя."}
+	}
+	if department.Type != string(app.DepartmentTypeShop) && department.Type != string(app.DepartmentTypeWorkshop) {
+		return miniAppUser{}, &viewerError{http.StatusForbidden, "Выбранная локация не поддерживается в приложении."}
+	}
+	if telegramUsername == "" && user.TelegramUsername != nil {
+		telegramUsername = strings.TrimSpace(*user.TelegramUsername)
+	}
+	return miniAppUser{
+		Auth:           user,
+		TelegramID:     telegramID,
+		TelegramUser:   strings.TrimSpace(telegramUsername),
+		DepartmentID:   department.ID,
+		DepartmentCode: department.Code,
+		DepartmentName: department.Name,
+		DepartmentType: department.Type,
+	}, nil
 }
 
 func miniAppUserFromContext(ctx context.Context) (miniAppUser, bool) {
@@ -105,13 +142,13 @@ func miniAppUserFromContext(ctx context.Context) (miniAppUser, bool) {
 	return user, ok
 }
 
-func miniAppAuthorizationData(header string) (string, bool) {
+func authorizationCredentials(header string) (string, string, bool) {
 	parts := strings.SplitN(strings.TrimSpace(header), " ", 2)
-	if len(parts) != 2 || !strings.EqualFold(parts[0], miniAppAuthorizationScheme) {
-		return "", false
+	if len(parts) != 2 {
+		return "", "", false
 	}
 	data := strings.TrimSpace(parts[1])
-	return data, data != ""
+	return parts[0], data, data != ""
 }
 
 func validateMiniAppInitData(raw string, botToken string, now time.Time, maxAge time.Duration) (telegramInitUser, error) {

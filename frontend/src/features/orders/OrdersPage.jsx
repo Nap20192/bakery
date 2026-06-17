@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
+import { Login } from '../../components/Login';
 import { panelClass, PanelHeader } from '../../components/Panel';
 import { apiBase, buildMode, frontendLogsEnabled } from '../../config/env';
+import { ApiError } from '../../api/client';
 import { createOrder, fetchBatchOrderMonitor, fetchCatalog, fetchDepartments, fetchMe, fetchOrder, fetchOrderMonitor, fetchOrders, updateOrder } from '../../api/orders';
+import { clearToken, getToken, isWebMode } from '../../lib/auth';
 import { logInfo, logWarn } from '../../lib/logger';
 import { miniAppModeFromLocation, orderNumberFromLocation, orderNumbersFromLocation, syncOrderURL, trimString } from '../../lib/url';
 import { MonitorReports } from './MonitorReports';
@@ -29,6 +32,7 @@ export function OrdersPage() {
   const [monitor, setMonitor] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [authNeeded, setAuthNeeded] = useState(isWebMode() && !getToken());
   const [ordersPage, setOrdersPage] = useState(defaultPage);
   const [filters, setFilters] = useState({
     fromDepartmentID: '',
@@ -39,7 +43,7 @@ export function OrdersPage() {
   const selectedNumber = selectedOrder?.number || '';
   const selectedOrderCount = selectedOrderNumbers.length;
 
-  useEffect(() => {
+  function bootstrap() {
     const launchMode = miniAppModeFromLocation();
     const linkedOrderNumber = orderNumberFromLocation();
     const linkedOrderNumbers = orderNumbersFromLocation();
@@ -63,7 +67,17 @@ export function OrdersPage() {
     } else if (linkedOrderNumber && launchMode !== 'edit') {
       loadOrder(linkedOrderNumber);
     }
+  }
+
+  useEffect(() => {
+    if (authNeeded) return;
+    bootstrap();
   }, []);
+
+  function handleAuthenticated() {
+    setAuthNeeded(false);
+    bootstrap();
+  }
 
   async function run(task) {
     setLoading(true);
@@ -71,6 +85,11 @@ export function OrdersPage() {
     try {
       await task();
     } catch (err) {
+      if (err instanceof ApiError && err.status === 401 && isWebMode()) {
+        clearToken();
+        setAuthNeeded(true);
+        return;
+      }
       logWarn('action.failed', {
         error: err instanceof Error ? err.message : String(err),
       });
@@ -258,6 +277,10 @@ export function OrdersPage() {
   }
 
   const canWriteOrders = viewer?.department_type === 'shop';
+
+  if (authNeeded) {
+    return <Login onAuthenticated={handleAuthenticated} />;
+  }
 
   return (
     <main className="min-h-screen bg-[#fff7df] text-stone-900 lg:grid lg:grid-cols-[24rem_minmax(0,1fr)]">
