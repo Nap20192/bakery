@@ -17,10 +17,7 @@ type UseCase interface {
 	CreateUserWithPassword(ctx context.Context, input accessdomain.PasswordAuthUserInput) (accessdomain.AuthUser, error)
 	EnsureAdminUser(ctx context.Context, username, password string) (accessdomain.AuthUser, bool, error)
 	VerifyPassword(ctx context.Context, username, password string) (accessdomain.AuthUser, error)
-	LoginTelegramUser(ctx context.Context, telegramID int64, telegramUsername, username, password string) (accessdomain.AuthUser, error)
-	LogoutTelegramUser(ctx context.Context, telegramID int64) error
 	AssignUserDepartment(ctx context.Context, userID int64, departmentID *int64) (accessdomain.AuthUser, error)
-	SetTelegramUserDepartment(ctx context.Context, telegramID int64, telegramUsername string, departmentID int64) (accessdomain.AuthUser, error)
 	GetUserByID(ctx context.Context, id int64) (accessdomain.AuthUser, error)
 	GetUserByTelegramID(ctx context.Context, telegramID int64) (accessdomain.AuthUser, error)
 	GetUserByTelegramUsername(ctx context.Context, telegramUsername string) (accessdomain.AuthUser, error)
@@ -44,28 +41,14 @@ type Repository interface {
 	ListByDepartmentID(ctx context.Context, departmentID int64) ([]accessdomain.AuthUser, error)
 	ListByRole(ctx context.Context, role string) ([]accessdomain.AuthUser, error)
 	SetRole(ctx context.Context, id int64, role string) (accessdomain.AuthUser, error)
-	LinkTelegramUser(ctx context.Context, input LinkTelegramUserInput) (accessdomain.AuthUser, error)
-	UnlinkTelegramUser(ctx context.Context, telegramID int64) error
-	UpsertTelegramUserDepartment(ctx context.Context, input UpsertTelegramDepartmentInput) (accessdomain.AuthUser, error)
 	AssignUserDepartment(ctx context.Context, userID int64, departmentID *int64) (accessdomain.AuthUser, error)
 }
 
 type CreatePasswordUserInput struct {
-	DepartmentID *int64
-	Username     string
-	PasswordHash string
-	MetadataJSON string
-	Role         string
-}
-
-type LinkTelegramUserInput struct {
-	UserID           int64
-	TelegramID       int64
+	DepartmentID     *int64
+	Username         string
 	TelegramUsername string
-}
-
-type UpsertTelegramDepartmentInput struct {
-	TelegramID       int64
-	TelegramUsername string
-	DepartmentID     int64
+	PasswordHash     string
+	MetadataJSON     string
+	Role             string
 }

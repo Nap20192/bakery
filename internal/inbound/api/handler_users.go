@@ -8,8 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	accessdomain "bakery/internal/domain/access"
-	authuc "bakery/internal/services/auth/usecase/auth"
+	adminuc "bakery/internal/services/admin/usecase/admin"
 )
 
 type userResponse struct {
@@ -21,10 +20,11 @@ type userResponse struct {
 }
 
 type createUserRequest struct {
-	Username       string `json:"username"`
-	Password       string `json:"password"`
-	Role           string `json:"role"`
-	DepartmentCode string `json:"department_code"`
+	Username         string `json:"username"`
+	Password         string `json:"password"`
+	TelegramUsername string `json:"telegram_username"`
+	Role             string `json:"role"`
+	DepartmentCode   string `json:"department_code"`
 }
 
 type updateUserRequest struct {
@@ -32,13 +32,8 @@ type updateUserRequest struct {
 	DepartmentCode *string `json:"department_code"`
 }
 
-// handleAdminDepartments returns all departments (admin scope, unfiltered).
 func (s *Server) handleAdminDepartments(w http.ResponseWriter, r *http.Request) {
-	if s.departmentSvc == nil {
-		writeJSON(w, http.StatusServiceUnavailable, errorResponse{Error: "Сервис отделов недоступен."})
-		return
-	}
-	departments, err := s.departmentSvc.ListByType(r.Context(), "")
+	departments, err := s.adminSvc.ListDepartments(r.Context())
 	if err != nil {
 		slog.ErrorContext(r.Context(), "admin list departments failed", "error", err)
 		writeJSON(w, http.StatusInternalServerError, errorResponse{Error: "Не удалось получить отделы."})
@@ -52,7 +47,7 @@ func (s *Server) handleAdminDepartments(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *Server) handleListUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := s.authSvc.ListUsers(r.Context())
+	users, err := s.adminSvc.ListUsers(r.Context())
 	if err != nil {
 		slog.ErrorContext(r.Context(), "list users failed", "error", err)
 		writeJSON(w, http.StatusInternalServerError, errorResponse{Error: "Не удалось получить пользователей."})
@@ -71,36 +66,20 @@ func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Некорректные данные."})
 		return
 	}
-	req.Username = strings.TrimSpace(req.Username)
-	req.Role = accessdomain.NormalizeRole(req.Role)
-	if req.Username == "" || req.Password == "" {
+	if strings.TrimSpace(req.Username) == "" || req.Password == "" {
 		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Укажите логин и пароль."})
 		return
 	}
-	if !accessdomain.IsValidRole(req.Role) {
-		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Недопустимая роль."})
-		return
-	}
 
-	departmentID, apiErr := s.departmentIDByCode(r, req.DepartmentCode)
-	if apiErr != nil {
-		writeJSON(w, apiErr.status, errorResponse{Error: apiErr.message})
-		return
-	}
-
-	user, err := s.authSvc.CreateUserWithPassword(r.Context(), accessdomain.PasswordAuthUserInput{
-		Username:     req.Username,
-		Password:     req.Password,
-		Role:         req.Role,
-		DepartmentID: departmentID,
+	user, err := s.adminSvc.CreateUser(r.Context(), adminuc.CreateUserInput{
+		Username:         req.Username,
+		Password:         req.Password,
+		TelegramUsername: req.TelegramUsername,
+		Role:             req.Role,
+		DepartmentCode:   req.DepartmentCode,
 	})
 	if err != nil {
-		if errors.Is(err, authuc.ErrInvalidRole) {
-			writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Недопустимая роль."})
-			return
-		}
-		slog.ErrorContext(r.Context(), "create user failed", "error", err)
-		writeJSON(w, http.StatusInternalServerError, errorResponse{Error: "Не удалось создать пользователя (возможно, логин занят)."})
+		s.writeUserError(w, r, err, "Не удалось создать пользователя (возможно, логин занят).")
 		return
 	}
 	writeJSON(w, http.StatusCreated, toUserResponse(user))
@@ -118,30 +97,22 @@ func (s *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := accessdomain.AuthUser{}
-	updated := false
+	var (
+		user    adminuc.User
+		updated bool
+	)
 	if req.Role != nil {
-		role := accessdomain.NormalizeRole(*req.Role)
-		if !accessdomain.IsValidRole(role) {
-			writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Недопустимая роль."})
-			return
-		}
-		user, err = s.authSvc.SetUserRole(r.Context(), id, role)
+		user, err = s.adminSvc.SetUserRole(r.Context(), id, *req.Role)
 		if err != nil {
-			s.writeUserUpdateError(w, r, err)
+			s.writeUserError(w, r, err, "Не удалось обновить роль.")
 			return
 		}
 		updated = true
 	}
 	if req.DepartmentCode != nil {
-		departmentID, apiErr := s.departmentIDByCode(r, *req.DepartmentCode)
-		if apiErr != nil {
-			writeJSON(w, apiErr.status, errorResponse{Error: apiErr.message})
-			return
-		}
-		user, err = s.authSvc.AssignUserDepartment(r.Context(), id, departmentID)
+		user, err = s.adminSvc.AssignUserDepartment(r.Context(), id, *req.DepartmentCode)
 		if err != nil {
-			s.writeUserUpdateError(w, r, err)
+			s.writeUserError(w, r, err, "Не удалось обновить отдел.")
 			return
 		}
 		updated = true
@@ -153,38 +124,21 @@ func (s *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, toUserResponse(user))
 }
 
-func (s *Server) writeUserUpdateError(w http.ResponseWriter, r *http.Request, err error) {
-	if errors.Is(err, authuc.ErrAuthUserNotFound) {
-		writeJSON(w, http.StatusNotFound, errorResponse{Error: "Пользователь не найден."})
-		return
+func (s *Server) writeUserError(w http.ResponseWriter, r *http.Request, err error, fallback string) {
+	switch {
+	case errors.Is(err, adminuc.ErrInvalidRole):
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Недопустимая роль."})
+	default:
+		slog.ErrorContext(r.Context(), "admin user operation failed", "error", err)
+		writeJSON(w, http.StatusInternalServerError, errorResponse{Error: fallback})
 	}
-	slog.ErrorContext(r.Context(), "update user failed", "error", err)
-	writeJSON(w, http.StatusInternalServerError, errorResponse{Error: "Не удалось обновить пользователя."})
 }
 
-// departmentIDByCode resolves an optional department code to its id.
-func (s *Server) departmentIDByCode(r *http.Request, code string) (*int64, *viewerError) {
-	code = strings.TrimSpace(code)
-	if code == "" {
-		return nil, nil
-	}
-	department, err := s.departmentSvc.GetByCode(r.Context(), code)
-	if err != nil {
-		return nil, &viewerError{http.StatusBadRequest, "Отдел с таким кодом не найден."}
-	}
-	id := department.ID
-	return &id, nil
-}
-
-func toUserResponse(u accessdomain.AuthUser) userResponse {
-	telegramUsername := ""
-	if u.TelegramUsername != nil {
-		telegramUsername = *u.TelegramUsername
-	}
+func toUserResponse(u adminuc.User) userResponse {
 	return userResponse{
 		ID:               u.ID,
 		Username:         u.Username,
-		TelegramUsername: telegramUsername,
+		TelegramUsername: u.TelegramUsername,
 		Role:             u.Role,
 		DepartmentID:     u.DepartmentID,
 	}

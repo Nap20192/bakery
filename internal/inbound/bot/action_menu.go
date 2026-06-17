@@ -23,14 +23,12 @@ const (
 )
 
 const (
-	actionChooseShop     = "Выбрать магазин"
-	actionChooseWorkshop = "Выбрать цех"
-	actionTemplates      = "Шаблоны"
-	actionOrders         = "Последние заказы"
-	actionSubmitOrder    = "Отправить заказ"
-	actionUpdateOrder    = "Обновить заказ"
-	actionCancelOrder    = "Отменить заказ"
-	actionSync           = "Sync iiko"
+	actionTemplates   = "Шаблоны"
+	actionOrders      = "Последние заказы"
+	actionSubmitOrder = "Отправить заказ"
+	actionUpdateOrder = "Обновить заказ"
+	actionCancelOrder = "Отменить заказ"
+	actionSync        = "Sync iiko"
 )
 
 type actionMenuState string
@@ -134,7 +132,7 @@ func (s actionMenuSnapshot) hasFilter() bool {
 func (s actionMenuSnapshot) rows() [][]string {
 	switch s.state {
 	case actionStateGuest:
-		return [][]string{{actionChooseShop, actionChooseWorkshop}}
+		return nil
 	case actionStateWorkshopIdle, actionStateWorkshopFilter:
 		return append(workshopActionRows(), s.filterRows()...)
 	case actionStateAdminWorkshop, actionStateAdminWorkshopFilt:
@@ -275,7 +273,11 @@ func (b *OrderBot) currentUser(c tele.Context) (accessdomain.AuthUser, bool) {
 	if b.authSvc == nil || c.Sender() == nil {
 		return accessdomain.AuthUser{}, false
 	}
-	user, err := b.authSvc.GetUserByTelegramID(requestContext(c), c.Sender().ID)
+	username := strings.TrimSpace(c.Sender().Username)
+	if username == "" {
+		return accessdomain.AuthUser{}, false
+	}
+	user, err := b.authSvc.GetUserByTelegramUsername(requestContext(c), username)
 	if err != nil {
 		return accessdomain.AuthUser{}, false
 	}

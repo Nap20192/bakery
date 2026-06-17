@@ -68,10 +68,6 @@ func (b *OrderBot) handleActionText(c tele.Context, text string) (bool, error) {
 		return true, b.handleOrders(c)
 	}
 	switch strings.TrimSpace(text) {
-	case actionChooseShop:
-		return true, b.handleDepartmentShop(c)
-	case actionChooseWorkshop:
-		return true, b.handleDepartmentWorkshop(c)
 	case actionTemplates:
 		return true, b.handleTemplates(c)
 	case actionOrders:

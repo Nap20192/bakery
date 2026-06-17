@@ -70,6 +70,7 @@ func main() {
 		deps.WithMonitorService(infra),
 		deps.WithTechCardService(infra),
 		deps.WithSyncService(infra),
+		deps.WithAdminService(),
 		deps.WithAPIServerConfig(infra),
 	)
 	if err != nil {

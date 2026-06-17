@@ -27,11 +27,12 @@ type AuthUser struct {
 
 // PasswordAuthUserInput — входные данные для пользователя с username/password.
 type PasswordAuthUserInput struct {
-	Username     string
-	Password     string
-	DepartmentID *int64
-	MetadataJSON string
-	Role         string
+	Username         string
+	Password         string
+	TelegramUsername string
+	DepartmentID     *int64
+	MetadataJSON     string
+	Role             string
 }
 
 // NormalizeRole приводит роль к каноничному виду (trim + lower-case),

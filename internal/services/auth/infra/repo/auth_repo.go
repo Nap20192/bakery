@@ -30,13 +30,14 @@ func New(queries *sqlc.Queries) *AuthRepository {
 func (r *AuthRepository) CreatePasswordUser(ctx context.Context, input authuc.CreatePasswordUserInput) (accessdomain.AuthUser, error) {
 	now := helpers.TimestamptzNow()
 	user, err := r.queries.CreatePasswordAuthUser(ctx, sqlc.CreatePasswordAuthUserParams{
-		DepartmentID: input.DepartmentID,
-		Username:     input.Username,
-		PasswordHash: input.PasswordHash,
-		MetadataJson: input.MetadataJSON,
-		Role:         input.Role,
-		CreatedAt:    now,
-		UpdatedAt:    now,
+		DepartmentID:     input.DepartmentID,
+		Username:         input.Username,
+		TelegramUsername: optionalTelegramUsername(input.TelegramUsername),
+		PasswordHash:     input.PasswordHash,
+		MetadataJson:     input.MetadataJSON,
+		Role:             input.Role,
+		CreatedAt:        now,
+		UpdatedAt:        now,
 	})
 	if err != nil {
 		return accessdomain.AuthUser{}, fmt.Errorf("create password auth user: %w", err)
@@ -137,45 +138,6 @@ func (r *AuthRepository) ListByDepartmentID(ctx context.Context, departmentID in
 		result = append(result, authUserToDomain(user))
 	}
 	return result, nil
-}
-
-func (r *AuthRepository) LinkTelegramUser(ctx context.Context, input authuc.LinkTelegramUserInput) (accessdomain.AuthUser, error) {
-	user, err := r.queries.LinkTelegramAuthUser(ctx, sqlc.LinkTelegramAuthUserParams{
-		TelegramID:       &input.TelegramID,
-		TelegramUsername: optionalTelegramUsername(input.TelegramUsername),
-		UpdatedAt:        helpers.TimestamptzNow(),
-		ID:               input.UserID,
-	})
-	if err != nil {
-		return accessdomain.AuthUser{}, fmt.Errorf("link telegram auth user: %w", err)
-	}
-	return authUserToDomain(user), nil
-}
-
-func (r *AuthRepository) UnlinkTelegramUser(ctx context.Context, telegramID int64) error {
-	if err := r.queries.UnlinkTelegramAuthUser(ctx, sqlc.UnlinkTelegramAuthUserParams{
-		TelegramID: &telegramID,
-		UpdatedAt:  helpers.TimestamptzNow(),
-	}); err != nil {
-		return fmt.Errorf("unlink telegram auth user: %w", err)
-	}
-	return nil
-}
-
-func (r *AuthRepository) UpsertTelegramUserDepartment(ctx context.Context, input authuc.UpsertTelegramDepartmentInput) (accessdomain.AuthUser, error) {
-	now := helpers.TimestamptzNow()
-	departmentID := input.DepartmentID
-	user, err := r.queries.UpsertTelegramAuthUserDepartment(ctx, sqlc.UpsertTelegramAuthUserDepartmentParams{
-		TelegramID:       &input.TelegramID,
-		TelegramUsername: optionalTelegramUsername(input.TelegramUsername),
-		DepartmentID:     &departmentID,
-		CreatedAt:        now,
-		UpdatedAt:        now,
-	})
-	if err != nil {
-		return accessdomain.AuthUser{}, fmt.Errorf("set telegram user department: %w", err)
-	}
-	return authUserToDomain(user), nil
 }
 
 func (r *AuthRepository) AssignUserDepartment(ctx context.Context, userID int64, departmentID *int64) (accessdomain.AuthUser, error) {

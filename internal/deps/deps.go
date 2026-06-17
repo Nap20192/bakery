@@ -1,11 +1,13 @@
 package deps
 
 import (
+	"context"
 	"fmt"
 
 	"bakery/internal/app"
 	"bakery/internal/inbound/api"
 	"bakery/internal/inbound/bot"
+	adminuc "bakery/internal/services/admin/usecase/admin"
 	authrepo "bakery/internal/services/auth/infra/repo"
 	authuc "bakery/internal/services/auth/usecase/auth"
 	orderrepo "bakery/internal/services/order/infra/repo"
@@ -14,6 +16,7 @@ import (
 
 type AppDeps struct {
 	AuthService       authuc.UseCase
+	AdminService      adminuc.UseCase
 	RbacService       *authuc.RBAC
 	DepartmentService *app.DepartmentService
 	MonitorService    *app.MonitorService
@@ -42,6 +45,42 @@ func WithAuthService(infra *InfraDeps) appOption {
 			return fmt.Errorf("missing dependencies for AuthService")
 		}
 		deps.AuthService = authuc.NewService(authrepo.New(infra.queries))
+		return nil
+	}
+}
+
+// adminDepartments adapts the department service to the admin service's
+// Departments port.
+type adminDepartments struct {
+	svc *app.DepartmentService
+}
+
+func (a adminDepartments) GetByCode(ctx context.Context, code string) (adminuc.Department, error) {
+	d, err := a.svc.GetByCode(ctx, code)
+	if err != nil {
+		return adminuc.Department{}, err
+	}
+	return adminuc.Department{ID: d.ID, Code: d.Code, Name: d.Name, Type: d.Type}, nil
+}
+
+func (a adminDepartments) ListAll(ctx context.Context) ([]adminuc.Department, error) {
+	rows, err := a.svc.ListByType(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+	out := make([]adminuc.Department, 0, len(rows))
+	for _, d := range rows {
+		out = append(out, adminuc.Department{ID: d.ID, Code: d.Code, Name: d.Name, Type: d.Type})
+	}
+	return out, nil
+}
+
+func WithAdminService() appOption {
+	return func(deps *AppDeps) error {
+		if deps.AuthService == nil || deps.DepartmentService == nil {
+			return fmt.Errorf("missing dependencies for AdminService")
+		}
+		deps.AdminService = adminuc.NewService(deps.AuthService, adminDepartments{svc: deps.DepartmentService})
 		return nil
 	}
 }
@@ -147,10 +186,10 @@ func WithAPIServerConfig(infra *InfraDeps) appOption {
 		if infra == nil || infra.config == nil {
 			return fmt.Errorf("missing dependencies for APIServer config")
 		}
-		if deps.OrderService == nil || deps.MonitorService == nil || deps.DepartmentService == nil || deps.AuthService == nil {
+		if deps.OrderService == nil || deps.MonitorService == nil || deps.DepartmentService == nil || deps.AuthService == nil || deps.AdminService == nil {
 			return fmt.Errorf("missing dependencies for APIServer")
 		}
-		deps.APIServer = api.NewServer(deps.OrderService, deps.MonitorService, deps.DepartmentService, deps.AuthService, api.ServerConfig{
+		deps.APIServer = api.NewServer(deps.OrderService, deps.MonitorService, deps.DepartmentService, deps.AuthService, deps.AdminService, api.ServerConfig{
 			Addr:           infra.config.Server.Addr(),
 			AllowedOrigins: infra.config.Server.AllowedOrigins,
 			BotToken:       infra.config.Telegram.BotToken,

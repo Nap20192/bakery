@@ -130,7 +130,7 @@ func (s *Server) resolveUser(ctx context.Context, r *http.Request) (accessdomain
 			return accessdomain.AuthUser{}, &viewerError{http.StatusUnauthorized, "Не удалось подтвердить вход. Откройте приложение заново."}
 		}
 		return s.lookupUser(ctx, func() (accessdomain.AuthUser, error) {
-			return s.authSvc.GetUserByTelegramID(ctx, init.ID)
+			return s.authSvc.GetUserByTelegramUsername(ctx, strings.TrimSpace(init.Username))
 		})
 	case "bearer":
 		claims, err := authtoken.Parse(s.config.BotToken, data, time.Now())

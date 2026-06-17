@@ -64,11 +64,12 @@ func (s *Service) CreateUserWithPassword(ctx context.Context, input accessdomain
 		return accessdomain.AuthUser{}, err
 	}
 	return s.repo.CreatePasswordUser(ctx, CreatePasswordUserInput{
-		DepartmentID: input.DepartmentID,
-		Username:     input.Username,
-		PasswordHash: hash,
-		MetadataJSON: input.MetadataJSON,
-		Role:         input.Role,
+		DepartmentID:     input.DepartmentID,
+		Username:         input.Username,
+		TelegramUsername: strings.TrimSpace(input.TelegramUsername),
+		PasswordHash:     hash,
+		MetadataJSON:     input.MetadataJSON,
+		Role:             input.Role,
 	})
 }
 
@@ -114,38 +115,8 @@ func (s *Service) VerifyPassword(ctx context.Context, username, password string)
 	return user, nil
 }
 
-func (s *Service) LoginTelegramUser(ctx context.Context, telegramID int64, telegramUsername, username, password string) (accessdomain.AuthUser, error) {
-	user, err := s.VerifyPassword(ctx, username, password)
-	if err != nil {
-		return accessdomain.AuthUser{}, err
-	}
-	if err := s.repo.UnlinkTelegramUser(ctx, telegramID); err != nil {
-		return accessdomain.AuthUser{}, fmt.Errorf("unlink previous telegram auth user: %w", err)
-	}
-	return s.repo.LinkTelegramUser(ctx, LinkTelegramUserInput{
-		UserID:           user.ID,
-		TelegramID:       telegramID,
-		TelegramUsername: strings.TrimSpace(telegramUsername),
-	})
-}
-
-func (s *Service) LogoutTelegramUser(ctx context.Context, telegramID int64) error {
-	if err := s.repo.UnlinkTelegramUser(ctx, telegramID); err != nil {
-		return fmt.Errorf("unlink telegram auth user: %w", err)
-	}
-	return nil
-}
-
 func (s *Service) AssignUserDepartment(ctx context.Context, userID int64, departmentID *int64) (accessdomain.AuthUser, error) {
 	return s.repo.AssignUserDepartment(ctx, userID, departmentID)
-}
-
-func (s *Service) SetTelegramUserDepartment(ctx context.Context, telegramID int64, telegramUsername string, departmentID int64) (accessdomain.AuthUser, error) {
-	return s.repo.UpsertTelegramUserDepartment(ctx, UpsertTelegramDepartmentInput{
-		TelegramID:       telegramID,
-		TelegramUsername: strings.TrimSpace(telegramUsername),
-		DepartmentID:     departmentID,
-	})
 }
 
 func (s *Service) GetUserByID(ctx context.Context, id int64) (accessdomain.AuthUser, error) {
