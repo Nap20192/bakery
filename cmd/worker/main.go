@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
 	"github.com/joho/godotenv"
@@ -19,7 +21,7 @@ import (
 )
 
 func main() {
-	_ = godotenv.Load()
+	_ = loadDotenv()
 
 	cfg := config.New()
 
@@ -39,7 +41,7 @@ func main() {
 	}
 	defer helpers.ClosePool(db)
 	if err = dbmigrate.ApplyMigrations(ctx, db, log, cfg.Migration.Dir); err != nil {
-		log.Error("apply db migrations failed", "error", err)
+		log.Error("apply db migrations failed", "error", err, "dir", cfg.Migration.Dir)
 		os.Exit(1)
 	}
 
@@ -55,6 +57,7 @@ func main() {
 	}
 
 	appDeps, err := deps.NewAppDeps(
+		deps.WithOrderEventBus(),
 		deps.WithAuthService(infra),
 		deps.WithRbacService(),
 		deps.WithOrderService(infra),
@@ -94,7 +97,8 @@ func main() {
 		return appDeps.SyncService.Run(groupCtx)
 	})
 	group.Go(func() error {
-		log.Info("order cleanup started",
+		log.Info(
+			"order cleanup started",
 			"interval", cfg.OrderCleanup.Interval.String(),
 			"retention", cfg.OrderCleanup.Retention.String(),
 		)
@@ -105,7 +109,8 @@ func main() {
 		return appDeps.APIServer.Start()
 	})
 	group.Go(func() error {
-		log.Info("orderbot started",
+		log.Info(
+			"orderbot started",
 			"bot_env", cfg.Telegram.BotEnv,
 			"bot_name", appDeps.OrderBot.Name(),
 			"bot_username", appDeps.OrderBot.Username(),
@@ -126,4 +131,49 @@ func main() {
 		os.Exit(1)
 	}
 	log.Info("worker stopped")
+}
+
+func loadDotenv() error {
+	paths := []string{".env"}
+	if wd, err := os.Getwd(); err == nil {
+		for current := wd; ; current = filepath.Dir(current) {
+			paths = append(paths, filepath.Join(current, ".env"))
+			parent := filepath.Dir(current)
+			if parent == current {
+				break
+			}
+		}
+	}
+	if exe, err := os.Executable(); err == nil {
+		for current := filepath.Dir(exe); ; current = filepath.Dir(current) {
+			paths = append(paths, filepath.Join(current, ".env"))
+			parent := filepath.Dir(current)
+			if parent == current {
+				break
+			}
+		}
+	}
+
+	seen := make(map[string]struct{}, len(paths))
+	unique := make([]string, 0, len(paths))
+	for _, path := range paths {
+		if path == "" {
+			continue
+		}
+		if _, ok := seen[path]; ok {
+			continue
+		}
+		seen[path] = struct{}{}
+		unique = append(unique, path)
+	}
+
+	for _, path := range unique {
+		if err := godotenv.Load(path); err == nil {
+			return nil
+		} else if !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+	}
+
+	return nil
 }

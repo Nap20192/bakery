@@ -8,11 +8,12 @@ import (
 )
 
 type TelegramConfig struct {
-	BotEnv       string
-	TestBotToken string
-	ProdBotToken string
-	BotToken     string
-	MiniAppURL   string
+	BotEnv         string
+	TestBotToken   string
+	ProdBotToken   string
+	BotToken       string
+	MiniAppURL     string
+	WorkshopChatID int64
 }
 
 type LogConfig struct {
@@ -86,6 +87,7 @@ func New() *Config {
 	botEnv := helpers.Env("BOT_ENV", "test")
 	testBotToken := helpers.Env("TEST_BOT_TOKEN", "")
 	prodBotToken := helpers.Env("PROD_BOT_TOKEN", "")
+	botToken := helpers.Env("BOT_TOKEN", "")
 	database := databaseConfig()
 
 	return &Config{
@@ -98,8 +100,12 @@ func New() *Config {
 			BotEnv:       botEnv,
 			TestBotToken: testBotToken,
 			ProdBotToken: prodBotToken,
-			BotToken:     selectBotToken(botEnv, testBotToken, prodBotToken),
+			BotToken:     selectBotToken(botEnv, testBotToken, prodBotToken, botToken),
 			MiniAppURL:   helpers.Env("MINI_APP_URL", ""),
+			WorkshopChatID: int64(helpers.EnvInt(
+				"TELEGRAM_WORKSHOP_CHAT_ID",
+				0,
+			)),
 		},
 		Iiko: IikoConfig{
 			Host:     helpers.Env("IIKO_HOST", ""),
@@ -163,11 +169,16 @@ func serverPort() int {
 	return helpers.EnvInt("HTTP_PORT", 8080)
 }
 
-func selectBotToken(botEnv string, testToken string, prodToken string) string {
+func selectBotToken(botEnv string, testToken string, prodToken string, fallbackToken string) string {
 	switch botEnv {
 	case "prod", "production":
-		return prodToken
+		if prodToken != "" {
+			return prodToken
+		}
 	default:
-		return testToken
+		if testToken != "" {
+			return testToken
+		}
 	}
+	return fallbackToken
 }
