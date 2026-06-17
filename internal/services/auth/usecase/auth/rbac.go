@@ -50,16 +50,3 @@ func (s *RBAC) HasPermission(role string, permission enum.Permission) bool {
 	_, ok = perms[normalizedPermission]
 	return ok
 }
-
-// Permissions returns the permissions granted to a role (read-only snapshot).
-func (s *RBAC) Permissions(role string) []enum.Permission {
-	if s == nil {
-		return nil
-	}
-	perms := s.rolePermissions[enum.NormalizeRole(role)]
-	result := make([]enum.Permission, 0, len(perms))
-	for perm := range perms {
-		result = append(result, perm)
-	}
-	return result
-}

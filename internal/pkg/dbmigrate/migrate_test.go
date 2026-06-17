@@ -9,12 +9,12 @@ import (
 func TestResolveMigrationDirFindsParentDirectory(t *testing.T) {
 	root := t.TempDir()
 	migrationsDir := filepath.Join(root, "migrations")
-	if err := os.MkdirAll(migrationsDir, 0o755); err != nil {
+	if err := os.MkdirAll(migrationsDir, 0o750); err != nil {
 		t.Fatalf("mkdir migrations: %v", err)
 	}
 
 	nestedDir := filepath.Join(root, "cmd", "worker")
-	if err := os.MkdirAll(nestedDir, 0o755); err != nil {
+	if err := os.MkdirAll(nestedDir, 0o750); err != nil {
 		t.Fatalf("mkdir nested dir: %v", err)
 	}
 
@@ -38,18 +38,18 @@ func TestResolveMigrationDirFindsParentDirectory(t *testing.T) {
 func TestMigrationFilesUsesResolvedDirectory(t *testing.T) {
 	root := t.TempDir()
 	migrationsDir := filepath.Join(root, "migrations")
-	if err := os.MkdirAll(migrationsDir, 0o755); err != nil {
+	if err := os.MkdirAll(migrationsDir, 0o750); err != nil {
 		t.Fatalf("mkdir migrations: %v", err)
 	}
 
 	file := filepath.Join(migrationsDir, "00001_init.sql")
 	content := []byte("-- +goose Up\nSELECT 1;\n-- +goose Down\nSELECT 1;\n")
-	if err := os.WriteFile(file, content, 0o644); err != nil {
+	if err := os.WriteFile(file, content, 0o600); err != nil {
 		t.Fatalf("write migration: %v", err)
 	}
 
 	nestedDir := filepath.Join(root, "cmd", "worker")
-	if err := os.MkdirAll(nestedDir, 0o755); err != nil {
+	if err := os.MkdirAll(nestedDir, 0o750); err != nil {
 		t.Fatalf("mkdir nested dir: %v", err)
 	}
 
