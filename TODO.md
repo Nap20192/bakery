@@ -1,37 +1,34 @@
-# TODO
+# TODO — Architecture roadmap
 
-## Reliability And Safety
+Goal: consistent per-service clean architecture, no infra-type leakage, reliable
+events, decoupled bot, tested critical flows.
 
-- [x] Wrap order creation in a DB transaction.
-  - Risk: `orders` can be created without all `order_items` if item insertion fails.
-  - Code: `internal/app/order.go` (`CreateOrder`).
+## Standardize services (ports + remove sqlc leakage)
+Make every service layered like auth/order: `usecase` (UseCase/Repository
+ports + DTO) + `infra/repo`. Delivery depends on interfaces, never on sqlc.
 
-- [x] Wrap order update in a DB transaction.
-  - Risk: old items are deleted before new items are inserted; a failure can leave the order empty or partially updated.
-  - Code: `internal/app/order.go` (`UpdateOrder`).
+- [ ] 1. department → ports + Department DTO + infra/repo (stop leaking sqlc.Department)
+- [ ] 2. techcard → ports + infra/repo
+- [ ] 3. monitor → ports + infra/repo (graph/sqlc loads into repo)
+- [ ] 4. sync → ports + infra/repo (+ iiko client port)
 
-- [ ] Serialize iiko sync runs.
-  - Risk: manual sync and background ticker can run at the same time and share the same mutable iiko client token.
-  - Code: `internal/app/sync.go`, `internal/outbound/iiko/client.go`.
+## Cross-cutting
+- [ ] 5. Centralized typed domain errors + one mapper (err → HTTP/bot); centralize DTO mappers
+- [ ] 6. Transactional outbox for order events + correlation id in envelope/logs
+- [ ] 7. Bot → pure API client (add missing endpoints, http client, per-user bearer); cmd/bot drops DB
+- [ ] 8. Tests: usecase (fake repos) for auth/admin/monitor/notify; repo integration (testcontainers)
 
-- [ ] Deep-copy Telegram session state before reading it outside the session mutex.
-  - Risk: copied session structs share the same `items` backing array and can race with another Telegram update.
-  - Code: `internal/inbound/bot/handler_order.go`, `internal/inbound/bot/session.go`.
+## Known gaps / pre-deploy
+- [ ] Dedupe duplicate telegram_username before migration 00013 (unique index)
+- [ ] Verify timestamptz cast (migration 00012) against real data + backup
+- [ ] Admin panel: edit telegram_username/department of existing users (currently create-only)
+- [ ] monitor: cache/batch product-graph loads (N+1)
+- [ ] iiko sync serialization (manual + ticker share mutable client token)
+- [ ] deep-copy bot session before reading outside mutex (data race)
 
-## Access Control
-
-- [ ] Enforce shop visibility on direct order access.
-  - Risk: shop users see only their own orders in `/orders`, but can open, copy, or edit another shop's order by number.
-  - Code: `internal/inbound/bot/handler_orders.go`, `internal/inbound/bot/handler_order.go`.
-
-## Monitoring Logic
-
-- [x] Make monitor graph truncation explicit.
-  - Risk: graph loading silently stops on cycles or max depth and can undercount dough without warning.
-  - Code: `internal/app/monitor.go`, `internal/domain/monitoring/service.go`.
-
-## Performance
-
-- [x] Reduce repeated DB graph loads in batch monitor calculations.
-  - Risk: each order and each monitored ingredient reloads product graphs, causing many duplicate SQL queries.
-  - Code: `internal/app/monitor.go` (`GetBatchIngredientsByCodes`, `GetIngredientsByCode`).
+## Done (this effort)
+- Per-service layout under internal/services; internal/app removed
+- timestamptz/date types; per-shop order counter; UpdateOrder tx
+- RabbitMQ event bus; bot notifications (creator + bakers + group)
+- Auth: web login/password, admin-only user mgmt, bot password login + telegram_id bind
+- Unique username/telegram_username/telegram_id
