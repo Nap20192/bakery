@@ -10,10 +10,10 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	accessdomain "bakery/internal/domain/access"
 	sqlc "bakery/internal/outbound/db/sqlc"
+	"bakery/internal/pkg/helpers"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -64,7 +64,7 @@ func (s *AuthService) CreateUserWithPassword(ctx context.Context, input accessdo
 		return accessdomain.AuthUser{}, err
 	}
 
-	now := time.Now().UTC().Format(time.RFC3339Nano)
+	now := helpers.TimestamptzNow()
 	user, err := s.queries.CreatePasswordAuthUser(ctx, sqlc.CreatePasswordAuthUserParams{
 		DepartmentID: input.DepartmentID,
 		Username:     input.Username,
@@ -128,7 +128,7 @@ func (s *AuthService) LoginTelegramUser(ctx context.Context, telegramID int64, t
 		return accessdomain.AuthUser{}, err
 	}
 
-	now := time.Now().UTC().Format(time.RFC3339Nano)
+	now := helpers.TimestamptzNow()
 	telegramUsername = strings.TrimSpace(telegramUsername)
 	if err := s.queries.UnlinkTelegramAuthUser(ctx, sqlc.UnlinkTelegramAuthUserParams{
 		TelegramID: &telegramID,
@@ -149,7 +149,7 @@ func (s *AuthService) LoginTelegramUser(ctx context.Context, telegramID int64, t
 }
 
 func (s *AuthService) LogoutTelegramUser(ctx context.Context, telegramID int64) error {
-	now := time.Now().UTC().Format(time.RFC3339Nano)
+	now := helpers.TimestamptzNow()
 	if err := s.queries.UnlinkTelegramAuthUser(ctx, sqlc.UnlinkTelegramAuthUserParams{
 		TelegramID: &telegramID,
 		UpdatedAt:  now,
@@ -160,7 +160,7 @@ func (s *AuthService) LogoutTelegramUser(ctx context.Context, telegramID int64) 
 }
 
 func (s *AuthService) AssignUserDepartment(ctx context.Context, userID int64, departmentID *int64) (accessdomain.AuthUser, error) {
-	now := time.Now().UTC().Format(time.RFC3339Nano)
+	now := helpers.TimestamptzNow()
 	user, err := s.queries.AssignUserDepartment(ctx, sqlc.AssignUserDepartmentParams{
 		DepartmentID: departmentID,
 		UpdatedAt:    now,
@@ -173,7 +173,7 @@ func (s *AuthService) AssignUserDepartment(ctx context.Context, userID int64, de
 }
 
 func (s *AuthService) SetTelegramUserDepartment(ctx context.Context, telegramID int64, telegramUsername string, departmentID int64) (accessdomain.AuthUser, error) {
-	now := time.Now().UTC().Format(time.RFC3339Nano)
+	now := helpers.TimestamptzNow()
 	telegramUsername = strings.TrimSpace(telegramUsername)
 	user, err := s.queries.UpsertTelegramAuthUserDepartment(ctx, sqlc.UpsertTelegramAuthUserDepartmentParams{
 		TelegramID:       &telegramID,
@@ -212,8 +212,6 @@ func (s *AuthService) ListUsersByDepartmentID(ctx context.Context, departmentID 
 }
 
 func authUserToDomain(user sqlc.AuthUser) accessdomain.AuthUser {
-	createdAt, _ := time.Parse(time.RFC3339Nano, user.CreatedAt)
-	updatedAt, _ := time.Parse(time.RFC3339Nano, user.UpdatedAt)
 	role := accessdomain.NormalizeRole(user.Role)
 	return accessdomain.AuthUser{
 		ID:               user.ID,
@@ -223,8 +221,8 @@ func authUserToDomain(user sqlc.AuthUser) accessdomain.AuthUser {
 		Username:         user.Username,
 		MetadataJSON:     user.MetadataJson,
 		Role:             role,
-		CreatedAt:        createdAt,
-		UpdatedAt:        updatedAt,
+		CreatedAt:        user.CreatedAt.Time,
+		UpdatedAt:        user.UpdatedAt.Time,
 	}
 }
 

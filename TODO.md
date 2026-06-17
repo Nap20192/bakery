@@ -6,7 +6,7 @@
   - Risk: `orders` can be created without all `order_items` if item insertion fails.
   - Code: `internal/app/order.go` (`CreateOrder`).
 
-- [ ] Wrap order update in a DB transaction.
+- [x] Wrap order update in a DB transaction.
   - Risk: old items are deleted before new items are inserted; a failure can leave the order empty or partially updated.
   - Code: `internal/app/order.go` (`UpdateOrder`).
 

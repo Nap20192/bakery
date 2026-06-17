@@ -1,12 +1,12 @@
 -- name: CreateOrderCounterDay :exec
-INSERT INTO order_counters(day, counter)
-VALUES (sqlc.arg(day), 0)
-ON CONFLICT(day) DO NOTHING;
+INSERT INTO order_counters(day, department_id, counter)
+VALUES (sqlc.arg(day), sqlc.arg(department_id), 0)
+ON CONFLICT(day, department_id) DO NOTHING;
 
 -- name: NextOrderCounter :one
 UPDATE order_counters
 SET counter = counter + 1
-WHERE day = sqlc.arg(day)
+WHERE day = sqlc.arg(day) AND department_id = sqlc.arg(department_id)
 RETURNING counter;
 
 -- name: CreateOrder :one
@@ -129,7 +129,7 @@ SELECT *
 FROM orders
 WHERE
     (sqlc.narg(from_department_id)::BIGINT IS NULL OR from_department_id = sqlc.narg(from_department_id)::BIGINT)
-    AND (sqlc.narg(fulfillment_date)::TEXT IS NULL OR fulfillment_date = sqlc.narg(fulfillment_date)::TEXT)
+    AND (sqlc.narg(fulfillment_date)::DATE IS NULL OR fulfillment_date = sqlc.narg(fulfillment_date)::DATE)
 ORDER BY id DESC
 LIMIT sqlc.arg(order_limit)
 OFFSET sqlc.arg(order_offset);
@@ -139,12 +139,12 @@ SELECT COUNT(*)
 FROM orders
 WHERE
     (sqlc.narg(from_department_id)::BIGINT IS NULL OR from_department_id = sqlc.narg(from_department_id)::BIGINT)
-    AND (sqlc.narg(fulfillment_date)::TEXT IS NULL OR fulfillment_date = sqlc.narg(fulfillment_date)::TEXT);
+    AND (sqlc.narg(fulfillment_date)::DATE IS NULL OR fulfillment_date = sqlc.narg(fulfillment_date)::DATE);
 
 -- name: DeleteOrdersCreatedBefore :one
 WITH deleted AS (
     DELETE FROM orders
-    WHERE created_at::timestamptz < sqlc.arg(created_at_before)::timestamptz
+    WHERE created_at < sqlc.arg(created_at_before)
     RETURNING id
 )
 SELECT COUNT(*)::BIGINT
