@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"log/slog"
 	"strings"
 
 	tele "gopkg.in/telebot.v3"
@@ -29,9 +30,16 @@ func sendText(c tele.Context, message string, markup ...*tele.ReplyMarkup) error
 }
 
 func (b *OrderBot) sendHTMLToChat(chatID int64, message string) error {
-	return sendTelegramChunks(botSender(b.tele, chatID), message, messageOptions{
+	slog.Debug("bot send to chat: start", "component", "bot.sender", "chat_id", chatID, "bytes", len(message))
+	err := sendTelegramChunks(botSender(b.tele, chatID), message, messageOptions{
 		parseMode: tele.ModeHTML,
 	})
+	if err != nil {
+		slog.Error("bot send to chat: failed", "component", "bot.sender", "chat_id", chatID, "error", err)
+	} else {
+		slog.Debug("bot send to chat: ok", "component", "bot.sender", "chat_id", chatID)
+	}
+	return err
 }
 
 func contextSender(c tele.Context) chunkSender {
@@ -45,13 +53,28 @@ func contextSender(c tele.Context) chunkSender {
 
 func botSender(bot *tele.Bot, chatID int64) chunkSender {
 	return func(text string, options *tele.SendOptions) error {
+		var err error
 		if options == nil {
-			_, err := bot.Send(tele.ChatID(chatID), text)
-			return err
+			_, err = bot.Send(tele.ChatID(chatID), text)
+		} else {
+			_, err = bot.Send(tele.ChatID(chatID), text, options)
 		}
-		_, err := bot.Send(tele.ChatID(chatID), text, options)
+		slog.Debug("bot.Send chunk result",
+			"component", "bot.sender",
+			"chat_id", chatID,
+			"bytes", len(text),
+			"ok", err == nil,
+			"error", errString(err),
+		)
 		return err
 	}
+}
+
+func errString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
 }
 
 func sendTelegramChunks(send chunkSender, message string, options messageOptions) error {
