@@ -17,6 +17,11 @@ type UseCase interface {
 	CreateUserWithPassword(ctx context.Context, input accessdomain.PasswordAuthUserInput) (accessdomain.AuthUser, error)
 	EnsureAdminUser(ctx context.Context, username, password string) (accessdomain.AuthUser, bool, error)
 	VerifyPassword(ctx context.Context, username, password string) (accessdomain.AuthUser, error)
+	// AuthenticateTelegram verifies a password for the account whose
+	// telegram_username matches, binds the given telegram_id and returns it.
+	AuthenticateTelegram(ctx context.Context, telegramID int64, telegramUsername, password string) (accessdomain.AuthUser, error)
+	SetPassword(ctx context.Context, id int64, password string) (accessdomain.AuthUser, error)
+	DeleteUser(ctx context.Context, id int64) error
 	AssignUserDepartment(ctx context.Context, userID int64, departmentID *int64) (accessdomain.AuthUser, error)
 	GetUserByID(ctx context.Context, id int64) (accessdomain.AuthUser, error)
 	GetUserByTelegramID(ctx context.Context, telegramID int64) (accessdomain.AuthUser, error)
@@ -41,6 +46,9 @@ type Repository interface {
 	ListByDepartmentID(ctx context.Context, departmentID int64) ([]accessdomain.AuthUser, error)
 	ListByRole(ctx context.Context, role string) ([]accessdomain.AuthUser, error)
 	SetRole(ctx context.Context, id int64, role string) (accessdomain.AuthUser, error)
+	SetPasswordHash(ctx context.Context, id int64, passwordHash string) (accessdomain.AuthUser, error)
+	BindTelegramID(ctx context.Context, id, telegramID int64) (accessdomain.AuthUser, error)
+	Delete(ctx context.Context, id int64) error
 	AssignUserDepartment(ctx context.Context, userID int64, departmentID *int64) (accessdomain.AuthUser, error)
 }
 

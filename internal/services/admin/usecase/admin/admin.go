@@ -81,6 +81,21 @@ func (s *Service) AssignUserDepartment(ctx context.Context, id int64, department
 	return toUser(user), nil
 }
 
+func (s *Service) SetUserPassword(ctx context.Context, id int64, password string) (User, error) {
+	if password == "" {
+		return User{}, fmt.Errorf("password is required")
+	}
+	user, err := s.users.SetPassword(ctx, id, password)
+	if err != nil {
+		return User{}, err
+	}
+	return toUser(user), nil
+}
+
+func (s *Service) DeleteUser(ctx context.Context, id int64) error {
+	return s.users.DeleteUser(ctx, id)
+}
+
 func (s *Service) ListDepartments(ctx context.Context) ([]Department, error) {
 	return s.departments.ListAll(ctx)
 }
@@ -114,7 +129,10 @@ func toUser(u accessdomain.AuthUser) User {
 		ID:               u.ID,
 		Username:         u.Username,
 		TelegramUsername: telegramUsername,
+		TelegramID:       u.TelegramID,
 		Role:             u.Role,
 		DepartmentID:     u.DepartmentID,
+		CreatedAt:        u.CreatedAt,
+		UpdatedAt:        u.UpdatedAt,
 	}
 }

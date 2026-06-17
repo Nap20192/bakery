@@ -273,11 +273,7 @@ func (b *OrderBot) currentUser(c tele.Context) (accessdomain.AuthUser, bool) {
 	if b.authSvc == nil || c.Sender() == nil {
 		return accessdomain.AuthUser{}, false
 	}
-	username := strings.TrimSpace(c.Sender().Username)
-	if username == "" {
-		return accessdomain.AuthUser{}, false
-	}
-	user, err := b.authSvc.GetUserByTelegramUsername(requestContext(c), username)
+	user, err := b.authSvc.GetUserByTelegramID(requestContext(c), c.Sender().ID)
 	if err != nil {
 		return accessdomain.AuthUser{}, false
 	}

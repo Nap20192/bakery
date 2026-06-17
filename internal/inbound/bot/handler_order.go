@@ -45,6 +45,9 @@ func (b *OrderBot) handleCancel(c tele.Context) error {
 
 func (b *OrderBot) handleText(c tele.Context) error {
 	text := strings.TrimSpace(c.Text())
+	if b.isAwaitingPassword(c) {
+		return b.handlePasswordEntry(c, text)
+	}
 	if handled, err := b.handleActionText(c, text); handled {
 		return err
 	}
