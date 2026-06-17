@@ -11,6 +11,38 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const bindTelegramID = `-- name: BindTelegramID :one
+UPDATE auth_users
+SET telegram_id = $1,
+    updated_at = $2
+WHERE id = $3
+RETURNING id, telegram_id, username, password_hash, metadata_json, role, created_at, updated_at, department_id, telegram_username
+`
+
+type BindTelegramIDParams struct {
+	TelegramID *int64             `json:"telegram_id"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	ID         int64              `json:"id"`
+}
+
+func (q *Queries) BindTelegramID(ctx context.Context, arg BindTelegramIDParams) (AuthUser, error) {
+	row := q.db.QueryRow(ctx, bindTelegramID, arg.TelegramID, arg.UpdatedAt, arg.ID)
+	var i AuthUser
+	err := row.Scan(
+		&i.ID,
+		&i.TelegramID,
+		&i.Username,
+		&i.PasswordHash,
+		&i.MetadataJson,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DepartmentID,
+		&i.TelegramUsername,
+	)
+	return i, err
+}
+
 const createPasswordAuthUser = `-- name: CreatePasswordAuthUser :one
 INSERT INTO auth_users (
     department_id,
@@ -77,6 +109,15 @@ func (q *Queries) CreatePasswordAuthUser(ctx context.Context, arg CreatePassword
 		&i.TelegramUsername,
 	)
 	return i, err
+}
+
+const deleteAuthUser = `-- name: DeleteAuthUser :exec
+DELETE FROM auth_users WHERE id = $1
+`
+
+func (q *Queries) DeleteAuthUser(ctx context.Context, id int64) error {
+	_, err := q.db.Exec(ctx, deleteAuthUser, id)
+	return err
 }
 
 const getAuthUserByID = `-- name: GetAuthUserByID :one
@@ -291,6 +332,38 @@ func (q *Queries) ListAuthUsersByRole(ctx context.Context, role string) ([]AuthU
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateAuthUserPassword = `-- name: UpdateAuthUserPassword :one
+UPDATE auth_users
+SET password_hash = $1,
+    updated_at = $2
+WHERE id = $3
+RETURNING id, telegram_id, username, password_hash, metadata_json, role, created_at, updated_at, department_id, telegram_username
+`
+
+type UpdateAuthUserPasswordParams struct {
+	PasswordHash string             `json:"password_hash"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	ID           int64              `json:"id"`
+}
+
+func (q *Queries) UpdateAuthUserPassword(ctx context.Context, arg UpdateAuthUserPasswordParams) (AuthUser, error) {
+	row := q.db.QueryRow(ctx, updateAuthUserPassword, arg.PasswordHash, arg.UpdatedAt, arg.ID)
+	var i AuthUser
+	err := row.Scan(
+		&i.ID,
+		&i.TelegramID,
+		&i.Username,
+		&i.PasswordHash,
+		&i.MetadataJson,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DepartmentID,
+		&i.TelegramUsername,
+	)
+	return i, err
 }
 
 const updateAuthUserRole = `-- name: UpdateAuthUserRole :one

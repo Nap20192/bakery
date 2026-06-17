@@ -19,7 +19,8 @@ type session struct {
 	orderFilter      orderFilter
 	fulfillmentDate  time.Time
 	editOrderNumber  string
-	updatedAt        time.Time // время последнего изменения
+	awaitingPassword bool // пользователь вводит пароль для входа
+	updatedAt        time.Time
 }
 
 // updateSession атомарно изменяет сессию пользователя под мьютексом.

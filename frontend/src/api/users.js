@@ -23,3 +23,7 @@ export function updateUser(id, patch) {
     body: JSON.stringify(patch),
   });
 }
+
+export function deleteUser(id) {
+  return apiRequest(`/users/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}

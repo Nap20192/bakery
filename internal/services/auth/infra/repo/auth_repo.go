@@ -140,6 +140,43 @@ func (r *AuthRepository) ListByDepartmentID(ctx context.Context, departmentID in
 	return result, nil
 }
 
+func (r *AuthRepository) BindTelegramID(ctx context.Context, id, telegramID int64) (accessdomain.AuthUser, error) {
+	user, err := r.queries.BindTelegramID(ctx, sqlc.BindTelegramIDParams{
+		TelegramID: &telegramID,
+		UpdatedAt:  helpers.TimestamptzNow(),
+		ID:         id,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return accessdomain.AuthUser{}, authuc.ErrAuthUserNotFound
+		}
+		return accessdomain.AuthUser{}, fmt.Errorf("bind telegram id: %w", err)
+	}
+	return authUserToDomain(user), nil
+}
+
+func (r *AuthRepository) SetPasswordHash(ctx context.Context, id int64, passwordHash string) (accessdomain.AuthUser, error) {
+	user, err := r.queries.UpdateAuthUserPassword(ctx, sqlc.UpdateAuthUserPasswordParams{
+		PasswordHash: passwordHash,
+		UpdatedAt:    helpers.TimestamptzNow(),
+		ID:           id,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return accessdomain.AuthUser{}, authuc.ErrAuthUserNotFound
+		}
+		return accessdomain.AuthUser{}, fmt.Errorf("update password: %w", err)
+	}
+	return authUserToDomain(user), nil
+}
+
+func (r *AuthRepository) Delete(ctx context.Context, id int64) error {
+	if err := r.queries.DeleteAuthUser(ctx, id); err != nil {
+		return fmt.Errorf("delete auth user: %w", err)
+	}
+	return nil
+}
+
 func (r *AuthRepository) AssignUserDepartment(ctx context.Context, userID int64, departmentID *int64) (accessdomain.AuthUser, error) {
 	user, err := r.queries.AssignUserDepartment(ctx, sqlc.AssignUserDepartmentParams{
 		DepartmentID: departmentID,

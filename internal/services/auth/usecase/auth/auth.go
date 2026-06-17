@@ -115,6 +115,32 @@ func (s *Service) VerifyPassword(ctx context.Context, username, password string)
 	return user, nil
 }
 
+func (s *Service) AuthenticateTelegram(ctx context.Context, telegramID int64, telegramUsername, password string) (accessdomain.AuthUser, error) {
+	account, err := s.repo.GetByTelegramUsername(ctx, strings.TrimSpace(telegramUsername))
+	if err != nil {
+		return accessdomain.AuthUser{}, err
+	}
+	if _, err := s.VerifyPassword(ctx, account.Username, password); err != nil {
+		return accessdomain.AuthUser{}, err
+	}
+	return s.repo.BindTelegramID(ctx, account.ID, telegramID)
+}
+
+func (s *Service) SetPassword(ctx context.Context, id int64, password string) (accessdomain.AuthUser, error) {
+	if password == "" {
+		return accessdomain.AuthUser{}, fmt.Errorf("password is required")
+	}
+	hash, err := hashPassword(password)
+	if err != nil {
+		return accessdomain.AuthUser{}, err
+	}
+	return s.repo.SetPasswordHash(ctx, id, hash)
+}
+
+func (s *Service) DeleteUser(ctx context.Context, id int64) error {
+	return s.repo.Delete(ctx, id)
+}
+
 func (s *Service) AssignUserDepartment(ctx context.Context, userID int64, departmentID *int64) (accessdomain.AuthUser, error) {
 	return s.repo.AssignUserDepartment(ctx, userID, departmentID)
 }

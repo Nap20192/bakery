@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	adminuc "bakery/internal/services/admin/usecase/admin"
 )
@@ -15,8 +16,11 @@ type userResponse struct {
 	ID               int64  `json:"id"`
 	Username         string `json:"username"`
 	TelegramUsername string `json:"telegram_username"`
+	TelegramID       *int64 `json:"telegram_id"`
 	Role             string `json:"role"`
 	DepartmentID     *int64 `json:"department_id"`
+	CreatedAt        string `json:"created_at"`
+	UpdatedAt        string `json:"updated_at"`
 }
 
 type createUserRequest struct {
@@ -30,6 +34,7 @@ type createUserRequest struct {
 type updateUserRequest struct {
 	Role           *string `json:"role"`
 	DepartmentCode *string `json:"department_code"`
+	Password       *string `json:"password"`
 }
 
 func (s *Server) handleAdminDepartments(w http.ResponseWriter, r *http.Request) {
@@ -117,11 +122,33 @@ func (s *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
 		}
 		updated = true
 	}
+	if req.Password != nil {
+		user, err = s.adminSvc.SetUserPassword(r.Context(), id, *req.Password)
+		if err != nil {
+			s.writeUserError(w, r, err, "Не удалось обновить пароль.")
+			return
+		}
+		updated = true
+	}
 	if !updated {
 		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Нечего обновлять."})
 		return
 	}
 	writeJSON(w, http.StatusOK, toUserResponse(user))
+}
+
+func (s *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil || id <= 0 {
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Некорректный id пользователя."})
+		return
+	}
+	if err := s.adminSvc.DeleteUser(r.Context(), id); err != nil {
+		slog.ErrorContext(r.Context(), "delete user failed", "error", err)
+		writeJSON(w, http.StatusInternalServerError, errorResponse{Error: "Не удалось удалить пользователя."})
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) writeUserError(w http.ResponseWriter, r *http.Request, err error, fallback string) {
@@ -135,11 +162,19 @@ func (s *Server) writeUserError(w http.ResponseWriter, r *http.Request, err erro
 }
 
 func toUserResponse(u adminuc.User) userResponse {
-	return userResponse{
+	resp := userResponse{
 		ID:               u.ID,
 		Username:         u.Username,
 		TelegramUsername: u.TelegramUsername,
+		TelegramID:       u.TelegramID,
 		Role:             u.Role,
 		DepartmentID:     u.DepartmentID,
 	}
+	if !u.CreatedAt.IsZero() {
+		resp.CreatedAt = u.CreatedAt.Format(time.RFC3339)
+	}
+	if !u.UpdatedAt.IsZero() {
+		resp.UpdatedAt = u.UpdatedAt.Format(time.RFC3339)
+	}
+	return resp
 }

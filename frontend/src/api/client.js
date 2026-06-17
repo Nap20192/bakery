@@ -55,6 +55,9 @@ export async function apiRequest(path, options = {}) {
     });
     throw new ApiError(payload.error || `HTTP ${response.status}`, response.status);
   }
+  if (response.status === 204 || contentType === '') {
+    return {};
+  }
   if (!contentType.includes('application/json')) {
     logWarn('api.invalid_content_type', {
       path,

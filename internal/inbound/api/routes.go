@@ -9,6 +9,7 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 	mux.Handle("GET /users", s.requireAdmin(http.HandlerFunc(s.handleListUsers)))
 	mux.Handle("POST /users", s.requireAdmin(http.HandlerFunc(s.handleCreateUser)))
 	mux.Handle("PATCH /users/{id}", s.requireAdmin(http.HandlerFunc(s.handleUpdateUser)))
+	mux.Handle("DELETE /users/{id}", s.requireAdmin(http.HandlerFunc(s.handleDeleteUser)))
 	mux.Handle("GET /admin/departments", s.requireAdmin(http.HandlerFunc(s.handleAdminDepartments)))
 	mux.Handle("GET /catalog", s.requireMiniAppAuth(http.HandlerFunc(s.handleCatalog)))
 	mux.Handle("GET /departments", s.requireMiniAppAuth(http.HandlerFunc(s.handleListDepartments)))

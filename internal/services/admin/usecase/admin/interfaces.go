@@ -6,6 +6,7 @@ package adminuc
 
 import (
 	"context"
+	"time"
 
 	accessdomain "bakery/internal/domain/access"
 )
@@ -15,7 +16,9 @@ type UseCase interface {
 	ListUsers(ctx context.Context) ([]User, error)
 	CreateUser(ctx context.Context, input CreateUserInput) (User, error)
 	SetUserRole(ctx context.Context, id int64, role string) (User, error)
+	SetUserPassword(ctx context.Context, id int64, password string) (User, error)
 	AssignUserDepartment(ctx context.Context, id int64, departmentCode string) (User, error)
+	DeleteUser(ctx context.Context, id int64) error
 	ListDepartments(ctx context.Context) ([]Department, error)
 }
 
@@ -25,7 +28,9 @@ type UserAccounts interface {
 	CreateUserWithPassword(ctx context.Context, input accessdomain.PasswordAuthUserInput) (accessdomain.AuthUser, error)
 	ListUsers(ctx context.Context) ([]accessdomain.AuthUser, error)
 	SetUserRole(ctx context.Context, id int64, role string) (accessdomain.AuthUser, error)
+	SetPassword(ctx context.Context, id int64, password string) (accessdomain.AuthUser, error)
 	AssignUserDepartment(ctx context.Context, id int64, departmentID *int64) (accessdomain.AuthUser, error)
+	DeleteUser(ctx context.Context, id int64) error
 }
 
 // Departments is the port for department lookup (satisfied by the department
@@ -39,8 +44,11 @@ type User struct {
 	ID               int64
 	Username         string
 	TelegramUsername string
+	TelegramID       *int64
 	Role             string
 	DepartmentID     *int64
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
 type Department struct {
