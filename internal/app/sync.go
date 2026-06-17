@@ -10,7 +10,9 @@ import (
 	sqlcrepo "bakery/internal/outbound/db/sqlc"
 	"bakery/internal/outbound/iiko"
 	"bakery/internal/pkg/enum"
+	"bakery/internal/pkg/helpers"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/sync/errgroup"
 )
@@ -129,7 +131,6 @@ func (s *SyncService) SaveSnapshot(ctx context.Context, catalog *iiko.Nomenclatu
 		return fmt.Errorf("empty assembly charts")
 	}
 
-	startedAt := time.Now().UTC().Format(time.RFC3339Nano)
 	run, err := s.queries.CreateIikoSyncRun(ctx, sqlcrepo.CreateIikoSyncRunParams{
 		Source:        string(enum.IikoSyncSourceGetAll),
 		DateFrom:      syncDate,
@@ -137,8 +138,8 @@ func (s *SyncService) SaveSnapshot(ctx context.Context, catalog *iiko.Nomenclatu
 		KnownRevision: int64(charts.KnownRevision),
 		Status:        string(enum.SyncStatusRunning),
 		Error:         "",
-		StartedAt:     startedAt,
-		FinishedAt:    nil,
+		StartedAt:     helpers.TimestamptzNow(),
+		FinishedAt:    pgtype.Timestamptz{},
 	})
 	if err != nil {
 		return fmt.Errorf("create sync run: %w", err)
@@ -164,12 +165,11 @@ func (s *SyncService) SaveSnapshot(ctx context.Context, catalog *iiko.Nomenclatu
 }
 
 func (s *SyncService) finishSyncRun(ctx context.Context, runID int64, revision int64, status enum.SyncStatus, message string) error {
-	finishedAt := time.Now().UTC().Format(time.RFC3339Nano)
 	_, err := s.queries.FinishIikoSyncRun(ctx, sqlcrepo.FinishIikoSyncRunParams{
 		KnownRevision: revision,
 		Status:        string(status),
 		Error:         message,
-		FinishedAt:    &finishedAt,
+		FinishedAt:    helpers.TimestamptzNow(),
 		ID:            runID,
 	})
 	return err
@@ -191,7 +191,7 @@ func (s *SyncService) saveSnapshotData(ctx context.Context, catalog *iiko.Nomenc
 	}()
 
 	q := s.queries.WithTx(tx)
-	updatedAt := time.Now().UTC().Format(time.RFC3339Nano)
+	updatedAt := helpers.TimestamptzNow()
 
 	for _, product := range catalog.Products {
 		if err := upsertIikoProduct(ctx, q, product, updatedAt); err != nil {
@@ -232,7 +232,7 @@ func (s *SyncService) saveSnapshotData(ctx context.Context, catalog *iiko.Nomenc
 	return nil
 }
 
-func upsertIikoProduct(ctx context.Context, q *sqlcrepo.Queries, product iiko.Product, updatedAt string) error {
+func upsertIikoProduct(ctx context.Context, q *sqlcrepo.Queries, product iiko.Product, updatedAt pgtype.Timestamptz) error {
 	err := q.UpsertIikoProduct(ctx, sqlcrepo.UpsertIikoProductParams{
 		ID:          product.ID.String(),
 		Code:        product.Code,
@@ -248,7 +248,7 @@ func upsertIikoProduct(ctx context.Context, q *sqlcrepo.Queries, product iiko.Pr
 	return nil
 }
 
-func upsertIikoAssemblyChart(ctx context.Context, q *sqlcrepo.Queries, chart iiko.AssemblyChartDto, updatedAt string) error {
+func upsertIikoAssemblyChart(ctx context.Context, q *sqlcrepo.Queries, chart iiko.AssemblyChartDto, updatedAt pgtype.Timestamptz) error {
 	err := q.UpsertIikoAssemblyChart(ctx, sqlcrepo.UpsertIikoAssemblyChartParams{
 		ID:                                   chart.ID,
 		AssembledProductID:                   chart.AssembledProductID,
@@ -294,7 +294,7 @@ func insertIikoAssemblyChartItem(ctx context.Context, q *sqlcrepo.Queries, chart
 	return nil
 }
 
-func upsertIikoPreparedChart(ctx context.Context, q *sqlcrepo.Queries, chart iiko.PreparedChartDto, updatedAt string) error {
+func upsertIikoPreparedChart(ctx context.Context, q *sqlcrepo.Queries, chart iiko.PreparedChartDto, updatedAt pgtype.Timestamptz) error {
 	err := q.UpsertIikoPreparedChart(ctx, sqlcrepo.UpsertIikoPreparedChartParams{
 		ID:                                   chart.ID,
 		AssembledProductID:                   chart.AssembledProductID,

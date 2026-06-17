@@ -14,6 +14,7 @@ import (
 	"bakery/internal/pkg/helpers"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -143,10 +144,10 @@ func (s *OrderService) createOrderWithQueries(
 	fulfillmentDate time.Time,
 	day string,
 ) (orderdomain.Order, error) {
-	if err := q.CreateOrderCounterDay(ctx, day); err != nil {
+	if err := q.CreateOrderCounterDay(ctx, sqlc.CreateOrderCounterDayParams{Day: day, DepartmentID: shop.ID}); err != nil {
 		return orderdomain.Order{}, fmt.Errorf("init order counter: %w", err)
 	}
-	counter, err := q.NextOrderCounter(ctx, day)
+	counter, err := q.NextOrderCounter(ctx, sqlc.NextOrderCounterParams{Day: day, DepartmentID: shop.ID})
 	if err != nil {
 		return orderdomain.Order{}, fmt.Errorf("increment order counter: %w", err)
 	}
@@ -157,8 +158,8 @@ func (s *OrderService) createOrderWithQueries(
 		Location:          input.Location,
 		FromDepartmentID:  input.FromDepartmentID,
 		ToDepartmentID:    input.ToDepartmentID,
-		CreatedAt:         createdAt.Format(time.RFC3339Nano),
-		FulfillmentDate:   fulfillmentDate.Format("2006-01-02"),
+		CreatedAt:         helpers.Timestamptz(createdAt),
+		FulfillmentDate:   helpers.DateOf(fulfillmentDate),
 		CreatedByUsername: strings.TrimSpace(input.CreatedByUsername),
 	})
 	if err != nil {
@@ -177,8 +178,8 @@ func (s *OrderService) createOrderWithQueries(
 		ToDepartmentID:    row.ToDepartmentID,
 		CreatedByUsername: row.CreatedByUsername,
 		Items:             input.Items,
-		CreatedAt:         helpers.ParseRFC3339(row.CreatedAt),
-		FulfillmentDate:   parseDate(row.FulfillmentDate),
+		CreatedAt:         row.CreatedAt.Time,
+		FulfillmentDate:   row.FulfillmentDate.Time,
 	}, nil
 }
 
@@ -229,32 +230,20 @@ func (s *OrderService) UpdateOrder(ctx context.Context, input UpdateOrderInput) 
 	if input.ToDepartmentID == nil {
 		input.ToDepartmentID = existing.ToDepartmentID
 	}
-	fulfillmentDate := s.domain.NormalizeFulfillmentDate(input.FulfillmentDate, helpers.ParseRFC3339(existing.CreatedAt))
+	fulfillmentDate := s.domain.NormalizeFulfillmentDate(input.FulfillmentDate, existing.CreatedAt.Time)
 	createdBy := strings.TrimSpace(input.CreatedByUsername)
 	if createdBy == "" {
 		createdBy = existing.CreatedByUsername
 	}
 
-	row, err := s.queries.UpdateOrder(ctx, sqlc.UpdateOrderParams{
-		FromDepartmentID:  input.FromDepartmentID,
-		ToDepartmentID:    input.ToDepartmentID,
-		FulfillmentDate:   fulfillmentDate.Format("2006-01-02"),
-		CreatedByUsername: createdBy,
-		Number:            input.Number,
-	})
+	var row sqlc.Order
+	if s.db != nil && s.txQueries != nil {
+		row, err = s.updateOrderTx(ctx, input, fulfillmentDate, createdBy, historyItems)
+	} else {
+		row, err = s.updateOrderWithQueries(ctx, s.queries, input, fulfillmentDate, createdBy, historyItems)
+	}
 	if err != nil {
-		return orderdomain.Order{}, fmt.Errorf("update order: %w", err)
-	}
-	if err := s.queries.DeleteOrderItemsByOrderID(ctx, row.ID); err != nil {
-		return orderdomain.Order{}, fmt.Errorf("delete order items: %w", err)
-	}
-	if err := s.createOrderItems(ctx, s.queries, row.ID, input.Items); err != nil {
 		return orderdomain.Order{}, err
-	}
-	if len(historyItems) > 0 {
-		if err := s.createOrderHistory(ctx, row.ID, createdBy, historyItems); err != nil {
-			return orderdomain.Order{}, err
-		}
 	}
 	history, err := s.listOrderHistory(ctx, row.ID)
 	if err != nil {
@@ -269,14 +258,75 @@ func (s *OrderService) UpdateOrder(ctx context.Context, input UpdateOrderInput) 
 		ToDepartmentID:    row.ToDepartmentID,
 		CreatedByUsername: row.CreatedByUsername,
 		Items:             input.Items,
-		CreatedAt:         helpers.ParseRFC3339(row.CreatedAt),
-		FulfillmentDate:   parseDate(row.FulfillmentDate),
+		CreatedAt:         row.CreatedAt.Time,
+		FulfillmentDate:   row.FulfillmentDate.Time,
 		History:           history,
 	}
 	if s.events != nil {
 		s.events.PublishOrderUpdated(order)
 	}
 	return order, nil
+}
+
+func (s *OrderService) updateOrderTx(
+	ctx context.Context,
+	input UpdateOrderInput,
+	fulfillmentDate time.Time,
+	createdBy string,
+	historyItems []orderdomain.OrderHistoryItem,
+) (sqlc.Order, error) {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return sqlc.Order{}, fmt.Errorf("begin order tx: %w", err)
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback(ctx)
+		}
+	}()
+
+	row, err := s.updateOrderWithQueries(ctx, s.txQueries.WithTx(tx), input, fulfillmentDate, createdBy, historyItems)
+	if err != nil {
+		return sqlc.Order{}, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return sqlc.Order{}, fmt.Errorf("commit order tx: %w", err)
+	}
+	committed = true
+	return row, nil
+}
+
+func (s *OrderService) updateOrderWithQueries(
+	ctx context.Context,
+	q sqlc.Querier,
+	input UpdateOrderInput,
+	fulfillmentDate time.Time,
+	createdBy string,
+	historyItems []orderdomain.OrderHistoryItem,
+) (sqlc.Order, error) {
+	row, err := q.UpdateOrder(ctx, sqlc.UpdateOrderParams{
+		FromDepartmentID:  input.FromDepartmentID,
+		ToDepartmentID:    input.ToDepartmentID,
+		FulfillmentDate:   helpers.DateOf(fulfillmentDate),
+		CreatedByUsername: createdBy,
+		Number:            input.Number,
+	})
+	if err != nil {
+		return sqlc.Order{}, fmt.Errorf("update order: %w", err)
+	}
+	if err := q.DeleteOrderItemsByOrderID(ctx, row.ID); err != nil {
+		return sqlc.Order{}, fmt.Errorf("delete order items: %w", err)
+	}
+	if err := s.createOrderItems(ctx, q, row.ID, input.Items); err != nil {
+		return sqlc.Order{}, err
+	}
+	if len(historyItems) > 0 {
+		if err := s.createOrderHistory(ctx, q, row.ID, createdBy, historyItems); err != nil {
+			return sqlc.Order{}, err
+		}
+	}
+	return row, nil
 }
 
 func (s *OrderService) resolveValidOrderItems(
@@ -395,8 +445,8 @@ func (s *OrderService) GetOrderByNumber(ctx context.Context, number string) (ord
 		ToDepartmentID:    order.ToDepartmentID,
 		CreatedByUsername: order.CreatedByUsername,
 		Items:             mapOrderItems(items),
-		CreatedAt:         helpers.ParseRFC3339(order.CreatedAt),
-		FulfillmentDate:   parseDate(order.FulfillmentDate),
+		CreatedAt:         order.CreatedAt.Time,
+		FulfillmentDate:   order.FulfillmentDate.Time,
 		History:           history,
 	}, nil
 }
@@ -411,10 +461,9 @@ func (s *OrderService) ListOrders(ctx context.Context, input ListOrdersInput) (L
 	if input.Offset < 0 {
 		input.Offset = 0
 	}
-	var fulfillmentDate *string
+	var fulfillmentDate pgtype.Date
 	if !input.FulfillmentDate.IsZero() {
-		value := input.FulfillmentDate.Format("2006-01-02")
-		fulfillmentDate = &value
+		fulfillmentDate = helpers.DateOf(input.FulfillmentDate)
 	}
 	total, err := s.queries.CountOrders(ctx, sqlc.CountOrdersParams{
 		FromDepartmentID: input.FromDepartmentID,
@@ -446,8 +495,8 @@ func (s *OrderService) ListOrders(ctx context.Context, input ListOrdersInput) (L
 			ToDepartmentID:    row.ToDepartmentID,
 			CreatedByUsername: row.CreatedByUsername,
 			Items:             mapOrderItems(items),
-			CreatedAt:         helpers.ParseRFC3339(row.CreatedAt),
-			FulfillmentDate:   parseDate(row.FulfillmentDate),
+			CreatedAt:         row.CreatedAt.Time,
+			FulfillmentDate:   row.FulfillmentDate.Time,
 		})
 	}
 	return ListOrdersResult{
@@ -561,7 +610,7 @@ func (s *OrderService) EnsureDefaultOrderTemplates(ctx context.Context, path str
 	}
 
 	catalogItems := parseDefaultDishCatalogItems(string(data))
-	now := time.Now().UTC().Format(time.RFC3339Nano)
+	now := helpers.TimestamptzNow()
 	for _, item := range catalogItems {
 		if _, err := s.queries.UpsertDishCatalogItem(ctx, sqlc.UpsertDishCatalogItemParams{
 			Code:      item.Code,
@@ -657,17 +706,17 @@ func mapOrderItems(items []sqlc.GetOrderItemsByOrderIDRow) []orderdomain.OrderIt
 	return result
 }
 
-func (s *OrderService) createOrderHistory(ctx context.Context, orderID int64, changedBy string, items []orderdomain.OrderHistoryItem) error {
-	history, err := s.queries.CreateOrderHistory(ctx, sqlc.CreateOrderHistoryParams{
+func (s *OrderService) createOrderHistory(ctx context.Context, q sqlc.Querier, orderID int64, changedBy string, items []orderdomain.OrderHistoryItem) error {
+	history, err := q.CreateOrderHistory(ctx, sqlc.CreateOrderHistoryParams{
 		OrderID:           orderID,
 		ChangedByUsername: strings.TrimSpace(changedBy),
-		ChangedAt:         time.Now().UTC().Format(time.RFC3339Nano),
+		ChangedAt:         helpers.TimestamptzNow(),
 	})
 	if err != nil {
 		return fmt.Errorf("create order history: %w", err)
 	}
 	for _, item := range items {
-		if _, err := s.queries.CreateOrderHistoryItem(ctx, sqlc.CreateOrderHistoryItemParams{
+		if _, err := q.CreateOrderHistoryItem(ctx, sqlc.CreateOrderHistoryItemParams{
 			HistoryID:           history.ID,
 			ChangeType:          item.ChangeType,
 			ProductCode:         item.ProductCode,
@@ -709,7 +758,7 @@ func (s *OrderService) listOrderHistory(ctx context.Context, orderID int64) ([]o
 		result = append(result, orderdomain.OrderHistory{
 			ID:                row.ID,
 			ChangedByUsername: row.ChangedByUsername,
-			ChangedAt:         helpers.ParseRFC3339(row.ChangedAt),
+			ChangedAt:         row.ChangedAt.Time,
 			Items:             items,
 		})
 	}
@@ -772,14 +821,6 @@ func orderHistoryItem(changeType string, oldItem orderdomain.OrderItem, newItem 
 
 func float64Ptr(value float64) *float64 {
 	return &value
-}
-
-func parseDate(value string) time.Time {
-	t, err := time.Parse("2006-01-02", value)
-	if err != nil {
-		return time.Time{}
-	}
-	return t
 }
 
 func (s *OrderService) GetTemplate(ctx context.Context) (string, error) {
