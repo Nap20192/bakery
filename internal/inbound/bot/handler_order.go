@@ -11,6 +11,7 @@ import (
 	"bakery/internal/app"
 	orderdomain "bakery/internal/domain/order"
 	"bakery/internal/pkg/enum"
+	orderuc "bakery/internal/services/order/usecase/order"
 	applog "bakery/pkg/logger"
 
 	tele "gopkg.in/telebot.v3"
@@ -289,7 +290,7 @@ func (b *OrderBot) handleUpdateOrder(c tele.Context) error {
 	if len(items) == 0 {
 		return sendText(c, "Заказ пустой. Добавьте позиции или нажмите отмену.")
 	}
-	order, err := b.orderSvc.UpdateOrder(ctx, app.UpdateOrderInput{
+	order, err := b.orderSvc.UpdateOrder(ctx, orderuc.UpdateOrderInput{
 		Number:            orderNumber,
 		Items:             items,
 		FromDepartmentID:  fromDepartmentID,

@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"bakery/internal/app"
 	orderdomain "bakery/internal/domain/order"
+	orderuc "bakery/internal/services/order/usecase/order"
 )
 
 const (
@@ -110,7 +110,7 @@ func (s *Server) handleUpdateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fromDepartmentID := user.DepartmentID
-	order, err := s.orderSvc.UpdateOrder(r.Context(), app.UpdateOrderInput{
+	order, err := s.orderSvc.UpdateOrder(r.Context(), orderuc.UpdateOrderInput{
 		Number:            number,
 		Items:             input.items,
 		FromDepartmentID:  &fromDepartmentID,
