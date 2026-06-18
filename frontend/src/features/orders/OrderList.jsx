@@ -26,12 +26,9 @@ export function OrderList({
   shops,
   viewer,
   canFilterShops,
-  canUseMonitor,
   filters,
   selectedNumber,
-  selectedOrderNumbers,
   onSelect,
-  onToggleSelection,
   onPageChange,
   onFiltersChange,
   onResetFilters,
@@ -98,7 +95,6 @@ export function OrderList({
       <div className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
         {orders.length ? (
           orders.map((order) => {
-            const checked = selectedOrderNumbers.includes(order.number);
             return (
               <div
                 key={order.number}
@@ -106,16 +102,7 @@ export function OrderList({
                   selectedNumber === order.number ? 'border-stone-300 bg-[#fff1cb]' : 'border-transparent bg-[#fff7df] hover:border-stone-300 hover:bg-[#fff1cb]'
                 }`}
               >
-                <div className={`grid gap-2 ${canUseMonitor ? 'grid-cols-[1.25rem_minmax(0,1fr)]' : 'grid-cols-1'}`}>
-                  {canUseMonitor && (
-                    <input
-                      type="checkbox"
-                      className="mt-0.5 h-4 w-4 accent-stone-950"
-                      checked={checked}
-                      aria-label={`Выбрать заказ ${order.number}`}
-                      onChange={() => onToggleSelection(order.number)}
-                    />
-                  )}
+                <div className="grid grid-cols-1 gap-2">
                   <button className="min-w-0 text-left" onClick={() => onSelect(order.number)}>
                     <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5">
                       <strong className="break-words text-[13px] font-semibold leading-5 text-stone-900">{order.number}</strong>

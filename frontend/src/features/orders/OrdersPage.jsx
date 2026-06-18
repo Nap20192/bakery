@@ -3,18 +3,18 @@ import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
 import { Login } from '../../components/Login';
 import { AdminUsers } from '../admin/AdminUsers';
-import { panelClass, PanelHeader } from '../../components/Panel';
+import { panelClass } from '../../components/Panel';
 import { apiBase, buildMode, frontendLogsEnabled } from '../../config/env';
 import { ApiError } from '../../api/client';
 import { createOrder, fetchBatchOrderMonitor, fetchCatalog, fetchDepartments, fetchMe, fetchOrder, fetchOrderMonitor, fetchOrders, updateOrder } from '../../api/orders';
 import { clearToken, getToken, isWebMode } from '../../lib/auth';
 import { logInfo, logWarn } from '../../lib/logger';
 import { miniAppModeFromLocation, orderNumberFromLocation, orderNumbersFromLocation, trimString } from '../../lib/url';
-import { MonitorReports } from './MonitorReports';
 import { OrderDetails } from './OrderDetails';
 import { OrderEditor } from './OrderEditor';
 import { OrderList } from './OrderList';
 import { OrdersLayout } from './OrdersLayout';
+import { BakerOrdersView } from './BakerOrdersView';
 
 const defaultPage = {
   page: 1,
@@ -43,7 +43,6 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
   const filtersRef = useRef(filters);
 
   const selectedNumber = selectedOrder?.number || '';
-  const selectedOrderCount = selectedOrderNumbers.length;
 
   function bootstrap(activeRoute = route) {
     const launchMode = miniAppModeFromLocation();
@@ -303,7 +302,7 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
   const canWriteOrders = viewer?.department_type === 'shop';
   const canUseMonitor = viewer?.department_type === 'workshop' || viewer?.role === 'baker';
   const showEditor = canWriteOrders && editor;
-  const showMonitorFirst = canUseMonitor && route.name === 'orderMonitor';
+  const showCreateOrderPage = showEditor && editor?.mode === 'create';
 
   if (authNeeded) {
     return <Login onAuthenticated={handleAuthenticated} />;
@@ -319,26 +318,45 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
 
   return (
     <OrdersLayout viewer={viewer} active={route.name} onNavigate={navigate} onLogout={handleLogout}>
-      <div className="lg:grid lg:grid-cols-[24rem_minmax(0,1fr)]">
-        <OrderList
+      {canUseMonitor ? (
+        <BakerOrdersView
           loading={loading}
           orders={orders}
           page={ordersPage}
           shops={shops}
-          viewer={viewer}
-          canFilterShops={viewer?.department_type === 'workshop'}
-          canUseMonitor={canUseMonitor}
           filters={filters}
           selectedNumber={selectedNumber}
+          selectedOrder={selectedOrder}
           selectedOrderNumbers={selectedOrderNumbers}
-          onSelect={(number) => loadOrder(number, canUseMonitor)}
+          monitor={monitor}
+          error={error}
+          onSelect={(number) => loadOrder(number, false)}
           onToggleSelection={toggleOrderSelection}
           onPageChange={loadOrders}
           onFiltersChange={updateFilters}
           onResetFilters={resetFilters}
+          onCalculate={loadBatchMonitor}
         />
+      ) : (
+      <div className={showCreateOrderPage ? '' : 'lg:grid lg:grid-cols-[24rem_minmax(0,1fr)]'}>
+        {!showCreateOrderPage && (
+          <OrderList
+            loading={loading}
+            orders={orders}
+            page={ordersPage}
+            shops={shops}
+            viewer={viewer}
+            canFilterShops={viewer?.department_type === 'workshop'}
+            filters={filters}
+            selectedNumber={selectedNumber}
+            onSelect={(number) => loadOrder(number)}
+            onPageChange={loadOrders}
+            onFiltersChange={updateFilters}
+            onResetFilters={resetFilters}
+          />
+        )}
         <section className="min-w-0 p-3 pt-0 sm:p-5 lg:p-6">
-        <div className="mx-auto max-w-[1180px]">
+        <div className={`mx-auto ${showCreateOrderPage ? 'max-w-5xl' : 'max-w-[1180px]'}`}>
           {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800">{error}</div>}
           {showEditor ? (
             <section className={panelClass}>
@@ -355,18 +373,7 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
               />
             </section>
           ) : selectedOrder ? (
-            <div className={`grid gap-4 ${showMonitorFirst ? 'xl:grid-cols-[minmax(22rem,0.9fr)_minmax(0,1.1fr)]' : 'xl:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.9fr)]'}`}>
-              {showMonitorFirst && (
-                <section className={panelClass}>
-                  <PanelHeader title="Расчёт теста" />
-                  <MonitorActions
-                    loading={loading}
-                    selectedOrderCount={selectedOrderCount}
-                    onCalculate={loadBatchMonitor}
-                  />
-                  <MonitorReports monitor={monitor} />
-                </section>
-              )}
+            <div className="grid gap-4">
               <section className={panelClass}>
                 {canWriteOrders && (
                   <div className="mb-3 flex justify-end">
@@ -377,17 +384,6 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
                 )}
                 <OrderDetails order={selectedOrder} />
               </section>
-              {!showMonitorFirst && canUseMonitor && (
-                <section className={panelClass}>
-                  <PanelHeader title="Расчёт теста" />
-                  <MonitorActions
-                    loading={loading}
-                    selectedOrderCount={selectedOrderCount}
-                    onCalculate={loadBatchMonitor}
-                  />
-                  <MonitorReports monitor={monitor} />
-                </section>
-              )}
             </div>
           ) : (
             <EmptyState>Заказы не загружены.</EmptyState>
@@ -395,20 +391,7 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
         </div>
         </section>
       </div>
+      )}
     </OrdersLayout>
-  );
-}
-
-function MonitorActions({ loading, selectedOrderCount, onCalculate }) {
-  if (selectedOrderCount === 0) {
-    return null;
-  }
-  return (
-    <div className="mb-3 flex flex-wrap items-center gap-2">
-      <Button variant="primary" onClick={onCalculate} disabled={loading}>
-        Рассчитать выбранные
-      </Button>
-      <span className="text-[13px] leading-5 text-stone-600">Выбрано заказов: {selectedOrderCount}</span>
-    </div>
   );
 }
