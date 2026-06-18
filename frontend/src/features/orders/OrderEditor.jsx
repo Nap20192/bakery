@@ -68,9 +68,6 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
     <form className="space-y-3" onSubmit={submit}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <PanelHeader title={order ? `Изменить ${order.number}` : 'Новый заказ'} />
-        <Button type="button" onClick={onCancel}>
-          Закрыть
-        </Button>
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2">

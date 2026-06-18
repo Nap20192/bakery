@@ -2,7 +2,6 @@ import { isWebMode } from '../../lib/auth';
 
 const navItems = [
   { route: { name: 'orders' }, label: 'Заказы', roles: ['shop', 'baker', 'admin'] },
-  { route: { name: 'orderNew' }, label: 'Новый', roles: ['shop'] },
   { route: { name: 'adminUsers' }, label: 'Пользователи', roles: ['admin'] },
   { route: { name: 'me' }, label: 'Профиль', roles: ['shop', 'baker', 'admin'] },
 ];
@@ -29,7 +28,7 @@ export function OrdersLayout({ viewer, active, onNavigate, onLogout, children })
                 type="button"
                 onClick={() => onNavigate(item.route)}
                 className={`shrink-0 rounded-md border px-3 py-1.5 text-[13px] font-medium ${
-                  active === item.route.name
+                  activeNavItem(active) === item.route.name
                     ? 'border-stone-900 bg-stone-900 text-white'
                     : 'border-stone-300 bg-[#fff7df] text-stone-800'
                 }`}
@@ -52,6 +51,13 @@ export function OrdersLayout({ viewer, active, onNavigate, onLogout, children })
       {children}
     </main>
   );
+}
+
+function activeNavItem(active) {
+  if (active === 'orderNew' || active === 'orderView' || active === 'orderEdit' || active === 'orderMonitor') {
+    return 'orders';
+  }
+  return active;
 }
 
 function navigationRole(viewer) {
