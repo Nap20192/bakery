@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Login } from '../../components/Login';
+import { MePanel } from '../account/Me';
 import { AdminUsers } from '../admin/AdminUsers';
 import { apiBase, buildMode, frontendLogsEnabled } from '../../config/env';
 import { ApiError } from '../../api/client';
@@ -332,10 +333,23 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
   }
 
   const canUseMonitor = viewer?.department_type === 'workshop' || viewer?.role === 'baker';
-  const showCreateOrderPage = editor?.mode === 'create';
+  // Only honour the editor on its own routes; navigating away (e.g. nav "Заказы"
+  // from create) must fall back to the list/details view even if editor state
+  // lingers.
+  const editorRoute = route.name === 'orderNew' || route.name === 'orderEdit';
+  const activeEditor = editorRoute ? editor : null;
+  const showCreateOrderPage = activeEditor?.mode === 'create';
 
   if (authNeeded) {
     return <Login onAuthenticated={handleAuthenticated} />;
+  }
+
+  if (route.name === 'me') {
+    return (
+      <OrdersLayout viewer={viewer} active={route.name} onNavigate={navigate} onLogout={handleLogout}>
+        <MePanel viewer={viewer} onLogout={handleLogout} />
+      </OrdersLayout>
+    );
   }
 
   if (viewer?.role === 'admin' && route.name === 'adminUsers') {
@@ -397,7 +411,7 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
           filters={filters}
           selectedNumber={selectedNumber}
           selectedOrder={selectedOrder}
-          editor={editor}
+          editor={activeEditor}
           catalog={catalog}
           error={error}
           showCreateOrderPage={showCreateOrderPage}

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { MePage } from '../features/account/Me';
 import { OrdersPage } from '../features/orders/OrdersPage';
 import { parseRoute, pathFor } from './routes';
 
@@ -24,10 +23,6 @@ export function App() {
       window.history.pushState(null, '', path);
     }
     setRoute(parseRoute(path));
-  }
-
-  if (route.name === 'me') {
-    return <MePage />;
   }
 
   return <OrdersPage route={route} navigate={navigate} />;
