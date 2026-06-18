@@ -49,6 +49,14 @@ export function updateOrder(number, order) {
   });
 }
 
+export function setOrderFavorite(number, favorite) {
+  return apiRequest(`/orders/${encodeURIComponent(number)}/favorite`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ favorite }),
+  });
+}
+
 export function fetchOrderMonitor(number) {
   return apiRequest(`/monitor/${encodeURIComponent(number)}`);
 }

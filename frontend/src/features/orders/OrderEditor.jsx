@@ -234,9 +234,10 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
               </div>
               <div className="divide-y divide-stone-100">
                 {group.items.map((item) => {
-                  const hasComment = Boolean(comments[item.name]);
-                  const commentOpen = openComments[item.name] || hasComment;
                   const value = quantities[item.name] || {};
+                  const filled = Number(value.quantity || 0) + Number(value.reserved_quantity || 0) > 0;
+                  const hasComment = Boolean(comments[item.name]);
+                  const commentOpen = filled && (openComments[item.name] || hasComment);
                   return (
                     <div className="py-1.5" key={item.name}>
                       <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem_2rem] items-center gap-2">
@@ -261,21 +262,25 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
                           value={value.reserved_quantity || ''}
                           onChange={(e) => updateQuantity(item.name, 'reserved_quantity', e.target.value.replace(/\D/g, ''))}
                         />
-                        <button
-                          type="button"
-                          onClick={() => setOpenComments((o) => ({ ...o, [item.name]: !commentOpen }))}
-                          title="Комментарий"
-                          aria-label={`${item.name}: комментарий`}
-                          className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border transition ${
-                            hasComment
-                              ? 'border-stone-900 bg-stone-900 text-white'
-                              : commentOpen
-                                ? 'border-stone-400 text-stone-700'
-                                : 'border-stone-200 text-stone-400 hover:border-stone-400 hover:text-stone-700'
-                          }`}
-                        >
-                          <Icon name="orders" size={15} />
-                        </button>
+                        {filled ? (
+                          <button
+                            type="button"
+                            onClick={() => setOpenComments((o) => ({ ...o, [item.name]: !commentOpen }))}
+                            title="Комментарий"
+                            aria-label={`${item.name}: комментарий`}
+                            className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border transition ${
+                              hasComment
+                                ? 'border-stone-900 bg-stone-900 text-white'
+                                : commentOpen
+                                  ? 'border-stone-400 text-stone-700'
+                                  : 'border-stone-200 text-stone-400 hover:border-stone-400 hover:text-stone-700'
+                            }`}
+                          >
+                            <Icon name="orders" size={15} />
+                          </button>
+                        ) : (
+                          <span />
+                        )}
                       </div>
                       {commentOpen && (
                         <input

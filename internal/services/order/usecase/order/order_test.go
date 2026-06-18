@@ -330,3 +330,7 @@ func (f *fakeRepo) UpsertDishCatalogItem(context.Context, DishCatalogItem) error
 func (f *fakeRepo) DeleteDishCatalogItem(context.Context, string) error {
 	return nil
 }
+
+func (f *fakeRepo) SetOrderFavorite(context.Context, string, bool) (orderdomain.Order, error) {
+	return orderdomain.Order{}, nil
+}

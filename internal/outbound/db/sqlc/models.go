@@ -131,6 +131,7 @@ type Order struct {
 	FulfillmentDate   pgtype.Date        `json:"fulfillment_date"`
 	CreatedByUsername string             `json:"created_by_username"`
 	Comments          []byte             `json:"comments"`
+	IsFavorite        bool               `json:"is_favorite"`
 }
 
 type OrderCounter struct {

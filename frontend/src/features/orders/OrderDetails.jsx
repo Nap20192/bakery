@@ -1,18 +1,38 @@
 import { MetaCell } from '../../components/MetaCell';
 import { PanelHeader } from '../../components/Panel';
 import { CopyButton } from '../../components/CopyButton';
+import { Button } from '../../components/Button';
+import { Icon } from '../../components/Icon';
 import { formatDate, formatFulfillmentDate, formatQuantity } from '../../lib/format';
 import { orderCreator, orderItemsToText, orderQuantity } from '../../lib/orders';
 import { EmptyState } from '../../components/EmptyState';
 
-export function OrderDetails({ order }) {
+export function OrderDetails({ order, canFavorite = false, onToggleFavorite }) {
   return (
     <>
       <div className="flex items-start justify-between gap-2">
         <PanelHeader title={order.number} count={order.items?.length || 0} />
-        {(order.items?.length || 0) > 0 && (
-          <CopyButton getText={() => orderItemsToText(order, false)} label="Копировать" className="shrink-0" />
-        )}
+        <div className="flex shrink-0 items-center gap-2">
+          {canFavorite ? (
+            <Button
+              variant={order.favorite ? 'primary' : 'default'}
+              onClick={() => onToggleFavorite?.(order.number, !order.favorite)}
+              title={order.favorite ? 'В избранном — не удаляется' : 'В избранное'}
+            >
+              <Icon name="star" size={15} filled={Boolean(order.favorite)} />
+              {order.favorite ? 'В избранном' : 'В избранное'}
+            </Button>
+          ) : (
+            order.favorite && (
+              <span className="inline-flex items-center gap-1 text-[12px] font-medium text-stone-500" title="Избранный заказ">
+                <Icon name="star" size={14} filled /> Избранное
+              </span>
+            )
+          )}
+          {(order.items?.length || 0) > 0 && (
+            <CopyButton getText={() => orderItemsToText(order, false)} label="Копировать" />
+          )}
+        </div>
       </div>
 
       <div className="mb-3 grid grid-cols-2 gap-1.5 sm:gap-2 md:grid-cols-5">

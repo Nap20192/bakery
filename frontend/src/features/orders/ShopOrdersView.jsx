@@ -18,6 +18,8 @@ export function ShopOrdersView({
   catalog,
   error,
   showCreateOrderPage,
+  canFavorite,
+  onToggleFavorite,
   onSelect,
   onPageChange,
   onFiltersChange,
@@ -65,7 +67,7 @@ export function ShopOrdersView({
                   Изменить
                 </Button>
               </div>
-              <OrderDetails order={selectedOrder} />
+              <OrderDetails order={selectedOrder} canFavorite={canFavorite} onToggleFavorite={onToggleFavorite} />
             </section>
           ) : (
             <EmptyState>Заказы не загружены.</EmptyState>

@@ -5,7 +5,7 @@ import { AdminUsers } from '../admin/AdminUsers';
 import { AdminDishes } from '../admin/AdminDishes';
 import { apiBase, buildMode, frontendLogsEnabled } from '../../config/env';
 import { ApiError } from '../../api/client';
-import { createOrder, fetchBatchOrderMonitor, fetchCatalog, fetchDepartments, fetchMe, fetchOrder, fetchOrderMonitor, fetchOrders, updateOrder } from '../../api/orders';
+import { createOrder, fetchBatchOrderMonitor, fetchCatalog, fetchDepartments, fetchMe, fetchOrder, fetchOrderMonitor, fetchOrders, setOrderFavorite, updateOrder } from '../../api/orders';
 import { clearToken, getToken, isWebMode } from '../../lib/auth';
 import { logInfo, logWarn } from '../../lib/logger';
 import { miniAppModeFromLocation, orderNumberFromLocation, orderNumbersFromLocation, trimString } from '../../lib/url';
@@ -333,6 +333,15 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
     });
   }
 
+  function toggleFavorite(number, favorite) {
+    return run(async () => {
+      const saved = await setOrderFavorite(number, favorite);
+      setSelectedOrder((current) => (current && current.number === number ? saved : current));
+      setOrders((current) => current.map((o) => (o.number === number ? { ...o, favorite: saved.favorite } : o)));
+    });
+  }
+
+  const canFavorite = viewer?.role === 'admin';
   const canUseMonitor = viewer?.department_type === 'workshop' || viewer?.role === 'baker';
   // Only honour the editor on its own routes; navigating away (e.g. nav "Заказы"
   // from create) must fall back to the list/details view even if editor state
@@ -387,6 +396,8 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
           order={selectedOrder}
           monitor={monitor}
           error={error}
+          canFavorite={canFavorite}
+          onToggleFavorite={toggleFavorite}
           onBack={() => navigate({ name: 'orders' })}
           onCalculate={calculateCurrentOrder}
         />
@@ -402,6 +413,8 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
           selectedOrderNumbers={selectedOrderNumbers}
           error={error}
           selectionMode={selectionMode}
+          canFavorite={canFavorite}
+          onToggleFavorite={toggleFavorite}
           onSelect={(number) => loadOrder(number, false)}
           onToggleSelection={toggleOrderSelection}
           onToggleSelectionMode={() => setSelectionMode((current) => !current)}
@@ -424,6 +437,8 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
           catalog={catalog}
           error={error}
           showCreateOrderPage={showCreateOrderPage}
+          canFavorite={canFavorite}
+          onToggleFavorite={toggleFavorite}
           onSelect={(number) => loadOrder(number)}
           onPageChange={loadOrders}
           onFiltersChange={updateFilters}

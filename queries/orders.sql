@@ -144,10 +144,17 @@ WHERE
     (sqlc.narg(from_department_id)::BIGINT IS NULL OR from_department_id = sqlc.narg(from_department_id)::BIGINT)
     AND (sqlc.narg(fulfillment_date)::DATE IS NULL OR fulfillment_date = sqlc.narg(fulfillment_date)::DATE);
 
+-- name: SetOrderFavorite :one
+UPDATE orders
+SET is_favorite = sqlc.arg(is_favorite)
+WHERE number = sqlc.arg(number)
+RETURNING *;
+
 -- name: DeleteOrdersCreatedBefore :one
 WITH deleted AS (
     DELETE FROM orders
     WHERE created_at < sqlc.arg(created_at_before)
+      AND is_favorite = FALSE
     RETURNING id
 )
 SELECT COUNT(*)::BIGINT

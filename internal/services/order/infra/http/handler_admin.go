@@ -19,11 +19,31 @@ type dishCreateRequest struct {
 	Theme string `json:"theme"`
 }
 
-// RegisterAdminRoutes wires admin-only dish catalog management.
+// RegisterAdminRoutes wires admin-only dish catalog management and order pins.
 func (h *Handler) RegisterAdminRoutes(mux *http.ServeMux, auth *httpx.Authenticator) {
 	mux.Handle("GET /admin/dishes", auth.RequireAdmin(http.HandlerFunc(h.handleListDishes)))
 	mux.Handle("POST /admin/dishes", auth.RequireAdmin(http.HandlerFunc(h.handleCreateDish)))
 	mux.Handle("DELETE /admin/dishes/{code}", auth.RequireAdmin(http.HandlerFunc(h.handleDeleteDish)))
+	mux.Handle("PATCH /orders/{id}/favorite", auth.RequireAdmin(http.HandlerFunc(h.handleSetFavorite)))
+}
+
+type favoriteRequest struct {
+	Favorite bool `json:"favorite"`
+}
+
+func (h *Handler) handleSetFavorite(w http.ResponseWriter, r *http.Request) {
+	number := httpx.Trim(r.PathValue("id"))
+	var req favoriteRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.WriteError(w, http.StatusBadRequest, "Некорректные данные.")
+		return
+	}
+	order, err := h.orderSvc.SetOrderFavorite(r.Context(), number, req.Favorite)
+	if err != nil {
+		httpx.WriteAppError(w, r, err, "Не удалось обновить заказ.")
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, h.presenter.BuildOrderResponse(r.Context(), order))
 }
 
 func (h *Handler) handleListDishes(w http.ResponseWriter, r *http.Request) {
