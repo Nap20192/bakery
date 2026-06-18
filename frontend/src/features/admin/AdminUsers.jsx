@@ -14,12 +14,21 @@ export function AdminUsers() {
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [query, setQuery] = useState('');
 
   const deptById = useMemo(() => {
     const map = {};
     for (const d of departments) map[d.id] = d;
     return map;
   }, [departments]);
+
+  const filteredUsers = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter((u) =>
+      [u.username, u.telegram_username, u.role].some((field) => String(field || '').toLowerCase().includes(q)),
+    );
+  }, [users, query]);
 
   function load() {
     fetchUsers()
@@ -89,8 +98,18 @@ export function AdminUsers() {
   return (
     <main className="bg-[#f7f3ea] p-4 text-stone-900 sm:p-6">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-lg font-semibold">Пользователи</h1>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h1 className="flex items-center gap-2 text-lg font-semibold">
+            Пользователи
+            <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[12px] font-medium tabular-nums text-stone-600">{users.length}</span>
+          </h1>
+          <input
+            className={`${fieldClass} w-full sm:w-64`}
+            type="search"
+            placeholder="Поиск: логин, telegram, роль…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
         </div>
 
         {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800">{error}</div>}
@@ -125,7 +144,7 @@ export function AdminUsers() {
               </tr>
             </thead>
             <tbody>
-              {users.map((u) => (
+              {filteredUsers.map((u) => (
                 <tr key={u.id} className="border-t border-stone-100">
                   <td className="px-3 py-2">{u.id}</td>
                   <td className="px-3 py-2">{u.username || '—'}</td>
@@ -147,11 +166,13 @@ export function AdminUsers() {
                   </td>
                   <td className="px-3 py-2 text-[12px] text-stone-500">{u.created_at ? u.created_at.slice(0, 10) : '—'}</td>
                   <td className="px-3 py-2">
-                    <button onClick={() => onDelete(u)} className="inline-flex min-h-9 items-center justify-center rounded-md border border-red-300 bg-white px-3 py-1.5 text-[13px] font-semibold text-red-700 transition hover:bg-red-50">Удалить</button>
+                    <Button onClick={() => onDelete(u)} variant="danger">Удалить</Button>
                   </td>
                 </tr>
               ))}
-              {users.length === 0 && <tr><td colSpan={9} className="px-3 py-6 text-center text-stone-500">Нет пользователей.</td></tr>}
+              {filteredUsers.length === 0 && (
+                <tr><td colSpan={9} className="px-3 py-6 text-center text-stone-500">{query ? 'Ничего не найдено.' : 'Нет пользователей.'}</td></tr>
+              )}
             </tbody>
           </table>
         </div>

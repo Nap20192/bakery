@@ -13,3 +13,31 @@ export function orderCreator(order) {
   if (order?.created_by_username) return `@${order.created_by_username}`;
   return orderSource(order);
 }
+
+function reportLines(reports) {
+  return (reports || []).map(({ report }) => {
+    const ing = report?.ingredient;
+    if (!ing) return '';
+    return `${ing.product_name}: ${formatQuantity(ing.quantity)} ${ing.unit}`.trim();
+  }).filter(Boolean);
+}
+
+// monitorToText renders a dough calculation as plain text for sharing.
+export function monitorToText(monitor) {
+  if (!monitor) return '';
+  if (monitor.total_reports?.length) {
+    const header = `Итого по заказам: ${monitor.orders?.length || 0}`;
+    return [header, ...reportLines(monitor.total_reports)].join('\n');
+  }
+  if (monitor.reports?.length) {
+    return reportLines(monitor.reports).join('\n');
+  }
+  return '';
+}
+
+// orderItemsToText renders order positions as plain text for sharing.
+export function orderItemsToText(order) {
+  const header = order?.number ? `Заказ ${order.number}` : 'Заказ';
+  const lines = (order?.items || []).map((item) => `${item.product_name}: ${orderQuantity(item)}`);
+  return [header, ...lines].join('\n');
+}
