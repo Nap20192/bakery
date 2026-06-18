@@ -40,3 +40,14 @@ select,
 textarea {
   touch-action: manipulation;
 }
+
+/* Inputs must be >=16px on phones, otherwise iOS Safari zooms the viewport on
+   focus. Applies to native inputs and MUI fields alike. */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea,
+  .MuiInputBase-input {
+    font-size: 16px !important;
+  }
+}

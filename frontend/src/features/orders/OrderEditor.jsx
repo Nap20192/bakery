@@ -1,9 +1,13 @@
 import { useMemo, useState } from 'react';
-import TextField from '@mui/material/TextField';
 import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
 import { PanelHeader } from '../../components/Panel';
 import { formatQuantity } from '../../lib/format';
+
+const controlClass =
+  'h-11 w-full rounded-lg border border-stone-300 bg-white px-3 text-base text-stone-900 outline-none transition focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10';
+const qtyClass =
+  'h-10 w-full rounded-lg border border-stone-300 bg-white px-1 text-center text-base text-stone-900 outline-none transition focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10';
 
 function todayValue() {
   const date = new Date();
@@ -91,68 +95,65 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
 
   return (
     <form className="space-y-3" onSubmit={submit}>
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <PanelHeader title={order ? `Изменить ${order.number}` : 'Новый заказ'} />
-      </div>
+      <PanelHeader title={order ? `Изменить ${order.number}` : 'Новый заказ'} />
 
       <div className="grid gap-2 sm:grid-cols-2">
-        <TextField
-          size="medium"
-          label="Дата выполнения"
-          type="date"
-          value={date}
-          onChange={(event) => setDate(event.target.value)}
-          slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: todayValue() } }}
-          required
-          fullWidth
-        />
-        <TextField
-          size="medium"
-          label="Поиск блюда"
-          type="search"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="начните вводить название…"
-          fullWidth
-        />
+        <label className="block">
+          <span className="mb-1 block text-[12px] font-medium text-stone-500">Дата выполнения</span>
+          <input className={controlClass} type="date" value={date} min={todayValue()} onChange={(e) => setDate(e.target.value)} required />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-[12px] font-medium text-stone-500">Поиск блюда</span>
+          <input className={controlClass} type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="название…" />
+        </label>
       </div>
 
-      <div className="max-h-[58vh] space-y-3 overflow-y-auto pr-1">
+      <div className="space-y-2.5">
         {visibleGroups.length ? (
           visibleGroups.map((group) => (
-            <section className="overflow-hidden rounded-md border border-stone-200" key={group.theme}>
-              <h4 className="m-0 bg-stone-50 px-3 py-2 text-[13px] font-semibold text-stone-900">{group.theme}</h4>
-              <div className="divide-y divide-stone-200">
-                {group.items.map((item) => {
-                  const value = quantities[item.name] || {};
-                  const filled = Number(value.quantity || 0) + Number(value.reserved_quantity || 0) > 0;
-                  return (
-                    <div
-                      className={`grid gap-2 px-3 py-3 sm:grid-cols-[minmax(0,1fr)_5.4rem_5.4rem] sm:items-center sm:py-2 ${filled ? 'bg-stone-50/60' : ''}`}
-                      key={item.name}
-                    >
-                      <span className="min-w-0 text-[15px] font-medium leading-5 text-stone-800 sm:text-[13px]">{item.name}</span>
-                      <div className="grid grid-cols-2 gap-2 sm:contents">
-                        <TextField
-                          size="medium"
+            <section key={group.theme}>
+              <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] items-center gap-2 px-1 pb-1">
+                <h4 className="m-0 truncate text-[12px] font-semibold uppercase tracking-wide text-stone-500">{group.theme}</h4>
+                <span className="text-center text-[10px] font-medium uppercase text-stone-400">Кол-во</span>
+                <span className="text-center text-[10px] font-medium uppercase text-stone-400">Заказ</span>
+              </div>
+              <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
+                <div className="divide-y divide-stone-100">
+                  {group.items.map((item) => {
+                    const value = quantities[item.name] || {};
+                    const filled = Number(value.quantity || 0) + Number(value.reserved_quantity || 0) > 0;
+                    return (
+                      <div
+                        className={`grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] items-center gap-2 px-2.5 py-1.5 transition ${filled ? 'bg-stone-50' : ''}`}
+                        key={item.name}
+                      >
+                        <span className="min-w-0 break-words text-[14px] leading-5 text-stone-800">{item.name}</span>
+                        <input
+                          className={qtyClass}
                           type="number"
-                          label="Кол-во"
+                          inputMode="numeric"
+                          min={0}
+                          step={1}
+                          placeholder="0"
+                          aria-label={`${item.name}: количество`}
                           value={value.quantity || ''}
-                          onChange={(event) => updateQuantity(item.name, 'quantity', event.target.value)}
-                          slotProps={{ htmlInput: { min: 0, step: 1, inputMode: 'decimal' } }}
+                          onChange={(e) => updateQuantity(item.name, 'quantity', e.target.value)}
                         />
-                        <TextField
-                          size="medium"
+                        <input
+                          className={qtyClass}
                           type="number"
-                          label="Заказ."
+                          inputMode="numeric"
+                          min={0}
+                          step={1}
+                          placeholder="0"
+                          aria-label={`${item.name}: заказано`}
                           value={value.reserved_quantity || ''}
-                          onChange={(event) => updateQuantity(item.name, 'reserved_quantity', event.target.value)}
-                          slotProps={{ htmlInput: { min: 0, step: 1, inputMode: 'decimal' } }}
+                          onChange={(e) => updateQuantity(item.name, 'reserved_quantity', e.target.value)}
                         />
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </section>
           ))
@@ -161,18 +162,16 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
         )}
       </div>
 
-      <div className="sticky bottom-0 flex flex-wrap items-center justify-between gap-2 border-t border-stone-200 bg-white py-3 shadow-[0_-8px_20px_rgba(28,25,23,0.06)]">
+      <div className="sticky bottom-16 -mx-3 flex items-center justify-between gap-2 border-t border-stone-200 bg-white/95 px-3 py-2.5 backdrop-blur sm:bottom-0 sm:-mx-4 sm:px-4">
         <span className="text-[13px] text-stone-600">
-          Позиций: <strong className="text-stone-900 tabular-nums">{summary.count}</strong>
+          <strong className="text-stone-900 tabular-nums">{summary.count}</strong> поз.
           <span className="mx-1.5 text-stone-300">·</span>
-          Всего: <strong className="text-stone-900 tabular-nums">{formatQuantity(summary.total)}</strong>
+          <strong className="text-stone-900 tabular-nums">{formatQuantity(summary.total)}</strong> шт.
         </span>
         <div className="flex gap-2">
-          <Button type="button" onClick={onCancel}>
-            Отмена
-          </Button>
+          <Button type="button" onClick={onCancel}>Отмена</Button>
           <Button type="submit" variant="primary" disabled={!canSubmit}>
-            {order ? 'Сохранить изменения' : 'Создать заказ'}
+            {order ? 'Сохранить' : 'Создать'}
           </Button>
         </div>
       </div>
