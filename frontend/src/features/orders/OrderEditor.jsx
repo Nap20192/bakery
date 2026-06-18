@@ -4,12 +4,6 @@ import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
 import { PanelHeader } from '../../components/Panel';
 
-function tomorrowValue() {
-  const date = new Date();
-  date.setDate(date.getDate() + 1);
-  return date.toISOString().slice(0, 10);
-}
-
 function initialQuantities(order) {
   const quantities = {};
   for (const item of order?.items || []) {
@@ -22,16 +16,13 @@ function initialQuantities(order) {
 }
 
 export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
-  const [query, setQuery] = useState('');
-  const [date, setDate] = useState(order?.fulfillment_date || tomorrowValue());
+  const [date, setDate] = useState(order?.fulfillment_date || '');
   const [quantities, setQuantities] = useState(() => initialQuantities(order));
 
   const groups = useMemo(() => {
-    const value = query.trim().toLowerCase();
     const result = [];
     const byTheme = new Map();
     for (const item of catalog) {
-      if (value && !item.name.toLowerCase().includes(value)) continue;
       if (!byTheme.has(item.theme)) {
         const group = { theme: item.theme || 'Без группы', items: [] };
         byTheme.set(item.theme, group);
@@ -40,7 +31,7 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
       byTheme.get(item.theme).items.push(item);
     }
     return result;
-  }, [catalog, query]);
+  }, [catalog]);
 
   function updateQuantity(name, key, value) {
     setQuantities((current) => ({
@@ -70,9 +61,9 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
         <PanelHeader title={order ? `Изменить ${order.number}` : 'Новый заказ'} />
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-2">
         <TextField
-          size="small"
+          size="medium"
           label="Дата выполнения"
           type="date"
           value={date}
@@ -81,16 +72,9 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
           required
           fullWidth
         />
-        <TextField
-          size="small"
-          label="Поиск блюда"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          fullWidth
-        />
       </div>
 
-      <div className="max-h-[58vh] space-y-3 overflow-y-auto pr-1">
+      <div className="max-h-[62vh] space-y-3 overflow-y-auto pr-1">
         {groups.length ? (
           groups.map((group) => (
             <section className="overflow-hidden rounded-md border border-stone-300" key={group.theme}>
@@ -99,25 +83,25 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
                 {group.items.map((item) => {
                   const value = quantities[item.name] || {};
                   return (
-                    <div className="grid gap-2 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_5.2rem_5.2rem] sm:items-center" key={item.name}>
-                      <span className="min-w-0 text-[14px] font-medium leading-5 text-stone-800 sm:text-[13px]">{item.name}</span>
+                    <div className="grid gap-2 px-3 py-3 sm:grid-cols-[minmax(0,1fr)_5.4rem_5.4rem] sm:items-center sm:py-2" key={item.name}>
+                      <span className="min-w-0 text-[15px] font-medium leading-5 text-stone-800 sm:text-[13px]">{item.name}</span>
                       <div className="grid grid-cols-2 gap-2 sm:contents">
-                      <TextField
-                        size="small"
-                        type="number"
-                        label="Кол-во"
-                        value={value.quantity || ''}
-                        onChange={(event) => updateQuantity(item.name, 'quantity', event.target.value)}
-                        slotProps={{ htmlInput: { min: 0, step: 1, inputMode: 'decimal' } }}
-                      />
-                      <TextField
-                        size="small"
-                        type="number"
-                        label="Заказ."
-                        value={value.reserved_quantity || ''}
-                        onChange={(event) => updateQuantity(item.name, 'reserved_quantity', event.target.value)}
-                        slotProps={{ htmlInput: { min: 0, step: 1, inputMode: 'decimal' } }}
-                      />
+                        <TextField
+                          size="medium"
+                          type="number"
+                          label="Кол-во"
+                          value={value.quantity || ''}
+                          onChange={(event) => updateQuantity(item.name, 'quantity', event.target.value)}
+                          slotProps={{ htmlInput: { min: 0, step: 1, inputMode: 'decimal' } }}
+                        />
+                        <TextField
+                          size="medium"
+                          type="number"
+                          label="Заказ."
+                          value={value.reserved_quantity || ''}
+                          onChange={(event) => updateQuantity(item.name, 'reserved_quantity', event.target.value)}
+                          slotProps={{ htmlInput: { min: 0, step: 1, inputMode: 'decimal' } }}
+                        />
                       </div>
                     </div>
                   );

@@ -26,12 +26,10 @@ export function OrderList({
   shops,
   viewer,
   canFilterShops,
-  canWriteOrders,
   canUseMonitor,
   filters,
   selectedNumber,
   selectedOrderNumbers,
-  onCreate,
   onSelect,
   onToggleSelection,
   onPageChange,
@@ -50,14 +48,6 @@ export function OrderList({
             </p>
           )}
         </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {canWriteOrders && (
-          <Button variant="primary" onClick={onCreate} disabled={loading}>
-            Новый заказ
-          </Button>
-        )}
       </div>
 
       <div className="rounded-md border border-stone-300 bg-[#fff7df] p-2">
