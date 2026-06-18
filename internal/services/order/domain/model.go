@@ -22,6 +22,7 @@ type Order struct {
 	CreatedAt         time.Time     `json:"created_at"`
 	FulfillmentDate   time.Time     `json:"fulfillment_date"`
 	Comments          OrderComments `json:"comments"`
+	Favorite          bool          `json:"favorite"`
 	History           []OrderHistory
 }
 

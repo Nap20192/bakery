@@ -13,6 +13,7 @@ import (
 	"time"
 
 	sqlc "bakery/internal/outbound/db/sqlc"
+	"bakery/internal/pkg/apperr"
 	"bakery/internal/pkg/correlation"
 	"bakery/internal/pkg/helpers"
 	sharedkernel "bakery/internal/pkg/sharedkernel"
@@ -421,8 +422,28 @@ func orderFromRow(row sqlc.Order, items []orderdomain.OrderItem, history []order
 		CreatedAt:         row.CreatedAt.Time,
 		FulfillmentDate:   row.FulfillmentDate.Time,
 		Comments:          parseComments(row.Comments),
+		Favorite:          row.IsFavorite,
 		History:           history,
 	}
+}
+
+func (r *OrderRepository) SetOrderFavorite(ctx context.Context, number string, favorite bool) (orderdomain.Order, error) {
+	row, err := r.queries.SetOrderFavorite(ctx, sqlc.SetOrderFavoriteParams{Number: number, IsFavorite: favorite})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return orderdomain.Order{}, apperr.NotFound("order.not_found", "Заказ не найден.")
+		}
+		return orderdomain.Order{}, fmt.Errorf("set order favorite: %w", err)
+	}
+	items, err := r.queries.GetOrderItemsByOrderID(ctx, row.ID)
+	if err != nil {
+		return orderdomain.Order{}, err
+	}
+	history, err := r.listOrderHistory(ctx, r.queries, row.ID)
+	if err != nil {
+		return orderdomain.Order{}, err
+	}
+	return orderFromRow(row, mapOrderItems(items), history), nil
 }
 
 // marshalComments serializes order comments to JSON, returning nil (SQL NULL)

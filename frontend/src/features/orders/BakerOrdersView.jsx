@@ -16,6 +16,8 @@ export function BakerOrdersView({
   selectedOrderNumbers,
   error,
   selectionMode,
+  canFavorite,
+  onToggleFavorite,
   onSelect,
   onToggleSelection,
   onToggleSelectionMode,
@@ -86,6 +88,11 @@ export function BakerOrdersView({
         {previewOpen && previewOrder && (
           <OrderPreviewModal
             order={previewOrder}
+            canFavorite={canFavorite}
+            onToggleFavorite={(number, fav) => {
+              onToggleFavorite?.(number, fav);
+              setPreviewOrder((cur) => (cur ? { ...cur, favorite: fav } : cur));
+            }}
             onClose={() => setPreviewOpen(false)}
           />
         )}

@@ -3,7 +3,7 @@ import { Button } from '../../components/Button';
 import { Icon } from '../../components/Icon';
 import { OrderDetails } from './OrderDetails';
 
-export function OrderPreviewModal({ order, onClose }) {
+export function OrderPreviewModal({ order, onClose, canFavorite, onToggleFavorite }) {
   useEffect(() => {
     const onKey = (event) => {
       if (event.key === 'Escape') onClose();
@@ -30,7 +30,7 @@ export function OrderPreviewModal({ order, onClose }) {
             Закрыть
           </Button>
         </div>
-        <OrderDetails order={order} />
+        <OrderDetails order={order} canFavorite={canFavorite} onToggleFavorite={onToggleFavorite} />
       </div>
     </div>
   );

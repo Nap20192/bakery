@@ -62,6 +62,7 @@ type OrderResponse struct {
 	FulfillmentDate   string                    `json:"fulfillment_date"`
 	MonitorCommand    string                    `json:"monitor_command"`
 	Comments          commentsResponse          `json:"comments"`
+	Favorite          bool                      `json:"favorite"`
 	History           []orderHistoryResponse    `json:"history,omitempty"`
 }
 
@@ -133,6 +134,7 @@ func (p *OrderPresenter) BuildOrderResponse(ctx context.Context, order orderdoma
 		FulfillmentDate:   fulfillmentDate,
 		MonitorCommand:    fmt.Sprintf("/monitor %s", order.Number),
 		Comments:          buildCommentsResponse(order.Comments),
+		Favorite:          order.Favorite,
 		History:           buildOrderHistoryResponse(order.History),
 	}
 }

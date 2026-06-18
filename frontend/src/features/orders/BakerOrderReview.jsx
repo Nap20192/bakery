@@ -5,7 +5,7 @@ import { panelClass, PanelHeader } from '../../components/Panel';
 import { MonitorReports } from './MonitorReports';
 import { OrderDetails } from './OrderDetails';
 
-export function BakerOrderReview({ loading, order, monitor, error, onBack, onCalculate }) {
+export function BakerOrderReview({ loading, order, monitor, error, canFavorite, onToggleFavorite, onBack, onCalculate }) {
   return (
     <section className="px-3 py-3 pb-20 sm:px-5 sm:pb-3 lg:px-6">
       <div className="mx-auto max-w-[1440px] space-y-4">
@@ -27,7 +27,7 @@ export function BakerOrderReview({ loading, order, monitor, error, onBack, onCal
         {order ? (
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.9fr)]">
             <section className={panelClass}>
-              <OrderDetails order={order} />
+              <OrderDetails order={order} canFavorite={canFavorite} onToggleFavorite={onToggleFavorite} />
             </section>
             <section className={panelClass}>
               <PanelHeader title="Расчёт теста" />

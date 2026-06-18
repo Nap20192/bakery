@@ -51,7 +51,7 @@ INSERT INTO orders (
     $7,
     $8
 )
-RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments
+RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite
 `
 
 type CreateOrderParams struct {
@@ -87,6 +87,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		&i.FulfillmentDate,
 		&i.CreatedByUsername,
 		&i.Comments,
+		&i.IsFavorite,
 	)
 	return i, err
 }
@@ -257,6 +258,7 @@ const deleteOrdersCreatedBefore = `-- name: DeleteOrdersCreatedBefore :one
 WITH deleted AS (
     DELETE FROM orders
     WHERE created_at < $1
+      AND is_favorite = FALSE
     RETURNING id
 )
 SELECT COUNT(*)::BIGINT
@@ -271,7 +273,7 @@ func (q *Queries) DeleteOrdersCreatedBefore(ctx context.Context, createdAtBefore
 }
 
 const getOrderByNumber = `-- name: GetOrderByNumber :one
-SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments
+SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite
 FROM orders
 WHERE number = $1
 `
@@ -289,6 +291,7 @@ func (q *Queries) GetOrderByNumber(ctx context.Context, number string) (Order, e
 		&i.FulfillmentDate,
 		&i.CreatedByUsername,
 		&i.Comments,
+		&i.IsFavorite,
 	)
 	return i, err
 }
@@ -416,7 +419,7 @@ func (q *Queries) ListOrderHistoryItemsByHistoryID(ctx context.Context, historyI
 }
 
 const listOrders = `-- name: ListOrders :many
-SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments
+SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite
 FROM orders
 WHERE
     ($1::BIGINT IS NULL OR from_department_id = $1::BIGINT)
@@ -457,6 +460,7 @@ func (q *Queries) ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order
 			&i.FulfillmentDate,
 			&i.CreatedByUsername,
 			&i.Comments,
+			&i.IsFavorite,
 		); err != nil {
 			return nil, err
 		}
@@ -487,6 +491,36 @@ func (q *Queries) NextOrderCounter(ctx context.Context, arg NextOrderCounterPara
 	return counter, err
 }
 
+const setOrderFavorite = `-- name: SetOrderFavorite :one
+UPDATE orders
+SET is_favorite = $1
+WHERE number = $2
+RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite
+`
+
+type SetOrderFavoriteParams struct {
+	IsFavorite bool   `json:"is_favorite"`
+	Number     string `json:"number"`
+}
+
+func (q *Queries) SetOrderFavorite(ctx context.Context, arg SetOrderFavoriteParams) (Order, error) {
+	row := q.db.QueryRow(ctx, setOrderFavorite, arg.IsFavorite, arg.Number)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.Number,
+		&i.Location,
+		&i.CreatedAt,
+		&i.FromDepartmentID,
+		&i.ToDepartmentID,
+		&i.FulfillmentDate,
+		&i.CreatedByUsername,
+		&i.Comments,
+		&i.IsFavorite,
+	)
+	return i, err
+}
+
 const updateOrder = `-- name: UpdateOrder :one
 UPDATE orders
 SET
@@ -496,7 +530,7 @@ SET
     created_by_username = $4,
     comments = $5
 WHERE number = $6
-RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments
+RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite
 `
 
 type UpdateOrderParams struct {
@@ -528,6 +562,7 @@ func (q *Queries) UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order
 		&i.FulfillmentDate,
 		&i.CreatedByUsername,
 		&i.Comments,
+		&i.IsFavorite,
 	)
 	return i, err
 }

@@ -164,6 +164,14 @@ func (s *Service) ListOrders(ctx context.Context, input ListOrdersInput) (ListOr
 	return s.repo.ListOrders(ctx, input)
 }
 
+func (s *Service) SetOrderFavorite(ctx context.Context, number string, favorite bool) (orderdomain.Order, error) {
+	number = strings.TrimSpace(number)
+	if number == "" {
+		return orderdomain.Order{}, apperr.Invalid("order.number_required", "Укажите номер заказа.")
+	}
+	return s.repo.SetOrderFavorite(ctx, number, favorite)
+}
+
 func (s *Service) ValidateBulkOrder(ctx context.Context, order string) orderdomain.BulkOrderValidationResult {
 	result := s.domain.ParseBulkOrder(order)
 	result.ValidItems = s.resolveValidOrderItems(ctx, result.ValidItems, &result)

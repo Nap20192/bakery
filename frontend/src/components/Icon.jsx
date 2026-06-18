@@ -10,9 +10,10 @@ const paths = {
   chevronLeft: 'm15 18-6-6 6-6',
   chevronRight: 'm9 18 6-6-6-6',
   close: 'M6 6l12 12M18 6 6 18',
+  star: 'M12 3.5l2.6 5.27 5.82.85-4.21 4.1.99 5.79L12 16.77 6.8 19.5l.99-5.79-4.21-4.1 5.82-.85z',
 };
 
-export function Icon({ name, size = 18, className = '', strokeWidth = 2 }) {
+export function Icon({ name, size = 18, className = '', strokeWidth = 2, filled = false }) {
   return (
     <svg
       aria-hidden="true"
@@ -20,7 +21,7 @@ export function Icon({ name, size = 18, className = '', strokeWidth = 2 }) {
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill="none"
+      fill={filled ? 'currentColor' : 'none'}
       stroke="currentColor"
       strokeLinecap="round"
       strokeLinejoin="round"
