@@ -1,6 +1,7 @@
 package order
 
 import (
+	"strings"
 	"time"
 
 	sharedkernel "bakery/internal/pkg/sharedkernel"
@@ -88,6 +89,23 @@ type OrderItem struct {
 	ReservedQuantity float64 `json:"reserved_quantity"`
 	ProductName      string  `json:"product"`
 	Code             string  `json:"code"`
+	// Comment is a transient per-line note captured from bulk input. It is not
+	// stored on the item row; the service folds it into the order's comments.
+	Comment string `json:"comment,omitempty"`
+}
+
+// CommentsFromItems collects per-item comments into OrderComments, keyed by
+// product name. Items without a comment are skipped.
+func CommentsFromItems(items []OrderItem) OrderComments {
+	var comments OrderComments
+	for _, item := range items {
+		text := strings.TrimSpace(item.Comment)
+		if text == "" {
+			continue
+		}
+		comments.Items = append(comments.Items, ItemComment{ProductName: item.ProductName, Comment: text})
+	}
+	return comments
 }
 
 func (item OrderItem) ProductionQuantity() float64 {

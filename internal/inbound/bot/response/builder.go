@@ -102,6 +102,7 @@ func (Builder) OrderDraft(orderNumber string, items []orderdomain.OrderItem, ful
 		sb.WriteString("Добавьте позиции сообщением или выберите шаблон через /templates.")
 	} else {
 		writeOrderItemsCodeBlock(&sb, items)
+		writeOrderComments(&sb, orderdomain.CommentsFromItems(items))
 	}
 	if len(errors) > 0 {
 		fmt.Fprintf(&sb, "\nОшибки: %d\n", len(errors))
@@ -122,7 +123,20 @@ func writeOrderDetails(sb *strings.Builder, order orderdomain.Order, fromDepartm
 	}
 	sb.WriteString("\n<b>Состав:</b>\n")
 	writeOrderItemsCodeBlock(sb, order.Items)
+	writeOrderComments(sb, order.Comments)
 	fmt.Fprintf(sb, "\n%s", html.EscapeString(orderWebURL(order.Number)))
+}
+
+func writeOrderComments(sb *strings.Builder, comments orderdomain.OrderComments) {
+	if len(comments.Items) > 0 {
+		sb.WriteString("\n<b>Комментарии:</b>\n")
+		for _, c := range comments.Items {
+			fmt.Fprintf(sb, "• %s — %s\n", html.EscapeString(c.ProductName), html.EscapeString(c.Comment))
+		}
+	}
+	if strings.TrimSpace(comments.General) != "" {
+		fmt.Fprintf(sb, "\nКомментарий: %s\n", html.EscapeString(comments.General))
+	}
 }
 
 func writeOrderItemsCodeBlock(sb *strings.Builder, items []orderdomain.OrderItem) {

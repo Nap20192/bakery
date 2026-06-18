@@ -2,6 +2,7 @@ package bot
 
 import (
 	"log/slog"
+	"strings"
 	"time"
 
 	orderdomain "bakery/internal/services/order/domain"
@@ -84,6 +85,9 @@ func mergeSessionItems(existing []orderdomain.OrderItem, incoming []orderdomain.
 			merged[idx].ProductName = item.ProductName
 			merged[idx].Quantity = item.Quantity
 			merged[idx].ReservedQuantity = item.ReservedQuantity
+			if strings.TrimSpace(item.Comment) != "" {
+				merged[idx].Comment = item.Comment
+			}
 			continue
 		}
 		index[item.Code] = len(merged)
