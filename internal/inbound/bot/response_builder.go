@@ -137,9 +137,6 @@ func writeOrderDetails(sb *strings.Builder, order orderdomain.Order, fromDepartm
 	latestChanges := latestOrderChanges(order)
 	writeOrderItemsCodeBlock(sb, order.Items, latestChanges)
 	writeOrderHistorySummary(sb, order)
-	fmt.Fprintf(sb,
-		"\nКалькуляция: <code>/monitor %s</code>",
-		html.EscapeString(order.Number))
 	fmt.Fprintf(sb, "\nОткрыть заказ: %s", html.EscapeString(orderWebURL(order.Number)))
 }
 
