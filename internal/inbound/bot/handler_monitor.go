@@ -36,10 +36,10 @@ func (b *OrderBot) handleMonitor(c tele.Context) error {
 
 func (b *OrderBot) handleSync(c tele.Context) error {
 	if b.syncSvc == nil {
-		return sendText(c, "Sync service недоступен.")
+		return sendText(c, "Сервис синхронизации недоступен.")
 	}
 
-	if err := sendText(c, "Синхронизация с iiko запущена..."); err != nil {
+	if err := sendText(c, "Синхронизация запущена…"); err != nil {
 		return err
 	}
 
@@ -49,10 +49,10 @@ func (b *OrderBot) handleSync(c tele.Context) error {
 
 	if err := b.syncSvc.SyncOnce(ctx); err != nil {
 		slog.ErrorContext(ctx, "manual iiko sync failed", "error", err)
-		return sendText(c, "Синхронизация с iiko не выполнена. Подробности записаны в лог.")
+		return sendText(c, "Синхронизация не выполнена.")
 	}
 
-	return sendText(c, fmt.Sprintf("Синхронизация с iiko завершена за %s.", time.Since(start).Round(time.Second)))
+	return sendText(c, fmt.Sprintf("Готово за %s.", time.Since(start).Round(time.Second)))
 }
 
 func (b *OrderBot) sendMonitorReports(ctx context.Context, c tele.Context, order orderdomain.Order, codes []string) error {
@@ -94,13 +94,13 @@ func (b *OrderBot) sendBatchMonitorReports(ctx context.Context, c tele.Context, 
 		orders = append(orders, order)
 	}
 	if len(orders) == 0 {
-		return sendText(c, "Выберите заказы в списке /orders.")
+		return sendText(c, "Выберите заказы: /orders")
 	}
 
 	report, err := b.monitorSvc.GetBatchIngredientsByCodes(ctx, monitoringdomain.DefaultMonitorCodes, orders)
 	if err != nil {
 		slog.WarnContext(ctx, "batch monitor report failed", "error", err)
-		return sendText(c, "Не удалось посчитать калькуляцию по выбранным заказам.")
+		return sendText(c, "Не удалось посчитать.")
 	}
 
 	return sendHTML(c, responses.BatchMonitorReports(report))

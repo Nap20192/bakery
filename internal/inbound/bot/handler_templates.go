@@ -76,5 +76,5 @@ func (b *OrderBot) ensureTemplatesAvailable(c tele.Context) error {
 	if !ok || b.userDepartmentType(c, user) != string(enum.DepartmentTypeWorkshop) {
 		return nil
 	}
-	return sendText(c, "В цеху шаблоны не используются. Откройте последние заказы и фильтры.", b.actionMarkup(c))
+	return sendText(c, "Шаблоны только для магазина.", b.actionMarkup(c))
 }

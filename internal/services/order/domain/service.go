@@ -147,7 +147,7 @@ func (s *OrderService) ParseBulkOrder(order string) BulkOrderValidationResult {
 			result.Errors = append(result.Errors, BulkOrderValidationError{
 				Line:    i + 1,
 				Raw:     line,
-				Message: "Строка не распознана. Формат: название количество. Например: Сосиска в тесте 5. Заказное количество пишите через плюс: 5+2.",
+				Message: "Не распознано. Формат: название количество (напр. Сосиска в тесте 5+2).",
 			})
 			continue
 		}
@@ -158,7 +158,7 @@ func (s *OrderService) ParseBulkOrder(order string) BulkOrderValidationResult {
 				Line:    parsed.Line,
 				Code:    parsed.Code,
 				Name:    parsed.Name,
-				Message: fmt.Sprintf("Количество %q не подходит. Укажите целое число без дробей, например 5 или 5+2.", parsed.Quantity),
+				Message: fmt.Sprintf("Количество %q не подходит. Нужно целое (напр. 5 или 5+2).", parsed.Quantity),
 			})
 			continue
 		}

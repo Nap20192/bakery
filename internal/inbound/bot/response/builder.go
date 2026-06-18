@@ -19,7 +19,8 @@ type Builder struct{}
 
 func (Builder) Start() string {
 	return "<b>orderbot</b>\n\n" +
-		fmt.Sprintf("Заказы: %s", ordersWebURL)
+		"Магазин — позиции сообщением. Цех — /orders.\n\n" +
+		ordersWebURL
 }
 
 func (Builder) Help() string {
@@ -27,10 +28,10 @@ func (Builder) Help() string {
 		"Заказ — позиции сообщением:\n" +
 		"<code>Сосиска в тесте 5</code>\n" +
 		"<code>Сосиска в тесте 5+2</code>\n" +
+		"<code>Кокрок 5 // комментарий</code>\n" +
 		"<code>25.05.2026</code>\n\n" +
-		"/orders — заказы\n" +
-		"/cancel — отменить черновик\n" +
-		fmt.Sprintf("\n%s", ordersWebURL)
+		"/orders /templates /cancel\n\n" +
+		ordersWebURL
 }
 
 func (Builder) Template(template string) string {
@@ -45,7 +46,6 @@ func (Builder) ValidationErrors(errors []orderdomain.BulkOrderValidationError) s
 	var sb strings.Builder
 	sb.WriteString("Заказ не распознан\n\n")
 	writeValidationErrors(&sb, errors)
-	sb.WriteString("\nОтправьте новый заказ целиком.")
 	return sb.String()
 }
 
@@ -95,11 +95,11 @@ func (Builder) OrderDraft(orderNumber string, items []orderdomain.OrderItem, ful
 		sb.WriteString("<b>Текущий заказ</b>\n\n")
 	}
 	if !fulfillmentDate.IsZero() {
-		fmt.Fprintf(&sb, "Дата выполнения: <code>%s</code>\n", html.EscapeString(fulfillmentDate.Format("02.01.2006")))
+		fmt.Fprintf(&sb, "Выполнить: <code>%s</code>\n", html.EscapeString(fulfillmentDate.Format("02.01.2006")))
 	}
 	fmt.Fprintf(&sb, "Позиций: %d\n\n", len(items))
 	if len(items) == 0 {
-		sb.WriteString("Добавьте позиции сообщением или выберите шаблон через /templates.")
+		sb.WriteString("Добавьте позиции сообщением.")
 	} else {
 		writeOrderItemsCodeBlock(&sb, items)
 		writeOrderComments(&sb, orderdomain.CommentsFromItems(items))
@@ -264,7 +264,7 @@ func (Builder) TechCard(card techcarddomain.TechCard) string {
 func writeValidationErrors(sb *strings.Builder, errors []orderdomain.BulkOrderValidationError) {
 	for _, errItem := range errors {
 		if errItem.Line > 0 {
-			fmt.Fprintf(sb, "line %d: ", errItem.Line)
+			fmt.Fprintf(sb, "строка %d: ", errItem.Line)
 		}
 		if errItem.Raw != "" {
 			sb.WriteString("\"")

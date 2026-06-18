@@ -32,9 +32,9 @@ bad line
 		t.Fatalf("valid items = %d, want 3: %#v", len(result.ValidItems), result.ValidItems)
 	}
 	messages := validationMessages(result.Errors)
-	assertContains(t, messages, "целое число")
+	assertContains(t, messages, "целое")
 	assertContains(t, messages, "Код продукта не найден")
-	assertContains(t, messages, "Строка не распознана")
+	assertContains(t, messages, "Не распознано")
 	assertContains(t, messages, `Позиция с кодом 15635 повторяется`)
 }
 

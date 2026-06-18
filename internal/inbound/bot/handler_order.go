@@ -25,7 +25,7 @@ func (b *OrderBot) handleCancel(c tele.Context) error {
 		return sendText(c, msgTelegramUserUnknown)
 	}
 	b.clearSession(sender.ID)
-	return sendText(c, "Текущий заказ отменен.", b.actionMarkup(c))
+	return sendText(c, "Черновик отменён.", b.actionMarkup(c))
 }
 
 func (b *OrderBot) handleText(c tele.Context) error {
@@ -34,10 +34,10 @@ func (b *OrderBot) handleText(c tele.Context) error {
 		return err
 	}
 	if strings.HasPrefix(text, "/") {
-		return sendText(c, "Неизвестная команда.\n\n/help - список команд и правила заказа")
+		return sendText(c, "Неизвестная команда. /help")
 	}
 	if text == "" {
-		return sendText(c, "Отправьте позиции заказа одним сообщением.")
+		return sendText(c, "Отправьте позиции сообщением.")
 	}
 	return b.handleBulkOrder(c, text)
 }
@@ -94,7 +94,7 @@ func (b *OrderBot) handleBulkOrder(c tele.Context, text string) error {
 		fromDepartmentID, toDepartmentID = b.orderDepartmentsForSender(ctx, c)
 	}
 	if fromDepartmentID == nil && toDepartmentID == nil {
-		return sendText(c, "Заказ создается от магазина в цех. Выберите магазин через /start.")
+		return sendText(c, "Магазин не выбран. /start")
 	}
 	var current session
 	b.updateSession(sender.ID, func(s *session) {
@@ -152,7 +152,7 @@ func (b *OrderBot) handleConfirm(c tele.Context) error {
 
 	_ = c.Respond()
 	if len(items) == 0 {
-		return sendText(c, "Заказ пустой или уже отправлен.")
+		return sendText(c, "Заказ пуст.")
 	}
 	if fromDepartmentID == nil && toDepartmentID == nil {
 		fromDepartmentID, toDepartmentID = b.orderDepartmentsForSender(ctx, c)
@@ -168,7 +168,7 @@ func (b *OrderBot) handleConfirm(c tele.Context) error {
 	})
 	if err != nil {
 		slog.ErrorContext(ctx, "create order failed", "error", err)
-		return sendText(c, "Не удалось создать заказ. Проверьте заказ и попробуйте снова.")
+		return sendText(c, "Не удалось создать заказ.")
 	}
 
 	// No reply here: the order-events notifier already messages the creator,
@@ -246,7 +246,7 @@ func (b *OrderBot) handleUpdateOrder(c tele.Context) error {
 		return sendText(c, "Нет заказа в режиме редактирования.")
 	}
 	if len(items) == 0 {
-		return sendText(c, "Заказ пустой. Добавьте позиции или нажмите отмену.")
+		return sendText(c, "Заказ пуст.")
 	}
 	order, err := b.orderSvc.UpdateOrder(ctx, orderuc.UpdateOrderInput{
 		Number:            orderNumber,
