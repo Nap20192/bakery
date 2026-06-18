@@ -251,7 +251,7 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
         )}
       </div>
 
-      <div className="sticky bottom-16 -mx-3 flex items-center justify-between gap-2 border-t border-stone-200 bg-white/95 px-3 py-2.5 backdrop-blur sm:bottom-0 sm:-mx-4 sm:px-4">
+      <div className="-mx-3 mt-1 flex items-center justify-between gap-2 border-t border-stone-200 bg-white px-3 py-3 sm:sticky sm:bottom-0 sm:-mx-4 sm:bg-white/95 sm:px-4 sm:backdrop-blur">
         <span className="text-[13px] text-stone-600">
           <strong className="text-stone-900 tabular-nums">{summary.count}</strong> поз.
           <span className="mx-1.5 text-stone-300">·</span>
