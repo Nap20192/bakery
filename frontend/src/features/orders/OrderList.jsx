@@ -1,11 +1,5 @@
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-import Select from '@mui/material/Select';
-import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
-import MuiButton from '@mui/material/Button';
 import { Button } from '../../components/Button';
+import { InputField, SelectField } from '../../components/Field';
 import { EmptyState } from '../../components/EmptyState';
 import { formatFulfillmentDate } from '../../lib/format';
 import { orderSource } from '../../lib/orders';
@@ -52,49 +46,34 @@ export function OrderList({
         </div>
       </div>
 
-      <div className="rounded-md border border-stone-200 bg-stone-50 p-2">
-        <Stack spacing={1.25}>
-          {canFilterShops && (
-            <FormControl size="small" fullWidth>
-              <InputLabel id="shop-filter-label">Магазин</InputLabel>
-              <Select
-                labelId="shop-filter-label"
-                label="Магазин"
-                value={filters.fromDepartmentID || ''}
-                onChange={(event) => onFiltersChange({ fromDepartmentID: event.target.value })}
-              >
-                <MenuItem value="">Все магазины</MenuItem>
-                {shops.map((shop) => (
-                  <MenuItem value={String(shop.id)} key={shop.id}>
-                    {shop.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          )}
+      <div className="space-y-2 rounded-md border border-stone-200 bg-stone-50 p-2">
+        {canFilterShops && (
+          <SelectField
+            label="Магазин"
+            value={filters.fromDepartmentID || ''}
+            onChange={(event) => onFiltersChange({ fromDepartmentID: event.target.value })}
+          >
+            <option value="">Все магазины</option>
+            {shops.map((shop) => (
+              <option value={String(shop.id)} key={shop.id}>
+                {shop.name}
+              </option>
+            ))}
+          </SelectField>
+        )}
 
-          <TextField
-            size="small"
-            label="Дата выполнения"
-            type="date"
-            value={filters.fulfillmentDate || ''}
-            onChange={(event) => onFiltersChange({ fulfillmentDate: event.target.value })}
-            slotProps={{ inputLabel: { shrink: true } }}
-            fullWidth
-          />
+        <InputField
+          label="Дата выполнения"
+          type="date"
+          value={filters.fulfillmentDate || ''}
+          onChange={(event) => onFiltersChange({ fulfillmentDate: event.target.value })}
+        />
 
-          <div className="grid grid-cols-3 gap-1.5">
-            <MuiButton size="small" variant="outlined" onClick={() => onFiltersChange({ fulfillmentDate: todayValue() })}>
-              Сегодня
-            </MuiButton>
-            <MuiButton size="small" variant="outlined" onClick={() => onFiltersChange({ fulfillmentDate: todayValue(1) })}>
-              Завтра
-            </MuiButton>
-            <MuiButton size="small" variant="outlined" onClick={onResetFilters}>
-              Сброс
-            </MuiButton>
-          </div>
-        </Stack>
+        <div className="grid grid-cols-3 gap-1.5">
+          <Button onClick={() => onFiltersChange({ fulfillmentDate: todayValue() })}>Сегодня</Button>
+          <Button onClick={() => onFiltersChange({ fulfillmentDate: todayValue(1) })}>Завтра</Button>
+          <Button onClick={onResetFilters}>Сброс</Button>
+        </div>
       </div>
 
       <div className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">

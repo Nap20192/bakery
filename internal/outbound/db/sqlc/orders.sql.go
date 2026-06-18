@@ -349,6 +349,59 @@ func (q *Queries) GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]
 	return items, nil
 }
 
+const getOrderItemsByOrderIDs = `-- name: GetOrderItemsByOrderIDs :many
+SELECT
+    oi.id,
+    oi.order_id,
+    oi.iiko_product_id,
+    oi.product_name,
+    oi.quantity,
+    oi.reserved_quantity,
+    COALESCE(p.code, '') AS product_code
+FROM order_items AS oi
+LEFT JOIN iiko_products AS p ON p.id = oi.iiko_product_id
+WHERE oi.order_id = ANY($1::BIGINT[])
+ORDER BY oi.order_id, oi.id
+`
+
+type GetOrderItemsByOrderIDsRow struct {
+	ID               int64   `json:"id"`
+	OrderID          int64   `json:"order_id"`
+	IikoProductID    *string `json:"iiko_product_id"`
+	ProductName      string  `json:"product_name"`
+	Quantity         float64 `json:"quantity"`
+	ReservedQuantity float64 `json:"reserved_quantity"`
+	ProductCode      string  `json:"product_code"`
+}
+
+func (q *Queries) GetOrderItemsByOrderIDs(ctx context.Context, orderIds []int64) ([]GetOrderItemsByOrderIDsRow, error) {
+	rows, err := q.db.Query(ctx, getOrderItemsByOrderIDs, orderIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetOrderItemsByOrderIDsRow
+	for rows.Next() {
+		var i GetOrderItemsByOrderIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrderID,
+			&i.IikoProductID,
+			&i.ProductName,
+			&i.Quantity,
+			&i.ReservedQuantity,
+			&i.ProductCode,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listOrderHistoryByOrderID = `-- name: ListOrderHistoryByOrderID :many
 SELECT id, order_id, changed_by_username, changed_at
 FROM order_history

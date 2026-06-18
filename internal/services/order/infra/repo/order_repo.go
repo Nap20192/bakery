@@ -231,13 +231,17 @@ func (r *OrderRepository) ListOrders(ctx context.Context, input orderuc.ListOrde
 	if err != nil {
 		return orderuc.ListOrdersResult{}, err
 	}
+	orderIDs := make([]int64, len(rows))
+	for i, row := range rows {
+		orderIDs[i] = row.ID
+	}
+	itemsByOrder, err := r.orderItemsByOrderIDs(ctx, orderIDs)
+	if err != nil {
+		return orderuc.ListOrdersResult{}, err
+	}
 	result := make([]orderdomain.Order, 0, len(rows))
 	for _, row := range rows {
-		items, err := r.queries.GetOrderItemsByOrderID(ctx, row.ID)
-		if err != nil {
-			return orderuc.ListOrdersResult{}, err
-		}
-		result = append(result, orderFromRow(row, mapOrderItems(items), nil))
+		result = append(result, orderFromRow(row, itemsByOrder[row.ID], nil))
 	}
 	return orderuc.ListOrdersResult{
 		Orders: result,
@@ -468,6 +472,28 @@ func parseComments(raw []byte) orderdomain.OrderComments {
 		return orderdomain.OrderComments{}
 	}
 	return comments
+}
+
+// orderItemsByOrderIDs loads items for many orders in a single query and groups
+// them by order id, avoiding the N+1 of one query per order.
+func (r *OrderRepository) orderItemsByOrderIDs(ctx context.Context, orderIDs []int64) (map[int64][]orderdomain.OrderItem, error) {
+	grouped := make(map[int64][]orderdomain.OrderItem, len(orderIDs))
+	if len(orderIDs) == 0 {
+		return grouped, nil
+	}
+	rows, err := r.queries.GetOrderItemsByOrderIDs(ctx, orderIDs)
+	if err != nil {
+		return nil, err
+	}
+	for _, item := range rows {
+		grouped[item.OrderID] = append(grouped[item.OrderID], orderdomain.OrderItem{
+			Code:             item.ProductCode,
+			ProductName:      item.ProductName,
+			Quantity:         item.Quantity,
+			ReservedQuantity: item.ReservedQuantity,
+		})
+	}
+	return grouped, nil
 }
 
 func mapOrderItems(items []sqlc.GetOrderItemsByOrderIDRow) []orderdomain.OrderItem {
