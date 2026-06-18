@@ -52,6 +52,7 @@ type createUserRequest struct {
 }
 
 type updateUserRequest struct {
+	Username       *string `json:"username"`
 	Role           *string `json:"role"`
 	DepartmentCode *string `json:"department_code"`
 	Password       *string `json:"password"`
@@ -126,6 +127,14 @@ func (h *Handler) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
 		user    adminuc.User
 		updated bool
 	)
+	if req.Username != nil {
+		user, err = h.adminSvc.SetUserUsername(r.Context(), id, *req.Username)
+		if err != nil {
+			h.writeUserError(w, r, err, "Не удалось обновить логин.")
+			return
+		}
+		updated = true
+	}
 	if req.Role != nil {
 		user, err = h.adminSvc.SetUserRole(r.Context(), id, *req.Role)
 		if err != nil {

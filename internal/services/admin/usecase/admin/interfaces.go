@@ -16,6 +16,7 @@ type UseCase interface {
 	ListUsers(ctx context.Context) ([]User, error)
 	CreateUser(ctx context.Context, input CreateUserInput) (User, error)
 	SetUserRole(ctx context.Context, id int64, role string) (User, error)
+	SetUserUsername(ctx context.Context, id int64, username string) (User, error)
 	SetUserPassword(ctx context.Context, id int64, password string) (User, error)
 	AssignUserDepartment(ctx context.Context, id int64, departmentCode string) (User, error)
 	DeleteUser(ctx context.Context, id int64) error
@@ -28,6 +29,7 @@ type UserAccounts interface {
 	CreateUserWithPassword(ctx context.Context, input accessdomain.PasswordAuthUserInput) (accessdomain.AuthUser, error)
 	ListUsers(ctx context.Context) ([]accessdomain.AuthUser, error)
 	SetUserRole(ctx context.Context, id int64, role string) (accessdomain.AuthUser, error)
+	SetUsername(ctx context.Context, id int64, username string) (accessdomain.AuthUser, error)
 	SetPassword(ctx context.Context, id int64, password string) (accessdomain.AuthUser, error)
 	AssignUserDepartment(ctx context.Context, id int64, departmentID *int64) (accessdomain.AuthUser, error)
 	DeleteUser(ctx context.Context, id int64) error

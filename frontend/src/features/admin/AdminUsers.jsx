@@ -147,7 +147,9 @@ export function AdminUsers() {
               {filteredUsers.map((u) => (
                 <tr key={u.id} className="border-t border-stone-100">
                   <td className="px-3 py-2">{u.id}</td>
-                  <td className="px-3 py-2">{u.username || '—'}</td>
+                  <td className="px-3 py-2">
+                    <UsernameCell key={u.username} user={u} onSave={(username) => patchUser(u.id, { username })} />
+                  </td>
                   <td className="px-3 py-2">{u.telegram_username ? `@${u.telegram_username}` : '—'}</td>
                   <td className="px-3 py-2">{u.telegram_id ?? '—'}</td>
                   <td className="px-3 py-2">
@@ -179,5 +181,28 @@ export function AdminUsers() {
         <p className="mt-3 text-[12px] text-stone-500">Пароли хранятся в виде необратимого хэша и не отображаются. Используйте «Сбросить» для задания нового.</p>
       </div>
     </main>
+  );
+}
+
+// UsernameCell is an inline editable login: saves on blur or Enter when changed.
+function UsernameCell({ user, onSave }) {
+  const [value, setValue] = useState(user.username || '');
+
+  function commit() {
+    const next = value.trim();
+    if (next && next !== user.username) onSave(next);
+    else setValue(user.username || '');
+  }
+
+  return (
+    <input
+      className={`${fieldClass} w-32`}
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') e.currentTarget.blur();
+      }}
+    />
   );
 }

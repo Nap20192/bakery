@@ -23,6 +23,7 @@ type Querier interface {
 	CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) (OrderItem, error)
 	CreatePasswordAuthUser(ctx context.Context, arg CreatePasswordAuthUserParams) (AuthUser, error)
 	DeleteAuthUser(ctx context.Context, id int64) error
+	DeleteDishCatalogItem(ctx context.Context, code string) error
 	DeleteIikoAssemblyChartItemsByChartID(ctx context.Context, chartID string) error
 	DeleteIikoPreparedChartItemsByChartID(ctx context.Context, preparedChartID string) error
 	DeleteOrderItemsByOrderID(ctx context.Context, orderID int64) error
@@ -62,6 +63,7 @@ type Querier interface {
 	NextOrderCounter(ctx context.Context, arg NextOrderCounterParams) (int64, error)
 	UpdateAuthUserPassword(ctx context.Context, arg UpdateAuthUserPasswordParams) (AuthUser, error)
 	UpdateAuthUserRole(ctx context.Context, arg UpdateAuthUserRoleParams) (AuthUser, error)
+	UpdateAuthUserUsername(ctx context.Context, arg UpdateAuthUserUsernameParams) (AuthUser, error)
 	UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order, error)
 	UpsertDishCatalogItem(ctx context.Context, arg UpsertDishCatalogItemParams) (DishCatalog, error)
 	UpsertIikoAssemblyChart(ctx context.Context, arg UpsertIikoAssemblyChartParams) error

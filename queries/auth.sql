@@ -75,6 +75,13 @@ SET role = sqlc.arg(role),
 WHERE id = sqlc.arg(id)
 RETURNING *;
 
+-- name: UpdateAuthUserUsername :one
+UPDATE auth_users
+SET username = sqlc.arg(username),
+    updated_at = sqlc.arg(updated_at)
+WHERE id = sqlc.arg(id)
+RETURNING *;
+
 -- name: BindTelegramID :one
 UPDATE auth_users
 SET telegram_id = sqlc.arg(telegram_id),

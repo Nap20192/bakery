@@ -65,6 +65,10 @@ ON CONFLICT (code) DO UPDATE SET
     updated_at = excluded.updated_at
 RETURNING *;
 
+-- name: DeleteDishCatalogItem :exec
+DELETE FROM dish_catalog
+WHERE code = sqlc.arg(code);
+
 -- name: ListDishCatalogItems :many
 SELECT *
 FROM dish_catalog

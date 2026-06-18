@@ -163,6 +163,14 @@ func (s *Service) SetUserRole(ctx context.Context, id int64, role string) (acces
 	return s.repo.SetRole(ctx, id, role)
 }
 
+func (s *Service) SetUsername(ctx context.Context, id int64, username string) (accessdomain.AuthUser, error) {
+	username = strings.TrimSpace(username)
+	if username == "" {
+		return accessdomain.AuthUser{}, apperr.Invalid("auth.username_required", "Укажите логин.")
+	}
+	return s.repo.SetUsername(ctx, id, username)
+}
+
 func (s *Service) GetUserByTelegramUsername(ctx context.Context, telegramUsername string) (accessdomain.AuthUser, error) {
 	return s.repo.GetByTelegramUsername(ctx, strings.TrimSpace(telegramUsername))
 }

@@ -70,6 +70,14 @@ func (s *Service) SetUserRole(ctx context.Context, id int64, role string) (User,
 	return toUser(user), nil
 }
 
+func (s *Service) SetUserUsername(ctx context.Context, id int64, username string) (User, error) {
+	user, err := s.users.SetUsername(ctx, id, strings.TrimSpace(username))
+	if err != nil {
+		return User{}, err
+	}
+	return toUser(user), nil
+}
+
 func (s *Service) AssignUserDepartment(ctx context.Context, id int64, departmentCode string) (User, error) {
 	departmentID, err := s.resolveDepartment(ctx, departmentCode)
 	if err != nil {

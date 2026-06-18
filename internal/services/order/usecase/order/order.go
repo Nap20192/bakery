@@ -204,12 +204,37 @@ func (s *Service) ListDishCatalog(ctx context.Context) ([]orderdomain.DishCatalo
 	items := make([]orderdomain.DishCatalogItem, 0, len(rows))
 	for _, row := range rows {
 		items = append(items, orderdomain.DishCatalogItem{
+			Code:      row.Code,
 			Name:      row.Name,
 			Theme:     row.Theme,
 			SortOrder: row.SortOrder,
 		})
 	}
 	return items, nil
+}
+
+// AddDishCatalogItem inserts (or updates) a dish in the catalog. The code is
+// derived from the name so admin-added dishes resolve by name like the rest.
+func (s *Service) AddDishCatalogItem(ctx context.Context, name, theme string) (orderdomain.DishCatalogItem, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return orderdomain.DishCatalogItem{}, apperr.Invalid("order.dish_name_required", "Укажите название блюда.")
+	}
+	theme = strings.TrimSpace(theme)
+	code := "custom:" + strings.ToLower(strings.Join(strings.Fields(name), " "))
+	if err := s.repo.UpsertDishCatalogItem(ctx, DishCatalogItem{Code: code, Name: name, Theme: theme}); err != nil {
+		return orderdomain.DishCatalogItem{}, fmt.Errorf("add dish catalog item: %w", err)
+	}
+	return orderdomain.DishCatalogItem{Code: code, Name: name, Theme: theme}, nil
+}
+
+// DeleteDishCatalogItem removes a dish from the catalog by code.
+func (s *Service) DeleteDishCatalogItem(ctx context.Context, code string) error {
+	code = strings.TrimSpace(code)
+	if code == "" {
+		return apperr.Invalid("order.dish_code_required", "Укажите блюдо.")
+	}
+	return s.repo.DeleteDishCatalogItem(ctx, code)
 }
 
 func (s *Service) ListOrderTemplates(ctx context.Context) ([]orderdomain.OrderTemplate, error) {

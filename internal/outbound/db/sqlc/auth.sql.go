@@ -396,3 +396,35 @@ func (q *Queries) UpdateAuthUserRole(ctx context.Context, arg UpdateAuthUserRole
 	)
 	return i, err
 }
+
+const updateAuthUserUsername = `-- name: UpdateAuthUserUsername :one
+UPDATE auth_users
+SET username = $1,
+    updated_at = $2
+WHERE id = $3
+RETURNING id, telegram_id, username, password_hash, metadata_json, role, created_at, updated_at, department_id, telegram_username
+`
+
+type UpdateAuthUserUsernameParams struct {
+	Username  string             `json:"username"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	ID        int64              `json:"id"`
+}
+
+func (q *Queries) UpdateAuthUserUsername(ctx context.Context, arg UpdateAuthUserUsernameParams) (AuthUser, error) {
+	row := q.db.QueryRow(ctx, updateAuthUserUsername, arg.Username, arg.UpdatedAt, arg.ID)
+	var i AuthUser
+	err := row.Scan(
+		&i.ID,
+		&i.TelegramID,
+		&i.Username,
+		&i.PasswordHash,
+		&i.MetadataJson,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DepartmentID,
+		&i.TelegramUsername,
+	)
+	return i, err
+}
