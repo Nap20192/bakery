@@ -116,12 +116,9 @@ func (s *Service) VerifyPassword(ctx context.Context, username, password string)
 	return user, nil
 }
 
-func (s *Service) AuthenticateTelegram(ctx context.Context, telegramID int64, telegramUsername, password string) (accessdomain.AuthUser, error) {
+func (s *Service) AuthenticateTelegram(ctx context.Context, telegramID int64, telegramUsername string) (accessdomain.AuthUser, error) {
 	account, err := s.repo.GetByTelegramUsername(ctx, strings.TrimSpace(telegramUsername))
 	if err != nil {
-		return accessdomain.AuthUser{}, err
-	}
-	if _, err := s.VerifyPassword(ctx, account.Username, password); err != nil {
 		return accessdomain.AuthUser{}, err
 	}
 	return s.repo.BindTelegramID(ctx, account.ID, telegramID)

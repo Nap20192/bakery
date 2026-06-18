@@ -19,20 +19,6 @@ import (
 
 const workshopDepartmentCode = "pekari"
 
-func (b *OrderBot) handleTemplate(c tele.Context) error {
-	if err := b.ensureTemplatesAvailable(c); err != nil {
-		return err
-	}
-
-	ctx := requestContext(c)
-	template, err := b.orderSvc.GetTemplate(ctx)
-	if err != nil {
-		slog.ErrorContext(ctx, "get order template failed", "error", err)
-		return sendText(c, "Не удалось получить шаблон заказа.")
-	}
-	return sendHTML(c, responses.Template(template))
-}
-
 func (b *OrderBot) handleCancel(c tele.Context) error {
 	sender := c.Sender()
 	if sender == nil {
@@ -44,9 +30,6 @@ func (b *OrderBot) handleCancel(c tele.Context) error {
 
 func (b *OrderBot) handleText(c tele.Context) error {
 	text := strings.TrimSpace(c.Text())
-	if b.isAwaitingPassword(c) {
-		return b.handlePasswordEntry(c, text)
-	}
 	if handled, err := b.handleActionText(c, text); handled {
 		return err
 	}

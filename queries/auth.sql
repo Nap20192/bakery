@@ -48,7 +48,6 @@ ORDER BY id;
 SELECT *
 FROM auth_users
 WHERE telegram_username = sqlc.arg(telegram_username)::text
-  AND telegram_id IS NOT NULL
 ORDER BY id
 LIMIT 1;
 

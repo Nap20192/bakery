@@ -27,7 +27,7 @@ const (
 	actionSubmitOrder = "Отправить заказ"
 	actionUpdateOrder = "Обновить заказ"
 	actionCancelOrder = "Отменить заказ"
-	actionSync        = "Sync iiko"
+	actionSync        = "Синхронизация"
 )
 
 type actionMenuState string
@@ -280,12 +280,23 @@ func (b *OrderBot) currentUser(c tele.Context) (accessdomain.AuthUser, bool) {
 }
 
 func (b *OrderBot) userDepartmentType(c tele.Context, user accessdomain.AuthUser) string {
-	if b.departmentSvc == nil || user.DepartmentID == nil {
+	if b.departmentSvc != nil && user.DepartmentID != nil {
+		department, err := b.departmentSvc.GetByID(requestContext(c), *user.DepartmentID)
+		if err == nil {
+			return department.Type
+		}
+	}
+
+	return departmentTypeForRole(user.Role)
+}
+
+func departmentTypeForRole(role string) string {
+	switch enum.NormalizeRole(role) {
+	case enum.RoleBaker, enum.RoleAdmin:
+		return string(enum.DepartmentTypeWorkshop)
+	case enum.RoleShop:
+		return string(enum.DepartmentTypeShop)
+	default:
 		return ""
 	}
-	department, err := b.departmentSvc.GetByID(requestContext(c), *user.DepartmentID)
-	if err != nil {
-		return ""
-	}
-	return department.Type
 }

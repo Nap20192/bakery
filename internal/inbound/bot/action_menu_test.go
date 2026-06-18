@@ -113,3 +113,24 @@ func TestActionMenuSnapshotResolveState(t *testing.T) {
 		})
 	}
 }
+
+func TestDepartmentTypeForRole(t *testing.T) {
+	tests := []struct {
+		name string
+		role string
+		want string
+	}{
+		{name: "shop role uses shop mode", role: string(enum.RoleShop), want: string(enum.DepartmentTypeShop)},
+		{name: "baker role uses workshop mode", role: string(enum.RoleBaker), want: string(enum.DepartmentTypeWorkshop)},
+		{name: "admin role uses workshop mode without assigned department", role: string(enum.RoleAdmin), want: string(enum.DepartmentTypeWorkshop)},
+		{name: "unknown role has no mode", role: string(enum.RoleUser), want: ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := departmentTypeForRole(tt.role); got != tt.want {
+				t.Fatalf("departmentTypeForRole(%q) = %q, want %q", tt.role, got, tt.want)
+			}
+		})
+	}
+}

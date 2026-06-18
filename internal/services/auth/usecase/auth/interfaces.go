@@ -17,9 +17,9 @@ type UseCase interface {
 	CreateUserWithPassword(ctx context.Context, input accessdomain.PasswordAuthUserInput) (accessdomain.AuthUser, error)
 	EnsureAdminUser(ctx context.Context, username, password string) (accessdomain.AuthUser, bool, error)
 	VerifyPassword(ctx context.Context, username, password string) (accessdomain.AuthUser, error)
-	// AuthenticateTelegram verifies a password for the account whose
-	// telegram_username matches, binds the given telegram_id and returns it.
-	AuthenticateTelegram(ctx context.Context, telegramID int64, telegramUsername, password string) (accessdomain.AuthUser, error)
+	// AuthenticateTelegram binds the given telegram_id to the account whose
+	// telegram_username matches.
+	AuthenticateTelegram(ctx context.Context, telegramID int64, telegramUsername string) (accessdomain.AuthUser, error)
 	SetPassword(ctx context.Context, id int64, password string) (accessdomain.AuthUser, error)
 	DeleteUser(ctx context.Context, id int64) error
 	AssignUserDepartment(ctx context.Context, userID int64, departmentID *int64) (accessdomain.AuthUser, error)

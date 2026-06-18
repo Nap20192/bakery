@@ -24,9 +24,7 @@ func (b *OrderBot) register() {
 	bt.Handle("/templates", b.handleTemplates)
 	bt.Handle("/monitor", b.handleMonitor)
 	bt.Handle("/sync", b.handleSync, b.requirePermissions(enum.PermissionSync))
-	// Авторизация оставлена только на служебные команды iiko.
 	bt.Handle("/techcard", b.handleTechCard, b.requirePermissions(enum.PermissionTechCard))
-	bt.Handle("/template", b.handleTemplate)
 	bt.Handle("/cancel", b.handleCancel)
 
 	bt.Handle("\fedit_order", b.handleEditOrder)
