@@ -22,6 +22,8 @@ type UseCase interface {
 	ListOrders(ctx context.Context, input ListOrdersInput) (ListOrdersResult, error)
 	ValidateBulkOrder(ctx context.Context, order string) orderdomain.BulkOrderValidationResult
 	ListDishCatalog(ctx context.Context) ([]orderdomain.DishCatalogItem, error)
+	AddDishCatalogItem(ctx context.Context, name, theme string) (orderdomain.DishCatalogItem, error)
+	DeleteDishCatalogItem(ctx context.Context, code string) error
 	ListOrderTemplates(ctx context.Context) ([]orderdomain.OrderTemplate, error)
 	CombinedOrderTemplate(ctx context.Context) (string, error)
 	GetOrderTemplate(ctx context.Context, theme string) (orderdomain.OrderTemplate, error)
@@ -43,6 +45,7 @@ type Repository interface {
 	ResolveDishCatalogItem(ctx context.Context, name string) (DishCatalogItem, error)
 	ListDishCatalog(ctx context.Context) ([]DishCatalogItem, error)
 	UpsertDishCatalogItem(ctx context.Context, item DishCatalogItem) error
+	DeleteDishCatalogItem(ctx context.Context, code string) error
 	DeleteOrdersOlderThan(ctx context.Context, cutoff time.Time) (int64, error)
 }
 

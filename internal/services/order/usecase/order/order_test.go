@@ -326,3 +326,7 @@ func (f *fakeRepo) GetDepartmentByID(_ context.Context, id int64) (Department, e
 func (f *fakeRepo) UpsertDishCatalogItem(context.Context, DishCatalogItem) error {
 	return nil
 }
+
+func (f *fakeRepo) DeleteDishCatalogItem(context.Context, string) error {
+	return nil
+}

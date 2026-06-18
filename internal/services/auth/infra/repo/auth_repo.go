@@ -10,11 +10,13 @@ import (
 	"fmt"
 
 	sqlc "bakery/internal/outbound/db/sqlc"
+	"bakery/internal/pkg/apperr"
 	"bakery/internal/pkg/helpers"
 	accessdomain "bakery/internal/services/auth/domain"
 	authuc "bakery/internal/services/auth/usecase/auth"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type AuthRepository struct {
@@ -90,6 +92,25 @@ func (r *AuthRepository) SetRole(ctx context.Context, id int64, role string) (ac
 			return accessdomain.AuthUser{}, authuc.ErrAuthUserNotFound
 		}
 		return accessdomain.AuthUser{}, fmt.Errorf("update auth user role: %w", err)
+	}
+	return authUserToDomain(user), nil
+}
+
+func (r *AuthRepository) SetUsername(ctx context.Context, id int64, username string) (accessdomain.AuthUser, error) {
+	user, err := r.queries.UpdateAuthUserUsername(ctx, sqlc.UpdateAuthUserUsernameParams{
+		Username:  username,
+		UpdatedAt: helpers.TimestamptzNow(),
+		ID:        id,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return accessdomain.AuthUser{}, authuc.ErrAuthUserNotFound
+		}
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return accessdomain.AuthUser{}, apperr.Conflict("auth.username_taken", "Логин уже занят.")
+		}
+		return accessdomain.AuthUser{}, fmt.Errorf("update auth user username: %w", err)
 	}
 	return authUserToDomain(user), nil
 }

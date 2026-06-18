@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Login } from '../../components/Login';
 import { MePanel } from '../account/Me';
 import { AdminUsers } from '../admin/AdminUsers';
+import { AdminDishes } from '../admin/AdminDishes';
 import { apiBase, buildMode, frontendLogsEnabled } from '../../config/env';
 import { ApiError } from '../../api/client';
 import { createOrder, fetchBatchOrderMonitor, fetchCatalog, fetchDepartments, fetchMe, fetchOrder, fetchOrderMonitor, fetchOrders, updateOrder } from '../../api/orders';
@@ -356,6 +357,14 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
     return (
       <OrdersLayout viewer={viewer} active={route.name} onNavigate={navigate} onLogout={handleLogout}>
         <AdminUsers />
+      </OrdersLayout>
+    );
+  }
+
+  if (viewer?.role === 'admin' && route.name === 'adminDishes') {
+    return (
+      <OrdersLayout viewer={viewer} active={route.name} onNavigate={navigate} onLogout={handleLogout}>
+        <AdminDishes />
       </OrdersLayout>
     );
   }

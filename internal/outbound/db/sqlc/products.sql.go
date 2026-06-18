@@ -11,6 +11,16 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const deleteDishCatalogItem = `-- name: DeleteDishCatalogItem :exec
+DELETE FROM dish_catalog
+WHERE code = $1
+`
+
+func (q *Queries) DeleteDishCatalogItem(ctx context.Context, code string) error {
+	_, err := q.db.Exec(ctx, deleteDishCatalogItem, code)
+	return err
+}
+
 const dishExistsByCode = `-- name: DishExistsByCode :one
 SELECT COUNT(*)::bigint
 FROM iiko_products

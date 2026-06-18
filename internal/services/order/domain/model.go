@@ -64,6 +64,7 @@ type OrderTemplate struct {
 }
 
 type DishCatalogItem struct {
+	Code      string `json:"code"`
 	Name      string `json:"name"`
 	Theme     string `json:"theme"`
 	SortOrder int64  `json:"sort_order"`

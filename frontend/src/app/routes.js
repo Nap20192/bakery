@@ -5,6 +5,7 @@ export function parseRoute(pathname = window.location.pathname) {
   if (path === '/') return { name: 'orders' };
   if (path === '/me') return { name: 'me' };
   if (path === '/admin/users') return { name: 'adminUsers' };
+  if (path === '/admin/dishes') return { name: 'adminDishes' };
   if (parts[0] !== 'orders') return { name: 'orders' };
   if (parts.length === 1) return { name: 'orders' };
   if (parts[1] === 'new') return { name: 'orderNew' };
@@ -21,6 +22,8 @@ export function pathFor(route) {
       return '/me';
     case 'adminUsers':
       return '/admin/users';
+    case 'adminDishes':
+      return '/admin/dishes';
     case 'orderNew':
       return '/orders/new';
     case 'orderSelection':

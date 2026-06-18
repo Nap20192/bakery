@@ -314,6 +314,10 @@ func (r *OrderRepository) UpsertDishCatalogItem(ctx context.Context, item orderu
 	return err
 }
 
+func (r *OrderRepository) DeleteDishCatalogItem(ctx context.Context, code string) error {
+	return r.queries.DeleteDishCatalogItem(ctx, code)
+}
+
 func (r *OrderRepository) DeleteOrdersOlderThan(ctx context.Context, cutoff time.Time) (int64, error) {
 	return r.queries.DeleteOrdersCreatedBefore(ctx, helpers.Timestamptz(cutoff))
 }

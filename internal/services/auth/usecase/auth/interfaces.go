@@ -30,6 +30,7 @@ type UseCase interface {
 	ListUsersByDepartmentID(ctx context.Context, departmentID int64) ([]accessdomain.AuthUser, error)
 	ListUsersByRole(ctx context.Context, role string) ([]accessdomain.AuthUser, error)
 	SetUserRole(ctx context.Context, id int64, role string) (accessdomain.AuthUser, error)
+	SetUsername(ctx context.Context, id int64, username string) (accessdomain.AuthUser, error)
 }
 
 // Repository is the persistence port implemented by infra/repo. It owns row
@@ -46,6 +47,7 @@ type Repository interface {
 	ListByDepartmentID(ctx context.Context, departmentID int64) ([]accessdomain.AuthUser, error)
 	ListByRole(ctx context.Context, role string) ([]accessdomain.AuthUser, error)
 	SetRole(ctx context.Context, id int64, role string) (accessdomain.AuthUser, error)
+	SetUsername(ctx context.Context, id int64, username string) (accessdomain.AuthUser, error)
 	SetPasswordHash(ctx context.Context, id int64, passwordHash string) (accessdomain.AuthUser, error)
 	BindTelegramID(ctx context.Context, id, telegramID int64) (accessdomain.AuthUser, error)
 	Delete(ctx context.Context, id int64) error

@@ -8,6 +8,7 @@ const navItems = [
   { route: { name: 'orders' }, label: 'Заказы', icon: 'orders', roles: ['shop', 'baker', 'admin'] },
   { route: { name: 'orderNew' }, label: 'Новый', icon: 'plus', roles: ['shop'] },
   { route: { name: 'adminUsers' }, label: 'Люди', icon: 'users', roles: ['admin'] },
+  { route: { name: 'adminDishes' }, label: 'Блюда', icon: 'orders', roles: ['admin'] },
   { route: { name: 'me' }, label: 'Профиль', icon: 'user', roles: ['shop', 'baker', 'admin'] },
 ];
 

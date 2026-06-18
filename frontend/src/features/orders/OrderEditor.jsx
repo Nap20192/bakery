@@ -226,18 +226,20 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
         {visibleGroups.length ? (
           visibleGroups.map((group) => (
             <section key={group.theme}>
-              <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] items-center gap-2 px-1 pb-1">
+              <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem_2rem] items-center gap-2 px-1 pb-1">
                 <h4 className="m-0 truncate text-[12px] font-semibold uppercase tracking-wide text-stone-400">{group.theme}</h4>
                 <span className="text-center text-[10px] font-medium uppercase text-stone-300">Кол-во</span>
                 <span className="text-center text-[10px] font-medium uppercase text-stone-300">Заказ</span>
+                <span />
               </div>
               <div className="divide-y divide-stone-100">
                 {group.items.map((item) => {
+                  const hasComment = Boolean(comments[item.name]);
+                  const commentOpen = openComments[item.name] || hasComment;
                   const value = quantities[item.name] || {};
-                  const filled = Number(value.quantity || 0) + Number(value.reserved_quantity || 0) > 0;
                   return (
                     <div className="py-1.5" key={item.name}>
-                      <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] items-center gap-2">
+                      <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem_2rem] items-center gap-2">
                         <span className="min-w-0 break-words text-[14px] leading-5 text-stone-800">{item.name}</span>
                         <input
                           className={qtyClass}
@@ -259,27 +261,33 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
                           value={value.reserved_quantity || ''}
                           onChange={(e) => updateQuantity(item.name, 'reserved_quantity', e.target.value.replace(/\D/g, ''))}
                         />
+                        <button
+                          type="button"
+                          onClick={() => setOpenComments((o) => ({ ...o, [item.name]: !commentOpen }))}
+                          title="Комментарий"
+                          aria-label={`${item.name}: комментарий`}
+                          className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border transition ${
+                            hasComment
+                              ? 'border-stone-900 bg-stone-900 text-white'
+                              : commentOpen
+                                ? 'border-stone-400 text-stone-700'
+                                : 'border-stone-200 text-stone-400 hover:border-stone-400 hover:text-stone-700'
+                          }`}
+                        >
+                          <Icon name="orders" size={15} />
+                        </button>
                       </div>
-                      {filled && (openComments[item.name] || comments[item.name] ? (
+                      {commentOpen && (
                         <input
                           className="fade-in mt-1.5 h-9 w-full rounded-lg border border-stone-200 bg-white px-3 text-base text-stone-700 outline-none transition focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10"
                           type="text"
-                          autoFocus={Boolean(openComments[item.name]) && !comments[item.name]}
+                          autoFocus={Boolean(openComments[item.name]) && !hasComment}
                           placeholder="Комментарий к позиции…"
-                          aria-label={`${item.name}: комментарий`}
+                          aria-label={`${item.name}: текст комментария`}
                           value={comments[item.name] || ''}
                           onChange={(e) => updateComment(item.name, e.target.value)}
                         />
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => setOpenComments((o) => ({ ...o, [item.name]: true }))}
-                          className="mt-1.5 inline-flex items-center gap-1 text-[12px] font-medium text-stone-400 transition hover:text-stone-700"
-                        >
-                          <Icon name="plus" size={13} />
-                          Комментарий
-                        </button>
-                      ))}
+                      )}
                     </div>
                   );
                 })}
