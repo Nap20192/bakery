@@ -310,7 +310,11 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
   }
 
   if (viewer?.role === 'admin' && route.name === 'adminUsers') {
-    return <AdminUsers onLogout={handleLogout} />;
+    return (
+      <OrdersLayout viewer={viewer} active={route.name} onNavigate={navigate} onLogout={handleLogout}>
+        <AdminUsers />
+      </OrdersLayout>
+    );
   }
 
   return (
@@ -328,10 +332,8 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
           filters={filters}
           selectedNumber={selectedNumber}
           selectedOrderNumbers={selectedOrderNumbers}
-          onRefresh={() => loadOrders(ordersPage.page)}
           onCreate={openCreateOrder}
-          onSelect={(number) => loadOrder(number)}
-          onOpenMonitor={(number) => loadOrder(number, true)}
+          onSelect={(number) => loadOrder(number, canUseMonitor)}
           onToggleSelection={toggleOrderSelection}
           onPageChange={loadOrders}
           onFiltersChange={updateFilters}
@@ -361,7 +363,6 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
                   <PanelHeader title="Расчёт теста" />
                   <MonitorActions
                     loading={loading}
-                    selectedOrder={selectedOrder}
                     selectedOrderCount={selectedOrderCount}
                     onCalculate={loadBatchMonitor}
                   />
@@ -383,7 +384,6 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
                   <PanelHeader title="Расчёт теста" />
                   <MonitorActions
                     loading={loading}
-                    selectedOrder={selectedOrder}
                     selectedOrderCount={selectedOrderCount}
                     onCalculate={loadBatchMonitor}
                   />
@@ -401,13 +401,16 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
   );
 }
 
-function MonitorActions({ loading, selectedOrder, selectedOrderCount, onCalculate }) {
+function MonitorActions({ loading, selectedOrderCount, onCalculate }) {
+  if (selectedOrderCount === 0) {
+    return null;
+  }
   return (
     <div className="mb-3 flex flex-wrap items-center gap-2">
-      <Button variant="primary" onClick={onCalculate} disabled={(!selectedOrder && !selectedOrderCount) || loading}>
-        Рассчитать
+      <Button variant="primary" onClick={onCalculate} disabled={loading}>
+        Рассчитать выбранные
       </Button>
-      {selectedOrderCount > 0 && <span className="text-[13px] leading-5 text-stone-600">Выбрано заказов: {selectedOrderCount}</span>}
+      <span className="text-[13px] leading-5 text-stone-600">Выбрано заказов: {selectedOrderCount}</span>
     </div>
   );
 }

@@ -31,10 +31,8 @@ export function OrderList({
   filters,
   selectedNumber,
   selectedOrderNumbers,
-  onRefresh,
   onCreate,
   onSelect,
-  onOpenMonitor,
   onToggleSelection,
   onPageChange,
   onFiltersChange,
@@ -60,9 +58,6 @@ export function OrderList({
             Новый заказ
           </Button>
         )}
-        <Button onClick={onRefresh} disabled={loading}>
-          Обновить
-        </Button>
       </div>
 
       <div className="rounded-md border border-stone-300 bg-[#fff7df] p-2">
@@ -121,14 +116,16 @@ export function OrderList({
                   selectedNumber === order.number ? 'border-stone-300 bg-[#fff1cb]' : 'border-transparent bg-[#fff7df] hover:border-stone-300 hover:bg-[#fff1cb]'
                 }`}
               >
-                <div className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-2">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5 h-4 w-4 accent-stone-950"
-                    checked={checked}
-                    aria-label={`Выбрать заказ ${order.number}`}
-                    onChange={() => onToggleSelection(order.number)}
-                  />
+                <div className={`grid gap-2 ${canUseMonitor ? 'grid-cols-[1.25rem_minmax(0,1fr)]' : 'grid-cols-1'}`}>
+                  {canUseMonitor && (
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4 accent-stone-950"
+                      checked={checked}
+                      aria-label={`Выбрать заказ ${order.number}`}
+                      onChange={() => onToggleSelection(order.number)}
+                    />
+                  )}
                   <button className="min-w-0 text-left" onClick={() => onSelect(order.number)}>
                     <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5">
                       <strong className="break-words text-[13px] font-semibold leading-5 text-stone-900">{order.number}</strong>
@@ -138,13 +135,6 @@ export function OrderList({
                     </div>
                   </button>
                 </div>
-                {canUseMonitor && (
-                  <div className="mt-2 flex justify-end">
-                    <Button onClick={() => onOpenMonitor(order.number)} disabled={loading}>
-                      Расчёт
-                    </Button>
-                  </div>
-                )}
               </div>
             );
           })
