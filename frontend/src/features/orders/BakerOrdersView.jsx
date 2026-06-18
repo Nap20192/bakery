@@ -30,7 +30,7 @@ export function BakerOrdersView({
   const selectedCount = selectedOrderNumbers.length;
 
   return (
-    <section className="px-3 py-3 pb-24 sm:px-5 lg:px-6">
+    <section className="px-3 py-3 pb-40 sm:px-5 sm:pb-24 lg:px-6">
       <div className="mx-auto max-w-[1440px] space-y-4">
         <BakerOrderFilters
           filters={filters}
@@ -94,7 +94,7 @@ function BottomActionBar({ loading, selectedOrder, selectedCount, selectionMode,
     return null;
   }
   return (
-    <div className="fixed inset-x-0 bottom-0 z-20 border-t border-stone-300 bg-white/95 px-3 py-2 backdrop-blur">
+    <div className="fixed inset-x-0 bottom-16 z-20 border-t border-stone-300 bg-white/95 px-3 py-2 backdrop-blur sm:bottom-0">
       <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-2">
         <span className="min-w-0 truncate text-[13px] font-medium text-stone-700">
           {selectionMode ? `Выбрано: ${selectedCount}` : selectedOrder?.number}

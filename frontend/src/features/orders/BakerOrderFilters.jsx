@@ -4,6 +4,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import MuiButton from '@mui/material/Button';
+import { Icon } from '../../components/Icon';
 
 function dateValue(offset = 0) {
   const date = new Date();
@@ -45,7 +46,7 @@ export function BakerOrderFilters({ filters, shops, selectionMode, onToggleSelec
           fullWidth
         />
 
-        <div className="grid grid-cols-4 gap-1.5 md:min-w-[25rem]">
+        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 md:min-w-[25rem]">
           <MuiButton size="small" variant="outlined" onClick={() => onFiltersChange({ fulfillmentDate: dateValue() })}>
             Сегодня
           </MuiButton>
@@ -64,6 +65,7 @@ export function BakerOrderFilters({ filters, shops, selectionMode, onToggleSelec
                 : 'border-stone-400 bg-stone-50 text-stone-900 hover:border-stone-700'
             }`}
           >
+            <Icon name="select" size={15} className="mr-1 inline-block align-[-3px]" />
             Выбор нескольких
           </button>
         </div>

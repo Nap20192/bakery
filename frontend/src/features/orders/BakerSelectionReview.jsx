@@ -1,5 +1,6 @@
 import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
+import { Icon } from '../../components/Icon';
 import { panelClass, PanelHeader } from '../../components/Panel';
 import { MonitorReports } from './MonitorReports';
 import { OrderDetails } from './OrderDetails';
@@ -14,7 +15,7 @@ export function BakerSelectionReview({
   onCalculate,
 }) {
   return (
-    <section className="px-3 py-3 sm:px-5 lg:px-6">
+    <section className="px-3 py-3 pb-20 sm:px-5 sm:pb-3 lg:px-6">
       <div className="mx-auto max-w-[1440px] space-y-4">
         <section className="rounded-lg border border-stone-300 bg-white p-3 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -22,9 +23,13 @@ export function BakerSelectionReview({
               <h1 className="m-0 text-[18px] font-semibold leading-7 text-stone-950">Выбранные заказы</h1>
               <p className="m-0 text-[13px] leading-5 text-stone-600">Заказов: {selectedOrders.length}</p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={onBack}>К списку</Button>
+            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+              <Button onClick={onBack}>
+                <Icon name="chevronLeft" size={16} />
+                К списку
+              </Button>
               <Button variant="primary" onClick={onCalculate} disabled={loading || selectedOrders.length === 0}>
+                <Icon name="calculator" size={16} />
                 Рассчитать тесто
               </Button>
             </div>
@@ -40,6 +45,7 @@ export function BakerSelectionReview({
                 <section className={panelClass} key={order.number}>
                   <div className="mb-3 flex justify-end">
                     <Button onClick={() => onRemove(order.number)} disabled={loading}>
+                      <Icon name="close" size={16} />
                       Убрать
                     </Button>
                   </div>

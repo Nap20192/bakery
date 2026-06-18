@@ -74,10 +74,9 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
           size="medium"
           label="Дата выполнения"
           type="date"
-          min={todayValue()}
           value={date}
           onChange={(event) => setDate(event.target.value)}
-          slotProps={{ inputLabel: { shrink: true } }}
+          slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: todayValue() } }}
           required
           fullWidth
         />
@@ -123,7 +122,7 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
         )}
       </div>
 
-      <div className="sticky bottom-0 flex justify-end gap-2 border-t border-stone-300 bg-white py-3">
+      <div className="sticky bottom-0 flex justify-end gap-2 border-t border-stone-300 bg-white py-3 shadow-[0_-8px_20px_rgba(28,25,23,0.06)]">
         <Button type="button" onClick={onCancel}>
           Отмена
         </Button>
