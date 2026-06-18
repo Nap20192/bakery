@@ -61,7 +61,26 @@ type OrderResponse struct {
 	CreatedAt         string                    `json:"created_at"`
 	FulfillmentDate   string                    `json:"fulfillment_date"`
 	MonitorCommand    string                    `json:"monitor_command"`
+	Comments          commentsResponse          `json:"comments"`
 	History           []orderHistoryResponse    `json:"history,omitempty"`
+}
+
+type commentsResponse struct {
+	General string                `json:"general"`
+	Items   []itemCommentResponse `json:"items"`
+}
+
+type itemCommentResponse struct {
+	ProductName string `json:"product_name"`
+	Comment     string `json:"comment"`
+}
+
+func buildCommentsResponse(comments orderdomain.OrderComments) commentsResponse {
+	out := commentsResponse{General: comments.General, Items: make([]itemCommentResponse, 0, len(comments.Items))}
+	for _, c := range comments.Items {
+		out.Items = append(out.Items, itemCommentResponse{ProductName: c.ProductName, Comment: c.Comment})
+	}
+	return out
 }
 
 type ordersPageResponse struct {
@@ -113,6 +132,7 @@ func (p *OrderPresenter) BuildOrderResponse(ctx context.Context, order orderdoma
 		CreatedAt:         createdAt,
 		FulfillmentDate:   fulfillmentDate,
 		MonitorCommand:    fmt.Sprintf("/monitor %s", order.Number),
+		Comments:          buildCommentsResponse(order.Comments),
 		History:           buildOrderHistoryResponse(order.History),
 	}
 }

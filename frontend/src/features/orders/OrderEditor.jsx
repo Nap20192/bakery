@@ -29,6 +29,14 @@ function initialQuantities(order) {
   return quantities;
 }
 
+function initialItemComments(order) {
+  const map = {};
+  for (const entry of order?.comments?.items || []) {
+    if (entry.product_name) map[entry.product_name] = entry.comment || '';
+  }
+  return map;
+}
+
 // parsePasteLine extracts "<name> <qty>[+<reserved>]" from a single line.
 function parsePasteLine(line) {
   const match = line.match(/^(.*?)[\s:–—-]*?(\d+(?:[.,]\d+)?)\s*(?:\+\s*(\d+(?:[.,]\d+)?))?\s*(?:шт\.?)?$/i);
@@ -43,6 +51,8 @@ function parsePasteLine(line) {
 export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
   const [date, setDate] = useState(order?.fulfillment_date || '');
   const [quantities, setQuantities] = useState(() => initialQuantities(order));
+  const [comments, setComments] = useState(() => initialItemComments(order));
+  const [general, setGeneral] = useState(order?.comments?.general || '');
   const [search, setSearch] = useState('');
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteText, setPasteText] = useState('');
@@ -97,6 +107,10 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
     }));
   }
 
+  function updateComment(name, value) {
+    setComments((current) => ({ ...current, [name]: value }));
+  }
+
   function resolveName(rawName) {
     const lower = rawName.toLowerCase();
     if (nameIndex.has(lower)) return nameIndex.get(lower);
@@ -148,7 +162,14 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
       })
       .filter((item) => item.quantity + item.reserved_quantity > 0);
     if (!items.length) return;
-    onSave({ fulfillment_date: date, items });
+    const itemComments = items
+      .map((item) => ({ product_name: item.product_name, comment: (comments[item.product_name] || '').trim() }))
+      .filter((entry) => entry.comment);
+    onSave({
+      fulfillment_date: date,
+      items,
+      comments: { general: general.trim(), items: itemComments },
+    });
   }
 
   const canSubmit = !loading && summary.count > 0 && Boolean(date);
@@ -212,32 +233,42 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
               <div className="divide-y divide-stone-100">
                 {group.items.map((item) => {
                   const value = quantities[item.name] || {};
+                  const filled = Number(value.quantity || 0) + Number(value.reserved_quantity || 0) > 0;
                   return (
-                    <div
-                      className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] items-center gap-2 py-1.5"
-                      key={item.name}
-                    >
-                      <span className="min-w-0 break-words text-[14px] leading-5 text-stone-800">{item.name}</span>
-                      <input
-                        className={qtyClass}
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        placeholder="0"
-                        aria-label={`${item.name}: количество`}
-                        value={value.quantity || ''}
-                        onChange={(e) => updateQuantity(item.name, 'quantity', e.target.value.replace(/\D/g, ''))}
-                      />
-                      <input
-                        className={qtyClass}
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        placeholder="0"
-                        aria-label={`${item.name}: заказано`}
-                        value={value.reserved_quantity || ''}
-                        onChange={(e) => updateQuantity(item.name, 'reserved_quantity', e.target.value.replace(/\D/g, ''))}
-                      />
+                    <div className="py-1.5" key={item.name}>
+                      <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] items-center gap-2">
+                        <span className="min-w-0 break-words text-[14px] leading-5 text-stone-800">{item.name}</span>
+                        <input
+                          className={qtyClass}
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          placeholder="0"
+                          aria-label={`${item.name}: количество`}
+                          value={value.quantity || ''}
+                          onChange={(e) => updateQuantity(item.name, 'quantity', e.target.value.replace(/\D/g, ''))}
+                        />
+                        <input
+                          className={qtyClass}
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          placeholder="0"
+                          aria-label={`${item.name}: заказано`}
+                          value={value.reserved_quantity || ''}
+                          onChange={(e) => updateQuantity(item.name, 'reserved_quantity', e.target.value.replace(/\D/g, ''))}
+                        />
+                      </div>
+                      {filled && (
+                        <input
+                          className="fade-in mt-1.5 h-9 w-full rounded-lg border border-stone-200 bg-white px-3 text-base text-stone-700 outline-none transition focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10"
+                          type="text"
+                          placeholder="Комментарий к позиции…"
+                          aria-label={`${item.name}: комментарий`}
+                          value={comments[item.name] || ''}
+                          onChange={(e) => updateComment(item.name, e.target.value)}
+                        />
+                      )}
                     </div>
                   );
                 })}
@@ -248,6 +279,16 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
           <EmptyState compact>{query ? 'Ничего не найдено.' : 'Блюда не найдены.'}</EmptyState>
         )}
       </div>
+
+      <label className="block">
+        <span className="mb-1 block text-[12px] font-medium text-stone-500">Общий комментарий</span>
+        <textarea
+          className="block min-h-[3.5rem] w-full resize-y rounded-lg border border-stone-200 bg-white p-2.5 text-base leading-6 text-stone-900 outline-none transition focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10"
+          placeholder="Комментарий ко всему заказу…"
+          value={general}
+          onChange={(e) => setGeneral(e.target.value)}
+        />
+      </label>
 
       <div className="-mx-3 mt-1 flex items-center justify-between gap-2 border-t border-stone-200 bg-white px-3 py-3 sm:sticky sm:bottom-0 sm:-mx-4 sm:bg-white/95 sm:px-4 sm:backdrop-blur">
         <span className="text-[13px] text-stone-600">

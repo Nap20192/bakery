@@ -11,15 +11,15 @@ import (
 type Order struct {
 	sharedkernel.AggregateRoot `json:"-"`
 
-	ID                string      `json:"id"`
-	Number            string      `json:"number"`
-	Location          string      `json:"location"`
-	FromDepartmentID  *int64      `json:"from_department_id"`
-	ToDepartmentID    *int64      `json:"to_department_id"`
-	CreatedByUsername string      `json:"created_by_username"`
-	Items             []OrderItem `json:"items"`
-	CreatedAt         time.Time   `json:"created_at"`
-	FulfillmentDate   time.Time   `json:"fulfillment_date"`
+	ID                string        `json:"id"`
+	Number            string        `json:"number"`
+	Location          string        `json:"location"`
+	FromDepartmentID  *int64        `json:"from_department_id"`
+	ToDepartmentID    *int64        `json:"to_department_id"`
+	CreatedByUsername string        `json:"created_by_username"`
+	Items             []OrderItem   `json:"items"`
+	CreatedAt         time.Time     `json:"created_at"`
+	FulfillmentDate   time.Time     `json:"fulfillment_date"`
 	Comments          OrderComments `json:"comments"`
 	History           []OrderHistory
 }

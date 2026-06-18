@@ -23,13 +23,27 @@ export function OrderDetails({ order }) {
         <MetaCell label="Куда" value={order.to_department?.name || '-'} />
       </div>
 
-      <OrderItems items={order.items || []} history={order.history || []} />
+      <OrderItems items={order.items || []} history={order.history || []} comments={commentByName(order)} />
+      {order.comments?.general && (
+        <div className="mt-3 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5">
+          <span className="block text-[11px] font-medium uppercase leading-4 text-stone-500">Комментарий</span>
+          <p className="m-0 mt-0.5 whitespace-pre-wrap break-words text-[13px] leading-5 text-stone-800">{order.comments.general}</p>
+        </div>
+      )}
       <OrderHistory history={order.history || []} />
     </>
   );
 }
 
-function OrderItems({ items, history }) {
+function commentByName(order) {
+  const map = {};
+  for (const entry of order?.comments?.items || []) {
+    if (entry.product_name && entry.comment) map[entry.product_name] = entry.comment;
+  }
+  return map;
+}
+
+function OrderItems({ items, history, comments = {} }) {
   if (!items.length) {
     return <EmptyState compact>В заказе нет позиций.</EmptyState>;
   }
@@ -59,6 +73,9 @@ function OrderItems({ items, history }) {
                   <span className="ml-1 whitespace-nowrap text-[11px] font-semibold" style={{ color: changeColor(change.change_type) }}>
                     {changeLabel(change.change_type)}
                   </span>
+                )}
+                {comments[item.product_name] && (
+                  <span className="mt-0.5 block break-words text-[12px] leading-4 text-stone-500">{comments[item.product_name]}</span>
                 )}
               </span>
               <span className="text-right text-[12px] font-semibold leading-5 text-stone-950 sm:text-[13px]">{orderQuantity(item)}</span>

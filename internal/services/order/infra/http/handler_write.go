@@ -23,14 +23,25 @@ const (
 )
 
 type orderWriteRequest struct {
-	Items           []orderWriteItem `json:"items"`
-	FulfillmentDate string           `json:"fulfillment_date"`
+	Items           []orderWriteItem   `json:"items"`
+	FulfillmentDate string             `json:"fulfillment_date"`
+	Comments        orderWriteComments `json:"comments"`
 }
 
 type orderWriteItem struct {
 	ProductName      string  `json:"product_name"`
 	Quantity         float64 `json:"quantity"`
 	ReservedQuantity float64 `json:"reserved_quantity"`
+}
+
+type orderWriteComments struct {
+	General string              `json:"general"`
+	Items   []orderWriteComment `json:"items"`
+}
+
+type orderWriteComment struct {
+	ProductName string `json:"product_name"`
+	Comment     string `json:"comment"`
 }
 
 func (h *Handler) handleCatalog(w http.ResponseWriter, r *http.Request) {
@@ -77,6 +88,7 @@ func (h *Handler) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		ToDepartmentID:    &toDepartmentID,
 		CreatedByUsername: miniAppOrderAuthor(user),
 		FulfillmentDate:   input.fulfillmentDate,
+		Comments:          input.comments,
 	})
 	if err != nil {
 		slog.WarnContext(r.Context(), "mini app create order failed", "error", err, "telegram_id", user.TelegramID)
@@ -118,6 +130,7 @@ func (h *Handler) handleUpdateOrder(w http.ResponseWriter, r *http.Request) {
 		ToDepartmentID:    existing.ToDepartmentID,
 		CreatedByUsername: miniAppOrderAuthor(user),
 		FulfillmentDate:   input.fulfillmentDate,
+		Comments:          input.comments,
 	})
 	if err != nil {
 		slog.WarnContext(r.Context(), "mini app update order failed", "error", err, "telegram_id", user.TelegramID)
@@ -130,6 +143,20 @@ func (h *Handler) handleUpdateOrder(w http.ResponseWriter, r *http.Request) {
 type validatedOrderWrite struct {
 	items           []orderdomain.OrderItem
 	fulfillmentDate time.Time
+	comments        orderdomain.OrderComments
+}
+
+func buildComments(req orderWriteComments) orderdomain.OrderComments {
+	out := orderdomain.OrderComments{General: strings.TrimSpace(req.General)}
+	for _, c := range req.Items {
+		name := strings.TrimSpace(c.ProductName)
+		comment := strings.TrimSpace(c.Comment)
+		if name == "" || comment == "" {
+			continue
+		}
+		out.Items = append(out.Items, orderdomain.ItemComment{ProductName: name, Comment: comment})
+	}
+	return out
 }
 
 func decodeOrderWriteRequest(w http.ResponseWriter, r *http.Request) (validatedOrderWrite, bool) {
@@ -179,7 +206,7 @@ func decodeOrderWriteRequest(w http.ResponseWriter, r *http.Request) (validatedO
 			ReservedQuantity: item.ReservedQuantity,
 		})
 	}
-	return validatedOrderWrite{items: items, fulfillmentDate: fulfillmentDate}, true
+	return validatedOrderWrite{items: items, fulfillmentDate: fulfillmentDate, comments: buildComments(request.Comments)}, true
 }
 
 func validOrderQuantity(quantity float64) bool {

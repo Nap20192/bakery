@@ -67,23 +67,6 @@ func (b *OrderBot) handleActionText(c tele.Context, text string) (bool, error) {
 	}
 }
 
-func (b *OrderBot) handleCurrentOrder(c tele.Context) error {
-	sender := c.Sender()
-	if sender == nil {
-		return sendText(c, msgTelegramUserUnknown)
-	}
-	var current session
-	b.mu.Lock()
-	if s := b.sessions[sender.ID]; s != nil {
-		current = *s
-	}
-	b.mu.Unlock()
-	if len(current.items) == 0 {
-		return sendText(c, "Текущий заказ пустой.", b.actionMarkup(c))
-	}
-	return sendHTML(c, responses.OrderDraft(current.editOrderNumber, current.items, current.fulfillmentDate, nil), b.actionMarkup(c))
-}
-
 func (b *OrderBot) ensureActionPermission(c tele.Context, permission enum.Permission) error {
 	user, err := b.authUserFromContext(c)
 	if err != nil {
