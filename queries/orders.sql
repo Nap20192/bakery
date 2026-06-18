@@ -66,6 +66,20 @@ LEFT JOIN iiko_products AS p ON p.id = oi.iiko_product_id
 WHERE oi.order_id = sqlc.arg(order_id)
 ORDER BY oi.id;
 
+-- name: GetOrderItemsByOrderIDs :many
+SELECT
+    oi.id,
+    oi.order_id,
+    oi.iiko_product_id,
+    oi.product_name,
+    oi.quantity,
+    oi.reserved_quantity,
+    COALESCE(p.code, '') AS product_code
+FROM order_items AS oi
+LEFT JOIN iiko_products AS p ON p.id = oi.iiko_product_id
+WHERE oi.order_id = ANY(sqlc.arg(order_ids)::BIGINT[])
+ORDER BY oi.order_id, oi.id;
+
 -- name: DeleteOrderItemsByOrderID :exec
 DELETE FROM order_items
 WHERE order_id = sqlc.arg(order_id);

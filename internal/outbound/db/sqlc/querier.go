@@ -44,6 +44,7 @@ type Querier interface {
 	GetIikoProductsByName(ctx context.Context, name string) ([]GetIikoProductsByNameRow, error)
 	GetOrderByNumber(ctx context.Context, number string) (Order, error)
 	GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]GetOrderItemsByOrderIDRow, error)
+	GetOrderItemsByOrderIDs(ctx context.Context, orderIds []int64) ([]GetOrderItemsByOrderIDsRow, error)
 	InsertIikoAssemblyChartItem(ctx context.Context, arg InsertIikoAssemblyChartItemParams) error
 	InsertIikoPreparedChartItem(ctx context.Context, arg InsertIikoPreparedChartItemParams) error
 	InsertOrderOutboxEvent(ctx context.Context, arg InsertOrderOutboxEventParams) (int64, error)

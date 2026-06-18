@@ -18,9 +18,11 @@ func OpenPostgres(ctx context.Context, databaseURL string) (*pgxpool.Pool, error
 	if err != nil {
 		return nil, err
 	}
-	config.MaxConns = 10
-	config.MinConns = 1
+	config.MaxConns = 20
+	config.MinConns = 2
 	config.MaxConnLifetime = time.Hour
+	config.MaxConnIdleTime = 30 * time.Minute
+	config.HealthCheckPeriod = time.Minute
 	logPostgresConnectStart(config)
 
 	pool, err := pgxpool.NewWithConfig(ctx, config)
