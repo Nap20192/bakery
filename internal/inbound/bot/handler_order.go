@@ -22,7 +22,7 @@ const workshopDepartmentCode = "pekari"
 func (b *OrderBot) handleCancel(c tele.Context) error {
 	sender := c.Sender()
 	if sender == nil {
-		return sendText(c, "Не удалось определить пользователя.")
+		return sendText(c, msgTelegramUserUnknown)
 	}
 	b.clearSession(sender.ID)
 	return sendText(c, "Текущий заказ отменен.", b.actionMarkup(c))
@@ -45,12 +45,6 @@ func (b *OrderBot) handleText(c tele.Context) error {
 func (b *OrderBot) handleActionText(c tele.Context, text string) (bool, error) {
 	if handled, err := b.handleOrdersReplyText(c, text); handled {
 		return true, err
-	}
-	if b.isCurrentOrderStateButton(c, text) {
-		return true, b.handleCurrentOrder(c)
-	}
-	if b.isOrderFilterStateButton(c, text) {
-		return true, b.handleOrders(c)
 	}
 	switch strings.TrimSpace(text) {
 	case actionTemplates:
@@ -76,7 +70,7 @@ func (b *OrderBot) handleActionText(c tele.Context, text string) (bool, error) {
 func (b *OrderBot) handleCurrentOrder(c tele.Context) error {
 	sender := c.Sender()
 	if sender == nil {
-		return sendText(c, "Не удалось определить пользователя.")
+		return sendText(c, msgTelegramUserUnknown)
 	}
 	var current session
 	b.mu.Lock()
@@ -96,7 +90,7 @@ func (b *OrderBot) ensureActionPermission(c tele.Context, permission enum.Permis
 		return err
 	}
 	if b.rbacSvc == nil || !b.rbacSvc.HasPermission(user.Role, permission) {
-		return sendText(c, "Доступ запрещён.")
+		return sendText(c, msgAccessDenied)
 	}
 	return nil
 }
@@ -105,7 +99,7 @@ func (b *OrderBot) handleBulkOrder(c tele.Context, text string) error {
 	ctx := requestContext(c)
 	sender := c.Sender()
 	if sender == nil {
-		return sendText(c, "Не удалось определить пользователя.")
+		return sendText(c, msgTelegramUserUnknown)
 	}
 	result := b.orderSvc.ValidateBulkOrder(ctx, text)
 	if len(result.ValidItems) == 0 && len(result.Errors) > 0 {
@@ -156,7 +150,7 @@ func (b *OrderBot) handleConfirm(c tele.Context) error {
 	ctx := requestContext(c)
 	sender := c.Sender()
 	if sender == nil {
-		return sendText(c, "Не удалось определить пользователя.")
+		return sendText(c, msgTelegramUserUnknown)
 	}
 	var items []orderdomain.OrderItem
 	var fromDepartmentID *int64
@@ -222,7 +216,7 @@ func (b *OrderBot) handleEditOrder(c tele.Context) error {
 	ctx := requestContext(c)
 	sender := c.Sender()
 	if sender == nil {
-		return sendText(c, "Не удалось определить пользователя.")
+		return sendText(c, msgTelegramUserUnknown)
 	}
 	number := strings.TrimSpace(c.Callback().Data)
 	if number == "" {
@@ -248,7 +242,7 @@ func (b *OrderBot) handleUpdateOrder(c tele.Context) error {
 	ctx := requestContext(c)
 	sender := c.Sender()
 	if sender == nil {
-		return sendText(c, "Не удалось определить пользователя.")
+		return sendText(c, msgTelegramUserUnknown)
 	}
 	var items []orderdomain.OrderItem
 	var fromDepartmentID *int64

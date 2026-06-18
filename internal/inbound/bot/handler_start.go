@@ -9,7 +9,7 @@ import (
 func (b *OrderBot) handleStart(c tele.Context) error {
 	sender := c.Sender()
 	if sender == nil {
-		return sendText(c, "Не удалось определить пользователя.")
+		return sendText(c, msgTelegramUserUnknown)
 	}
 	b.resetSession(sender.ID)
 

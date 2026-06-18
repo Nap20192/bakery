@@ -17,7 +17,7 @@ func (b *baseBot) requirePermissions(permissions ...enum.Permission) tele.Middle
 	return func(next tele.HandlerFunc) tele.HandlerFunc {
 		return func(c tele.Context) error {
 			if b.rbacSvc == nil {
-				return sendText(c, "Сервис прав доступа недоступен.")
+				return sendText(c, msgRBACUnavailable)
 			}
 			user, err := b.authUserFromContext(c)
 			if err != nil {
@@ -67,17 +67,17 @@ func (b *baseBot) authUserFromContext(c tele.Context) (accessdomain.AuthUser, er
 		}
 	}
 	if b.authSvc == nil {
-		return accessdomain.AuthUser{}, sendText(c, "Сервис авторизации недоступен.")
+		return accessdomain.AuthUser{}, sendText(c, msgAuthUnavailable)
 	}
 	sender := c.Sender()
 	if sender == nil {
-		return accessdomain.AuthUser{}, sendText(c, "Не удалось определить пользователя.")
+		return accessdomain.AuthUser{}, sendText(c, msgTelegramUserUnknown)
 	}
 	ctx := requestContext(c)
 	user, err := b.authSvc.GetUserByTelegramID(ctx, sender.ID)
 	if err != nil {
 		if errors.Is(err, authuc.ErrAuthUserNotFound) {
-			return accessdomain.AuthUser{}, sendText(c, "Вы не вошли. Нажмите /start для входа по Telegram username.")
+			return accessdomain.AuthUser{}, sendText(c, msgUserNotLinked)
 		}
 		slog.ErrorContext(ctx, "auth user lookup failed", "error", err)
 		return accessdomain.AuthUser{}, sendText(c, "Ошибка авторизации.")

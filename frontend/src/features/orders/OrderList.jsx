@@ -27,19 +27,21 @@ export function OrderList({
   viewer,
   canFilterShops,
   canWriteOrders,
+  canUseMonitor,
   filters,
   selectedNumber,
   selectedOrderNumbers,
   onRefresh,
   onCreate,
   onSelect,
+  onOpenMonitor,
   onToggleSelection,
   onPageChange,
   onFiltersChange,
   onResetFilters,
 }) {
   return (
-    <aside className="m-3 flex min-h-[32rem] max-h-[70vh] flex-col gap-2.5 rounded-lg border border-stone-300 bg-[#fff7df] p-3 lg:sticky lg:top-3 lg:ml-3 lg:mr-0 lg:h-[calc(100vh-1.5rem)] lg:max-h-none lg:min-h-[38rem]">
+    <aside className="m-3 flex min-h-[32rem] max-h-[70vh] flex-col gap-2.5 rounded-lg border border-stone-300 bg-[#fff7df] p-3 lg:sticky lg:top-[3.75rem] lg:ml-3 lg:mr-0 lg:h-[calc(100vh-5.25rem)] lg:max-h-none lg:min-h-[38rem]">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <h1 className="m-0 text-[20px] font-semibold leading-7 text-stone-950">Заказы</h1>
@@ -136,6 +138,13 @@ export function OrderList({
                     </div>
                   </button>
                 </div>
+                {canUseMonitor && (
+                  <div className="mt-2 flex justify-end">
+                    <Button onClick={() => onOpenMonitor(order.number)} disabled={loading}>
+                      Расчёт
+                    </Button>
+                  </div>
+                )}
               </div>
             );
           })

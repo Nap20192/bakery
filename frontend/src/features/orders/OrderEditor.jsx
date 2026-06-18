@@ -102,15 +102,16 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
                 {group.items.map((item) => {
                   const value = quantities[item.name] || {};
                   return (
-                    <div className="grid grid-cols-[minmax(0,1fr)_4.7rem_4.7rem] items-center gap-2 px-3 py-2" key={item.name}>
-                      <span className="min-w-0 text-[13px] leading-5 text-stone-800">{item.name}</span>
+                    <div className="grid gap-2 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_5.2rem_5.2rem] sm:items-center" key={item.name}>
+                      <span className="min-w-0 text-[14px] font-medium leading-5 text-stone-800 sm:text-[13px]">{item.name}</span>
+                      <div className="grid grid-cols-2 gap-2 sm:contents">
                       <TextField
                         size="small"
                         type="number"
                         label="Кол-во"
                         value={value.quantity || ''}
                         onChange={(event) => updateQuantity(item.name, 'quantity', event.target.value)}
-                        slotProps={{ htmlInput: { min: 0, step: 1 } }}
+                        slotProps={{ htmlInput: { min: 0, step: 1, inputMode: 'decimal' } }}
                       />
                       <TextField
                         size="small"
@@ -118,8 +119,9 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
                         label="Заказ."
                         value={value.reserved_quantity || ''}
                         onChange={(event) => updateQuantity(item.name, 'reserved_quantity', event.target.value)}
-                        slotProps={{ htmlInput: { min: 0, step: 1 } }}
+                        slotProps={{ htmlInput: { min: 0, step: 1, inputMode: 'decimal' } }}
                       />
+                      </div>
                     </div>
                   );
                 })}
@@ -131,7 +133,7 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
         )}
       </div>
 
-      <div className="flex justify-end gap-2 border-t border-stone-300 pt-3">
+      <div className="sticky bottom-0 flex justify-end gap-2 border-t border-stone-300 bg-[#fff7df] py-3">
         <Button type="button" onClick={onCancel}>
           Отмена
         </Button>

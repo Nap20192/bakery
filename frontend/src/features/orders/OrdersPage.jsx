@@ -9,11 +9,12 @@ import { ApiError } from '../../api/client';
 import { createOrder, fetchBatchOrderMonitor, fetchCatalog, fetchDepartments, fetchMe, fetchOrder, fetchOrderMonitor, fetchOrders, updateOrder } from '../../api/orders';
 import { clearToken, getToken, isWebMode } from '../../lib/auth';
 import { logInfo, logWarn } from '../../lib/logger';
-import { miniAppModeFromLocation, orderNumberFromLocation, orderNumbersFromLocation, syncOrderURL, trimString } from '../../lib/url';
+import { miniAppModeFromLocation, orderNumberFromLocation, orderNumbersFromLocation, trimString } from '../../lib/url';
 import { MonitorReports } from './MonitorReports';
 import { OrderDetails } from './OrderDetails';
 import { OrderEditor } from './OrderEditor';
 import { OrderList } from './OrderList';
+import { OrdersLayout } from './OrdersLayout';
 
 const defaultPage = {
   page: 1,
@@ -22,7 +23,7 @@ const defaultPage = {
   total_pages: 0,
 };
 
-export function OrdersPage() {
+export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) {
   const [orders, setOrders] = useState([]);
   const [shops, setShops] = useState([]);
   const [catalog, setCatalog] = useState([]);
@@ -44,10 +45,11 @@ export function OrdersPage() {
   const selectedNumber = selectedOrder?.number || '';
   const selectedOrderCount = selectedOrderNumbers.length;
 
-  function bootstrap() {
+  function bootstrap(activeRoute = route) {
     const launchMode = miniAppModeFromLocation();
     const linkedOrderNumber = orderNumberFromLocation();
     const linkedOrderNumbers = orderNumbersFromLocation();
+    const routeOrderNumber = activeRoute.number || '';
     logInfo('app.config', {
       mode: buildMode,
       api_base: apiBase,
@@ -58,26 +60,31 @@ export function OrdersPage() {
       launch_mode: launchMode,
       linked_order: linkedOrderNumber,
       linked_orders: linkedOrderNumbers,
+      route: activeRoute.name,
+      route_order: routeOrderNumber,
     });
-    loadViewer(launchMode, linkedOrderNumber);
-    loadOrders(ordersPage.page, linkedOrderNumber);
+    loadViewer(launchMode, linkedOrderNumber, activeRoute);
+    loadOrders(ordersPage.page, routeOrderNumber || linkedOrderNumber);
     if (launchMode === 'monitor' && linkedOrderNumbers.length) {
       loadMonitor(linkedOrderNumbers, true);
     } else if (launchMode === 'monitor' && linkedOrderNumber) {
       loadOrder(linkedOrderNumber, true);
+    } else if (activeRoute.name !== 'orderEdit' && routeOrderNumber) {
+      loadOrder(routeOrderNumber, activeRoute.name === 'orderMonitor', false);
     } else if (linkedOrderNumber && launchMode !== 'edit') {
-      loadOrder(linkedOrderNumber);
+      loadOrder(linkedOrderNumber, false, false);
+    } else if (activeRoute.name === 'orderNew') {
+      openCreateOrder(false);
     }
   }
 
   useEffect(() => {
     if (authNeeded) return;
-    bootstrap();
-  }, []);
+    bootstrap(route);
+  }, [authNeeded, route.name, route.number]);
 
   function handleAuthenticated() {
     setAuthNeeded(false);
-    bootstrap();
   }
 
   function handleLogout() {
@@ -90,7 +97,7 @@ export function OrdersPage() {
     setLoading(true);
     setError('');
     try {
-      await task();
+      return await task();
     } catch (err) {
       if (err instanceof ApiError && err.status === 401 && isWebMode()) {
         clearToken();
@@ -106,7 +113,7 @@ export function OrdersPage() {
     }
   }
 
-  function loadViewer(launchMode = '', linkedOrderNumber = '') {
+  function loadViewer(launchMode = '', linkedOrderNumber = '', activeRoute = route) {
     return run(async () => {
       const current = await fetchMe();
       setViewer(current);
@@ -118,10 +125,10 @@ export function OrdersPage() {
       } else if (current.department_type === 'shop') {
         const items = await fetchCatalog();
         setCatalog(Array.isArray(items) ? items : []);
-        if (launchMode === 'create') {
+        if (activeRoute.name === 'orderNew' || launchMode === 'create') {
           setEditor({ mode: 'create', order: null });
-        } else if (launchMode === 'edit' && linkedOrderNumber) {
-          const order = await fetchOrder(linkedOrderNumber);
+        } else if (activeRoute.name === 'orderEdit' || (launchMode === 'edit' && linkedOrderNumber)) {
+          const order = await fetchOrder(activeRoute.number || linkedOrderNumber);
           setSelectedOrder(order);
           setEditor({ mode: 'update', order });
         }
@@ -204,15 +211,18 @@ export function OrdersPage() {
     });
   }
 
-  function loadOrder(number, withMonitor = false) {
+  function loadOrder(number, withMonitor = false, pushRoute = true) {
     return run(async () => {
-      syncOrderURL(number, withMonitor ? 'monitor' : 'view');
+      if (pushRoute) {
+        navigate({ name: withMonitor ? 'orderMonitor' : 'orderView', number });
+      }
       const order = await fetchOrder(number);
       logInfo('order.loaded', {
         number,
         items: order.items?.length || 0,
       });
       setSelectedOrder(order);
+      setEditor(null);
       if (withMonitor) {
         setMonitor(await fetchOrderMonitor(number));
       } else {
@@ -249,16 +259,23 @@ export function OrdersPage() {
 
   function loadBatchMonitor() {
     const numbers = selectedOrderNumbers.length ? selectedOrderNumbers : selectedOrder ? [selectedOrder.number] : [];
+    if (numbers.length === 1) {
+      navigate({ name: 'orderMonitor', number: numbers[0] });
+    }
     return loadMonitor(numbers);
   }
 
-  function openCreateOrder() {
+  function openCreateOrder(pushRoute = true) {
+    if (pushRoute) {
+      navigate({ name: 'orderNew' });
+    }
     setEditor({ mode: 'create', order: null });
     setMonitor(null);
   }
 
   function openUpdateOrder() {
     if (!selectedOrder) return;
+    navigate({ name: 'orderEdit', number: selectedOrder.number });
     setEditor({ mode: 'update', order: selectedOrder });
     setMonitor(null);
   }
@@ -270,7 +287,7 @@ export function OrdersPage() {
         : await createOrder(request);
       setSelectedOrder(saved);
       setEditor(null);
-      syncOrderURL(saved.number);
+      navigate({ name: 'orderView', number: saved.number });
       const result = await fetchOrders(1, ordersPage.limit, filtersRef.current);
       const items = Array.isArray(result.items) ? result.items : [];
       setOrders(items);
@@ -284,62 +301,73 @@ export function OrdersPage() {
   }
 
   const canWriteOrders = viewer?.department_type === 'shop';
+  const canUseMonitor = viewer?.department_type === 'workshop' || viewer?.role === 'baker';
+  const showEditor = canWriteOrders && editor;
+  const showMonitorFirst = canUseMonitor && route.name === 'orderMonitor';
 
   if (authNeeded) {
     return <Login onAuthenticated={handleAuthenticated} />;
   }
 
-  if (viewer?.role === 'admin') {
+  if (viewer?.role === 'admin' && route.name === 'adminUsers') {
     return <AdminUsers onLogout={handleLogout} />;
   }
 
   return (
-    <main className="min-h-screen bg-[#fff7df] text-stone-900 lg:grid lg:grid-cols-[24rem_minmax(0,1fr)]">
-      <OrderList
-        loading={loading}
-        orders={orders}
-        page={ordersPage}
-        shops={shops}
-        viewer={viewer}
-        canFilterShops={viewer?.department_type === 'workshop'}
-        canWriteOrders={canWriteOrders}
-        filters={filters}
-        selectedNumber={selectedNumber}
-        selectedOrderNumbers={selectedOrderNumbers}
-        onRefresh={() => loadOrders(ordersPage.page)}
-        onCreate={openCreateOrder}
-        onSelect={loadOrder}
-        onToggleSelection={toggleOrderSelection}
-        onPageChange={loadOrders}
-        onFiltersChange={updateFilters}
-        onResetFilters={resetFilters}
-      />
-      <section className="min-w-0 p-3 pt-0 sm:p-5 lg:p-6">
+    <OrdersLayout viewer={viewer} active={route.name} onNavigate={navigate} onLogout={handleLogout}>
+      <div className="lg:grid lg:grid-cols-[24rem_minmax(0,1fr)]">
+        <OrderList
+          loading={loading}
+          orders={orders}
+          page={ordersPage}
+          shops={shops}
+          viewer={viewer}
+          canFilterShops={viewer?.department_type === 'workshop'}
+          canWriteOrders={canWriteOrders}
+          canUseMonitor={canUseMonitor}
+          filters={filters}
+          selectedNumber={selectedNumber}
+          selectedOrderNumbers={selectedOrderNumbers}
+          onRefresh={() => loadOrders(ordersPage.page)}
+          onCreate={openCreateOrder}
+          onSelect={(number) => loadOrder(number)}
+          onOpenMonitor={(number) => loadOrder(number, true)}
+          onToggleSelection={toggleOrderSelection}
+          onPageChange={loadOrders}
+          onFiltersChange={updateFilters}
+          onResetFilters={resetFilters}
+        />
+        <section className="min-w-0 p-3 pt-0 sm:p-5 lg:p-6">
         <div className="mx-auto max-w-[1180px]">
-          <div className="mb-3 flex flex-wrap justify-end gap-2 pt-3">
-            <a href="/me" className="rounded-md border border-stone-300 px-3 py-1.5 text-sm">
-              Профиль{viewer?.role ? ` (${viewer.role})` : ''}
-            </a>
-            {isWebMode() && (
-              <button onClick={handleLogout} className="rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700">
-                Выйти
-              </button>
-            )}
-          </div>
           {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800">{error}</div>}
-          {editor ? (
+          {showEditor ? (
             <section className={panelClass}>
               <OrderEditor
                 key={`${editor.mode}-${editor.order?.number || 'new'}`}
                 catalog={catalog}
                 order={editor.order}
                 loading={loading}
-                onCancel={() => setEditor(null)}
+                onCancel={() => {
+                  setEditor(null);
+                  navigate(editor?.order?.number ? { name: 'orderView', number: editor.order.number } : { name: 'orders' });
+                }}
                 onSave={saveOrder}
               />
             </section>
           ) : selectedOrder ? (
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.9fr)]">
+            <div className={`grid gap-4 ${showMonitorFirst ? 'xl:grid-cols-[minmax(22rem,0.9fr)_minmax(0,1.1fr)]' : 'xl:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.9fr)]'}`}>
+              {showMonitorFirst && (
+                <section className={panelClass}>
+                  <PanelHeader title="Расчёт теста" />
+                  <MonitorActions
+                    loading={loading}
+                    selectedOrder={selectedOrder}
+                    selectedOrderCount={selectedOrderCount}
+                    onCalculate={loadBatchMonitor}
+                  />
+                  <MonitorReports monitor={monitor} />
+                </section>
+              )}
               <section className={panelClass}>
                 {canWriteOrders && (
                   <div className="mb-3 flex justify-end">
@@ -350,22 +378,36 @@ export function OrdersPage() {
                 )}
                 <OrderDetails order={selectedOrder} />
               </section>
-              <section className={panelClass}>
-                <PanelHeader title="Расчёт теста" />
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button variant="primary" onClick={loadBatchMonitor} disabled={(!selectedOrder && !selectedOrderCount) || loading}>
-                    Рассчитать
-                  </Button>
-                  {selectedOrderCount > 0 && <span className="text-[13px] leading-5 text-stone-600">Выбрано заказов: {selectedOrderCount}</span>}
-                </div>
-                <MonitorReports monitor={monitor} />
-              </section>
+              {!showMonitorFirst && canUseMonitor && (
+                <section className={panelClass}>
+                  <PanelHeader title="Расчёт теста" />
+                  <MonitorActions
+                    loading={loading}
+                    selectedOrder={selectedOrder}
+                    selectedOrderCount={selectedOrderCount}
+                    onCalculate={loadBatchMonitor}
+                  />
+                  <MonitorReports monitor={monitor} />
+                </section>
+              )}
             </div>
           ) : (
             <EmptyState>Заказы не загружены.</EmptyState>
           )}
         </div>
-      </section>
-    </main>
+        </section>
+      </div>
+    </OrdersLayout>
+  );
+}
+
+function MonitorActions({ loading, selectedOrder, selectedOrderCount, onCalculate }) {
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-2">
+      <Button variant="primary" onClick={onCalculate} disabled={(!selectedOrder && !selectedOrderCount) || loading}>
+        Рассчитать
+      </Button>
+      {selectedOrderCount > 0 && <span className="text-[13px] leading-5 text-stone-600">Выбрано заказов: {selectedOrderCount}</span>}
+    </div>
   );
 }

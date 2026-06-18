@@ -23,7 +23,7 @@ func (b *OrderBot) handleOrders(c tele.Context) error {
 	orders, mode, err := b.listVisibleOrders(c, orderListLimit)
 	if err != nil {
 		if errors.Is(err, errOrderLocationRequired) {
-			return sendText(c, "Пользователю не назначен магазин. Обратитесь к администратору.", b.actionMarkup(c))
+			return sendText(c, msgUserNoShopDepartment, b.actionMarkup(c))
 		}
 		slog.ErrorContext(ctx, "list orders failed", "error", err)
 		return sendText(c, "Не удалось получить заказы. Попробуйте позже.")
@@ -79,7 +79,7 @@ func (b *OrderBot) handleMonitorFilteredOrdersCallback(c tele.Context) error {
 	orders, _, err := b.listVisibleOrders(c, orderListLimit)
 	if err != nil {
 		if errors.Is(err, errOrderLocationRequired) {
-			return sendText(c, "Пользователю не назначен магазин. Обратитесь к администратору.", b.actionMarkup(c))
+			return sendText(c, msgUserNoShopDepartment, b.actionMarkup(c))
 		}
 		slog.ErrorContext(ctx, "list orders for filtered monitor failed", "error", err)
 		return sendText(c, "Не удалось получить заказы для расчёта.")
@@ -219,7 +219,7 @@ func (b *OrderBot) handleOrdersReplyText(c tele.Context, text string) (bool, err
 func (b *OrderBot) setOrderReplyDateFilter(c tele.Context, date time.Time) error {
 	sender := c.Sender()
 	if sender == nil {
-		return sendText(c, "Не удалось определить пользователя.")
+		return sendText(c, msgTelegramUserUnknown)
 	}
 	b.updateSession(sender.ID, func(s *session) {
 		s.orderFilter.FulfillmentDate = date
@@ -230,7 +230,7 @@ func (b *OrderBot) setOrderReplyDateFilter(c tele.Context, date time.Time) error
 func (b *OrderBot) clearOrderReplyDateFilter(c tele.Context) error {
 	sender := c.Sender()
 	if sender == nil {
-		return sendText(c, "Не удалось определить пользователя.")
+		return sendText(c, msgTelegramUserUnknown)
 	}
 	b.updateSession(sender.ID, func(s *session) {
 		s.orderFilter.FulfillmentDate = time.Time{}
@@ -241,7 +241,7 @@ func (b *OrderBot) clearOrderReplyDateFilter(c tele.Context) error {
 func (b *OrderBot) setOrderReplyShopFilter(c tele.Context, shopID int64) error {
 	sender := c.Sender()
 	if sender == nil {
-		return sendText(c, "Не удалось определить пользователя.")
+		return sendText(c, msgTelegramUserUnknown)
 	}
 	b.updateSession(sender.ID, func(s *session) {
 		s.orderFilter.FromDepartmentID = &shopID
@@ -252,7 +252,7 @@ func (b *OrderBot) setOrderReplyShopFilter(c tele.Context, shopID int64) error {
 func (b *OrderBot) clearOrderReplyShopFilter(c tele.Context) error {
 	sender := c.Sender()
 	if sender == nil {
-		return sendText(c, "Не удалось определить пользователя.")
+		return sendText(c, msgTelegramUserUnknown)
 	}
 	b.updateSession(sender.ID, func(s *session) {
 		s.orderFilter.FromDepartmentID = nil
