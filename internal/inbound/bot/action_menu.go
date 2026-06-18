@@ -2,7 +2,6 @@ package bot
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"strings"
 	"time"
@@ -162,29 +161,16 @@ func (s actionMenuSnapshot) orderRows() [][]string {
 	if s.orderItems <= 0 {
 		return nil
 	}
-	_, action := s.orderStateText()
-	return [][]string{{action, actionCancelOrder}}
-}
-
-func (s actionMenuSnapshot) orderStateText() (string, string) {
 	if strings.TrimSpace(s.editOrder) != "" {
-		return fmt.Sprintf("Редактируется: %s", s.editOrder), actionUpdateOrder
+		return [][]string{{actionUpdateOrder, actionCancelOrder}}
 	}
-	return fmt.Sprintf("Создается заказ: %d поз.", s.orderItems), actionSubmitOrder
+	return [][]string{{actionSubmitOrder, actionCancelOrder}}
 }
 
 func (s actionMenuSnapshot) filterRows() [][]string {
 	return [][]string{
 		{orderFilterTodayText, orderFilterTomorrowText, orderFilterAllDatesText},
 	}
-}
-
-func (s actionMenuSnapshot) filterStateText() string {
-	date := orderFilterAllDatesText
-	if !s.filterDate.IsZero() {
-		date = s.filterDate.Format("02.01.2006")
-	}
-	return fmt.Sprintf("Фильтр: %s / %s", s.filterShop, date)
 }
 
 func (b *OrderBot) actionMenuRows(c tele.Context) [][]string {
@@ -194,20 +180,6 @@ func (b *OrderBot) actionMenuRows(c tele.Context) [][]string {
 		return rows
 	}
 	return append(rows, b.orderShopFilterReplyRows(requestContext(c))...)
-}
-
-func (b *OrderBot) isCurrentOrderStateButton(c tele.Context, text string) bool {
-	snapshot := b.actionMenu(c)
-	stateText, _ := snapshot.orderStateText()
-	return snapshot.orderItems > 0 && strings.EqualFold(strings.TrimSpace(text), stateText)
-}
-
-func (b *OrderBot) isOrderFilterStateButton(c tele.Context, text string) bool {
-	snapshot := b.actionMenu(c)
-	if snapshot.departmentType != string(enum.DepartmentTypeWorkshop) {
-		return false
-	}
-	return strings.EqualFold(strings.TrimSpace(text), snapshot.filterStateText())
 }
 
 func (b *OrderBot) orderShopFilterReplyRows(ctx context.Context) [][]string {
