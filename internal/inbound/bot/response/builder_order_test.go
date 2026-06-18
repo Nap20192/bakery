@@ -1,4 +1,4 @@
-package bot
+package response
 
 import (
 	"strings"
@@ -7,6 +7,8 @@ import (
 
 	orderdomain "bakery/internal/services/order/domain"
 )
+
+var responses = Builder{}
 
 func TestOrderViewShowsOrderItemsAsCopyableCodeBlock(t *testing.T) {
 	order := orderdomain.Order{
@@ -18,7 +20,7 @@ func TestOrderViewShowsOrderItemsAsCopyableCodeBlock(t *testing.T) {
 
 	got := responses.OrderView(order, "Магазин Гагарина", "Цех Пекари")
 
-	want := "<b>Состав заказа:</b>\n<pre>15647 Сосиска в тесте 5+2\n</pre>"
+	want := "<b>Состав:</b>\n<pre>Сосиска в тесте 5+2\n</pre>"
 	if !strings.Contains(got, want) {
 		t.Fatalf("OrderView() = %q, want to contain %q", got, want)
 	}
@@ -31,7 +33,7 @@ func TestOrderDraftShowsOrderItemsAsCopyableCodeBlock(t *testing.T) {
 
 	got := responses.OrderDraft("", items, time.Time{}, nil)
 
-	want := "<pre>15541 Кокрок с капустой 3\n</pre>"
+	want := "<pre>Кокрок с капустой 3\n</pre>"
 	if !strings.Contains(got, want) {
 		t.Fatalf("OrderDraft() = %q, want to contain %q", got, want)
 	}
