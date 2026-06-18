@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Button } from '../../components/Button';
 import { createUser, deleteUser, fetchAdminDepartments, fetchUsers, updateUser } from '../../api/users';
 import { logWarn } from '../../lib/logger';
 
 const ROLES = ['admin', 'shop', 'baker', 'user'];
 
 const emptyForm = { username: '', password: '', telegram_username: '', role: 'shop', department_code: '' };
+const fieldClass = 'min-h-9 rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10';
 
 export function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -93,23 +95,23 @@ export function AdminUsers() {
 
         {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800">{error}</div>}
 
-        <form onSubmit={onCreate} className="mb-6 grid gap-2 rounded-xl border border-amber-200 bg-white p-4 sm:grid-cols-6">
-          <input className="rounded-md border border-stone-300 px-2 py-1.5 text-sm" placeholder="логин" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
-          <input className="rounded-md border border-stone-300 px-2 py-1.5 text-sm" placeholder="пароль" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
-          <input className="rounded-md border border-stone-300 px-2 py-1.5 text-sm" placeholder="telegram @username" value={form.telegram_username} onChange={(e) => setForm({ ...form, telegram_username: e.target.value })} />
-          <select className="rounded-md border border-stone-300 px-2 py-1.5 text-sm" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
+        <form onSubmit={onCreate} className="mb-6 grid gap-2 rounded-lg border border-stone-300 bg-white p-4 shadow-sm md:grid-cols-6">
+          <input className={fieldClass} placeholder="логин" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
+          <input className={fieldClass} placeholder="пароль" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+          <input className={fieldClass} placeholder="telegram @username" value={form.telegram_username} onChange={(e) => setForm({ ...form, telegram_username: e.target.value })} />
+          <select className={fieldClass} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
             {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
-          <select className="rounded-md border border-stone-300 px-2 py-1.5 text-sm" value={form.department_code} onChange={(e) => setForm({ ...form, department_code: e.target.value })}>
+          <select className={fieldClass} value={form.department_code} onChange={(e) => setForm({ ...form, department_code: e.target.value })}>
             <option value="">— без отдела —</option>
             {departments.map((d) => <option key={d.id} value={d.code}>{d.name} ({d.type})</option>)}
           </select>
-          <button type="submit" disabled={busy || !form.username.trim() || !form.password} className="rounded-md bg-amber-500 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50">Добавить</button>
+          <Button type="submit" variant="primary" disabled={busy || !form.username.trim() || !form.password}>Добавить</Button>
         </form>
 
-        <div className="overflow-x-auto rounded-xl border border-amber-200 bg-white">
+        <div className="overflow-x-auto rounded-lg border border-stone-300 bg-white shadow-sm">
           <table className="w-full text-sm">
-            <thead className="bg-amber-50 text-left text-[12px] text-stone-500">
+            <thead className="bg-stone-50 text-left text-[12px] text-stone-500">
               <tr>
                 <th className="px-3 py-2">ID</th>
                 <th className="px-3 py-2">Логин</th>
@@ -130,22 +132,22 @@ export function AdminUsers() {
                   <td className="px-3 py-2">{u.telegram_username ? `@${u.telegram_username}` : '—'}</td>
                   <td className="px-3 py-2">{u.telegram_id ?? '—'}</td>
                   <td className="px-3 py-2">
-                    <button onClick={() => onResetPassword(u)} className="rounded border border-stone-300 px-2 py-0.5 text-[12px]">Сбросить</button>
+                    <Button onClick={() => onResetPassword(u)}>Сбросить</Button>
                   </td>
                   <td className="px-3 py-2">
-                    <select className="rounded-md border border-stone-300 px-2 py-1 text-sm" value={u.role} onChange={(e) => patchUser(u.id, { role: e.target.value })}>
+                    <select className={fieldClass} value={u.role} onChange={(e) => patchUser(u.id, { role: e.target.value })}>
                       {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                     </select>
                   </td>
                   <td className="px-3 py-2">
-                    <select className="rounded-md border border-stone-300 px-2 py-1 text-sm" value={deptCodeOf(u)} onChange={(e) => patchUser(u.id, { department_code: e.target.value })}>
+                    <select className={fieldClass} value={deptCodeOf(u)} onChange={(e) => patchUser(u.id, { department_code: e.target.value })}>
                       <option value="">—</option>
                       {departments.map((d) => <option key={d.id} value={d.code}>{d.name}</option>)}
                     </select>
                   </td>
                   <td className="px-3 py-2 text-[12px] text-stone-500">{u.created_at ? u.created_at.slice(0, 10) : '—'}</td>
                   <td className="px-3 py-2">
-                    <button onClick={() => onDelete(u)} className="rounded border border-red-300 px-2 py-0.5 text-[12px] text-red-700">Удалить</button>
+                    <button onClick={() => onDelete(u)} className="inline-flex min-h-9 items-center justify-center rounded-md border border-red-300 bg-white px-3 py-1.5 text-[13px] font-semibold text-red-700 transition hover:bg-red-50">Удалить</button>
                   </td>
                 </tr>
               ))}
