@@ -1,15 +1,28 @@
+import { Button } from '../../components/Button';
 import { CopyButton } from '../../components/CopyButton';
 import { EmptyState } from '../../components/EmptyState';
+import { Icon } from '../../components/Icon';
 import { formatQuantity } from '../../lib/format';
 import { monitorToText } from '../../lib/orders';
 
-export function MonitorReports({ monitor }) {
+export function MonitorReports({ monitor, onCalculate, loading, canCalculate = true }) {
   if (!monitor) {
+    if (onCalculate) {
+      return (
+        <div className="mt-3 flex flex-col items-center gap-2 rounded-lg border border-dashed border-stone-300 bg-stone-50 px-4 py-8 text-center">
+          <p className="m-0 text-[13px] text-stone-500">Расчёт расхода теста по заказам.</p>
+          <Button variant="primary" onClick={onCalculate} disabled={loading || !canCalculate}>
+            <Icon name="calculator" size={16} />
+            {loading ? 'Считаем…' : 'Рассчитать тесто'}
+          </Button>
+        </div>
+      );
+    }
     return <EmptyState compact>Нажмите "Рассчитать", чтобы увидеть расход теста.</EmptyState>;
   }
   if (monitor.total_reports?.length) {
     return (
-      <div className="mt-3 space-y-3">
+      <div className="fade-in mt-3 space-y-3">
         <CopyBar monitor={monitor} />
         <ReportBlock title={`Итого по заказам: ${monitor.orders?.length || 0}`} reports={monitor.total_reports} />
         {monitor.orders?.map((order) => (
@@ -22,7 +35,7 @@ export function MonitorReports({ monitor }) {
     return <EmptyState compact>Нет данных для расчёта теста.</EmptyState>;
   }
   return (
-    <div className="mt-3 space-y-3">
+    <div className="fade-in mt-3 space-y-3">
       <CopyBar monitor={monitor} />
       <ReportBlock reports={monitor.reports} />
     </div>

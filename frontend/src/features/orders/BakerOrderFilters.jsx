@@ -53,7 +53,7 @@ export function BakerOrderFilters({ filters, shops, selectionMode, onToggleSelec
           <MuiButton size="small" variant="outlined" onClick={() => onFiltersChange({ fulfillmentDate: dateValue(1) })}>
             Завтра
           </MuiButton>
-          <MuiButton size="small" variant="text" onClick={onResetFilters}>
+          <MuiButton size="small" variant="outlined" onClick={onResetFilters}>
             Сброс
           </MuiButton>
           <button

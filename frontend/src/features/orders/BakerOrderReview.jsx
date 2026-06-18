@@ -15,16 +15,10 @@ export function BakerOrderReview({ loading, order, monitor, error, onBack, onCal
               <h1 className="m-0 text-[18px] font-semibold leading-7 text-stone-950">{order?.number || 'Заказ'}</h1>
               <p className="m-0 text-[13px] leading-5 text-stone-600">Просмотр и расчёт</p>
             </div>
-            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
-              <Button onClick={onBack}>
-                <Icon name="chevronLeft" size={16} />
-                К списку
-              </Button>
-              <Button variant="primary" onClick={onCalculate} disabled={loading || !order}>
-                <Icon name="calculator" size={16} />
-                Рассчитать тесто
-              </Button>
-            </div>
+            <Button onClick={onBack} className="shrink-0">
+              <Icon name="chevronLeft" size={16} />
+              К списку
+            </Button>
           </div>
         </section>
 
@@ -37,7 +31,7 @@ export function BakerOrderReview({ loading, order, monitor, error, onBack, onCal
             </section>
             <section className={panelClass}>
               <PanelHeader title="Расчёт теста" />
-              <MonitorReports monitor={monitor} />
+              <MonitorReports monitor={monitor} onCalculate={onCalculate} loading={loading} canCalculate={Boolean(order)} />
             </section>
           </div>
         ) : (
