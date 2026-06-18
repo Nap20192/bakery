@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	orderdomain "bakery/internal/domain/order"
+	orderdomain "bakery/internal/services/order/domain"
 )
 
 func TestServiceValidateBulkOrder(t *testing.T) {
@@ -18,7 +18,7 @@ func TestServiceValidateBulkOrder(t *testing.T) {
 			"00000": false,
 		},
 	}
-	svc := NewService(repo, nil)
+	svc := NewService(repo)
 
 	result := svc.ValidateBulkOrder(context.Background(), `
 15635 Пирожок с капустой 15
@@ -43,7 +43,7 @@ func TestServiceValidateBulkOrderReportsDBError(t *testing.T) {
 		dishExistsByCode: map[string]bool{"15635": true},
 		dishErrorsByCode: map[string]error{"20495": errors.New("db unavailable")},
 	}
-	svc := NewService(repo, nil)
+	svc := NewService(repo)
 
 	result := svc.ValidateBulkOrder(context.Background(), `
 15635 Пирожок с капустой 15
@@ -63,7 +63,7 @@ func TestServiceValidateBulkOrderResolvesDishNames(t *testing.T) {
 			"сосиска в тесте": {Code: "15647", Name: "Сосиска в тесте", Theme: "ПИРОЖКИ И САМСА"},
 		},
 	}
-	svc := NewService(repo, nil)
+	svc := NewService(repo)
 
 	result := svc.ValidateBulkOrder(context.Background(), "Сосиска в тесте 5")
 	if len(result.Errors) != 0 {
@@ -79,7 +79,7 @@ func TestServiceValidateBulkOrderResolvesDishNames(t *testing.T) {
 }
 
 func TestServiceValidateBulkOrderReportsUnknownDishName(t *testing.T) {
-	svc := NewService(&fakeRepo{}, nil)
+	svc := NewService(&fakeRepo{})
 
 	result := svc.ValidateBulkOrder(context.Background(), "Неизвестное блюдо 2")
 	if len(result.ValidItems) != 0 {
@@ -92,7 +92,7 @@ func TestServiceValidateBulkOrderReportsAmbiguousDishName(t *testing.T) {
 	repo := &fakeRepo{
 		resolveErrByName: map[string]error{"булочка": ErrDishCatalogItemAmbiguous},
 	}
-	svc := NewService(repo, nil)
+	svc := NewService(repo)
 
 	result := svc.ValidateBulkOrder(context.Background(), "Булочка 2")
 	if len(result.ValidItems) != 0 {
@@ -107,7 +107,7 @@ func TestServiceListOrderTemplatesBuildsFromDishCatalog(t *testing.T) {
 		{Code: "15544", Name: "Кокрок с творогом", Theme: "КОКРОКИ"},
 		{Code: "15646", Name: "Самса с курицей", Theme: "САМСА И УЧПУЧМАК"},
 	}}
-	svc := NewService(repo, nil)
+	svc := NewService(repo)
 
 	templates, err := svc.ListOrderTemplates(context.Background())
 	if err != nil {
@@ -135,7 +135,7 @@ func TestServiceListDishCatalogHidesCodes(t *testing.T) {
 	repo := &fakeRepo{dishCatalog: []DishCatalogItem{
 		{Code: "15542", Name: "Кокрок с картофелем", Theme: "КОКРОКИ", SortOrder: 2},
 	}}
-	svc := NewService(repo, nil)
+	svc := NewService(repo)
 
 	items, err := svc.ListDishCatalog(context.Background())
 	if err != nil {
@@ -148,7 +148,7 @@ func TestServiceListDishCatalogHidesCodes(t *testing.T) {
 
 func TestServiceDeleteOrdersOlderThan(t *testing.T) {
 	repo := &fakeRepo{deleteResult: 7}
-	svc := NewService(repo, nil)
+	svc := NewService(repo)
 
 	deleted, err := svc.DeleteOrdersOlderThan(context.Background(), time.Date(2026, 5, 14, 12, 0, 0, 0, time.UTC), 31*24*time.Hour)
 	if err != nil {

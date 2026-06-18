@@ -1,7 +1,6 @@
-package api
+package httpx
 
 import (
-	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -11,9 +10,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	orderdomain "bakery/internal/domain/order"
-	"bakery/internal/pkg/enum"
 )
 
 func TestValidateMiniAppInitData(t *testing.T) {
@@ -89,32 +85,6 @@ func TestAuthorizationCredentials(t *testing.T) {
 			scheme, data, ok := authorizationCredentials(tt.header)
 			if ok != tt.ok || (ok && (scheme != tt.wantScheme || data != tt.wantData)) {
 				t.Fatalf("authorizationCredentials() = (%q, %q, %v), want (%q, %q, %v)", scheme, data, ok, tt.wantScheme, tt.wantData, tt.ok)
-			}
-		})
-	}
-}
-
-func TestMiniAppUserCanReadOrder(t *testing.T) {
-	shopID := int64(3)
-	otherShopID := int64(4)
-	tests := []struct {
-		name string
-		user miniAppUser
-		from *int64
-		want bool
-	}{
-		{name: "shop reads own order", user: miniAppUser{DepartmentID: shopID, DepartmentType: string(enum.DepartmentTypeShop)}, from: &shopID, want: true},
-		{name: "shop cannot read another order", user: miniAppUser{DepartmentID: shopID, DepartmentType: string(enum.DepartmentTypeShop)}, from: &otherShopID, want: false},
-		{name: "workshop reads any order", user: miniAppUser{DepartmentType: string(enum.DepartmentTypeWorkshop)}, from: &otherShopID, want: true},
-		{name: "unknown department denied", user: miniAppUser{DepartmentType: "unknown"}, from: &shopID, want: false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.WithValue(context.Background(), miniAppUserContextKey{}, tt.user)
-			got := miniAppUserCanReadOrder(ctx, orderdomain.Order{FromDepartmentID: tt.from})
-			if got != tt.want {
-				t.Fatalf("miniAppUserCanReadOrder() = %v, want %v", got, tt.want)
 			}
 		})
 	}

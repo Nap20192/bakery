@@ -8,7 +8,7 @@ import (
 	"context"
 	"time"
 
-	accessdomain "bakery/internal/domain/access"
+	accessdomain "bakery/internal/services/auth/domain"
 )
 
 // UseCase is the admin boundary used by the HTTP API (admin-only routes).

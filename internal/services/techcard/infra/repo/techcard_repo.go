@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"time"
 
-	techcarddomain "bakery/internal/domain/techcard"
 	sqlc "bakery/internal/outbound/db/sqlc"
 	"bakery/internal/outbound/iiko"
+	techcarddomain "bakery/internal/services/techcard/domain"
 	techcarduc "bakery/internal/services/techcard/usecase/techcard"
 
 	"github.com/jackc/pgx/v5"

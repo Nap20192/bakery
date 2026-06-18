@@ -66,6 +66,7 @@ func main() {
 		deps.WithAuthService(infra),
 		deps.WithRbacService(),
 		deps.WithOrderService(infra),
+		deps.WithOrderOutboxRelay(infra),
 		deps.WithDepartmentService(infra),
 		deps.WithMonitorService(infra),
 		deps.WithTechCardService(infra),
@@ -108,6 +109,10 @@ func main() {
 			"retention", cfg.OrderCleanup.Retention.String(),
 		)
 		return appDeps.OrderService.RunCleanupTicker(groupCtx, cfg.OrderCleanup.Interval, cfg.OrderCleanup.Retention)
+	})
+	group.Go(func() error {
+		log.Info("order outbox relay started", "interval", cfg.Outbox.Interval.String())
+		return appDeps.OrderOutboxRelay.Run(groupCtx)
 	})
 	group.Go(func() error {
 		log.Info("http api started", "addr", cfg.Server.Addr())

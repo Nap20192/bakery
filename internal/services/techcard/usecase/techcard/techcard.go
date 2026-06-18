@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	techcarddomain "bakery/internal/domain/techcard"
+	techcarddomain "bakery/internal/services/techcard/domain"
 )
 
 type Service struct {

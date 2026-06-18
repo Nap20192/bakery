@@ -45,6 +45,7 @@ type Querier interface {
 	GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]GetOrderItemsByOrderIDRow, error)
 	InsertIikoAssemblyChartItem(ctx context.Context, arg InsertIikoAssemblyChartItemParams) error
 	InsertIikoPreparedChartItem(ctx context.Context, arg InsertIikoPreparedChartItemParams) error
+	InsertOrderOutboxEvent(ctx context.Context, arg InsertOrderOutboxEventParams) (int64, error)
 	ListAssemblyChartItemsByChartID(ctx context.Context, chartID string) ([]ListAssemblyChartItemsByChartIDRow, error)
 	ListAuthUsers(ctx context.Context) ([]AuthUser, error)
 	ListAuthUsersByDepartmentID(ctx context.Context, departmentID *int64) ([]AuthUser, error)
@@ -56,6 +57,8 @@ type Querier interface {
 	ListOrderHistoryItemsByHistoryID(ctx context.Context, historyID int64) ([]OrderHistoryItem, error)
 	ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order, error)
 	ListPreparedChartItemsByChartID(ctx context.Context, preparedChartID string) ([]ListPreparedChartItemsByChartIDRow, error)
+	ListUnpublishedOrderOutboxEvents(ctx context.Context, maxEvents int32) ([]ListUnpublishedOrderOutboxEventsRow, error)
+	MarkOrderOutboxEventPublished(ctx context.Context, id int64) error
 	NextOrderCounter(ctx context.Context, arg NextOrderCounterParams) (int64, error)
 	UpdateAuthUserPassword(ctx context.Context, arg UpdateAuthUserPasswordParams) (AuthUser, error)
 	UpdateAuthUserRole(ctx context.Context, arg UpdateAuthUserRoleParams) (AuthUser, error)

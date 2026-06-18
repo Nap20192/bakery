@@ -165,3 +165,13 @@ type OrderItem struct {
 	Quantity         float64 `json:"quantity"`
 	ReservedQuantity float64 `json:"reserved_quantity"`
 }
+
+type OrderOutbox struct {
+	ID            int64              `json:"id"`
+	AggregateID   string             `json:"aggregate_id"`
+	EventType     string             `json:"event_type"`
+	Payload       []byte             `json:"payload"`
+	CorrelationID string             `json:"correlation_id"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	PublishedAt   pgtype.Timestamptz `json:"published_at"`
+}

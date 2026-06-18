@@ -5,7 +5,7 @@ import (
 	"context"
 	"time"
 
-	techcarddomain "bakery/internal/domain/techcard"
+	techcarddomain "bakery/internal/services/techcard/domain"
 )
 
 type UseCase interface {

@@ -9,9 +9,9 @@ import (
 	"errors"
 	"fmt"
 
-	accessdomain "bakery/internal/domain/access"
 	sqlc "bakery/internal/outbound/db/sqlc"
 	"bakery/internal/pkg/helpers"
+	accessdomain "bakery/internal/services/auth/domain"
 	authuc "bakery/internal/services/auth/usecase/auth"
 
 	"github.com/jackc/pgx/v5"

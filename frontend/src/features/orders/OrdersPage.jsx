@@ -316,10 +316,15 @@ export function OrdersPage() {
       />
       <section className="min-w-0 p-3 pt-0 sm:p-5 lg:p-6">
         <div className="mx-auto max-w-[1180px]">
-          <div className="mb-3 flex justify-end pt-3">
+          <div className="mb-3 flex flex-wrap justify-end gap-2 pt-3">
             <a href="/me" className="rounded-md border border-stone-300 px-3 py-1.5 text-sm">
               Профиль{viewer?.role ? ` (${viewer.role})` : ''}
             </a>
+            {isWebMode() && (
+              <button onClick={handleLogout} className="rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700">
+                Выйти
+              </button>
+            )}
           </div>
           {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800">{error}</div>}
           {editor ? (

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	orderdomain "bakery/internal/domain/order"
+	orderdomain "bakery/internal/services/order/domain"
 )
 
 func TestOrderViewShowsOrderItemsAsCopyableCodeBlock(t *testing.T) {

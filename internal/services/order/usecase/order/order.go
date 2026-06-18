@@ -9,71 +9,33 @@ import (
 	"strings"
 	"time"
 
-	orderdomain "bakery/internal/domain/order"
+	"bakery/internal/pkg/apperr"
 	"bakery/internal/pkg/enum"
-	sharedkernel "bakery/internal/pkg/sharedkernel"
+	orderdomain "bakery/internal/services/order/domain"
 )
 
 var (
-	ErrDishCatalogItemNotFound  = errors.New("dish catalog item not found")
-	ErrDishCatalogItemAmbiguous = errors.New("dish catalog item ambiguous")
+	ErrDishCatalogItemNotFound  = apperr.NotFound("order.dish_not_found", "Блюдо не найдено в каталоге.")
+	ErrDishCatalogItemAmbiguous = apperr.Conflict("order.dish_ambiguous", "Найдено несколько блюд с таким названием.")
 )
 
 // Service is the order use-case implementation. It depends only on the
-// Repository and EventPublisher ports declared in this package, plus the pure
-// domain service — never on infrastructure.
+// Repository port and the pure domain service — never on infrastructure.
+// Domain events are persisted to the transactional outbox by the repository
+// (atomically with the write) and published by a separate relay.
 type Service struct {
 	repo   Repository
-	events EventPublisher
 	domain *orderdomain.OrderService
 }
 
 // Compile-time assurance that Service satisfies the boundary contract.
 var _ UseCase = (*Service)(nil)
 
-func NewService(repo Repository, events EventPublisher) *Service {
+func NewService(repo Repository) *Service {
 	return &Service{
 		repo:   repo,
-		events: events,
 		domain: orderdomain.NewOrderService(),
 	}
-}
-
-func domainEventOrderNumber(event sharedkernel.DomainEvent) string {
-	switch e := event.(type) {
-	case orderdomain.OrderCreatedEvent:
-		return e.Order.Number
-	case orderdomain.OrderUpdatedEvent:
-		return e.Order.Number
-	default:
-		return ""
-	}
-}
-
-// publishDomainEvents publishes the aggregate's recorded events to the bus.
-// Failures are logged, not fatal — persistence already succeeded.
-func (s *Service) publishDomainEvents(ctx context.Context, events []sharedkernel.DomainEvent) {
-	if s.events == nil || len(events) == 0 {
-		return
-	}
-	payload := make([]any, len(events))
-	for i, event := range events {
-		payload[i] = event
-		slog.DebugContext(ctx, "order usecase recorded domain event",
-			"component", "order.usecase",
-			"type", event.Identity(),
-			"order_number", domainEventOrderNumber(event),
-			"created_at", event.CreatedAt(),
-		)
-	}
-	if err := s.events.PublishEvents(ctx, payload); err != nil {
-		slog.WarnContext(ctx, "publish order events failed", "error", err)
-		return
-	}
-	slog.DebugContext(ctx, "order usecase published domain events",
-		"component", "order.usecase",
-		"events", len(payload),
-	)
 }
 
 func (s *Service) CreateOrder(ctx context.Context, input orderdomain.CreateOrderInput) (orderdomain.Order, error) {
@@ -106,8 +68,6 @@ func (s *Service) CreateOrder(ctx context.Context, input orderdomain.CreateOrder
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
-	order.RecordCreated()
-	s.publishDomainEvents(ctx, order.PullDomainEvents())
 	return order, nil
 }
 
@@ -157,8 +117,6 @@ func (s *Service) UpdateOrder(ctx context.Context, input UpdateOrderInput) (orde
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
-	order.RecordUpdated()
-	s.publishDomainEvents(ctx, order.PullDomainEvents())
 	return order, nil
 }
 

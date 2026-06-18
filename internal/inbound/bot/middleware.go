@@ -4,8 +4,8 @@ import (
 	"errors"
 	"log/slog"
 
-	accessdomain "bakery/internal/domain/access"
 	"bakery/internal/pkg/enum"
+	accessdomain "bakery/internal/services/auth/domain"
 	authuc "bakery/internal/services/auth/usecase/auth"
 
 	tele "gopkg.in/telebot.v3"

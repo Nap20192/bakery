@@ -1,16 +1,13 @@
 package api
 
 import (
-	"encoding/json"
 	"log/slog"
 	"net/http"
 	"strings"
 	"time"
-)
 
-type errorResponse struct {
-	Error string `json:"error"`
-}
+	"bakery/internal/inbound/api/httpx"
+)
 
 func (s *Server) withMiddleware(next http.Handler) http.Handler {
 	return s.recoverer(s.requestLogger(s.cors(next)))
@@ -39,7 +36,7 @@ func (s *Server) recoverer(next http.Handler) http.Handler {
 		defer func() {
 			if recovered := recover(); recovered != nil {
 				slog.Error("http panic recovered", "method", r.Method, "path", r.URL.Path, "panic", recovered)
-				writeJSON(w, http.StatusInternalServerError, errorResponse{Error: "internal server error"})
+				httpx.WriteError(w, http.StatusInternalServerError, "internal server error")
 			}
 		}()
 		next.ServeHTTP(w, r)
@@ -56,18 +53,6 @@ func (s *Server) requestLogger(next http.Handler) http.Handler {
 			"duration", time.Since(start).Round(time.Millisecond).String(),
 		)
 	})
-}
-
-func writeJSON(w http.ResponseWriter, status int, payload any) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(status)
-	if err := json.NewEncoder(w).Encode(payload); err != nil {
-		slog.Warn("write json response failed", "error", err)
-	}
-}
-
-func trim(value string) string {
-	return strings.TrimSpace(value)
 }
 
 func parseAllowedOrigins(raw string) map[string]struct{} {

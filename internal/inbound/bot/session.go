@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"time"
 
-	orderdomain "bakery/internal/domain/order"
+	orderdomain "bakery/internal/services/order/domain"
 )
 
 const (

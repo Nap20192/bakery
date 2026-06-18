@@ -69,6 +69,7 @@ type Config struct {
 	Log          LogConfig
 	Migration    MigrationConfig
 	OrderCleanup OrderCleanupConfig
+	Outbox       OutboxConfig
 	RabbitMQ     RabbitMQConfig
 	Server       ServerConfig
 	Sync         SyncConfig
@@ -86,6 +87,10 @@ type SyncConfig struct {
 type OrderCleanupConfig struct {
 	Interval  time.Duration
 	Retention time.Duration
+}
+
+type OutboxConfig struct {
+	Interval time.Duration
 }
 
 func New() *Config {
@@ -141,6 +146,9 @@ func New() *Config {
 		OrderCleanup: OrderCleanupConfig{
 			Interval:  helpers.EnvDuration("ORDER_CLEANUP_INTERVAL", 24*time.Hour),
 			Retention: helpers.EnvDuration("ORDER_RETENTION", 31*24*time.Hour),
+		},
+		Outbox: OutboxConfig{
+			Interval: helpers.EnvDuration("OUTBOX_INTERVAL", 2*time.Second),
 		},
 	}
 }

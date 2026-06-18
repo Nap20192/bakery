@@ -9,7 +9,7 @@ package authuc
 import (
 	"context"
 
-	accessdomain "bakery/internal/domain/access"
+	accessdomain "bakery/internal/services/auth/domain"
 )
 
 // UseCase is the auth boundary used by delivery (bot, HTTP API) and bootstrap.
