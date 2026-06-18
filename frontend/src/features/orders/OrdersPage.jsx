@@ -15,6 +15,8 @@ import { OrderEditor } from './OrderEditor';
 import { OrderList } from './OrderList';
 import { OrdersLayout } from './OrdersLayout';
 import { BakerOrdersView } from './BakerOrdersView';
+import { BakerSelectionReview } from './BakerSelectionReview';
+import { BakerOrderReview } from './BakerOrderReview';
 
 const defaultPage = {
   page: 1,
@@ -31,6 +33,8 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
   const [editor, setEditor] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [selectedOrderNumbers, setSelectedOrderNumbers] = useState([]);
+  const [selectedOrders, setSelectedOrders] = useState([]);
+  const [selectionMode, setSelectionMode] = useState(false);
   const [monitor, setMonitor] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -64,7 +68,9 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
     });
     loadViewer(launchMode, linkedOrderNumber, activeRoute);
     loadOrders(ordersPage.page, routeOrderNumber || linkedOrderNumber);
-    if (launchMode === 'monitor' && linkedOrderNumbers.length) {
+    if (activeRoute.name === 'orderSelection') {
+      loadSelectedOrders();
+    } else if (launchMode === 'monitor' && linkedOrderNumbers.length) {
       loadMonitor(linkedOrderNumbers, true);
     } else if (launchMode === 'monitor' && linkedOrderNumber) {
       loadOrder(linkedOrderNumber, true);
@@ -147,7 +153,6 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
         filters: activeFilters,
       });
       setOrders(items);
-      setSelectedOrderNumbers((current) => current.filter((number) => items.some((order) => order.number === number)));
       setOrdersPage({
         page: result.page || page,
         limit: result.limit || ordersPage.limit,
@@ -170,6 +175,7 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
       const items = Array.isArray(result.items) ? result.items : [];
       setOrders(items);
       setSelectedOrderNumbers([]);
+      setSelectedOrders([]);
       setOrdersPage({
         page: result.page || 1,
         limit: result.limit || ordersPage.limit,
@@ -197,6 +203,7 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
       const items = Array.isArray(result.items) ? result.items : [];
       setOrders(items);
       setSelectedOrderNumbers([]);
+      setSelectedOrders([]);
       setOrdersPage({
         page: result.page || 1,
         limit: result.limit || ordersPage.limit,
@@ -233,7 +240,9 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
   function toggleOrderSelection(number) {
     setMonitor(null);
     setSelectedOrderNumbers((current) => {
-      if (current.includes(number)) {
+      const exists = current.includes(number);
+      if (exists) {
+        setSelectedOrders((orders) => orders.filter((order) => order.number !== number));
         return current.filter((item) => item !== number);
       }
       return [...current, number];
@@ -256,12 +265,40 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
     });
   }
 
-  function loadBatchMonitor() {
-    const numbers = selectedOrderNumbers.length ? selectedOrderNumbers : selectedOrder ? [selectedOrder.number] : [];
-    if (numbers.length === 1) {
-      navigate({ name: 'orderMonitor', number: numbers[0] });
+  function calculateSelectedOrders() {
+    return loadMonitor(selectedOrderNumbers);
+  }
+
+  function calculateCurrentOrder() {
+    if (!selectedOrder?.number) return;
+    return loadMonitor([selectedOrder.number]);
+  }
+
+  function loadSelectedOrders() {
+    if (selectedOrderNumbers.length === 0) {
+      setSelectedOrders([]);
+      setMonitor(null);
+      return;
     }
-    return loadMonitor(numbers);
+    return run(async () => {
+      const loaded = await Promise.all(selectedOrderNumbers.map((number) => fetchOrder(number)));
+      setSelectedOrders(loaded);
+    });
+  }
+
+  function openSelectionReview() {
+    return run(async () => {
+      const loaded = await Promise.all(selectedOrderNumbers.map((number) => fetchOrder(number)));
+      setSelectedOrders(loaded);
+      setSelectionMode(false);
+      navigate({ name: 'orderSelection' });
+    });
+  }
+
+  function removeSelectedOrder(number) {
+    setSelectedOrderNumbers((current) => current.filter((item) => item !== number));
+    setSelectedOrders((current) => current.filter((order) => order.number !== number));
+    setMonitor(null);
   }
 
   function openCreateOrder(pushRoute = true) {
@@ -318,7 +355,26 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
 
   return (
     <OrdersLayout viewer={viewer} active={route.name} onNavigate={navigate} onLogout={handleLogout}>
-      {canUseMonitor ? (
+      {canUseMonitor && route.name === 'orderSelection' ? (
+        <BakerSelectionReview
+          loading={loading}
+          selectedOrders={selectedOrders}
+          monitor={monitor}
+          error={error}
+          onBack={() => navigate({ name: 'orders' })}
+          onRemove={removeSelectedOrder}
+          onCalculate={calculateSelectedOrders}
+        />
+      ) : canUseMonitor && (route.name === 'orderView' || route.name === 'orderMonitor') ? (
+        <BakerOrderReview
+          loading={loading}
+          order={selectedOrder}
+          monitor={monitor}
+          error={error}
+          onBack={() => navigate({ name: 'orders' })}
+          onCalculate={calculateCurrentOrder}
+        />
+      ) : canUseMonitor ? (
         <BakerOrdersView
           loading={loading}
           orders={orders}
@@ -328,14 +384,15 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
           selectedNumber={selectedNumber}
           selectedOrder={selectedOrder}
           selectedOrderNumbers={selectedOrderNumbers}
-          monitor={monitor}
           error={error}
+          selectionMode={selectionMode}
           onSelect={(number) => loadOrder(number, false)}
           onToggleSelection={toggleOrderSelection}
+          onToggleSelectionMode={() => setSelectionMode((current) => !current)}
+          onOpenSelection={openSelectionReview}
           onPageChange={loadOrders}
           onFiltersChange={updateFilters}
           onResetFilters={resetFilters}
-          onCalculate={loadBatchMonitor}
         />
       ) : (
       <div className={showCreateOrderPage ? '' : 'lg:grid lg:grid-cols-[24rem_minmax(0,1fr)]'}>

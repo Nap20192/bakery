@@ -4,12 +4,11 @@ import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import MuiButton from '@mui/material/Button';
+import { useState } from 'react';
 import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
-import { panelClass, PanelHeader } from '../../components/Panel';
 import { formatDate, formatFulfillmentDate } from '../../lib/format';
 import { orderSource } from '../../lib/orders';
-import { MonitorReports } from './MonitorReports';
 import { OrderDetails } from './OrderDetails';
 
 function dateValue(offset = 0) {
@@ -30,33 +29,35 @@ export function BakerOrdersView({
   selectedNumber,
   selectedOrder,
   selectedOrderNumbers,
-  monitor,
   error,
+  selectionMode,
   onSelect,
   onToggleSelection,
+  onToggleSelectionMode,
+  onOpenSelection,
   onPageChange,
   onFiltersChange,
   onResetFilters,
-  onCalculate,
 }) {
+  const [previewOpen, setPreviewOpen] = useState(false);
   const selectedCount = selectedOrderNumbers.length;
 
   return (
-    <section className="px-3 py-3 sm:px-5 lg:px-6">
+    <section className="pb-24 px-3 py-3 sm:px-5 lg:px-6">
       <div className="mx-auto max-w-[1440px] space-y-4">
         <BakerOrderFilters
           filters={filters}
           shops={shops}
           loading={loading}
-          selectedCount={selectedCount}
+          selectionMode={selectionMode}
+          onToggleSelectionMode={onToggleSelectionMode}
           onFiltersChange={onFiltersChange}
           onResetFilters={onResetFilters}
-          onCalculate={onCalculate}
         />
 
         {error && <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800">{error}</div>}
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4">
           {orders.length ? (
             orders.map((order) => (
               <BakerOrderCard
@@ -64,7 +65,7 @@ export function BakerOrdersView({
                 order={order}
                 selected={selectedNumber === order.number}
                 checked={selectedOrderNumbers.includes(order.number)}
-                loading={loading}
+                selectionMode={selectionMode}
                 onSelect={() => onSelect(order.number)}
                 onToggleSelection={() => onToggleSelection(order.number)}
               />
@@ -88,33 +89,24 @@ export function BakerOrdersView({
           </Button>
         </div>
 
-        {selectedOrder ? (
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)]">
-            <section className={panelClass}>
-              <OrderDetails order={selectedOrder} />
-            </section>
-            <section className={panelClass}>
-              <PanelHeader title="Расчёт теста" />
-              {selectedCount > 0 && (
-                <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <Button variant="primary" onClick={onCalculate} disabled={loading}>
-                    Рассчитать выбранные
-                  </Button>
-                  <span className="text-[13px] leading-5 text-stone-600">Выбрано заказов: {selectedCount}</span>
-                </div>
-              )}
-              <MonitorReports monitor={monitor} />
-            </section>
-          </div>
-        ) : (
-          <EmptyState>Выберите заказ для просмотра.</EmptyState>
+        <BottomActionBar
+          loading={loading}
+          selectedOrder={selectedOrder}
+          selectedCount={selectedCount}
+          selectionMode={selectionMode}
+          onPreview={() => setPreviewOpen(true)}
+          onOpenSelection={onOpenSelection}
+        />
+
+        {previewOpen && selectedOrder && (
+          <OrderPreviewModal order={selectedOrder} onClose={() => setPreviewOpen(false)} />
         )}
       </div>
     </section>
   );
 }
 
-function BakerOrderFilters({ filters, shops, loading, selectedCount, onFiltersChange, onResetFilters, onCalculate }) {
+function BakerOrderFilters({ filters, shops, selectionMode, onToggleSelectionMode, onFiltersChange, onResetFilters }) {
   return (
     <section className="rounded-lg border border-stone-300 bg-[#fff7df] p-3">
       <div className="grid gap-2 md:grid-cols-[minmax(12rem,1fr)_minmax(11rem,0.8fr)_auto] md:items-end">
@@ -155,8 +147,8 @@ function BakerOrderFilters({ filters, shops, loading, selectedCount, onFiltersCh
           <MuiButton size="small" variant="text" onClick={onResetFilters}>
             Сброс
           </MuiButton>
-          <MuiButton size="small" variant="contained" disabled={loading || selectedCount === 0} onClick={onCalculate}>
-            Расчёт
+          <MuiButton size="small" variant={selectionMode ? 'contained' : 'outlined'} onClick={onToggleSelectionMode}>
+            Выбор
           </MuiButton>
         </div>
       </div>
@@ -164,37 +156,40 @@ function BakerOrderFilters({ filters, shops, loading, selectedCount, onFiltersCh
   );
 }
 
-function BakerOrderCard({ order, selected, checked, loading, onSelect, onToggleSelection }) {
+function BakerOrderCard({ order, selected, checked, selectionMode, onSelect, onToggleSelection }) {
+  const handleClick = selectionMode ? onToggleSelection : onSelect;
+
   return (
-    <article
+    <button
+      type="button"
+      onClick={handleClick}
       className={`rounded-lg border bg-[#fff7df] p-3 transition ${
-        selected ? 'border-stone-950 shadow-sm' : 'border-stone-300 hover:border-stone-500'
+        checked
+          ? 'border-stone-950 bg-[#fff1cb] shadow-sm'
+          : selected
+            ? 'border-stone-950 shadow-sm'
+            : 'border-stone-300 hover:border-stone-500'
       }`}
     >
       <div className="mb-2 flex items-start justify-between gap-3">
-        <button type="button" className="min-w-0 flex-1 text-left" onClick={onSelect}>
+        <span className="min-w-0 flex-1 text-left">
           <strong className="block truncate text-[16px] font-semibold leading-6 text-stone-950">{order.number}</strong>
           <span className="block truncate text-[12px] leading-5 text-stone-600">{orderSource(order)}</span>
-        </button>
-        <label className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-stone-300 bg-[#fff1cb]">
-          <input
-            type="checkbox"
-            className="h-4 w-4 accent-stone-950"
-            checked={checked}
-            disabled={loading}
-            aria-label={`Выбрать заказ ${order.number}`}
-            onChange={onToggleSelection}
-          />
-        </label>
+        </span>
+        {selectionMode && (
+          <span className={`shrink-0 rounded-md border px-2 py-1 text-[12px] font-semibold ${checked ? 'border-stone-950 bg-stone-950 text-white' : 'border-stone-300 text-stone-600'}`}>
+            {checked ? 'Выбран' : 'Выбрать'}
+          </span>
+        )}
       </div>
 
-      <button type="button" className="grid w-full grid-cols-2 gap-2 text-left" onClick={onSelect}>
+      <span className="grid w-full grid-cols-2 gap-2 text-left">
         <CardMeta label="Выполнить" value={formatFulfillmentDate(order.fulfillment_date) || '-'} strong />
         <CardMeta label="Позиций" value={String(order.items?.length || 0)} />
         <CardMeta label="Создан" value={formatDate(order.created_at) || '-'} />
         <CardMeta label="Куда" value={order.to_department?.name || '-'} />
-      </button>
-    </article>
+      </span>
+    </button>
   );
 }
 
@@ -204,5 +199,43 @@ function CardMeta({ label, value, strong = false }) {
       <span className="block text-[10px] font-medium uppercase leading-4 text-stone-500">{label}</span>
       <span className={`block truncate text-[13px] leading-5 text-stone-900 ${strong ? 'font-semibold' : 'font-medium'}`}>{value}</span>
     </span>
+  );
+}
+
+function BottomActionBar({ loading, selectedOrder, selectedCount, selectionMode, onPreview, onOpenSelection }) {
+  if (!selectedOrder && selectedCount === 0) {
+    return null;
+  }
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-20 border-t border-stone-300 bg-[#fff7df]/95 px-3 py-2 backdrop-blur">
+      <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-2">
+        <span className="min-w-0 truncate text-[13px] font-medium text-stone-700">
+          {selectionMode ? `Выбрано: ${selectedCount}` : selectedOrder?.number}
+        </span>
+        <div className="flex shrink-0 gap-2">
+          <Button onClick={onPreview} disabled={!selectedOrder || loading}>
+            Обзор
+          </Button>
+          {selectionMode && (
+            <Button variant="primary" onClick={onOpenSelection} disabled={selectedCount === 0 || loading}>
+              Открыть выбранные
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OrderPreviewModal({ order, onClose }) {
+  return (
+    <div className="fixed inset-0 z-30 bg-black/35 p-3">
+      <div className="mx-auto max-h-[92vh] max-w-3xl overflow-y-auto rounded-lg border border-stone-300 bg-[#fff7df] p-3 shadow-xl">
+        <div className="mb-3 flex justify-end">
+          <Button onClick={onClose}>Закрыть</Button>
+        </div>
+        <OrderDetails order={order} />
+      </div>
+    </div>
   );
 }

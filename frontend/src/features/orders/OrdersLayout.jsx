@@ -55,7 +55,7 @@ export function OrdersLayout({ viewer, active, onNavigate, onLogout, children })
 }
 
 function activeNavItem(active) {
-  if (active === 'orderView' || active === 'orderEdit' || active === 'orderMonitor') {
+  if (active === 'orderView' || active === 'orderEdit' || active === 'orderMonitor' || active === 'orderSelection') {
     return 'orders';
   }
   return active;
