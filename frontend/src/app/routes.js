@@ -8,6 +8,7 @@ export function parseRoute(pathname = window.location.pathname) {
   if (parts[0] !== 'orders') return { name: 'orders' };
   if (parts.length === 1) return { name: 'orders' };
   if (parts[1] === 'new') return { name: 'orderNew' };
+  if (parts[1] === 'selection') return { name: 'orderSelection' };
   if (parts.length === 2) return { name: 'orderView', number: parts[1] };
   if (parts[2] === 'edit') return { name: 'orderEdit', number: parts[1] };
   if (parts[2] === 'monitor') return { name: 'orderMonitor', number: parts[1] };
@@ -22,6 +23,8 @@ export function pathFor(route) {
       return '/admin/users';
     case 'orderNew':
       return '/orders/new';
+    case 'orderSelection':
+      return '/orders/selection';
     case 'orderView':
       return `/orders/${encodeURIComponent(route.number)}`;
     case 'orderEdit':
