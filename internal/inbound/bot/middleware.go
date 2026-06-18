@@ -25,7 +25,7 @@ func (b *baseBot) requirePermissions(permissions ...enum.Permission) tele.Middle
 			}
 			for _, perm := range permissions {
 				if !b.rbacSvc.HasPermission(user.Role, perm) {
-					return sendText(c, "Доступ запрещён: у вашего пользователя нет прав на эту команду.")
+					return sendText(c, "Доступ запрещён.")
 				}
 			}
 			return next(c)

@@ -41,13 +41,13 @@ broken line
 	if len(result.Errors) != 3 {
 		t.Fatalf("errors = %d, want 3: %#v", len(result.Errors), result.Errors)
 	}
-	if result.Errors[0].Line != 7 || result.Errors[0].Code != "20495" || !strings.Contains(result.Errors[0].Message, "целое число") {
+	if result.Errors[0].Line != 7 || result.Errors[0].Code != "20495" || !strings.Contains(result.Errors[0].Message, "целое") {
 		t.Fatalf("unexpected first error: %#v", result.Errors[0])
 	}
-	if result.Errors[1].Line != 8 || result.Errors[1].Raw != "broken line" || !strings.Contains(result.Errors[1].Message, "Строка не распознана") {
+	if result.Errors[1].Line != 8 || result.Errors[1].Raw != "broken line" || !strings.Contains(result.Errors[1].Message, "Не распознано") {
 		t.Fatalf("unexpected second error: %#v", result.Errors[1])
 	}
-	if result.Errors[2].Line != 9 || result.Errors[2].Raw != "15647 Сосиска в тесте abc" || !strings.Contains(result.Errors[2].Message, "Строка не распознана") {
+	if result.Errors[2].Line != 9 || result.Errors[2].Raw != "15647 Сосиска в тесте abc" || !strings.Contains(result.Errors[2].Message, "Не распознано") {
 		t.Fatalf("unexpected third error: %#v", result.Errors[2])
 	}
 }
@@ -65,7 +65,7 @@ func TestOrderServiceUsesInjectedSpec(t *testing.T) {
 	if len(result.ValidItems) != 0 {
 		t.Fatalf("valid items = %d, want 0", len(result.ValidItems))
 	}
-	if len(result.Errors) != 1 || !strings.Contains(result.Errors[0].Message, "Строка не распознана") {
+	if len(result.Errors) != 1 || !strings.Contains(result.Errors[0].Message, "Не распознано") {
 		t.Fatalf("unexpected errors: %#v", result.Errors)
 	}
 }

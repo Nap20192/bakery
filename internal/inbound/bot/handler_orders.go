@@ -26,13 +26,13 @@ func (b *OrderBot) handleOrders(c tele.Context) error {
 			return sendText(c, msgUserNoShopDepartment, b.actionMarkup(c))
 		}
 		slog.ErrorContext(ctx, "list orders failed", "error", err)
-		return sendText(c, "Не удалось получить заказы. Попробуйте позже.")
+		return sendText(c, "Не удалось получить заказы.")
 	}
 	if len(orders) == 0 {
 		if mode == ordersModeShop {
-			return sendText(c, "Ваших последних заказов пока нет.", b.actionMarkup(c))
+			return sendText(c, "Заказов нет.", b.actionMarkup(c))
 		}
-		return sendText(c, "Заказов по выбранным фильтрам нет.", b.actionMarkup(c))
+		return sendText(c, "Ничего не найдено.", b.actionMarkup(c))
 	}
 
 	if mode == ordersModeShop {
@@ -82,10 +82,10 @@ func (b *OrderBot) handleMonitorFilteredOrdersCallback(c tele.Context) error {
 			return sendText(c, msgUserNoShopDepartment, b.actionMarkup(c))
 		}
 		slog.ErrorContext(ctx, "list orders for filtered monitor failed", "error", err)
-		return sendText(c, "Не удалось получить заказы для расчёта.")
+		return sendText(c, "Не удалось получить заказы.")
 	}
 	if len(orders) == 0 {
-		return sendText(c, "Заказов по выбранным фильтрам нет.")
+		return sendText(c, "Ничего не найдено.")
 	}
 	numbers := make([]string, 0, len(orders))
 	for _, order := range orders {
