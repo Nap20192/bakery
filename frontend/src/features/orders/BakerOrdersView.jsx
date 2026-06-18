@@ -40,6 +40,7 @@ export function BakerOrdersView({
   onResetFilters,
 }) {
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewOrder, setPreviewOrder] = useState(null);
   const selectedCount = selectedOrderNumbers.length;
 
   return (
@@ -68,6 +69,10 @@ export function BakerOrdersView({
                 selectionMode={selectionMode}
                 onSelect={() => onSelect(order.number)}
                 onToggleSelection={() => onToggleSelection(order.number)}
+                onPreview={() => {
+                  setPreviewOrder(order);
+                  setPreviewOpen(true);
+                }}
               />
             ))
           ) : (
@@ -98,8 +103,8 @@ export function BakerOrdersView({
           onOpenSelection={onOpenSelection}
         />
 
-        {previewOpen && selectedOrder && (
-          <OrderPreviewModal order={selectedOrder} onClose={() => setPreviewOpen(false)} />
+        {previewOpen && previewOrder && (
+          <OrderPreviewModal order={previewOrder} onClose={() => setPreviewOpen(false)} />
         )}
       </div>
     </section>
@@ -147,22 +152,28 @@ function BakerOrderFilters({ filters, shops, selectionMode, onToggleSelectionMod
           <MuiButton size="small" variant="text" onClick={onResetFilters}>
             Сброс
           </MuiButton>
-          <MuiButton size="small" variant={selectionMode ? 'contained' : 'outlined'} onClick={onToggleSelectionMode}>
-            Выбор
-          </MuiButton>
+          <button
+            type="button"
+            onClick={onToggleSelectionMode}
+            className={`rounded-md border px-2 py-1.5 text-[12px] font-semibold transition ${
+              selectionMode
+                ? 'border-stone-950 bg-stone-950 text-white'
+                : 'border-stone-400 bg-[#fff1cb] text-stone-900 hover:border-stone-700'
+            }`}
+          >
+            Выбор нескольких
+          </button>
         </div>
       </div>
     </section>
   );
 }
 
-function BakerOrderCard({ order, selected, checked, selectionMode, onSelect, onToggleSelection }) {
+function BakerOrderCard({ order, selected, checked, selectionMode, onSelect, onToggleSelection, onPreview }) {
   const handleClick = selectionMode ? onToggleSelection : onSelect;
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
+    <article
       className={`rounded-lg border bg-[#fff7df] p-3 transition ${
         checked
           ? 'border-stone-950 bg-[#fff1cb] shadow-sm'
@@ -172,10 +183,10 @@ function BakerOrderCard({ order, selected, checked, selectionMode, onSelect, onT
       }`}
     >
       <div className="mb-2 flex items-start justify-between gap-3">
-        <span className="min-w-0 flex-1 text-left">
+        <button type="button" onClick={handleClick} className="min-w-0 flex-1 text-left">
           <strong className="block truncate text-[16px] font-semibold leading-6 text-stone-950">{order.number}</strong>
           <span className="block truncate text-[12px] leading-5 text-stone-600">{orderSource(order)}</span>
-        </span>
+        </button>
         {selectionMode && (
           <span className={`shrink-0 rounded-md border px-2 py-1 text-[12px] font-semibold ${checked ? 'border-stone-950 bg-stone-950 text-white' : 'border-stone-300 text-stone-600'}`}>
             {checked ? 'Выбран' : 'Выбрать'}
@@ -183,19 +194,23 @@ function BakerOrderCard({ order, selected, checked, selectionMode, onSelect, onT
         )}
       </div>
 
-      <span className="grid w-full grid-cols-2 gap-2 text-left">
+      <button type="button" onClick={handleClick} className="grid w-full grid-cols-2 gap-1.5 text-left">
         <CardMeta label="Выполнить" value={formatFulfillmentDate(order.fulfillment_date) || '-'} strong />
         <CardMeta label="Позиций" value={String(order.items?.length || 0)} />
         <CardMeta label="Создан" value={formatDate(order.created_at) || '-'} />
         <CardMeta label="Куда" value={order.to_department?.name || '-'} />
-      </span>
-    </button>
+      </button>
+
+      <div className="mt-2 flex justify-end">
+        <Button onClick={onPreview}>Обзор</Button>
+      </div>
+    </article>
   );
 }
 
 function CardMeta({ label, value, strong = false }) {
   return (
-    <span className="min-w-0 rounded-md border border-stone-300 bg-[#fff1cb] px-2 py-1.5">
+    <span className="min-w-0 rounded-md border border-stone-300 bg-[#fff1cb] px-2 py-1">
       <span className="block text-[10px] font-medium uppercase leading-4 text-stone-500">{label}</span>
       <span className={`block truncate text-[13px] leading-5 text-stone-900 ${strong ? 'font-semibold' : 'font-medium'}`}>{value}</span>
     </span>
