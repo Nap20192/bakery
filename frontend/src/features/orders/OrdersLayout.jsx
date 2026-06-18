@@ -1,5 +1,8 @@
 import { isWebMode } from '../../lib/auth';
 import { Icon } from '../../components/Icon';
+import { Button } from '../../components/Button';
+
+const mobileColsClass = { 1: 'grid-cols-1', 2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4' };
 
 const navItems = [
   { route: { name: 'orders' }, label: 'Заказы', icon: 'orders', roles: ['shop', 'baker', 'admin'] },
@@ -41,20 +44,16 @@ export function OrdersLayout({ viewer, active, onNavigate, onLogout, children })
             ))}
           </nav>
           {isWebMode() && (
-            <button
-              type="button"
-              onClick={onLogout}
-              className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-md border border-red-300 px-3 py-1.5 text-[13px] font-semibold text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-900/20"
-            >
+            <Button type="button" onClick={onLogout} variant="danger" className="shrink-0">
               <Icon name="logout" size={16} />
               Выйти
-            </button>
+            </Button>
           )}
         </div>
       </header>
       {children}
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-300 bg-white/95 px-2 py-1.5 shadow-[0_-8px_20px_rgba(28,25,23,0.08)] backdrop-blur sm:hidden">
-        <div className="mx-auto grid max-w-md grid-cols-3 gap-1">
+        <div className={`mx-auto grid max-w-md gap-1 ${mobileColsClass[items.length] ?? 'grid-cols-3'}`}>
           {items.map((item) => (
             <button
               key={item.label}

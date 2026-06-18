@@ -1,4 +1,4 @@
-export const panelClass = 'rounded-lg border border-stone-300 bg-white p-3 shadow-sm sm:p-4';
+export const panelClass = 'rounded-xl border border-stone-200 bg-white p-3 shadow-sm sm:p-4';
 
 export function PanelHeader({ eyebrow, title, count }) {
   return (

@@ -1,6 +1,5 @@
-import { Button } from '../../components/Button';
 import { Icon } from '../../components/Icon';
-import { formatDate, formatFulfillmentDate } from '../../lib/format';
+import { formatFulfillmentDate } from '../../lib/format';
 import { orderSource } from '../../lib/orders';
 
 export function BakerOrderCard({ order, selected, checked, selectionMode, onSelect, onToggleSelection, onPreview }) {
@@ -8,49 +7,66 @@ export function BakerOrderCard({ order, selected, checked, selectionMode, onSele
 
   return (
     <article
-      className={`rounded-lg border bg-white p-2.5 shadow-sm transition hover:shadow-md ${
+      className={`group relative flex flex-col rounded-xl border bg-white p-3 transition ${
         checked
-          ? 'border-stone-950 ring-2 ring-stone-900/10'
+          ? 'border-stone-900 ring-1 ring-stone-900/15'
           : selected
-            ? 'border-stone-800'
-            : 'border-stone-300 hover:border-stone-500'
+            ? 'border-stone-800 shadow-sm'
+            : 'border-stone-200 hover:border-stone-400 hover:shadow-sm'
       }`}
     >
-      <div className="mb-2 flex items-start justify-between gap-2">
-        <button type="button" onClick={handleClick} className="min-w-0 flex-1 rounded-md text-left focus:outline-none focus:ring-2 focus:ring-stone-900/20">
-          <strong className="block truncate text-[15px] font-semibold leading-6 text-stone-950">{order.number}</strong>
-          <span className="block truncate text-[12px] leading-5 text-stone-600">{orderSource(order)}</span>
-        </button>
-        {selectionMode && (
-          <span className={`shrink-0 rounded-md border px-2 py-1 text-[11px] font-semibold ${checked ? 'border-stone-950 bg-stone-950 text-white' : 'border-stone-300 text-stone-600'}`}>
-            {checked && <Icon name="select" size={13} className="mr-1 inline-block align-[-2px]" />}
-            {checked ? 'Выбран' : 'Выбрать'}
+      <button
+        type="button"
+        onClick={handleClick}
+        className="min-w-0 rounded-md text-left focus:outline-none focus:ring-2 focus:ring-stone-900/20"
+      >
+        <div className="flex items-center gap-2">
+          <strong className="min-w-0 flex-1 truncate text-[15px] font-semibold leading-6 text-stone-950">{order.number}</strong>
+          <span className="shrink-0 rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium tabular-nums text-stone-600">
+            {order.items?.length || 0}
           </span>
-        )}
-      </div>
-
-      <button type="button" onClick={handleClick} className="grid w-full grid-cols-2 gap-1.5 rounded-md text-left focus:outline-none focus:ring-2 focus:ring-stone-900/20">
-        <CardMeta label="Выполнить" value={formatFulfillmentDate(order.fulfillment_date) || '-'} strong />
-        <CardMeta label="Позиций" value={String(order.items?.length || 0)} />
-        <CardMeta label="Создан" value={formatDate(order.created_at) || '-'} />
-        <CardMeta label="Куда" value={order.to_department?.name || '-'} />
+        </div>
+        <span className="mt-0.5 block truncate text-[12px] leading-5 text-stone-500">{orderSource(order)}</span>
       </button>
 
-      <div className="mt-2 flex justify-end">
-        <Button onClick={onPreview}>
+      <button
+        type="button"
+        onClick={handleClick}
+        className="mt-2.5 space-y-1 rounded-md text-left focus:outline-none focus:ring-2 focus:ring-stone-900/20"
+      >
+        <Fact label="Выполнить" value={formatFulfillmentDate(order.fulfillment_date) || '—'} strong />
+        <Fact label="Куда" value={order.to_department?.name || '—'} />
+      </button>
+
+      {selectionMode ? (
+        <span
+          className={`absolute right-2.5 top-2.5 inline-flex h-6 w-6 items-center justify-center rounded-full border text-[11px] font-semibold transition ${
+            checked ? 'border-stone-900 bg-stone-900 text-white' : 'border-stone-300 bg-white text-transparent group-hover:border-stone-400'
+          }`}
+          aria-hidden="true"
+        >
+          <Icon name="select" size={13} />
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={onPreview}
+          title="Обзор"
+          aria-label="Обзор заказа"
+          className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-md text-stone-400 opacity-0 transition hover:bg-stone-100 hover:text-stone-700 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-stone-900/20 group-hover:opacity-100 sm:opacity-100"
+        >
           <Icon name="eye" size={16} />
-          Обзор
-        </Button>
-      </div>
+        </button>
+      )}
     </article>
   );
 }
 
-function CardMeta({ label, value, strong = false }) {
+function Fact({ label, value, strong = false }) {
   return (
-    <span className="min-w-0 rounded-md border border-stone-200 bg-stone-50 px-2 py-1">
-      <span className="block text-[10px] font-medium uppercase leading-4 text-stone-500">{label}</span>
-      <span className={`block truncate text-[12px] leading-5 text-stone-900 ${strong ? 'font-semibold' : 'font-medium'}`}>{value}</span>
+    <span className="flex items-baseline justify-between gap-2 text-[12px] leading-5">
+      <span className="shrink-0 text-stone-400">{label}</span>
+      <span className={`min-w-0 truncate text-right text-stone-800 ${strong ? 'font-semibold text-stone-950' : 'font-medium'}`}>{value}</span>
     </span>
   );
 }

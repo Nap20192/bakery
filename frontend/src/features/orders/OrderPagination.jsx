@@ -8,8 +8,9 @@ export function OrderPagination({ loading, page, onPageChange }) {
         <Icon name="chevronLeft" size={16} />
         Назад
       </Button>
-      <span className="whitespace-nowrap text-xs text-stone-500">
-        {page.page} / {page.total_pages || 1}
+      <span className="whitespace-nowrap text-center text-xs text-stone-500">
+        <span className="tabular-nums">{page.page} / {page.total_pages || 1}</span>
+        {page.total > 0 && <span className="block text-[11px] text-stone-400">всего {page.total}</span>}
       </span>
       <Button onClick={() => onPageChange(page.page + 1)} disabled={loading || page.page >= (page.total_pages || 1)}>
         Далее

@@ -1,13 +1,19 @@
 import { MetaCell } from '../../components/MetaCell';
 import { PanelHeader } from '../../components/Panel';
+import { CopyButton } from '../../components/CopyButton';
 import { formatDate, formatFulfillmentDate, formatQuantity } from '../../lib/format';
-import { orderCreator, orderQuantity } from '../../lib/orders';
+import { orderCreator, orderItemsToText, orderQuantity } from '../../lib/orders';
 import { EmptyState } from '../../components/EmptyState';
 
 export function OrderDetails({ order }) {
   return (
     <>
-      <PanelHeader title={order.number} count={order.items?.length || 0} />
+      <div className="flex items-start justify-between gap-2">
+        <PanelHeader title={order.number} count={order.items?.length || 0} />
+        {(order.items?.length || 0) > 0 && (
+          <CopyButton getText={() => orderItemsToText(order)} label="Копировать" className="shrink-0" />
+        )}
+      </div>
 
       <div className="mb-3 grid grid-cols-2 gap-1.5 sm:gap-2 md:grid-cols-5">
         <MetaCell label="Создан" value={formatDate(order.created_at) || '-'} />
@@ -28,6 +34,7 @@ function OrderItems({ items, history }) {
     return <EmptyState compact>В заказе нет позиций.</EmptyState>;
   }
   const latestChanges = latestHistoryByCode(history);
+  const totalQuantity = items.reduce((sum, item) => sum + (Number(item.quantity) || 0) + (Number(item.reserved_quantity) || 0), 0);
   return (
     <div className="overflow-hidden rounded-lg border border-stone-300 bg-white">
       <div className="grid grid-cols-[minmax(0,1fr)_4.6rem] gap-2 bg-stone-50 px-2.5 py-1.5 text-[11px] font-medium uppercase leading-5 text-stone-600 sm:grid-cols-[minmax(0,1fr)_5rem] sm:px-3">
@@ -58,6 +65,10 @@ function OrderItems({ items, history }) {
             </div>
           );
         })}
+      </div>
+      <div className="grid grid-cols-[minmax(0,1fr)_4.6rem] gap-2 border-t border-stone-300 bg-stone-50 px-2.5 py-1.5 text-[12px] font-semibold leading-5 text-stone-900 sm:grid-cols-[minmax(0,1fr)_5rem] sm:px-3">
+        <span>Итого</span>
+        <span className="text-right tabular-nums">{formatQuantity(totalQuantity)}</span>
       </div>
     </div>
   );

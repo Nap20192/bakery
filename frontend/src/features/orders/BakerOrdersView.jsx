@@ -43,7 +43,7 @@ export function BakerOrdersView({
 
         {error && <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800">{error}</div>}
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(13rem,1fr))]">
           {orders.length ? (
             orders.map((order) => (
               <BakerOrderCard
@@ -61,7 +61,7 @@ export function BakerOrdersView({
               />
             ))
           ) : (
-            <div className="sm:col-span-2 xl:col-span-4">
+            <div className="col-span-full">
               <EmptyState compact>Заказов нет.</EmptyState>
             </div>
           )}

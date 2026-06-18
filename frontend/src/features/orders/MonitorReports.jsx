@@ -1,5 +1,7 @@
+import { CopyButton } from '../../components/CopyButton';
 import { EmptyState } from '../../components/EmptyState';
 import { formatQuantity } from '../../lib/format';
+import { monitorToText } from '../../lib/orders';
 
 export function MonitorReports({ monitor }) {
   if (!monitor) {
@@ -8,6 +10,7 @@ export function MonitorReports({ monitor }) {
   if (monitor.total_reports?.length) {
     return (
       <div className="mt-3 space-y-3">
+        <CopyBar monitor={monitor} />
         <ReportBlock title={`Итого по заказам: ${monitor.orders?.length || 0}`} reports={monitor.total_reports} />
         {monitor.orders?.map((order) => (
           <ReportBlock key={order.order?.number} title={order.order?.number || 'Заказ'} reports={order.reports || []} compact />
@@ -18,7 +21,20 @@ export function MonitorReports({ monitor }) {
   if (!monitor.reports?.length) {
     return <EmptyState compact>Нет данных для расчёта теста.</EmptyState>;
   }
-  return <ReportBlock reports={monitor.reports} />;
+  return (
+    <div className="mt-3 space-y-3">
+      <CopyBar monitor={monitor} />
+      <ReportBlock reports={monitor.reports} />
+    </div>
+  );
+}
+
+function CopyBar({ monitor }) {
+  return (
+    <div className="flex justify-end">
+      <CopyButton getText={() => monitorToText(monitor)} label="Копировать расчёт" />
+    </div>
+  );
 }
 
 function ReportBlock({ title = '', reports, compact = false }) {
