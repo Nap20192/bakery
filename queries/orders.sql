@@ -17,7 +17,8 @@ INSERT INTO orders (
     to_department_id,
     created_at,
     fulfillment_date,
-    created_by_username
+    created_by_username,
+    comments
 ) VALUES (
     sqlc.arg(number),
     sqlc.arg(location),
@@ -25,7 +26,8 @@ INSERT INTO orders (
     sqlc.narg(to_department_id),
     sqlc.arg(created_at),
     sqlc.arg(fulfillment_date),
-    sqlc.arg(created_by_username)
+    sqlc.arg(created_by_username),
+    sqlc.narg(comments)
 )
 RETURNING *;
 
@@ -120,7 +122,8 @@ SET
     from_department_id = sqlc.narg(from_department_id),
     to_department_id = sqlc.narg(to_department_id),
     fulfillment_date = sqlc.arg(fulfillment_date),
-    created_by_username = sqlc.arg(created_by_username)
+    created_by_username = sqlc.arg(created_by_username),
+    comments = sqlc.narg(comments)
 WHERE number = sqlc.arg(number)
 RETURNING *;
 

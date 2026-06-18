@@ -39,7 +39,8 @@ INSERT INTO orders (
     to_department_id,
     created_at,
     fulfillment_date,
-    created_by_username
+    created_by_username,
+    comments
 ) VALUES (
     $1,
     $2,
@@ -47,9 +48,10 @@ INSERT INTO orders (
     $4,
     $5,
     $6,
-    $7
+    $7,
+    $8
 )
-RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username
+RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments
 `
 
 type CreateOrderParams struct {
@@ -60,6 +62,7 @@ type CreateOrderParams struct {
 	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 	FulfillmentDate   pgtype.Date        `json:"fulfillment_date"`
 	CreatedByUsername string             `json:"created_by_username"`
+	Comments          []byte             `json:"comments"`
 }
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
@@ -71,6 +74,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		arg.CreatedAt,
 		arg.FulfillmentDate,
 		arg.CreatedByUsername,
+		arg.Comments,
 	)
 	var i Order
 	err := row.Scan(
@@ -82,6 +86,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		&i.ToDepartmentID,
 		&i.FulfillmentDate,
 		&i.CreatedByUsername,
+		&i.Comments,
 	)
 	return i, err
 }
@@ -266,7 +271,7 @@ func (q *Queries) DeleteOrdersCreatedBefore(ctx context.Context, createdAtBefore
 }
 
 const getOrderByNumber = `-- name: GetOrderByNumber :one
-SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username
+SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments
 FROM orders
 WHERE number = $1
 `
@@ -283,6 +288,7 @@ func (q *Queries) GetOrderByNumber(ctx context.Context, number string) (Order, e
 		&i.ToDepartmentID,
 		&i.FulfillmentDate,
 		&i.CreatedByUsername,
+		&i.Comments,
 	)
 	return i, err
 }
@@ -410,7 +416,7 @@ func (q *Queries) ListOrderHistoryItemsByHistoryID(ctx context.Context, historyI
 }
 
 const listOrders = `-- name: ListOrders :many
-SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username
+SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments
 FROM orders
 WHERE
     ($1::BIGINT IS NULL OR from_department_id = $1::BIGINT)
@@ -450,6 +456,7 @@ func (q *Queries) ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order
 			&i.ToDepartmentID,
 			&i.FulfillmentDate,
 			&i.CreatedByUsername,
+			&i.Comments,
 		); err != nil {
 			return nil, err
 		}
@@ -486,9 +493,10 @@ SET
     from_department_id = $1,
     to_department_id = $2,
     fulfillment_date = $3,
-    created_by_username = $4
-WHERE number = $5
-RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username
+    created_by_username = $4,
+    comments = $5
+WHERE number = $6
+RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments
 `
 
 type UpdateOrderParams struct {
@@ -496,6 +504,7 @@ type UpdateOrderParams struct {
 	ToDepartmentID    *int64      `json:"to_department_id"`
 	FulfillmentDate   pgtype.Date `json:"fulfillment_date"`
 	CreatedByUsername string      `json:"created_by_username"`
+	Comments          []byte      `json:"comments"`
 	Number            string      `json:"number"`
 }
 
@@ -505,6 +514,7 @@ func (q *Queries) UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order
 		arg.ToDepartmentID,
 		arg.FulfillmentDate,
 		arg.CreatedByUsername,
+		arg.Comments,
 		arg.Number,
 	)
 	var i Order
@@ -517,6 +527,7 @@ func (q *Queries) UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order
 		&i.ToDepartmentID,
 		&i.FulfillmentDate,
 		&i.CreatedByUsername,
+		&i.Comments,
 	)
 	return i, err
 }

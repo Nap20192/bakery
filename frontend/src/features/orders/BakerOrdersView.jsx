@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import { Button } from '../../components/Button';
-import { EmptyState } from '../../components/EmptyState';
-import { BakerOrderCard } from './BakerOrderCard';
-import { BakerOrderFilters } from './BakerOrderFilters';
-import { OrderPagination } from './OrderPagination';
-import { OrderPreviewModal } from './OrderPreviewModal';
+import { useState } from "react";
+import { Button } from "../../components/Button";
+import { EmptyState } from "../../components/EmptyState";
+import { BakerOrderCard } from "./BakerOrderCard";
+import { BakerOrderFilters } from "./BakerOrderFilters";
+import { OrderPagination } from "./OrderPagination";
+import { OrderPreviewModal } from "./OrderPreviewModal";
 
 export function BakerOrdersView({
   loading,
@@ -13,7 +13,6 @@ export function BakerOrdersView({
   shops,
   filters,
   selectedNumber,
-  selectedOrder,
   selectedOrderNumbers,
   error,
   selectionMode,
@@ -41,7 +40,11 @@ export function BakerOrdersView({
           onResetFilters={onResetFilters}
         />
 
-        {error && <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800">{error}</div>}
+        {error && (
+          <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800">
+            {error}
+          </div>
+        )}
 
         <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(13rem,1fr))]">
           {orders.length ? (
@@ -67,48 +70,41 @@ export function BakerOrdersView({
           )}
         </div>
 
-        <OrderPagination loading={loading} page={page} onPageChange={onPageChange} />
+        <OrderPagination
+          loading={loading}
+          page={page}
+          onPageChange={onPageChange}
+        />
 
         <BottomActionBar
           loading={loading}
-          selectedOrder={selectedOrder}
           selectedCount={selectedCount}
           selectionMode={selectionMode}
-          onPreview={() => {
-            setPreviewOrder(selectedOrder);
-            setPreviewOpen(true);
-          }}
           onOpenSelection={onOpenSelection}
         />
 
         {previewOpen && previewOrder && (
-          <OrderPreviewModal order={previewOrder} onClose={() => setPreviewOpen(false)} />
+          <OrderPreviewModal
+            order={previewOrder}
+            onClose={() => setPreviewOpen(false)}
+          />
         )}
       </div>
     </section>
   );
 }
 
-function BottomActionBar({ loading, selectedOrder, selectedCount, selectionMode, onPreview, onOpenSelection }) {
-  if (!selectedOrder && selectedCount === 0) {
+function BottomActionBar({ loading, selectedCount, selectionMode, onOpenSelection }) {
+  if (!selectionMode) {
     return null;
   }
   return (
-    <div className="fixed inset-x-0 bottom-16 z-20 border-t border-stone-300 bg-white/95 px-3 py-2 backdrop-blur sm:bottom-0">
+    <div className="fade-in fixed inset-x-0 bottom-16 z-20 border-t border-stone-300 bg-white/95 px-3 py-2 backdrop-blur sm:bottom-0">
       <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-2">
-        <span className="min-w-0 truncate text-[13px] font-medium text-stone-700">
-          {selectionMode ? `Выбрано: ${selectedCount}` : selectedOrder?.number}
-        </span>
-        <div className="flex shrink-0 gap-2">
-          <Button onClick={onPreview} disabled={!selectedOrder || loading}>
-            Обзор
-          </Button>
-          {selectionMode && (
-            <Button variant="primary" onClick={onOpenSelection} disabled={selectedCount === 0 || loading}>
-              Открыть выбранные
-            </Button>
-          )}
-        </div>
+        <span className="min-w-0 truncate text-[13px] font-medium text-stone-700">Выбрано: {selectedCount}</span>
+        <Button variant="primary" onClick={onOpenSelection} disabled={selectedCount === 0 || loading} className="shrink-0">
+          Открыть выбранные
+        </Button>
       </div>
     </div>
   );

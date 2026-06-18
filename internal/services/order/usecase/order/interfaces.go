@@ -81,6 +81,7 @@ type UpdateOrderRepositoryInput struct {
 	ToDepartmentID    *int64
 	CreatedByUsername string
 	FulfillmentDate   time.Time
+	Comments          orderdomain.OrderComments
 	HistoryItems      []orderdomain.OrderHistoryItem
 }
 
@@ -105,6 +106,7 @@ type UpdateOrderInput struct {
 	ToDepartmentID    *int64
 	CreatedByUsername string
 	FulfillmentDate   time.Time
+	Comments          orderdomain.OrderComments
 }
 
 type EnsureDefaultTemplatesResult struct {
