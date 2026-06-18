@@ -2,6 +2,7 @@ import { isWebMode } from '../../lib/auth';
 
 const navItems = [
   { route: { name: 'orders' }, label: 'Заказы', roles: ['shop', 'baker', 'admin'] },
+  { route: { name: 'orderNew' }, label: 'Новый заказ', roles: ['shop'] },
   { route: { name: 'adminUsers' }, label: 'Пользователи', roles: ['admin'] },
   { route: { name: 'me' }, label: 'Профиль', roles: ['shop', 'baker', 'admin'] },
 ];
@@ -54,7 +55,7 @@ export function OrdersLayout({ viewer, active, onNavigate, onLogout, children })
 }
 
 function activeNavItem(active) {
-  if (active === 'orderNew' || active === 'orderView' || active === 'orderEdit' || active === 'orderMonitor') {
+  if (active === 'orderView' || active === 'orderEdit' || active === 'orderMonitor') {
     return 'orders';
   }
   return active;

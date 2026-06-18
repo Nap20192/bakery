@@ -327,12 +327,10 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
           shops={shops}
           viewer={viewer}
           canFilterShops={viewer?.department_type === 'workshop'}
-          canWriteOrders={canWriteOrders}
           canUseMonitor={canUseMonitor}
           filters={filters}
           selectedNumber={selectedNumber}
           selectedOrderNumbers={selectedOrderNumbers}
-          onCreate={openCreateOrder}
           onSelect={(number) => loadOrder(number, canUseMonitor)}
           onToggleSelection={toggleOrderSelection}
           onPageChange={loadOrders}
