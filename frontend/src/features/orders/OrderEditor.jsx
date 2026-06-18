@@ -220,25 +220,23 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
                       <span className="min-w-0 break-words text-[14px] leading-5 text-stone-800">{item.name}</span>
                       <input
                         className={qtyClass}
-                        type="number"
+                        type="text"
                         inputMode="numeric"
-                        min={0}
-                        step={1}
+                        pattern="[0-9]*"
                         placeholder="0"
                         aria-label={`${item.name}: количество`}
                         value={value.quantity || ''}
-                        onChange={(e) => updateQuantity(item.name, 'quantity', e.target.value)}
+                        onChange={(e) => updateQuantity(item.name, 'quantity', e.target.value.replace(/\D/g, ''))}
                       />
                       <input
                         className={qtyClass}
-                        type="number"
+                        type="text"
                         inputMode="numeric"
-                        min={0}
-                        step={1}
+                        pattern="[0-9]*"
                         placeholder="0"
                         aria-label={`${item.name}: заказано`}
                         value={value.reserved_quantity || ''}
-                        onChange={(e) => updateQuantity(item.name, 'reserved_quantity', e.target.value)}
+                        onChange={(e) => updateQuantity(item.name, 'reserved_quantity', e.target.value.replace(/\D/g, ''))}
                       />
                     </div>
                   );

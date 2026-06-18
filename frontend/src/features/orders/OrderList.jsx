@@ -90,7 +90,7 @@ export function OrderList({
             <MuiButton size="small" variant="outlined" onClick={() => onFiltersChange({ fulfillmentDate: todayValue(1) })}>
               Завтра
             </MuiButton>
-            <MuiButton size="small" variant="text" onClick={onResetFilters}>
+            <MuiButton size="small" variant="outlined" onClick={onResetFilters}>
               Сброс
             </MuiButton>
           </div>

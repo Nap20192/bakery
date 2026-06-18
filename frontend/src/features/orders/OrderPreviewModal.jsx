@@ -14,12 +14,12 @@ export function OrderPreviewModal({ order, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/40 p-2 backdrop-blur-sm sm:p-4"
+      className="fade-in fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/40 p-2 backdrop-blur-sm sm:p-4"
       onClick={onClose}
       role="presentation"
     >
       <div
-        className="my-auto w-full max-w-3xl rounded-xl border border-stone-200 bg-white p-4 shadow-xl"
+        className="pop-in my-auto w-full max-w-3xl rounded-xl border border-stone-200 bg-white p-4 shadow-xl"
         onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"

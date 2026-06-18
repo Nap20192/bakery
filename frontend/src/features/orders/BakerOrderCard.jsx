@@ -1,16 +1,19 @@
+import { Button } from '../../components/Button';
 import { Icon } from '../../components/Icon';
 import { formatFulfillmentDate } from '../../lib/format';
 import { orderSource } from '../../lib/orders';
 
 export function BakerOrderCard({ order, selected, checked, selectionMode, onSelect, onToggleSelection, onPreview }) {
-  const handleClick = selectionMode ? onToggleSelection : onSelect;
+  // Plain tap opens the quick-look popup; the explicit button opens the full
+  // calculation screen. In selection mode a tap toggles the checkbox.
+  const handleClick = selectionMode ? onToggleSelection : onPreview;
 
   return (
     <article
-      className={`group relative flex flex-col rounded-xl border bg-white p-3 transition ${
+      className={`group relative flex flex-col rounded-xl border bg-white p-3 transition duration-150 active:scale-[0.99] ${
         checked
           ? 'border-stone-900 ring-1 ring-stone-900/15'
-          : selected
+          : !selectionMode && selected
             ? 'border-stone-800 shadow-sm'
             : 'border-stone-200 hover:border-stone-400 hover:shadow-sm'
       }`}
@@ -40,7 +43,7 @@ export function BakerOrderCard({ order, selected, checked, selectionMode, onSele
 
       {selectionMode ? (
         <span
-          className={`absolute right-2.5 top-2.5 inline-flex h-6 w-6 items-center justify-center rounded-full border text-[11px] font-semibold transition ${
+          className={`absolute right-2.5 top-2.5 inline-flex h-6 w-6 items-center justify-center rounded-full border transition duration-150 ${
             checked ? 'border-stone-900 bg-stone-900 text-white' : 'border-stone-300 bg-white text-transparent group-hover:border-stone-400'
           }`}
           aria-hidden="true"
@@ -48,15 +51,12 @@ export function BakerOrderCard({ order, selected, checked, selectionMode, onSele
           <Icon name="select" size={13} />
         </span>
       ) : (
-        <button
-          type="button"
-          onClick={onPreview}
-          title="Обзор"
-          aria-label="Обзор заказа"
-          className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-md text-stone-400 opacity-0 transition hover:bg-stone-100 hover:text-stone-700 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-stone-900/20 group-hover:opacity-100 sm:opacity-100"
-        >
-          <Icon name="eye" size={16} />
-        </button>
+        <div className="mt-2.5 border-t border-stone-100 pt-2.5">
+          <Button onClick={onSelect} className="w-full">
+            <Icon name="calculator" size={15} />
+            Расчёт теста
+          </Button>
+        </div>
       )}
     </article>
   );
