@@ -1,62 +1,37 @@
-import { useEffect, useState } from 'react';
-import { ApiError } from '../../api/client';
-import { fetchMe } from '../../api/orders';
-import { clearToken, isWebMode } from '../../lib/auth';
+import { isWebMode } from '../../lib/auth';
 import { Button } from '../../components/Button';
 
 function Row({ label, value }) {
   return (
-    <div className="flex justify-between gap-4 border-t border-stone-100 py-2 text-sm">
+    <div className="flex justify-between gap-4 border-t border-stone-100 py-2 text-sm first:border-t-0">
       <span className="text-stone-500">{label}</span>
-      <span className="font-medium">{value || '—'}</span>
+      <span className="font-medium text-stone-900">{value || '—'}</span>
     </div>
   );
 }
 
-// MePage is the standalone profile route (/me): shows the current user and lets
-// web users log out. It fetches /me itself so it works as an independent route.
-export function MePage() {
-  const [me, setMe] = useState(null);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    fetchMe()
-      .then(setMe)
-      .catch((err) => {
-        if (err instanceof ApiError && err.status === 401) {
-          goHome();
-          return;
-        }
-        setError(err instanceof Error ? err.message : String(err));
-      });
-  }, []);
-
-  function goHome() {
-    window.location.assign('/');
-  }
-
-  function logout() {
-    clearToken();
-    window.location.assign('/');
-  }
-
-  const v = me || {};
+// MePanel renders the current user's profile inside the app shell. It reads the
+// viewer already loaded by the page and lets web users log out (Mini App users
+// stay signed in via Telegram).
+export function MePanel({ viewer, onLogout }) {
+  const v = viewer || {};
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#f7f3ea] p-4 text-stone-900">
-      <div className="w-full max-w-sm rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
-        <h1 className="mb-4 text-lg font-semibold text-stone-950">Профиль</h1>
-        {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800">{error}</div>}
-        <Row label="Роль" value={v.role} />
-        <Row label="Telegram" value={v.telegram_username ? `@${v.telegram_username}` : ''} />
-        <Row label="Отдел" value={v.department_name} />
-        <Row label="Тип" value={v.department_type} />
-        <div className="mt-5 flex gap-2">
-          <Button onClick={goHome} className="flex-1">Назад</Button>
-          {isWebMode() && (
-            <Button onClick={logout} variant="danger" className="flex-1">Выйти</Button>
+    <main className="bg-[#f7f3ea] p-4 text-stone-900 sm:p-6">
+      <div className="mx-auto max-w-md">
+        <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
+          <h1 className="mb-4 text-lg font-semibold text-stone-950">Профиль</h1>
+          <Row label="Роль" value={v.role} />
+          <Row label="Telegram" value={v.telegram_username ? `@${v.telegram_username}` : ''} />
+          <Row label="Отдел" value={v.department_name} />
+          <Row label="Тип" value={v.department_type} />
+          {isWebMode() ? (
+            <Button onClick={onLogout} variant="danger" className="mt-5 w-full">
+              Выйти
+            </Button>
+          ) : (
+            <p className="mt-4 text-center text-[12px] text-stone-500">Вход через Telegram — выход не требуется.</p>
           )}
         </div>
-        {!isWebMode() && <p className="mt-3 text-center text-[12px] text-stone-500">Вход через Telegram — выход не требуется.</p>}
       </div>
     </main>
   );
