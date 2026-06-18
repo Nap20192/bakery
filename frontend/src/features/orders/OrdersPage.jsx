@@ -1,22 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button } from '../../components/Button';
-import { EmptyState } from '../../components/EmptyState';
 import { Login } from '../../components/Login';
 import { AdminUsers } from '../admin/AdminUsers';
-import { panelClass } from '../../components/Panel';
 import { apiBase, buildMode, frontendLogsEnabled } from '../../config/env';
 import { ApiError } from '../../api/client';
 import { createOrder, fetchBatchOrderMonitor, fetchCatalog, fetchDepartments, fetchMe, fetchOrder, fetchOrderMonitor, fetchOrders, updateOrder } from '../../api/orders';
 import { clearToken, getToken, isWebMode } from '../../lib/auth';
 import { logInfo, logWarn } from '../../lib/logger';
 import { miniAppModeFromLocation, orderNumberFromLocation, orderNumbersFromLocation, trimString } from '../../lib/url';
-import { OrderDetails } from './OrderDetails';
-import { OrderEditor } from './OrderEditor';
-import { OrderList } from './OrderList';
 import { OrdersLayout } from './OrdersLayout';
 import { BakerOrdersView } from './BakerOrdersView';
 import { BakerSelectionReview } from './BakerSelectionReview';
 import { BakerOrderReview } from './BakerOrderReview';
+import { ShopOrdersView } from './ShopOrdersView';
 
 const defaultPage = {
   page: 1,
@@ -336,10 +331,8 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
     });
   }
 
-  const canWriteOrders = viewer?.department_type === 'shop';
   const canUseMonitor = viewer?.department_type === 'workshop' || viewer?.role === 'baker';
-  const showEditor = canWriteOrders && editor;
-  const showCreateOrderPage = showEditor && editor?.mode === 'create';
+  const showCreateOrderPage = editor?.mode === 'create';
 
   if (authNeeded) {
     return <Login onAuthenticated={handleAuthenticated} />;
@@ -395,59 +388,30 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
           onResetFilters={resetFilters}
         />
       ) : (
-      <div className={showCreateOrderPage ? '' : 'lg:grid lg:grid-cols-[24rem_minmax(0,1fr)]'}>
-        {!showCreateOrderPage && (
-          <OrderList
-            loading={loading}
-            orders={orders}
-            page={ordersPage}
-            shops={shops}
-            viewer={viewer}
-            canFilterShops={viewer?.department_type === 'workshop'}
-            filters={filters}
-            selectedNumber={selectedNumber}
-            onSelect={(number) => loadOrder(number)}
-            onPageChange={loadOrders}
-            onFiltersChange={updateFilters}
-            onResetFilters={resetFilters}
-          />
-        )}
-        <section className="min-w-0 p-3 pt-0 sm:p-5 lg:p-6">
-        <div className={`mx-auto ${showCreateOrderPage ? 'max-w-5xl' : 'max-w-[1180px]'}`}>
-          {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800">{error}</div>}
-          {showEditor ? (
-            <section className={panelClass}>
-              <OrderEditor
-                key={`${editor.mode}-${editor.order?.number || 'new'}`}
-                catalog={catalog}
-                order={editor.order}
-                loading={loading}
-                onCancel={() => {
-                  setEditor(null);
-                  navigate(editor?.order?.number ? { name: 'orderView', number: editor.order.number } : { name: 'orders' });
-                }}
-                onSave={saveOrder}
-              />
-            </section>
-          ) : selectedOrder ? (
-            <div className="grid gap-4">
-              <section className={panelClass}>
-                {canWriteOrders && (
-                  <div className="mb-3 flex justify-end">
-                    <Button onClick={openUpdateOrder} disabled={loading}>
-                      Изменить
-                    </Button>
-                  </div>
-                )}
-                <OrderDetails order={selectedOrder} />
-              </section>
-            </div>
-          ) : (
-            <EmptyState>Заказы не загружены.</EmptyState>
-          )}
-        </div>
-        </section>
-      </div>
+        <ShopOrdersView
+          loading={loading}
+          orders={orders}
+          page={ordersPage}
+          shops={shops}
+          viewer={viewer}
+          filters={filters}
+          selectedNumber={selectedNumber}
+          selectedOrder={selectedOrder}
+          editor={editor}
+          catalog={catalog}
+          error={error}
+          showCreateOrderPage={showCreateOrderPage}
+          onSelect={(number) => loadOrder(number)}
+          onPageChange={loadOrders}
+          onFiltersChange={updateFilters}
+          onResetFilters={resetFilters}
+          onEdit={openUpdateOrder}
+          onCancelEdit={() => {
+            setEditor(null);
+            navigate(editor?.order?.number ? { name: 'orderView', number: editor.order.number } : { name: 'orders' });
+          }}
+          onSave={saveOrder}
+        />
       )}
     </OrdersLayout>
   );

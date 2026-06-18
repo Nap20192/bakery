@@ -8,7 +8,7 @@ export function BakerOrderReview({ loading, order, monitor, error, onBack, onCal
   return (
     <section className="px-3 py-3 sm:px-5 lg:px-6">
       <div className="mx-auto max-w-[1440px] space-y-4">
-        <section className="rounded-lg border border-stone-300 bg-[#fff7df] p-3">
+        <section className="rounded-lg border border-stone-300 bg-white p-3 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h1 className="m-0 text-[18px] font-semibold leading-7 text-stone-950">{order?.number || 'Заказ'}</h1>

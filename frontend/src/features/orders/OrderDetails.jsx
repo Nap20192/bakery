@@ -29,8 +29,8 @@ function OrderItems({ items, history }) {
   }
   const latestChanges = latestHistoryByCode(history);
   return (
-    <div className="overflow-hidden rounded-lg border border-stone-300 bg-[#fff7df]">
-      <div className="grid grid-cols-[minmax(0,1fr)_4.6rem] gap-2 bg-[#fff1cb] px-2.5 py-1.5 text-[11px] font-medium uppercase leading-5 text-stone-600 sm:grid-cols-[minmax(0,1fr)_5rem] sm:px-3">
+    <div className="overflow-hidden rounded-lg border border-stone-300 bg-white">
+      <div className="grid grid-cols-[minmax(0,1fr)_4.6rem] gap-2 bg-stone-50 px-2.5 py-1.5 text-[11px] font-medium uppercase leading-5 text-stone-600 sm:grid-cols-[minmax(0,1fr)_5rem] sm:px-3">
         <span>Позиция</span>
         <span className="text-right">Кол-во</span>
       </div>
@@ -66,8 +66,8 @@ function OrderItems({ items, history }) {
 function OrderHistory({ history }) {
   if (!history.length) return null;
   return (
-    <section className="mt-3 overflow-hidden rounded-lg border border-stone-300 bg-[#fff7df]">
-      <h4 className="border-b border-stone-300 bg-[#fff1cb] px-2.5 py-2 text-[13px] font-semibold leading-5 text-stone-950 sm:px-3">История изменений</h4>
+    <section className="mt-3 overflow-hidden rounded-lg border border-stone-300 bg-white">
+      <h4 className="border-b border-stone-300 bg-stone-50 px-2.5 py-2 text-[13px] font-semibold leading-5 text-stone-950 sm:px-3">История изменений</h4>
       <div className="divide-y divide-stone-300">
         {history.map((entry) => (
           <article className="px-2.5 py-2 sm:px-3" key={entry.id}>
@@ -122,7 +122,7 @@ function changeBackground(type) {
   if (type === 'added') return '#e7f6ed';
   if (type === 'updated') return '#fff0c2';
   if (type === 'removed') return '#fde8e8';
-  return '#fff1cb';
+  return '#f5f5f4';
 }
 
 function historyQuantityText(item) {

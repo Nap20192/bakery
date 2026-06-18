@@ -32,7 +32,7 @@ export function Login({ onAuthenticated }) {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#fff7df] p-4 text-stone-900">
+    <main className="flex min-h-screen items-center justify-center bg-[#f7f3ea] p-4 text-stone-900">
       <form onSubmit={onSubmit} className="w-full max-w-sm rounded-xl border border-amber-200 bg-white p-6 shadow-sm">
         <h1 className="mb-1 text-center text-lg font-semibold">Заказы пекарни</h1>
         <p className="mb-5 text-center text-[13px] leading-5 text-stone-600">Войдите, чтобы продолжить.</p>

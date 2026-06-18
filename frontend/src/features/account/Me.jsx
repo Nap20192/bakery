@@ -41,7 +41,7 @@ export function MePage() {
 
   const v = me || {};
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#fff7df] p-4 text-stone-900">
+    <main className="flex min-h-screen items-center justify-center bg-[#f7f3ea] p-4 text-stone-900">
       <div className="w-full max-w-sm rounded-xl border border-amber-200 bg-white p-6 shadow-sm">
         <h1 className="mb-4 text-lg font-semibold">Профиль</h1>
         {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800">{error}</div>}
