@@ -80,7 +80,7 @@ func (h *Handler) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		slog.WarnContext(r.Context(), "mini app create order failed", "error", err, "telegram_id", user.TelegramID)
-		httpx.WriteError(w, http.StatusBadRequest, "Не удалось создать заказ. Проверьте позиции и количества.")
+		httpx.WriteAppError(w, r, err, "Не удалось создать заказ. Проверьте позиции и количества.")
 		return
 	}
 	httpx.WriteJSON(w, http.StatusCreated, h.presenter.BuildOrderResponse(r.Context(), order))
@@ -121,7 +121,7 @@ func (h *Handler) handleUpdateOrder(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		slog.WarnContext(r.Context(), "mini app update order failed", "error", err, "telegram_id", user.TelegramID)
-		httpx.WriteError(w, http.StatusBadRequest, "Не удалось обновить заказ. Проверьте позиции и количества.")
+		httpx.WriteAppError(w, r, err, "Не удалось обновить заказ. Проверьте позиции и количества.")
 		return
 	}
 	httpx.WriteJSON(w, http.StatusOK, h.presenter.BuildOrderResponse(r.Context(), order))

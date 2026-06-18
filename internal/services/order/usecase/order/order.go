@@ -17,6 +17,7 @@ import (
 var (
 	ErrDishCatalogItemNotFound  = apperr.NotFound("order.dish_not_found", "Блюдо не найдено в каталоге.")
 	ErrDishCatalogItemAmbiguous = apperr.Conflict("order.dish_ambiguous", "Найдено несколько блюд с таким названием.")
+	ErrFulfillmentDateInPast    = apperr.Invalid("order.fulfillment_date_in_past", "Дата выполнения не может быть в прошлом.")
 )
 
 // Service is the order use-case implementation. It depends only on the
@@ -53,6 +54,9 @@ func (s *Service) CreateOrder(ctx context.Context, input orderdomain.CreateOrder
 
 	createdAt := s.domain.NormalizeCreatedAt(input.Date)
 	fulfillmentDate := s.domain.NormalizeFulfillmentDate(input.FulfillmentDate, createdAt)
+	if err := validateFulfillmentDateNotPast(fulfillmentDate, createdAt); err != nil {
+		return orderdomain.Order{}, err
+	}
 	shop, err := s.orderShopDepartment(ctx, input.FromDepartmentID)
 	if err != nil {
 		return orderdomain.Order{}, err
@@ -100,6 +104,9 @@ func (s *Service) UpdateOrder(ctx context.Context, input UpdateOrderInput) (orde
 		input.ToDepartmentID = existing.ToDepartmentID
 	}
 	fulfillmentDate := s.domain.NormalizeFulfillmentDate(input.FulfillmentDate, existing.CreatedAt)
+	if err := validateFulfillmentDateNotPast(fulfillmentDate, time.Now().UTC()); err != nil {
+		return orderdomain.Order{}, err
+	}
 	createdBy := strings.TrimSpace(input.CreatedByUsername)
 	if createdBy == "" {
 		createdBy = existing.CreatedByUsername
@@ -118,6 +125,19 @@ func (s *Service) UpdateOrder(ctx context.Context, input UpdateOrderInput) (orde
 		return orderdomain.Order{}, err
 	}
 	return order, nil
+}
+
+func validateFulfillmentDateNotPast(fulfillmentDate time.Time, now time.Time) error {
+	today := dateOnly(now)
+	if dateOnly(fulfillmentDate).Before(today) {
+		return ErrFulfillmentDateInPast
+	}
+	return nil
+}
+
+func dateOnly(value time.Time) time.Time {
+	value = value.UTC()
+	return time.Date(value.Year(), value.Month(), value.Day(), 0, 0, 0, 0, time.UTC)
 }
 
 func (s *Service) GetOrderByNumber(ctx context.Context, number string) (orderdomain.Order, error) {

@@ -163,6 +163,62 @@ func TestServiceDeleteOrdersOlderThan(t *testing.T) {
 	}
 }
 
+func TestServiceCreateOrderRejectsPastFulfillmentDate(t *testing.T) {
+	repo := &fakeRepo{}
+	svc := NewService(repo)
+	shopID := int64(10)
+	now := time.Date(2026, 6, 18, 10, 0, 0, 0, time.UTC)
+
+	_, err := svc.CreateOrder(context.Background(), orderdomain.CreateOrderInput{
+		Date:              now,
+		FulfillmentDate:   now.AddDate(0, 0, -1),
+		FromDepartmentID:  &shopID,
+		CreatedByUsername: "shop",
+		Items: []orderdomain.OrderItem{{
+			Code:        "15635",
+			ProductName: "Пирожок",
+			Quantity:    1,
+		}},
+	})
+
+	if !errors.Is(err, ErrFulfillmentDateInPast) {
+		t.Fatalf("CreateOrder error = %v, want ErrFulfillmentDateInPast", err)
+	}
+	if repo.createCalled {
+		t.Fatal("CreateOrder must not persist order with past fulfillment date")
+	}
+}
+
+func TestServiceCreateOrderAllowsTodayFulfillmentDate(t *testing.T) {
+	repo := &fakeRepo{
+		departmentByID: map[int64]Department{
+			10: {ID: 10, Code: "gagarina", Name: "Магазин Гагарина", Type: "shop"},
+		},
+	}
+	svc := NewService(repo)
+	shopID := int64(10)
+	now := time.Date(2026, 6, 18, 10, 0, 0, 0, time.UTC)
+
+	_, err := svc.CreateOrder(context.Background(), orderdomain.CreateOrderInput{
+		Date:              now,
+		FulfillmentDate:   now,
+		FromDepartmentID:  &shopID,
+		CreatedByUsername: "shop",
+		Items: []orderdomain.OrderItem{{
+			Code:        "15635",
+			ProductName: "Пирожок",
+			Quantity:    1,
+		}},
+	})
+
+	if err != nil {
+		t.Fatalf("CreateOrder returned error: %v", err)
+	}
+	if !repo.createCalled {
+		t.Fatal("CreateOrder should persist order with today's fulfillment date")
+	}
+}
+
 func TestParseDefaultDishCatalogItems(t *testing.T) {
 	items := parseDefaultDishCatalogItems(`
 КОКРОКИ
@@ -208,6 +264,8 @@ type fakeRepo struct {
 	dishCatalog      []DishCatalogItem
 	deleteResult     int64
 	deleteCutoff     time.Time
+	departmentByID   map[int64]Department
+	createCalled     bool
 }
 
 var _ Repository = (*fakeRepo)(nil)
@@ -242,6 +300,7 @@ func (f *fakeRepo) DeleteOrdersOlderThan(_ context.Context, cutoff time.Time) (i
 }
 
 func (f *fakeRepo) CreateOrder(context.Context, CreateOrderRepositoryInput) (orderdomain.Order, error) {
+	f.createCalled = true
 	return orderdomain.Order{}, nil
 }
 
@@ -257,7 +316,10 @@ func (f *fakeRepo) ListOrders(context.Context, ListOrdersInput) (ListOrdersResul
 	return ListOrdersResult{}, nil
 }
 
-func (f *fakeRepo) GetDepartmentByID(context.Context, int64) (Department, error) {
+func (f *fakeRepo) GetDepartmentByID(_ context.Context, id int64) (Department, error) {
+	if department, ok := f.departmentByID[id]; ok {
+		return department, nil
+	}
 	return Department{}, nil
 }
 

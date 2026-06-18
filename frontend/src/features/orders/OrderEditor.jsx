@@ -4,6 +4,14 @@ import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
 import { PanelHeader } from '../../components/Panel';
 
+function todayValue() {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function initialQuantities(order) {
   const quantities = {};
   for (const item of order?.items || []) {
@@ -66,6 +74,7 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
           size="medium"
           label="Дата выполнения"
           type="date"
+          min={todayValue()}
           value={date}
           onChange={(event) => setDate(event.target.value)}
           slotProps={{ inputLabel: { shrink: true } }}
