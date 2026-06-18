@@ -119,6 +119,7 @@ func (s *Service) UpdateOrder(ctx context.Context, input UpdateOrderInput) (orde
 		ToDepartmentID:    input.ToDepartmentID,
 		CreatedByUsername: createdBy,
 		FulfillmentDate:   fulfillmentDate,
+		Comments:          input.Comments,
 		HistoryItems:      historyItems,
 	})
 	if err != nil {

@@ -20,7 +20,20 @@ type Order struct {
 	Items             []OrderItem `json:"items"`
 	CreatedAt         time.Time   `json:"created_at"`
 	FulfillmentDate   time.Time   `json:"fulfillment_date"`
+	Comments          OrderComments `json:"comments"`
 	History           []OrderHistory
+}
+
+// OrderComments holds an order's free-form notes: per-item comments (keyed by
+// product name) and one general comment for the whole order.
+type OrderComments struct {
+	General string        `json:"general,omitempty"`
+	Items   []ItemComment `json:"items,omitempty"`
+}
+
+type ItemComment struct {
+	ProductName string `json:"product_name"`
+	Comment     string `json:"comment"`
 }
 
 type OrderHistory struct {
@@ -65,6 +78,7 @@ type CreateOrderInput struct {
 	CreatedByUsername string
 	Date              time.Time
 	FulfillmentDate   time.Time
+	Comments          OrderComments
 }
 
 // OrderItem — одна позиция в заказе.

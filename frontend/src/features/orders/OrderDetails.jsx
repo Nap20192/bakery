@@ -11,7 +11,7 @@ export function OrderDetails({ order }) {
       <div className="flex items-start justify-between gap-2">
         <PanelHeader title={order.number} count={order.items?.length || 0} />
         {(order.items?.length || 0) > 0 && (
-          <CopyButton getText={() => orderItemsToText(order)} label="Копировать" className="shrink-0" />
+          <CopyButton getText={() => orderItemsToText(order, false)} label="Копировать" className="shrink-0" />
         )}
       </div>
 

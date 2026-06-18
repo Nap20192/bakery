@@ -85,6 +85,7 @@ func (r *OrderRepository) createOrderWithQueries(ctx context.Context, q sqlc.Que
 		CreatedAt:         helpers.Timestamptz(input.CreatedAt),
 		FulfillmentDate:   helpers.DateOf(input.FulfillmentDate),
 		CreatedByUsername: strings.TrimSpace(input.Input.CreatedByUsername),
+		Comments:          marshalComments(input.Input.Comments),
 	})
 	if err != nil {
 		return orderdomain.Order{}, fmt.Errorf("create order: %w", err)
@@ -164,6 +165,7 @@ func (r *OrderRepository) updateOrderWithQueries(ctx context.Context, q sqlc.Que
 		FulfillmentDate:   helpers.DateOf(input.FulfillmentDate),
 		CreatedByUsername: input.CreatedByUsername,
 		Number:            input.Number,
+		Comments:          marshalComments(input.Comments),
 	})
 	if err != nil {
 		return orderdomain.Order{}, fmt.Errorf("update order: %w", err)
@@ -414,8 +416,33 @@ func orderFromRow(row sqlc.Order, items []orderdomain.OrderItem, history []order
 		Items:             items,
 		CreatedAt:         row.CreatedAt.Time,
 		FulfillmentDate:   row.FulfillmentDate.Time,
+		Comments:          parseComments(row.Comments),
 		History:           history,
 	}
+}
+
+// marshalComments serializes order comments to JSON, returning nil (SQL NULL)
+// when there is nothing to store.
+func marshalComments(comments orderdomain.OrderComments) []byte {
+	if strings.TrimSpace(comments.General) == "" && len(comments.Items) == 0 {
+		return nil
+	}
+	data, err := json.Marshal(comments)
+	if err != nil {
+		return nil
+	}
+	return data
+}
+
+func parseComments(raw []byte) orderdomain.OrderComments {
+	if len(raw) == 0 {
+		return orderdomain.OrderComments{}
+	}
+	var comments orderdomain.OrderComments
+	if err := json.Unmarshal(raw, &comments); err != nil {
+		return orderdomain.OrderComments{}
+	}
+	return comments
 }
 
 func mapOrderItems(items []sqlc.GetOrderItemsByOrderIDRow) []orderdomain.OrderItem {

@@ -130,6 +130,7 @@ type Order struct {
 	ToDepartmentID    *int64             `json:"to_department_id"`
 	FulfillmentDate   pgtype.Date        `json:"fulfillment_date"`
 	CreatedByUsername string             `json:"created_by_username"`
+	Comments          []byte             `json:"comments"`
 }
 
 type OrderCounter struct {
