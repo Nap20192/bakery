@@ -170,12 +170,10 @@ func (b *OrderBot) handleConfirm(c tele.Context) error {
 		return sendText(c, "Не удалось создать заказ. Проверьте заказ и попробуйте снова.")
 	}
 
-	fromName := b.departmentDisplayName(ctx, order.FromDepartmentID)
-	toName := b.departmentDisplayName(ctx, order.ToDepartmentID)
-	summary := responses.OrderSummary(order, fromName, toName)
-
+	// No reply here: the order-events notifier already messages the creator,
+	// bakers and the workshop chat. Avoid the duplicate.
 	slog.InfoContext(applog.WithOrderNumber(ctx, order.Number), "order created", "items", len(items))
-	return sendHTML(c, summary, b.actionMarkup(c))
+	return nil
 }
 
 func (b *OrderBot) createdByUsername(ctx context.Context, sender *tele.User) string {
