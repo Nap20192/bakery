@@ -11,7 +11,8 @@ import (
 	"fmt"
 	"strings"
 
-	accessdomain "bakery/internal/domain/access"
+	"bakery/internal/pkg/apperr"
+	accessdomain "bakery/internal/services/auth/domain"
 )
 
 const (
@@ -24,8 +25,8 @@ const (
 )
 
 var (
-	ErrAuthUserNotFound = errors.New("auth user not found")
-	ErrInvalidRole      = errors.New("invalid auth role")
+	ErrAuthUserNotFound = apperr.NotFound("auth.user_not_found", "Пользователь не найден.")
+	ErrInvalidRole      = apperr.Invalid("auth.invalid_role", "Недопустимая роль.")
 )
 
 // Service is the auth use-case implementation. It depends only on the

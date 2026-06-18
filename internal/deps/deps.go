@@ -1,23 +1,24 @@
 package deps
 
 import (
-	"context"
 	"fmt"
 
 	"bakery/internal/inbound/api"
 	"bakery/internal/inbound/bot"
+	adminapp "bakery/internal/services/admin/app"
 	adminuc "bakery/internal/services/admin/usecase/admin"
-	authrepo "bakery/internal/services/auth/infra/repo"
+	authapp "bakery/internal/services/auth/app"
 	authuc "bakery/internal/services/auth/usecase/auth"
-	departmentrepo "bakery/internal/services/department/infra/repo"
+	departmentapp "bakery/internal/services/department/app"
 	departmentuc "bakery/internal/services/department/usecase/department"
-	monitorrepo "bakery/internal/services/monitor/infra/repo"
+	monitorapp "bakery/internal/services/monitor/app"
 	monitoruc "bakery/internal/services/monitor/usecase/monitor"
-	orderrepo "bakery/internal/services/order/infra/repo"
+	orderapp "bakery/internal/services/order/app"
+	orderoutbox "bakery/internal/services/order/infra/outbox"
 	orderuc "bakery/internal/services/order/usecase/order"
-	syncrepo "bakery/internal/services/sync/infra/repo"
+	syncapp "bakery/internal/services/sync/app"
 	syncuc "bakery/internal/services/sync/usecase/sync"
-	techcardrepo "bakery/internal/services/techcard/infra/repo"
+	techcardapp "bakery/internal/services/techcard/app"
 	techcarduc "bakery/internal/services/techcard/usecase/techcard"
 )
 
@@ -28,6 +29,7 @@ type AppDeps struct {
 	DepartmentService departmentuc.UseCase
 	MonitorService    monitoruc.UseCase
 	OrderService      orderuc.UseCase
+	OrderOutboxRelay  *orderoutbox.Relay
 	SyncService       syncuc.UseCase
 	TechCardService   techcarduc.UseCase
 	APIServer         *api.Server
@@ -51,35 +53,9 @@ func WithAuthService(infra *InfraDeps) appOption {
 		if infra == nil || infra.queries == nil {
 			return fmt.Errorf("missing dependencies for AuthService")
 		}
-		deps.AuthService = authuc.NewService(authrepo.New(infra.queries))
+		deps.AuthService = authapp.New(infra.queries)
 		return nil
 	}
-}
-
-// adminDepartments adapts the department service to the admin service's
-// Departments port.
-type adminDepartments struct {
-	svc departmentuc.UseCase
-}
-
-func (a adminDepartments) GetByCode(ctx context.Context, code string) (adminuc.Department, error) {
-	d, err := a.svc.GetByCode(ctx, code)
-	if err != nil {
-		return adminuc.Department{}, err
-	}
-	return adminuc.Department{ID: d.ID, Code: d.Code, Name: d.Name, Type: d.Type}, nil
-}
-
-func (a adminDepartments) ListAll(ctx context.Context) ([]adminuc.Department, error) {
-	rows, err := a.svc.ListByType(ctx, "")
-	if err != nil {
-		return nil, err
-	}
-	out := make([]adminuc.Department, 0, len(rows))
-	for _, d := range rows {
-		out = append(out, adminuc.Department{ID: d.ID, Code: d.Code, Name: d.Name, Type: d.Type})
-	}
-	return out, nil
 }
 
 func WithAdminService() appOption {
@@ -87,24 +63,34 @@ func WithAdminService() appOption {
 		if deps.AuthService == nil || deps.DepartmentService == nil {
 			return fmt.Errorf("missing dependencies for AdminService")
 		}
-		deps.AdminService = adminuc.NewService(deps.AuthService, adminDepartments{svc: deps.DepartmentService})
+		deps.AdminService = adminapp.New(deps.AuthService, deps.DepartmentService)
 		return nil
 	}
 }
 
 func WithRbacService() appOption {
 	return func(deps *AppDeps) error {
-		deps.RbacService = authuc.NewRBAC()
+		deps.RbacService = authapp.NewRBAC()
 		return nil
 	}
 }
 
 func WithOrderService(infra *InfraDeps) appOption {
 	return func(deps *AppDeps) error {
-		if infra == nil || infra.queries == nil || infra.DB == nil || infra.eventPublisher == nil {
+		if infra == nil || infra.queries == nil || infra.DB == nil {
 			return fmt.Errorf("missing dependencies for OrderService")
 		}
-		deps.OrderService = orderuc.NewService(orderrepo.New(infra.queries, infra.DB), infra.eventPublisher)
+		deps.OrderService = orderapp.New(infra.queries, infra.DB)
+		return nil
+	}
+}
+
+func WithOrderOutboxRelay(infra *InfraDeps) appOption {
+	return func(deps *AppDeps) error {
+		if infra == nil || infra.queries == nil || infra.DB == nil || infra.eventPublisher == nil {
+			return fmt.Errorf("missing dependencies for OrderOutboxRelay")
+		}
+		deps.OrderOutboxRelay = orderapp.NewOutboxRelay(infra.queries, infra.DB, infra.eventPublisher, infra.config.Outbox.Interval)
 		return nil
 	}
 }
@@ -114,7 +100,7 @@ func WithDepartmentService(infra *InfraDeps) appOption {
 		if infra == nil || infra.queries == nil {
 			return fmt.Errorf("missing dependencies for DepartmentService")
 		}
-		deps.DepartmentService = departmentuc.NewService(departmentrepo.New(infra.queries))
+		deps.DepartmentService = departmentapp.New(infra.queries)
 		return nil
 	}
 }
@@ -124,7 +110,7 @@ func WithMonitorService(infra *InfraDeps) appOption {
 		if infra == nil || infra.queries == nil {
 			return fmt.Errorf("missing dependencies for MonitorService")
 		}
-		deps.MonitorService = monitoruc.NewService(monitorrepo.New(infra.queries))
+		deps.MonitorService = monitorapp.New(infra.queries)
 		return nil
 	}
 }
@@ -134,7 +120,7 @@ func WithTechCardService(infra *InfraDeps) appOption {
 		if infra == nil || infra.queries == nil {
 			return fmt.Errorf("missing dependencies for TechCardService")
 		}
-		deps.TechCardService = techcarduc.NewService(techcardrepo.New(infra.queries))
+		deps.TechCardService = techcardapp.New(infra.queries)
 		return nil
 	}
 }
@@ -144,11 +130,7 @@ func WithSyncService(infra *InfraDeps) appOption {
 		if infra == nil || infra.config == nil || infra.DB == nil || infra.iikoClient == nil || infra.queries == nil {
 			return fmt.Errorf("missing dependencies for SyncService")
 		}
-		deps.SyncService = syncuc.NewService(
-			infra.iikoClient,
-			syncrepo.New(infra.DB, infra.queries),
-			infra.config.Sync.Interval,
-		)
+		deps.SyncService = syncapp.New(infra.iikoClient, infra.DB, infra.queries, infra.config.Sync.Interval)
 		return nil
 	}
 }

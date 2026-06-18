@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	accessdomain "bakery/internal/domain/access"
 	"bakery/internal/pkg/enum"
+	accessdomain "bakery/internal/services/auth/domain"
 
 	tele "gopkg.in/telebot.v3"
 )
@@ -162,8 +162,8 @@ func (s actionMenuSnapshot) orderRows() [][]string {
 	if s.orderItems <= 0 {
 		return nil
 	}
-	stateText, action := s.orderStateText()
-	return [][]string{{stateText}, {action}, {actionCancelOrder}}
+	_, action := s.orderStateText()
+	return [][]string{{action, actionCancelOrder}}
 }
 
 func (s actionMenuSnapshot) orderStateText() (string, string) {
@@ -175,7 +175,6 @@ func (s actionMenuSnapshot) orderStateText() (string, string) {
 
 func (s actionMenuSnapshot) filterRows() [][]string {
 	return [][]string{
-		{s.filterStateText()},
 		{orderFilterTodayText, orderFilterTomorrowText, orderFilterAllDatesText},
 	}
 }

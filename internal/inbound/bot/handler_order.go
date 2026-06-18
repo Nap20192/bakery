@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	orderdomain "bakery/internal/domain/order"
 	"bakery/internal/pkg/enum"
 	authuc "bakery/internal/services/auth/usecase/auth"
+	orderdomain "bakery/internal/services/order/domain"
 	orderuc "bakery/internal/services/order/usecase/order"
 	applog "bakery/pkg/logger"
 

@@ -1,7 +1,7 @@
 // Package orderuc is the application (use-case) layer of the order service.
 //
 // It owns the service's boundary contract (UseCase) and the ports it depends
-// on (Repository, EventPublisher). Following the dependency-inversion
+// on (Repository). Following the dependency-inversion
 // principle, this inner layer declares the interfaces it needs and never
 // imports infrastructure; the infra adapters (infra/repo) depend on this
 // package and implement these ports. Wiring happens in the composition root.
@@ -11,7 +11,7 @@ import (
 	"context"
 	"time"
 
-	orderdomain "bakery/internal/domain/order"
+	orderdomain "bakery/internal/services/order/domain"
 )
 
 // UseCase is the boundary the delivery layer (bot, HTTP API) talks to.
@@ -44,11 +44,6 @@ type Repository interface {
 	ListDishCatalog(ctx context.Context) ([]DishCatalogItem, error)
 	UpsertDishCatalogItem(ctx context.Context, item DishCatalogItem) error
 	DeleteOrdersOlderThan(ctx context.Context, cutoff time.Time) (int64, error)
-}
-
-// EventPublisher is the domain-event port. The RabbitMQ publisher implements it.
-type EventPublisher interface {
-	PublishEvents(ctx context.Context, events []any) error
 }
 
 // Department is the persistence view of a department needed to create an order.

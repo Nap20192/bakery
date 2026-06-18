@@ -10,13 +10,7 @@ import (
 	"sync"
 	"time"
 
-	orderdomain "bakery/internal/domain/order"
-	authuc "bakery/internal/services/auth/usecase/auth"
-	departmentuc "bakery/internal/services/department/usecase/department"
-	monitoruc "bakery/internal/services/monitor/usecase/monitor"
-	orderuc "bakery/internal/services/order/usecase/order"
-	syncuc "bakery/internal/services/sync/usecase/sync"
-	techcarduc "bakery/internal/services/techcard/usecase/techcard"
+	orderdomain "bakery/internal/services/order/domain"
 	"bakery/pkg/rabbitmq/consumer"
 
 	tele "gopkg.in/telebot.v3"
@@ -24,13 +18,13 @@ import (
 
 type baseBot struct {
 	tele           *tele.Bot
-	orderSvc       orderuc.UseCase
-	authSvc        authuc.UseCase
-	rbacSvc        *authuc.RBAC
-	departmentSvc  departmentuc.UseCase
-	monitorSvc     monitoruc.UseCase
-	syncSvc        syncuc.UseCase
-	techCardSvc    techcarduc.UseCase
+	orderSvc       OrderBackend
+	authSvc        AuthBackend
+	rbacSvc        Authorizer
+	departmentSvc  DepartmentBackend
+	monitorSvc     MonitorBackend
+	syncSvc        SyncBackend
+	techCardSvc    TechCardBackend
 	eventConsumer  *consumer.Consumer
 	miniAppURL     string
 	workshopChatID int64
@@ -44,13 +38,13 @@ type OrderBot struct {
 
 func NewOrderBot(
 	token string,
-	orderSvc orderuc.UseCase,
-	authSvc authuc.UseCase,
-	rbacSvc *authuc.RBAC,
-	departmentSvc departmentuc.UseCase,
-	monitorSvc monitoruc.UseCase,
-	syncSvc syncuc.UseCase,
-	techCardSvc techcarduc.UseCase,
+	orderSvc OrderBackend,
+	authSvc AuthBackend,
+	rbacSvc Authorizer,
+	departmentSvc DepartmentBackend,
+	monitorSvc MonitorBackend,
+	syncSvc SyncBackend,
+	techCardSvc TechCardBackend,
 	eventConsumer *consumer.Consumer,
 	miniAppURL string,
 	workshopChatID int64,

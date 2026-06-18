@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	monitoringdomain "bakery/internal/domain/monitoring"
-	orderdomain "bakery/internal/domain/order"
+	monitoringdomain "bakery/internal/services/monitor/domain"
+	orderdomain "bakery/internal/services/order/domain"
 )
 
 func TestMonitorReportsHidesProductCodes(t *testing.T) {

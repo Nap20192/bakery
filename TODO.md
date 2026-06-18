@@ -3,6 +3,11 @@
 Goal: consistent per-service clean architecture, no infra-type leakage, reliable
 events, decoupled bot, tested critical flows.
 
+## Architecture alignment (go-coffeeshop reference)
+- [x] domain moved inside each service (internal/services/<svc>/domain)
+- [x] 9. per-service `app/` composition (decentralize internal/deps god-file)
+- [x] 10. HTTP handlers distributed to services (internal/services/<svc>/infra/http) + shared httpx transport
+
 ## Standardize services (ports + remove sqlc leakage)
 Make every service layered like auth/order: `usecase` (UseCase/Repository
 ports + DTO) + `infra/repo`. Delivery depends on interfaces, never on sqlc.
@@ -13,7 +18,9 @@ ports + DTO) + `infra/repo`. Delivery depends on interfaces, never on sqlc.
 - [ ] 4. sync → ports + infra/repo (+ iiko client port)
 
 ## Cross-cutting
-- [ ] 5. Centralized typed domain errors + one mapper (err → HTTP/bot); centralize DTO mappers
+- [x] 5. Centralized typed domain errors (internal/pkg/apperr: Kind taxonomy) + one HTTP mapper
+        (httpx.WriteAppError). Sentinels carry kinds; errors.Is + KindOf both work. DTO mappers
+        already live per-service (orderhttp.OrderPresenter, adminhttp.toUserResponse, departmentResponse).
 - [ ] 6. Transactional outbox for order events + correlation id in envelope/logs
 - [ ] 7. Bot → pure API client (add missing endpoints, http client, per-user bearer); cmd/bot drops DB
 - [ ] 8. Tests: usecase (fake repos) for auth/admin/monitor/notify; repo integration (testcontainers)

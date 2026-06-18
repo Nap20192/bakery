@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	monitoringdomain "bakery/internal/domain/monitoring"
-	orderdomain "bakery/internal/domain/order"
+	monitoringdomain "bakery/internal/services/monitor/domain"
+	orderdomain "bakery/internal/services/order/domain"
 )
 
 type Service struct {

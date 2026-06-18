@@ -30,9 +30,7 @@ func TestActionMenuSnapshotRows(t *testing.T) {
 			snap: actionMenuSnapshot{state: actionStateShopCreate, departmentType: string(enum.DepartmentTypeShop), orderItems: 3},
 			want: [][]string{
 				{actionTemplates, actionOrders},
-				{"Создается заказ: 3 поз."},
-				{actionSubmitOrder},
-				{actionCancelOrder},
+				{actionSubmitOrder, actionCancelOrder},
 			},
 		},
 		{
@@ -40,9 +38,7 @@ func TestActionMenuSnapshotRows(t *testing.T) {
 			snap: actionMenuSnapshot{state: actionStateShopUpdate, departmentType: string(enum.DepartmentTypeShop), orderItems: 2, editOrder: "Г.24.05.26.001"},
 			want: [][]string{
 				{actionTemplates, actionOrders},
-				{"Редактируется: Г.24.05.26.001"},
-				{actionUpdateOrder},
-				{actionCancelOrder},
+				{actionUpdateOrder, actionCancelOrder},
 			},
 		},
 		{
@@ -50,7 +46,6 @@ func TestActionMenuSnapshotRows(t *testing.T) {
 			snap: actionMenuSnapshot{state: actionStateWorkshopIdle, departmentType: string(enum.DepartmentTypeWorkshop), filterShop: orderFilterAllShopsText},
 			want: [][]string{
 				{actionOrders},
-				{"Фильтр: Все магазины / Все даты"},
 				{orderFilterTodayText, orderFilterTomorrowText, orderFilterAllDatesText},
 			},
 		},
@@ -59,7 +54,6 @@ func TestActionMenuSnapshotRows(t *testing.T) {
 			snap: actionMenuSnapshot{state: actionStateWorkshopFilter, departmentType: string(enum.DepartmentTypeWorkshop), filterShop: "Магазин Гагарина", filterDate: filterDate},
 			want: [][]string{
 				{actionOrders},
-				{"Фильтр: Магазин Гагарина / 25.05.2026"},
 				{orderFilterTodayText, orderFilterTomorrowText, orderFilterAllDatesText},
 			},
 		},
@@ -69,9 +63,7 @@ func TestActionMenuSnapshotRows(t *testing.T) {
 			want: [][]string{
 				{actionTemplates, actionOrders},
 				{actionSync},
-				{"Создается заказ: 1 поз."},
-				{actionSubmitOrder},
-				{actionCancelOrder},
+				{actionSubmitOrder, actionCancelOrder},
 			},
 		},
 		{
@@ -80,7 +72,6 @@ func TestActionMenuSnapshotRows(t *testing.T) {
 			want: [][]string{
 				{actionOrders},
 				{actionSync},
-				{"Фильтр: Магазин Сарыарка / Все даты"},
 				{orderFilterTodayText, orderFilterTomorrowText, orderFilterAllDatesText},
 			},
 		},

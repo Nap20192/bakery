@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	accessdomain "bakery/internal/domain/access"
+	"bakery/internal/pkg/apperr"
+	accessdomain "bakery/internal/services/auth/domain"
 )
 
-var ErrInvalidRole = fmt.Errorf("invalid role")
+var ErrInvalidRole = apperr.Invalid("admin.invalid_role", "Недопустимая роль.")
 
 // Service is the admin use-case implementation. It depends only on the
 // UserAccounts and Departments ports.

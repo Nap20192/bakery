@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	monitoringdomain "bakery/internal/domain/monitoring"
-	orderdomain "bakery/internal/domain/order"
+	monitoringdomain "bakery/internal/services/monitor/domain"
+	orderdomain "bakery/internal/services/order/domain"
 	applog "bakery/pkg/logger"
 
 	tele "gopkg.in/telebot.v3"

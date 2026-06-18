@@ -6,14 +6,17 @@ package orderrepo
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	orderdomain "bakery/internal/domain/order"
 	sqlc "bakery/internal/outbound/db/sqlc"
+	"bakery/internal/pkg/correlation"
 	"bakery/internal/pkg/helpers"
+	sharedkernel "bakery/internal/pkg/sharedkernel"
+	orderdomain "bakery/internal/services/order/domain"
 	orderuc "bakery/internal/services/order/usecase/order"
 
 	"github.com/jackc/pgx/v5"
@@ -91,34 +94,50 @@ func (r *OrderRepository) createOrderWithQueries(ctx context.Context, q sqlc.Que
 		return orderdomain.Order{}, err
 	}
 
-	return orderFromRow(row, input.Input.Items, nil), nil
+	order := orderFromRow(row, input.Input.Items, nil)
+	order.RecordCreated()
+	if err := r.persistOutbox(ctx, q, order.Number, order.PullDomainEvents()); err != nil {
+		return orderdomain.Order{}, err
+	}
+	return order, nil
+}
+
+// persistOutbox writes the aggregate's domain events to the order_outbox table
+// inside the caller's transaction, so events are committed atomically with the
+// order change. A relay later publishes them to RabbitMQ.
+func (r *OrderRepository) persistOutbox(ctx context.Context, q sqlc.Querier, aggregateID string, events []sharedkernel.DomainEvent) error {
+	if len(events) == 0 {
+		return nil
+	}
+	correlationID := correlation.FromContext(ctx)
+	for _, event := range events {
+		payload, err := json.Marshal(event)
+		if err != nil {
+			return fmt.Errorf("marshal outbox event: %w", err)
+		}
+		if _, err := q.InsertOrderOutboxEvent(ctx, sqlc.InsertOrderOutboxEventParams{
+			AggregateID:   aggregateID,
+			EventType:     event.Identity(),
+			Payload:       payload,
+			CorrelationID: correlationID,
+		}); err != nil {
+			return fmt.Errorf("insert outbox event: %w", err)
+		}
+	}
+	return nil
 }
 
 func (r *OrderRepository) UpdateOrder(ctx context.Context, input orderuc.UpdateOrderRepositoryInput) (orderdomain.Order, error) {
-	var (
-		row sqlc.Order
-		err error
-	)
 	if r.db == nil {
-		row, err = r.updateOrderWithQueries(ctx, r.queries, input)
-	} else {
-		row, err = r.updateOrderTx(ctx, input)
+		return r.updateOrderWithQueries(ctx, r.queries, input)
 	}
-	if err != nil {
-		return orderdomain.Order{}, err
-	}
-
-	history, err := r.listOrderHistory(ctx, r.queries, row.ID)
-	if err != nil {
-		return orderdomain.Order{}, err
-	}
-	return orderFromRow(row, input.Items, history), nil
+	return r.updateOrderTx(ctx, input)
 }
 
-func (r *OrderRepository) updateOrderTx(ctx context.Context, input orderuc.UpdateOrderRepositoryInput) (sqlc.Order, error) {
+func (r *OrderRepository) updateOrderTx(ctx context.Context, input orderuc.UpdateOrderRepositoryInput) (orderdomain.Order, error) {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
-		return sqlc.Order{}, fmt.Errorf("begin order tx: %w", err)
+		return orderdomain.Order{}, fmt.Errorf("begin order tx: %w", err)
 	}
 	committed := false
 	defer func() {
@@ -127,18 +146,18 @@ func (r *OrderRepository) updateOrderTx(ctx context.Context, input orderuc.Updat
 		}
 	}()
 
-	row, err := r.updateOrderWithQueries(ctx, r.queries.WithTx(tx), input)
+	order, err := r.updateOrderWithQueries(ctx, r.queries.WithTx(tx), input)
 	if err != nil {
-		return sqlc.Order{}, err
+		return orderdomain.Order{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {
-		return sqlc.Order{}, fmt.Errorf("commit order tx: %w", err)
+		return orderdomain.Order{}, fmt.Errorf("commit order tx: %w", err)
 	}
 	committed = true
-	return row, nil
+	return order, nil
 }
 
-func (r *OrderRepository) updateOrderWithQueries(ctx context.Context, q sqlc.Querier, input orderuc.UpdateOrderRepositoryInput) (sqlc.Order, error) {
+func (r *OrderRepository) updateOrderWithQueries(ctx context.Context, q sqlc.Querier, input orderuc.UpdateOrderRepositoryInput) (orderdomain.Order, error) {
 	row, err := q.UpdateOrder(ctx, sqlc.UpdateOrderParams{
 		FromDepartmentID:  input.FromDepartmentID,
 		ToDepartmentID:    input.ToDepartmentID,
@@ -147,20 +166,29 @@ func (r *OrderRepository) updateOrderWithQueries(ctx context.Context, q sqlc.Que
 		Number:            input.Number,
 	})
 	if err != nil {
-		return sqlc.Order{}, fmt.Errorf("update order: %w", err)
+		return orderdomain.Order{}, fmt.Errorf("update order: %w", err)
 	}
 	if err := q.DeleteOrderItemsByOrderID(ctx, row.ID); err != nil {
-		return sqlc.Order{}, fmt.Errorf("delete order items: %w", err)
+		return orderdomain.Order{}, fmt.Errorf("delete order items: %w", err)
 	}
 	if err := r.createOrderItems(ctx, q, row.ID, input.Items); err != nil {
-		return sqlc.Order{}, err
+		return orderdomain.Order{}, err
 	}
 	if len(input.HistoryItems) > 0 {
 		if err := r.createOrderHistory(ctx, q, row.ID, input.CreatedByUsername, input.HistoryItems); err != nil {
-			return sqlc.Order{}, err
+			return orderdomain.Order{}, err
 		}
 	}
-	return row, nil
+	history, err := r.listOrderHistory(ctx, q, row.ID)
+	if err != nil {
+		return orderdomain.Order{}, err
+	}
+	order := orderFromRow(row, input.Items, history)
+	order.RecordUpdated()
+	if err := r.persistOutbox(ctx, q, order.Number, order.PullDomainEvents()); err != nil {
+		return orderdomain.Order{}, err
+	}
+	return order, nil
 }
 
 func (r *OrderRepository) GetOrderByNumber(ctx context.Context, number string) (orderdomain.Order, error) {

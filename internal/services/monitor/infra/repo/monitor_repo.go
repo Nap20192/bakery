@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	monitoringdomain "bakery/internal/domain/monitoring"
-	orderdomain "bakery/internal/domain/order"
 	sqlc "bakery/internal/outbound/db/sqlc"
 	"bakery/internal/pkg/enum"
+	monitoringdomain "bakery/internal/services/monitor/domain"
 	monitoruc "bakery/internal/services/monitor/usecase/monitor"
+	orderdomain "bakery/internal/services/order/domain"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"

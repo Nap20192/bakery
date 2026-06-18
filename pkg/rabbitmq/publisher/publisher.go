@@ -77,6 +77,30 @@ func (p *Publisher) PublishEvents(ctx context.Context, events []any) error {
 	return nil
 }
 
+// PublishStored publishes an event that was persisted in the transactional
+// outbox. The stored payload is the marshaled domain event; it is wrapped in
+// the same transport envelope the synchronous path produces, so consumers are
+// unaffected.
+func (p *Publisher) PublishStored(ctx context.Context, eventType string, payload []byte, createdAt time.Time, correlationID string) error {
+	body, err := json.Marshal(map[string]any{
+		"type":           eventType,
+		"created_at":     createdAt.UTC(),
+		"payload":        json.RawMessage(payload),
+		"correlation_id": correlationID,
+	})
+	if err != nil {
+		return fmt.Errorf("marshal stored event envelope: %w", err)
+	}
+	slog.DebugContext(ctx, "rabbitmq publishing outbox event",
+		"component", "rabbitmq.publisher",
+		"exchange", p.exchangeName,
+		"type", eventType,
+		"correlation_id", correlationID,
+		"bytes", len(body),
+	)
+	return p.publish(ctx, body)
+}
+
 func envelope(event any) map[string]any {
 	identity := ""
 	createdAt := time.Now().UTC()

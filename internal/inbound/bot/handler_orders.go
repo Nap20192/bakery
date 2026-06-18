@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	accessdomain "bakery/internal/domain/access"
-	monitoringdomain "bakery/internal/domain/monitoring"
-	orderdomain "bakery/internal/domain/order"
 	"bakery/internal/pkg/enum"
+	accessdomain "bakery/internal/services/auth/domain"
+	monitoringdomain "bakery/internal/services/monitor/domain"
+	orderdomain "bakery/internal/services/order/domain"
 	orderuc "bakery/internal/services/order/usecase/order"
 	applog "bakery/pkg/logger"
 

@@ -3,7 +3,7 @@ package bot
 import (
 	"testing"
 
-	orderdomain "bakery/internal/domain/order"
+	orderdomain "bakery/internal/services/order/domain"
 )
 
 func TestMergeSessionItemsReplacesExistingQuantity(t *testing.T) {
