@@ -78,7 +78,7 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
         {groups.length ? (
           groups.map((group) => (
             <section className="overflow-hidden rounded-md border border-stone-300" key={group.theme}>
-              <h4 className="m-0 bg-[#fff1cb] px-3 py-2 text-[13px] font-semibold text-stone-900">{group.theme}</h4>
+              <h4 className="m-0 bg-stone-50 px-3 py-2 text-[13px] font-semibold text-stone-900">{group.theme}</h4>
               <div className="divide-y divide-stone-200">
                 {group.items.map((item) => {
                   const value = quantities[item.name] || {};
@@ -114,7 +114,7 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
         )}
       </div>
 
-      <div className="sticky bottom-0 flex justify-end gap-2 border-t border-stone-300 bg-[#fff7df] py-3">
+      <div className="sticky bottom-0 flex justify-end gap-2 border-t border-stone-300 bg-white py-3">
         <Button type="button" onClick={onCancel}>
           Отмена
         </Button>

@@ -12,8 +12,8 @@ export function OrdersLayout({ viewer, active, onNavigate, onLogout, children })
   const items = navItems.filter((item) => item.roles.includes(role));
 
   return (
-    <main className="min-h-screen bg-[#fff7df] text-stone-900">
-      <header className="sticky top-0 z-20 border-b border-stone-300 bg-[#fff7df]/95 px-3 py-2 backdrop-blur">
+    <main className="min-h-screen bg-[#f7f3ea] text-stone-900">
+      <header className="sticky top-0 z-20 border-b border-stone-300 bg-white/95 px-3 py-2 backdrop-blur">
         <div className="mx-auto flex max-w-[1440px] items-center gap-2">
           <button
             type="button"
@@ -31,7 +31,7 @@ export function OrdersLayout({ viewer, active, onNavigate, onLogout, children })
                 className={`shrink-0 rounded-md border px-3 py-1.5 text-[13px] font-medium ${
                   activeNavItem(active) === item.route.name
                     ? 'border-stone-900 bg-stone-900 text-white'
-                    : 'border-stone-300 bg-[#fff7df] text-stone-800'
+                    : 'border-stone-300 bg-white text-stone-800'
                 }`}
               >
                 {item.label}

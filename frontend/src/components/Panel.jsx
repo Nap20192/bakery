@@ -1,4 +1,4 @@
-export const panelClass = 'rounded-lg border border-stone-300 bg-[#fff7df] p-3 sm:p-4';
+export const panelClass = 'rounded-lg border border-stone-300 bg-white p-3 shadow-sm sm:p-4';
 
 export function PanelHeader({ eyebrow, title, count }) {
   return (
@@ -8,7 +8,7 @@ export function PanelHeader({ eyebrow, title, count }) {
         <h3 className="m-0 break-words text-[17px] font-semibold leading-6 text-stone-950 sm:text-[18px]">{title}</h3>
       </div>
       {count !== undefined && (
-        <span className="shrink-0 rounded-full border border-stone-300 bg-[#fff7df] px-2 py-1 text-[11px] font-medium text-stone-600 sm:text-xs">
+        <span className="shrink-0 rounded-full border border-stone-300 bg-stone-50 px-2 py-1 text-[11px] font-medium text-stone-600 sm:text-xs">
           {count} поз.
         </span>
       )}

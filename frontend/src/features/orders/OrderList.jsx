@@ -34,7 +34,7 @@ export function OrderList({
   onResetFilters,
 }) {
   return (
-    <aside className="m-3 flex min-h-[32rem] max-h-[70vh] flex-col gap-2.5 rounded-lg border border-stone-300 bg-[#fff7df] p-3 lg:sticky lg:top-[3.75rem] lg:ml-3 lg:mr-0 lg:h-[calc(100vh-5.25rem)] lg:max-h-none lg:min-h-[38rem]">
+    <aside className="m-3 flex min-h-[32rem] max-h-[70vh] flex-col gap-2.5 rounded-lg border border-stone-300 bg-white p-3 shadow-sm lg:sticky lg:top-[3.75rem] lg:ml-3 lg:mr-0 lg:h-[calc(100vh-5.25rem)] lg:max-h-none lg:min-h-[38rem]">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <h1 className="m-0 text-[20px] font-semibold leading-7 text-stone-950">Заказы</h1>
@@ -47,7 +47,7 @@ export function OrderList({
         </div>
       </div>
 
-      <div className="rounded-md border border-stone-300 bg-[#fff7df] p-2">
+      <div className="rounded-md border border-stone-200 bg-stone-50 p-2">
         <Stack spacing={1.25}>
           {canFilterShops && (
             <FormControl size="small" fullWidth>
@@ -99,7 +99,7 @@ export function OrderList({
               <div
                 key={order.number}
                 className={`w-full rounded-md border px-2.5 py-2 text-left transition ${
-                  selectedNumber === order.number ? 'border-stone-300 bg-[#fff1cb]' : 'border-transparent bg-[#fff7df] hover:border-stone-300 hover:bg-[#fff1cb]'
+                  selectedNumber === order.number ? 'border-stone-300 bg-stone-50' : 'border-transparent bg-white hover:border-stone-300 hover:bg-stone-50'
                 }`}
               >
                 <div className="grid grid-cols-1 gap-2">

@@ -85,7 +85,7 @@ export function AdminUsers() {
   }
 
   return (
-    <main className="bg-[#fff7df] p-4 text-stone-900 sm:p-6">
+    <main className="bg-[#f7f3ea] p-4 text-stone-900 sm:p-6">
       <div className="mx-auto max-w-6xl">
         <div className="mb-4 flex items-center justify-between">
           <h1 className="text-lg font-semibold">Пользователи</h1>

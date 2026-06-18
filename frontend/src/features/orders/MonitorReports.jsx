@@ -23,11 +23,11 @@ export function MonitorReports({ monitor }) {
 
 function ReportBlock({ title = '', reports, compact = false }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-stone-300 bg-[#fff7df]">
-      {title && <h3 className="border-b border-stone-300 bg-[#fff7df] px-2.5 py-2 text-[13px] font-semibold leading-5 text-stone-950 sm:px-3">{title}</h3>}
+    <div className="overflow-hidden rounded-lg border border-stone-300 bg-white">
+      {title && <h3 className="border-b border-stone-300 bg-white px-2.5 py-2 text-[13px] font-semibold leading-5 text-stone-950 sm:px-3">{title}</h3>}
       {reports.map(({ code, report }) => (
         <article className="border-b border-stone-300 last:border-b-0" key={code}>
-          <header className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 bg-[#fff1cb] px-2.5 py-1.5 sm:px-3">
+          <header className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 bg-stone-50 px-2.5 py-1.5 sm:px-3">
             <strong className="min-w-0 break-words text-[13px] font-semibold leading-5 text-stone-950">{report.ingredient.product_name}</strong>
             <span className="text-[13px] font-semibold leading-5 text-stone-950">
               {formatQuantity(report.ingredient.quantity)} {report.ingredient.unit}
