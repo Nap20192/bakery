@@ -23,7 +23,7 @@ export const appTheme = createTheme({
     borderRadius: 8,
   },
   typography: {
-    fontFamily: '"Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+    fontFamily: '"Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
     button: {
       textTransform: 'none',
       fontWeight: 600,

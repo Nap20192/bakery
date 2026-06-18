@@ -14,9 +14,12 @@ const navItems = [
 export function OrdersLayout({ viewer, active, onNavigate, onLogout, children }) {
   const role = navigationRole(viewer);
   const items = navItems.filter((item) => item.roles.includes(role));
+  // While creating/editing an order the form owns the bottom bar — hide the
+  // mobile bottom nav so the two don't stack.
+  const hideBottomNav = active === 'orderNew' || active === 'orderEdit';
 
   return (
-    <main className="min-h-screen bg-[#f7f3ea] pb-16 text-stone-900 sm:pb-0">
+    <main className={`min-h-screen bg-[#f7f3ea] text-stone-900 ${hideBottomNav ? '' : 'pb-16 sm:pb-0'}`}>
       <header className="sticky top-0 z-20 border-b border-stone-300 bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
         <div className="mx-auto flex max-w-[1440px] items-center gap-2">
           <button
@@ -52,6 +55,7 @@ export function OrdersLayout({ viewer, active, onNavigate, onLogout, children })
         </div>
       </header>
       {children}
+      {!hideBottomNav && (
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-300 bg-white/95 px-2 py-1.5 shadow-[0_-8px_20px_rgba(28,25,23,0.08)] backdrop-blur sm:hidden">
         <div className={`mx-auto grid max-w-md gap-1 ${mobileColsClass[items.length] ?? 'grid-cols-3'}`}>
           {items.map((item) => (
@@ -69,6 +73,7 @@ export function OrdersLayout({ viewer, active, onNavigate, onLogout, children })
           ))}
         </div>
       </nav>
+      )}
     </main>
   );
 }
