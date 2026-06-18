@@ -101,12 +101,31 @@ func shopOrderPrefix(shopCode string, shopName string) string {
 	return ""
 }
 
+// splitLineComment separates an optional per-item comment from a bulk line.
+// Comment starts at the first "//" or ";" separator, e.g.
+// "Кокрок 5 // посыпать сахаром".
+func splitLineComment(line string) (string, string) {
+	best := -1
+	bestLen := 0
+	for _, sep := range []string{"//", ";"} {
+		if i := strings.Index(line, sep); i >= 0 && (best < 0 || i < best) {
+			best = i
+			bestLen = len(sep)
+		}
+	}
+	if best < 0 {
+		return line, ""
+	}
+	return strings.TrimSpace(line[:best]), strings.TrimSpace(line[best+bestLen:])
+}
+
 func (s *OrderService) ParseBulkOrder(order string) BulkOrderValidationResult {
 	var result BulkOrderValidationResult
 	lines := strings.Split(order, "\n")
 
 	for i, line := range lines {
 		line = strings.TrimSpace(line)
+		line, comment := splitLineComment(line)
 		candidate := BulkOrderLine{Number: i + 1, Raw: line}
 		if date, ok, err := ParseFulfillmentDateLine(line); ok {
 			if err != nil {
@@ -151,6 +170,7 @@ func (s *OrderService) ParseBulkOrder(order string) BulkOrderValidationResult {
 			ProductName:      parsed.Name,
 			Quantity:         qty,
 			ReservedQuantity: reservedQty,
+			Comment:          comment,
 		})
 	}
 	result.FulfillmentDate = s.NormalizeFulfillmentDate(result.FulfillmentDate, time.Now().UTC())

@@ -52,6 +52,7 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
   const [date, setDate] = useState(order?.fulfillment_date || '');
   const [quantities, setQuantities] = useState(() => initialQuantities(order));
   const [comments, setComments] = useState(() => initialItemComments(order));
+  const [openComments, setOpenComments] = useState({});
   const [general, setGeneral] = useState(order?.comments?.general || '');
   const [search, setSearch] = useState('');
   const [pasteOpen, setPasteOpen] = useState(false);
@@ -259,16 +260,26 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
                           onChange={(e) => updateQuantity(item.name, 'reserved_quantity', e.target.value.replace(/\D/g, ''))}
                         />
                       </div>
-                      {filled && (
+                      {filled && (openComments[item.name] || comments[item.name] ? (
                         <input
                           className="fade-in mt-1.5 h-9 w-full rounded-lg border border-stone-200 bg-white px-3 text-base text-stone-700 outline-none transition focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10"
                           type="text"
+                          autoFocus={Boolean(openComments[item.name]) && !comments[item.name]}
                           placeholder="Комментарий к позиции…"
                           aria-label={`${item.name}: комментарий`}
                           value={comments[item.name] || ''}
                           onChange={(e) => updateComment(item.name, e.target.value)}
                         />
-                      )}
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setOpenComments((o) => ({ ...o, [item.name]: true }))}
+                          className="mt-1.5 inline-flex items-center gap-1 text-[12px] font-medium text-stone-400 transition hover:text-stone-700"
+                        >
+                          <Icon name="plus" size={13} />
+                          Комментарий
+                        </button>
+                      ))}
                     </div>
                   );
                 })}

@@ -164,6 +164,7 @@ func (b *OrderBot) handleConfirm(c tele.Context) error {
 		ToDepartmentID:    toDepartmentID,
 		CreatedByUsername: b.createdByUsername(ctx, sender),
 		FulfillmentDate:   fulfillmentDate,
+		Comments:          orderdomain.CommentsFromItems(items),
 	})
 	if err != nil {
 		slog.ErrorContext(ctx, "create order failed", "error", err)
@@ -254,6 +255,7 @@ func (b *OrderBot) handleUpdateOrder(c tele.Context) error {
 		ToDepartmentID:    toDepartmentID,
 		CreatedByUsername: b.createdByUsername(ctx, sender),
 		FulfillmentDate:   fulfillmentDate,
+		Comments:          orderdomain.CommentsFromItems(items),
 	})
 	if err != nil {
 		slog.ErrorContext(ctx, "update order failed", "order_number", orderNumber, "error", err)
