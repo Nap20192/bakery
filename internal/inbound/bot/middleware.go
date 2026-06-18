@@ -77,7 +77,7 @@ func (b *baseBot) authUserFromContext(c tele.Context) (accessdomain.AuthUser, er
 	user, err := b.authSvc.GetUserByTelegramID(ctx, sender.ID)
 	if err != nil {
 		if errors.Is(err, authuc.ErrAuthUserNotFound) {
-			return accessdomain.AuthUser{}, sendText(c, "Вы не вошли. Нажмите /start и введите пароль.")
+			return accessdomain.AuthUser{}, sendText(c, "Вы не вошли. Нажмите /start для входа по Telegram username.")
 		}
 		slog.ErrorContext(ctx, "auth user lookup failed", "error", err)
 		return accessdomain.AuthUser{}, sendText(c, "Ошибка авторизации.")

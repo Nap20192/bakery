@@ -19,7 +19,6 @@ type session struct {
 	orderFilter      orderFilter
 	fulfillmentDate  time.Time
 	editOrderNumber  string
-	awaitingPassword bool // пользователь вводит пароль для входа
 	updatedAt        time.Time
 }
 

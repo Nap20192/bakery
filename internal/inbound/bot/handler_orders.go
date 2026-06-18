@@ -23,7 +23,7 @@ func (b *OrderBot) handleOrders(c tele.Context) error {
 	orders, mode, err := b.listVisibleOrders(c, orderListLimit)
 	if err != nil {
 		if errors.Is(err, errOrderLocationRequired) {
-			return sendText(c, "Сначала выберите локацию через /start.", b.actionMarkup(c))
+			return sendText(c, "Пользователю не назначен магазин. Обратитесь к администратору.", b.actionMarkup(c))
 		}
 		slog.ErrorContext(ctx, "list orders failed", "error", err)
 		return sendText(c, "Не удалось получить заказы. Попробуйте позже.")
@@ -46,13 +46,16 @@ func (b *OrderBot) handleOrders(c tele.Context) error {
 
 func (b *OrderBot) listVisibleOrders(c tele.Context, limit int32) ([]orderdomain.Order, ordersMode, error) {
 	user, ok := b.currentUser(c)
-	if !ok || user.DepartmentID == nil {
+	if !ok {
 		return nil, "", errOrderLocationRequired
 	}
 
 	filter := b.currentOrderFilter(c)
 	mode := b.ordersMode(c, user)
 	if mode == ordersModeShop {
+		if user.DepartmentID == nil {
+			return nil, mode, errOrderLocationRequired
+		}
 		filter.FromDepartmentID = cloneInt64Ptr(user.DepartmentID)
 	}
 
@@ -76,7 +79,7 @@ func (b *OrderBot) handleMonitorFilteredOrdersCallback(c tele.Context) error {
 	orders, _, err := b.listVisibleOrders(c, orderListLimit)
 	if err != nil {
 		if errors.Is(err, errOrderLocationRequired) {
-			return sendText(c, "Сначала выберите локацию через /start.", b.actionMarkup(c))
+			return sendText(c, "Пользователю не назначен магазин. Обратитесь к администратору.", b.actionMarkup(c))
 		}
 		slog.ErrorContext(ctx, "list orders for filtered monitor failed", "error", err)
 		return sendText(c, "Не удалось получить заказы для расчёта.")

@@ -172,7 +172,6 @@ const getAuthUserByTelegramUsername = `-- name: GetAuthUserByTelegramUsername :o
 SELECT id, telegram_id, username, password_hash, metadata_json, role, created_at, updated_at, department_id, telegram_username
 FROM auth_users
 WHERE telegram_username = $1::text
-  AND telegram_id IS NOT NULL
 ORDER BY id
 LIMIT 1
 `
