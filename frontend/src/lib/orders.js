@@ -36,9 +36,11 @@ export function monitorToText(monitor) {
 }
 
 // orderItemsToText renders order positions as plain text for sharing.
+// Format matches the bot ("<name> <qty>[+<reserved>]") so copied text pastes
+// back cleanly in both the web editor and the Telegram bot.
 // Pass includeHeader=false to copy positions only, without the order title.
 export function orderItemsToText(order, includeHeader = true) {
-  const lines = (order?.items || []).map((item) => `${item.product_name}: ${orderQuantity(item)}`);
+  const lines = (order?.items || []).map((item) => `${item.product_name} ${orderQuantity(item)}`);
   if (!includeHeader) return lines.join('\n');
   const header = order?.number ? `Заказ ${order.number}` : 'Заказ';
   return [header, ...lines].join('\n');
