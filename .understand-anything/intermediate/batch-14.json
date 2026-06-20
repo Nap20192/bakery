@@ -1,0 +1,141 @@
+{
+  "nodes": [
+    {
+      "id": "service:deploy/Dockerfile.bot",
+      "type": "service",
+      "name": "Dockerfile.bot",
+      "filePath": "deploy/Dockerfile.bot",
+      "summary": "Многоступенчатая сборка Docker для сервиса бота: компилирует Go-бинарь из ./cmd/bot на golang-alpine и упаковывает его в минимальный alpine-образ с миграциями, шаблонами и непривилегированным пользователем.",
+      "tags": ["containerization", "infrastructure", "deployment", "multi-stage-build", "golang"],
+      "complexity": "simple",
+      "languageNotes": "Многоступенчатая сборка с CGO_ENABLED=0 и ldflags '-s -w' даёт статичный минимальный бинарь; запуск под непривилегированным пользователем app повышает безопасность."
+    },
+    {
+      "id": "service:deploy/Dockerfile.worker",
+      "type": "service",
+      "name": "Dockerfile.worker",
+      "filePath": "deploy/Dockerfile.worker",
+      "summary": "Многоступенчатая сборка Docker для воркера: компилирует Go-бинарь из ./cmd/worker и упаковывает его в минимальный alpine-образ с миграциями и шаблонами, идентично сборке бота кроме entrypoint-команды.",
+      "tags": ["containerization", "infrastructure", "deployment", "multi-stage-build", "golang"],
+      "complexity": "simple",
+      "languageNotes": "Отличается от Dockerfile.bot только целью сборки (./cmd/worker вместо ./cmd/bot)."
+    },
+    {
+      "id": "config:frontend/eslint.config.js",
+      "type": "config",
+      "name": "eslint.config.js",
+      "filePath": "frontend/eslint.config.js",
+      "summary": "Flat-конфигурация ESLint для фронтенда: подключает рекомендованные правила JS, плагины react-hooks и react-refresh, задаёт окружение browser/node и поддержку JSX.",
+      "tags": ["configuration", "linting", "eslint", "react", "build-system"],
+      "complexity": "simple",
+      "languageNotes": "Использует новый flat-config формат ESLint (массив конфигов) вместо устаревшего .eslintrc."
+    },
+    {
+      "id": "file:frontend/server.js",
+      "type": "file",
+      "name": "server.js",
+      "filePath": "frontend/server.js",
+      "summary": "Лёгкий production HTTP-сервер на Node без зависимостей: проксирует запросы /api на бэкенд, отдаёт статику собранного фронтенда с SPA-фолбэком и структурированным логированием запросов.",
+      "tags": ["server", "reverse-proxy", "static-server", "logging", "entry-point"],
+      "complexity": "moderate",
+      "languageNotes": "Реализован на стандартных модулях Node (http/https, fs, path) без внешних пакетов; ручная нормализация путей защищает от path traversal."
+    },
+    {
+      "id": "function:frontend/server.js:proxyAPI",
+      "type": "function",
+      "name": "proxyAPI",
+      "filePath": "frontend/server.js",
+      "lineRange": [63, 129],
+      "summary": "Проксирует входящий /api-запрос на целевой бэкенд: переписывает путь, пробрасывает тело и заголовки, стримит ответ обратно клиенту и логирует тайминги и ошибки.",
+      "tags": ["reverse-proxy", "api-handler", "streaming", "logging"],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:frontend/server.js:serveStatic",
+      "type": "function",
+      "name": "serveStatic",
+      "filePath": "frontend/server.js",
+      "lineRange": [131, 170],
+      "summary": "Отдаёт статические файлы собранного фронтенда: безопасно резолвит путь, обрабатывает директории и SPA-фолбэк на index.html, определяет content-type и стримит содержимое файла.",
+      "tags": ["static-server", "spa-fallback", "file-serving", "security"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:frontend/server.js:requestLogHeaders",
+      "type": "function",
+      "name": "requestLogHeaders",
+      "filePath": "frontend/server.js",
+      "lineRange": [179, 190],
+      "summary": "Формирует безопасный для логирования поднабор заголовков входящего запроса, исключая чувствительные значения.",
+      "tags": ["logging", "utility", "security"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:frontend/server.js:log",
+      "type": "function",
+      "name": "log",
+      "filePath": "frontend/server.js",
+      "lineRange": [200, 218],
+      "summary": "Пишет структурированную JSON-запись лога с уровнем, временной меткой и сообщением, направляя её в console.error/warn/log по уровню.",
+      "tags": ["logging", "utility", "serialization"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/src/styles.css",
+      "type": "file",
+      "name": "styles.css",
+      "filePath": "frontend/src/styles.css",
+      "summary": "Глобальные стили фронтенда: подключает Tailwind, задаёт шрифт Manrope, базовые переменные темы и общие правила оформления приложения.",
+      "tags": ["stylesheet", "tailwind", "theming", "frontend"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:frontend/vite.config.js",
+      "type": "config",
+      "name": "vite.config.js",
+      "filePath": "frontend/vite.config.js",
+      "summary": "Конфигурация сборщика Vite для фронтенда: подключает плагины React и Tailwind, настраивает dev-прокси /api на бэкенд с переписыванием пути.",
+      "tags": ["configuration", "vite", "build-system", "react", "dev-proxy"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:templates/dishes.txt",
+      "type": "document",
+      "name": "dishes.txt",
+      "filePath": "templates/dishes.txt",
+      "summary": "Справочный шаблон каталога блюд пекарни: список позиций сгруппирован по категориям (кокроки, пироги и др.) с кодом, названием и количеством по умолчанию.",
+      "tags": ["documentation", "data", "catalog", "template"],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:frontend/server.js",
+      "target": "function:frontend/server.js:proxyAPI",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:frontend/server.js",
+      "target": "function:frontend/server.js:serveStatic",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:frontend/server.js",
+      "target": "function:frontend/server.js:requestLogHeaders",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:frontend/server.js",
+      "target": "function:frontend/server.js:log",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    }
+  ]
+}

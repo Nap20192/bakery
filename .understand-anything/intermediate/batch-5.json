@@ -1,0 +1,427 @@
+{
+  "nodes": [
+    {
+      "id": "file:frontend/src/api/auth.js",
+      "type": "file",
+      "name": "auth.js",
+      "filePath": "frontend/src/api/auth.js",
+      "summary": "Клиент аутентификации фронтенда: отправляет логин/пароль на эндпоинт авторизации и возвращает JWT-токен и тело ответа.",
+      "tags": ["api-handler", "authentication", "fetch", "frontend"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:frontend/src/api/auth.js:login",
+      "type": "function",
+      "name": "login",
+      "filePath": "frontend/src/api/auth.js",
+      "lineRange": [6, 19],
+      "summary": "Выполняет POST-запрос на /auth/login с учётными данными, извлекает токен из заголовка и парсит JSON-ответ.",
+      "tags": ["authentication", "fetch", "async"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/src/api/client.js",
+      "type": "file",
+      "name": "client.js",
+      "filePath": "frontend/src/api/client.js",
+      "summary": "Центральный HTTP-клиент мини-приложения: обёртка над fetch с авторизационными заголовками, логированием времени запроса и единым классом ошибок ApiError.",
+      "tags": ["api-handler", "http-client", "middleware", "error-handling", "frontend"],
+      "complexity": "moderate",
+      "languageNotes": "Единая точка для всех сетевых вызовов; ApiError наследует Error для структурированной обработки статусов."
+    },
+    {
+      "id": "class:frontend/src/api/client.js:ApiError",
+      "type": "class",
+      "name": "ApiError",
+      "filePath": "frontend/src/api/client.js",
+      "lineRange": [6, 12],
+      "summary": "Класс ошибки HTTP-запроса, расширяющий Error и несущий статус-код и тело ответа.",
+      "tags": ["error-handling", "type-definition"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:frontend/src/api/client.js:apiRequest",
+      "type": "function",
+      "name": "apiRequest",
+      "filePath": "frontend/src/api/client.js",
+      "lineRange": [14, 81],
+      "summary": "Универсальная функция запроса: строит URL, добавляет заголовки авторизации, логирует длительность и нормализует ответ или выбрасывает ApiError.",
+      "tags": ["http-client", "fetch", "error-handling", "async"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:frontend/src/api/dishes.js",
+      "type": "file",
+      "name": "dishes.js",
+      "filePath": "frontend/src/api/dishes.js",
+      "summary": "API-обёртки для каталога блюд: получение списка, создание и удаление блюда через общий apiRequest.",
+      "tags": ["api-handler", "data-model", "frontend"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/src/api/orders.js",
+      "type": "file",
+      "name": "orders.js",
+      "filePath": "frontend/src/api/orders.js",
+      "summary": "Набор API-функций для работы с заказами: профиль, каталог, отделы, список с пагинацией, CRUD заказов, избранное и мониторинг (одиночный и пакетный).",
+      "tags": ["api-handler", "data-model", "frontend", "orders"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:frontend/src/api/orders.js:fetchOrders",
+      "type": "function",
+      "name": "fetchOrders",
+      "filePath": "frontend/src/api/orders.js",
+      "lineRange": [18, 30],
+      "summary": "Загружает страницу заказов с параметрами page и limit, формируя query-строку.",
+      "tags": ["api-handler", "pagination", "async"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:frontend/src/api/orders.js:setOrderFavorite",
+      "type": "function",
+      "name": "setOrderFavorite",
+      "filePath": "frontend/src/api/orders.js",
+      "lineRange": [52, 58],
+      "summary": "Помечает заказ как избранный или снимает отметку через PATCH-запрос.",
+      "tags": ["api-handler", "orders", "async"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:frontend/src/api/orders.js:fetchBatchOrderMonitor",
+      "type": "function",
+      "name": "fetchBatchOrderMonitor",
+      "filePath": "frontend/src/api/orders.js",
+      "lineRange": [64, 70],
+      "summary": "Запрашивает данные мониторинга сразу по нескольким номерам заказов, добавляя их в query-параметры.",
+      "tags": ["api-handler", "monitoring", "async"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/src/api/users.js",
+      "type": "file",
+      "name": "users.js",
+      "filePath": "frontend/src/api/users.js",
+      "summary": "API-обёртки администрирования пользователей: список пользователей и отделов, создание, обновление и удаление пользователя.",
+      "tags": ["api-handler", "data-model", "admin", "frontend"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/src/app/App.jsx",
+      "type": "file",
+      "name": "App.jsx",
+      "filePath": "frontend/src/app/App.jsx",
+      "summary": "Корневой компонент приложения: хранит текущий маршрут, реагирует на навигацию браузера (popstate) и переключает страницы через history API.",
+      "tags": ["entry-point", "component", "routing", "frontend"],
+      "complexity": "simple",
+      "languageNotes": "Самописный роутер на History API без сторонней библиотеки маршрутизации."
+    },
+    {
+      "id": "function:frontend/src/app/App.jsx:App",
+      "type": "function",
+      "name": "App",
+      "filePath": "frontend/src/app/App.jsx",
+      "lineRange": [5, 29],
+      "summary": "React-компонент верхнего уровня, управляющий состоянием маршрута и функцией навигации.",
+      "tags": ["component", "routing", "hook"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:frontend/src/app/routes.js",
+      "type": "file",
+      "name": "routes.js",
+      "filePath": "frontend/src/app/routes.js",
+      "summary": "Утилиты маршрутизации: parseRoute разбирает текущий URL в объект маршрута, pathFor строит путь по маршруту.",
+      "tags": ["routing", "utility", "frontend"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:frontend/src/app/routes.js:parseRoute",
+      "type": "function",
+      "name": "parseRoute",
+      "filePath": "frontend/src/app/routes.js",
+      "lineRange": [1, 17],
+      "summary": "Разбирает pathname текущего окна в структурированный объект маршрута приложения.",
+      "tags": ["routing", "utility", "parsing"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:frontend/src/app/routes.js:pathFor",
+      "type": "function",
+      "name": "pathFor",
+      "filePath": "frontend/src/app/routes.js",
+      "lineRange": [19, 41],
+      "summary": "Строит строку URL-пути для заданного объекта маршрута, кодируя динамические сегменты.",
+      "tags": ["routing", "utility", "serialization"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/src/components/Button.jsx",
+      "type": "file",
+      "name": "Button.jsx",
+      "filePath": "frontend/src/components/Button.jsx",
+      "summary": "Переиспользуемая кнопка с набором стилевых вариантов на основе Tailwind-классов.",
+      "tags": ["component", "ui", "frontend"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/src/components/CopyButton.jsx",
+      "type": "file",
+      "name": "CopyButton.jsx",
+      "filePath": "frontend/src/components/CopyButton.jsx",
+      "summary": "Кнопка копирования текста в буфер обмена с временной индикацией успешного копирования.",
+      "tags": ["component", "ui", "hook", "frontend"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:frontend/src/components/CopyButton.jsx:CopyButton",
+      "type": "function",
+      "name": "CopyButton",
+      "filePath": "frontend/src/components/CopyButton.jsx",
+      "lineRange": [6, 32],
+      "summary": "Компонент, копирующий текст через navigator.clipboard и показывающий состояние \"скопировано\" с автосбросом по таймеру.",
+      "tags": ["component", "hook", "clipboard"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:frontend/src/components/EmptyState.jsx",
+      "type": "file",
+      "name": "EmptyState.jsx",
+      "filePath": "frontend/src/components/EmptyState.jsx",
+      "summary": "Простой компонент-заглушка для отображения пустого состояния списков.",
+      "tags": ["component", "ui", "frontend"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/src/components/Field.jsx",
+      "type": "file",
+      "name": "Field.jsx",
+      "filePath": "frontend/src/components/Field.jsx",
+      "summary": "Переиспользуемые поля формы: SelectField и InputField с подписями и единым стилем.",
+      "tags": ["component", "ui", "form", "frontend"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/src/components/Icon.jsx",
+      "type": "file",
+      "name": "Icon.jsx",
+      "filePath": "frontend/src/components/Icon.jsx",
+      "summary": "Компонент рендеринга SVG-иконок по имени из встроенного набора.",
+      "tags": ["component", "ui", "icon", "frontend"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/src/components/Login.jsx",
+      "type": "file",
+      "name": "Login.jsx",
+      "filePath": "frontend/src/components/Login.jsx",
+      "summary": "Форма входа: принимает логин и пароль, вызывает API авторизации, сохраняет токен и сообщает об ошибках.",
+      "tags": ["component", "authentication", "form", "frontend"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:frontend/src/components/Login.jsx:Login",
+      "type": "function",
+      "name": "Login",
+      "filePath": "frontend/src/components/Login.jsx",
+      "lineRange": [13, 70],
+      "summary": "React-компонент формы входа, управляющий состоянием полей, отправкой и обработкой ошибок авторизации.",
+      "tags": ["component", "authentication", "form", "hook"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:frontend/src/components/MetaCell.jsx",
+      "type": "file",
+      "name": "MetaCell.jsx",
+      "filePath": "frontend/src/components/MetaCell.jsx",
+      "summary": "Небольшой компонент для отображения пары метка-значение в таблицах и карточках.",
+      "tags": ["component", "ui", "frontend"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/src/components/Panel.jsx",
+      "type": "file",
+      "name": "Panel.jsx",
+      "filePath": "frontend/src/components/Panel.jsx",
+      "summary": "Стилевая обёртка-панель: экспортирует базовый класс panelClass и компонент заголовка PanelHeader.",
+      "tags": ["component", "ui", "layout", "frontend"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/src/config/env.js",
+      "type": "file",
+      "name": "env.js",
+      "filePath": "frontend/src/config/env.js",
+      "summary": "Конфигурация окружения фронтенда: базовый URL API, флаг логов, режим сборки и имя Telegram-бота из переменных Vite.",
+      "tags": ["config", "configuration", "frontend"],
+      "complexity": "simple",
+      "languageNotes": "Значения берутся из import.meta.env (Vite) на этапе сборки."
+    },
+    {
+      "id": "file:frontend/src/features/account/Me.jsx",
+      "type": "file",
+      "name": "Me.jsx",
+      "filePath": "frontend/src/features/account/Me.jsx",
+      "summary": "Панель профиля текущего пользователя: показывает данные аккаунта и в web-режиме предоставляет выход из сессии.",
+      "tags": ["component", "feature", "account", "frontend"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:frontend/src/features/account/Me.jsx:MePanel",
+      "type": "function",
+      "name": "MePanel",
+      "filePath": "frontend/src/features/account/Me.jsx",
+      "lineRange": [16, 38],
+      "summary": "Компонент панели профиля, отображающий строки с информацией о пользователе и кнопку выхода в web-режиме.",
+      "tags": ["component", "account", "feature"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/src/features/admin/AdminDishes.jsx",
+      "type": "file",
+      "name": "AdminDishes.jsx",
+      "filePath": "frontend/src/features/admin/AdminDishes.jsx",
+      "summary": "Админ-экран управления блюдами: загрузка, поиск/фильтрация, создание и удаление блюд каталога.",
+      "tags": ["component", "feature", "admin", "crud", "frontend"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:frontend/src/features/admin/AdminDishes.jsx:AdminDishes",
+      "type": "function",
+      "name": "AdminDishes",
+      "filePath": "frontend/src/features/admin/AdminDishes.jsx",
+      "lineRange": [12, 103],
+      "summary": "React-компонент администрирования блюд: управляет состоянием формы, списком, фильтром и операциями создания/удаления через API.",
+      "tags": ["component", "admin", "crud", "hook"],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:frontend/src/features/admin/AdminUsers.jsx",
+      "type": "file",
+      "name": "AdminUsers.jsx",
+      "filePath": "frontend/src/features/admin/AdminUsers.jsx",
+      "summary": "Админ-экран управления пользователями: список с поиском, создание, редактирование роли/отдела/имени, сброс пароля и удаление.",
+      "tags": ["component", "feature", "admin", "crud", "rbac"],
+      "complexity": "complex",
+      "languageNotes": "Содержит inline-редактирование ячейки имени (UsernameCell) и привязку ролей RBAC к отделам."
+    },
+    {
+      "id": "function:frontend/src/features/admin/AdminUsers.jsx:AdminUsers",
+      "type": "function",
+      "name": "AdminUsers",
+      "filePath": "frontend/src/features/admin/AdminUsers.jsx",
+      "lineRange": [11, 185],
+      "summary": "Основной компонент администрирования пользователей: управляет загрузкой, фильтрацией, CRUD-операциями и сбросом пароля.",
+      "tags": ["component", "admin", "crud", "rbac", "hook"],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:frontend/src/features/admin/AdminUsers.jsx:UsernameCell",
+      "type": "function",
+      "name": "UsernameCell",
+      "filePath": "frontend/src/features/admin/AdminUsers.jsx",
+      "lineRange": [188, 208],
+      "summary": "Ячейка с inline-редактированием имени пользователя, фиксирующая изменение по потере фокуса или Enter.",
+      "tags": ["component", "admin", "inline-edit"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:frontend/src/features/orders/BakerOrderCard.jsx",
+      "type": "file",
+      "name": "BakerOrderCard.jsx",
+      "filePath": "frontend/src/features/orders/BakerOrderCard.jsx",
+      "summary": "Карточка заказа для роли пекаря: отображает источник, дату выполнения и ключевые факты заказа с действиями.",
+      "tags": ["component", "feature", "orders", "frontend"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:frontend/src/features/orders/BakerOrderCard.jsx:BakerOrderCard",
+      "type": "function",
+      "name": "BakerOrderCard",
+      "filePath": "frontend/src/features/orders/BakerOrderCard.jsx",
+      "lineRange": [6, 63],
+      "summary": "Компонент карточки заказа пекаря, форматирующий данные заказа и отображающий состав и метаданные.",
+      "tags": ["component", "orders", "feature"],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {"source": "file:frontend/src/api/auth.js", "target": "file:frontend/src/config/env.js", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/api/auth.js", "target": "file:frontend/src/lib/url.js", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/api/auth.js", "target": "function:frontend/src/api/auth.js:login", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:frontend/src/api/auth.js", "target": "function:frontend/src/api/auth.js:login", "type": "exports", "direction": "forward", "weight": 0.8},
+
+    {"source": "file:frontend/src/api/client.js", "target": "file:frontend/src/config/env.js", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/api/client.js", "target": "file:frontend/src/lib/auth.js", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/api/client.js", "target": "file:frontend/src/lib/logger.js", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/api/client.js", "target": "file:frontend/src/lib/url.js", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/api/client.js", "target": "class:frontend/src/api/client.js:ApiError", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:frontend/src/api/client.js", "target": "class:frontend/src/api/client.js:ApiError", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:frontend/src/api/client.js", "target": "function:frontend/src/api/client.js:apiRequest", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:frontend/src/api/client.js", "target": "function:frontend/src/api/client.js:apiRequest", "type": "exports", "direction": "forward", "weight": 0.8},
+
+    {"source": "file:frontend/src/api/dishes.js", "target": "file:frontend/src/api/client.js", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/api/dishes.js", "target": "function:frontend/src/api/client.js:apiRequest", "type": "calls", "direction": "forward", "weight": 0.8},
+
+    {"source": "file:frontend/src/api/orders.js", "target": "file:frontend/src/api/client.js", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/api/orders.js", "target": "function:frontend/src/api/orders.js:fetchOrders", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:frontend/src/api/orders.js", "target": "function:frontend/src/api/orders.js:fetchOrders", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:frontend/src/api/orders.js", "target": "function:frontend/src/api/orders.js:setOrderFavorite", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:frontend/src/api/orders.js", "target": "function:frontend/src/api/orders.js:setOrderFavorite", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:frontend/src/api/orders.js", "target": "function:frontend/src/api/orders.js:fetchBatchOrderMonitor", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:frontend/src/api/orders.js", "target": "function:frontend/src/api/orders.js:fetchBatchOrderMonitor", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "function:frontend/src/api/orders.js:fetchOrders", "target": "function:frontend/src/api/client.js:apiRequest", "type": "calls", "direction": "forward", "weight": 0.8},
+
+    {"source": "file:frontend/src/api/users.js", "target": "file:frontend/src/api/client.js", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/api/users.js", "target": "function:frontend/src/api/client.js:apiRequest", "type": "calls", "direction": "forward", "weight": 0.8},
+
+    {"source": "file:frontend/src/app/App.jsx", "target": "file:frontend/src/app/routes.js", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/app/App.jsx", "target": "file:frontend/src/features/orders/OrdersPage.jsx", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/app/App.jsx", "target": "function:frontend/src/app/App.jsx:App", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:frontend/src/app/App.jsx", "target": "function:frontend/src/app/App.jsx:App", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "function:frontend/src/app/App.jsx:App", "target": "function:frontend/src/app/routes.js:parseRoute", "type": "calls", "direction": "forward", "weight": 0.8},
+    {"source": "function:frontend/src/app/App.jsx:App", "target": "function:frontend/src/app/routes.js:pathFor", "type": "calls", "direction": "forward", "weight": 0.8},
+
+    {"source": "file:frontend/src/app/routes.js", "target": "function:frontend/src/app/routes.js:parseRoute", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:frontend/src/app/routes.js", "target": "function:frontend/src/app/routes.js:parseRoute", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:frontend/src/app/routes.js", "target": "function:frontend/src/app/routes.js:pathFor", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:frontend/src/app/routes.js", "target": "function:frontend/src/app/routes.js:pathFor", "type": "exports", "direction": "forward", "weight": 0.8},
+
+    {"source": "file:frontend/src/components/CopyButton.jsx", "target": "file:frontend/src/components/Button.jsx", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/components/CopyButton.jsx", "target": "file:frontend/src/components/Icon.jsx", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/components/CopyButton.jsx", "target": "function:frontend/src/components/CopyButton.jsx:CopyButton", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:frontend/src/components/CopyButton.jsx", "target": "function:frontend/src/components/CopyButton.jsx:CopyButton", "type": "exports", "direction": "forward", "weight": 0.8},
+
+    {"source": "file:frontend/src/components/Login.jsx", "target": "file:frontend/src/api/auth.js", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/components/Login.jsx", "target": "file:frontend/src/components/Button.jsx", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/components/Login.jsx", "target": "file:frontend/src/lib/auth.js", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/components/Login.jsx", "target": "file:frontend/src/lib/logger.js", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/components/Login.jsx", "target": "function:frontend/src/components/Login.jsx:Login", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:frontend/src/components/Login.jsx", "target": "function:frontend/src/components/Login.jsx:Login", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "function:frontend/src/components/Login.jsx:Login", "target": "function:frontend/src/api/auth.js:login", "type": "calls", "direction": "forward", "weight": 0.8},
+
+    {"source": "file:frontend/src/features/account/Me.jsx", "target": "file:frontend/src/components/Button.jsx", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/features/account/Me.jsx", "target": "file:frontend/src/lib/auth.js", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/features/account/Me.jsx", "target": "function:frontend/src/features/account/Me.jsx:MePanel", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:frontend/src/features/account/Me.jsx", "target": "function:frontend/src/features/account/Me.jsx:MePanel", "type": "exports", "direction": "forward", "weight": 0.8},
+
+    {"source": "file:frontend/src/features/admin/AdminDishes.jsx", "target": "file:frontend/src/api/dishes.js", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/features/admin/AdminDishes.jsx", "target": "file:frontend/src/components/Button.jsx", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/features/admin/AdminDishes.jsx", "target": "function:frontend/src/features/admin/AdminDishes.jsx:AdminDishes", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:frontend/src/features/admin/AdminDishes.jsx", "target": "function:frontend/src/features/admin/AdminDishes.jsx:AdminDishes", "type": "exports", "direction": "forward", "weight": 0.8},
+
+    {"source": "file:frontend/src/features/admin/AdminUsers.jsx", "target": "file:frontend/src/api/users.js", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/features/admin/AdminUsers.jsx", "target": "file:frontend/src/components/Button.jsx", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/features/admin/AdminUsers.jsx", "target": "file:frontend/src/lib/logger.js", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/features/admin/AdminUsers.jsx", "target": "function:frontend/src/features/admin/AdminUsers.jsx:AdminUsers", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:frontend/src/features/admin/AdminUsers.jsx", "target": "function:frontend/src/features/admin/AdminUsers.jsx:AdminUsers", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:frontend/src/features/admin/AdminUsers.jsx", "target": "function:frontend/src/features/admin/AdminUsers.jsx:UsernameCell", "type": "contains", "direction": "forward", "weight": 1.0},
+
+    {"source": "file:frontend/src/features/orders/BakerOrderCard.jsx", "target": "file:frontend/src/components/Button.jsx", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/features/orders/BakerOrderCard.jsx", "target": "file:frontend/src/components/Icon.jsx", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/features/orders/BakerOrderCard.jsx", "target": "file:frontend/src/lib/format.js", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/features/orders/BakerOrderCard.jsx", "target": "file:frontend/src/lib/orders.js", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:frontend/src/features/orders/BakerOrderCard.jsx", "target": "function:frontend/src/features/orders/BakerOrderCard.jsx:BakerOrderCard", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:frontend/src/features/orders/BakerOrderCard.jsx", "target": "function:frontend/src/features/orders/BakerOrderCard.jsx:BakerOrderCard", "type": "exports", "direction": "forward", "weight": 0.8}
+  ]
+}

@@ -1,0 +1,378 @@
+{
+  "nodes": [
+    {
+      "id": "table:migrations/00001_init.sql",
+      "type": "table",
+      "name": "00001_init.sql",
+      "filePath": "migrations/00001_init.sql",
+      "summary": "Начальная goose-миграция, создающая базовую схему: пользователи (auth_users), заказы (orders, order_items, order_counters) и каталог iiko (продукты, технологические карты сборки и заготовки) вместе с индексами.",
+      "tags": ["database", "migration", "schema-definition", "iiko", "orders"],
+      "complexity": "complex",
+      "languageNotes": "Использует JSONB-колонки (metadata_json, raw_json) для хранения сырых данных интеграции iiko и foreign key с ON DELETE CASCADE между orders и order_items."
+    },
+    {
+      "id": "table:migrations/00001_init.sql:auth_users",
+      "type": "table",
+      "name": "auth_users",
+      "filePath": "migrations/00001_init.sql",
+      "lineRange": [2, 11],
+      "summary": "Таблица учётных записей пользователей с Telegram-идентификатором, ролью и JSONB-метаданными для нативной аутентификации через Telegram.",
+      "tags": ["database", "users", "auth", "rbac"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00001_init.sql:order_counters",
+      "type": "table",
+      "name": "order_counters",
+      "filePath": "migrations/00001_init.sql",
+      "lineRange": [13, 16],
+      "summary": "Счётчик дневной нумерации заказов, ключ по дню (позже расширяется до per-shop ключа day+department_id).",
+      "tags": ["database", "orders", "counter"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00001_init.sql:orders",
+      "type": "table",
+      "name": "orders",
+      "filePath": "migrations/00001_init.sql",
+      "summary": "Центральная таблица заказов; со временем расширяется колонками отделов, fulfillment_date, comments и is_favorite через последующие миграции.",
+      "tags": ["database", "orders", "core-entity"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00001_init.sql:iiko_products",
+      "type": "table",
+      "name": "iiko_products",
+      "filePath": "migrations/00001_init.sql",
+      "lineRange": [25, 33],
+      "summary": "Справочник продуктов из системы iiko с сырым JSON и индексами по имени, коду и типу.",
+      "tags": ["database", "iiko", "catalog"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00001_init.sql:order_items",
+      "type": "table",
+      "name": "order_items",
+      "filePath": "migrations/00001_init.sql",
+      "lineRange": [35, 41],
+      "summary": "Позиции заказа со ссылкой на orders и iiko_products, хранящие название и количество продукта.",
+      "tags": ["database", "orders", "line-items"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00001_init.sql:iiko_sync_runs",
+      "type": "table",
+      "name": "iiko_sync_runs",
+      "filePath": "migrations/00001_init.sql",
+      "lineRange": [43, 53],
+      "summary": "Журнал запусков синхронизации с iiko: статус, диапазон дат, ревизия и ошибки.",
+      "tags": ["database", "iiko", "sync", "audit"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00001_init.sql:iiko_assembly_charts",
+      "type": "table",
+      "name": "iiko_assembly_charts",
+      "filePath": "migrations/00001_init.sql",
+      "lineRange": [55, 66],
+      "summary": "Технологические карты сборки iiko со стратегиями списания и JSONB-спецификациями.",
+      "tags": ["database", "iiko", "recipe"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00001_init.sql:iiko_assembly_chart_items",
+      "type": "table",
+      "name": "iiko_assembly_chart_items",
+      "filePath": "migrations/00001_init.sql",
+      "lineRange": [68, 87],
+      "summary": "Позиции технологической карты сборки с детальными нормами расхода (amount_in/out по сезонам) и JSONB-спецификациями.",
+      "tags": ["database", "iiko", "recipe", "line-items"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "table:migrations/00001_init.sql:iiko_prepared_charts",
+      "type": "table",
+      "name": "iiko_prepared_charts",
+      "filePath": "migrations/00001_init.sql",
+      "lineRange": [89, 98],
+      "summary": "Технологические карты заготовок iiko с периодом действия и стратегией сборки.",
+      "tags": ["database", "iiko", "recipe"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00001_init.sql:iiko_prepared_chart_items",
+      "type": "table",
+      "name": "iiko_prepared_chart_items",
+      "filePath": "migrations/00001_init.sql",
+      "lineRange": [100, 109],
+      "summary": "Позиции технологической карты заготовок со ссылкой на родительскую карту и нормой расхода.",
+      "tags": ["database", "iiko", "recipe", "line-items"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00002_departments.sql",
+      "type": "table",
+      "name": "00002_departments.sql",
+      "filePath": "migrations/00002_departments.sql",
+      "summary": "Миграция, создающая таблицу departments (цеха/магазины) и добавляющая department_id в auth_users для привязки пользователей к отделам.",
+      "tags": ["database", "migration", "departments", "rbac"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00002_departments.sql:departments",
+      "type": "table",
+      "name": "departments",
+      "filePath": "migrations/00002_departments.sql",
+      "lineRange": [2, 12],
+      "summary": "Таблица отделов (цех/магазин) с типом, кодом, iiko_department_id и JSONB-метаданными; основа per-shop модели видимости.",
+      "tags": ["database", "departments", "core-entity"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00003_default_departments_order_locations.sql",
+      "type": "table",
+      "name": "00003_default_departments_order_locations.sql",
+      "filePath": "migrations/00003_default_departments_order_locations.sql",
+      "summary": "Миграция, связывающая заказы с отделами: добавляет from/to_department_id в orders, telegram_username в auth_users и сопутствующие индексы.",
+      "tags": ["database", "migration", "orders", "departments"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00004_order_fulfillment_reserved_quantity.sql",
+      "type": "table",
+      "name": "00004_order_fulfillment_reserved_quantity.sql",
+      "filePath": "migrations/00004_order_fulfillment_reserved_quantity.sql",
+      "summary": "Миграция, добавляющая в orders колонку fulfillment_date (с индексом) и в order_items зарезервированное количество.",
+      "tags": ["database", "migration", "orders"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00005_order_created_by_username.sql",
+      "type": "table",
+      "name": "00005_order_created_by_username.sql",
+      "filePath": "migrations/00005_order_created_by_username.sql",
+      "summary": "Миграция, добавляющая в orders колонку created_by_username с индексом для фильтрации заказов по автору.",
+      "tags": ["database", "migration", "orders"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00006_order_templates_and_updates.sql",
+      "type": "table",
+      "name": "00006_order_templates_and_updates.sql",
+      "filePath": "migrations/00006_order_templates_and_updates.sql",
+      "summary": "Миграция, создающая таблицу order_templates (шаблоны заказов с темой) и индексы по теме и автору.",
+      "tags": ["database", "migration", "templates"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00006_order_templates_and_updates.sql:order_templates",
+      "type": "table",
+      "name": "order_templates",
+      "filePath": "migrations/00006_order_templates_and_updates.sql",
+      "lineRange": [2, 10],
+      "summary": "Таблица шаблонов заказов с темой, телом и ссылкой на автора (позже тема удаляется, а сама таблица упраздняется).",
+      "tags": ["database", "templates"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00007_drop_order_template_theme.sql",
+      "type": "table",
+      "name": "00007_drop_order_template_theme.sql",
+      "filePath": "migrations/00007_drop_order_template_theme.sql",
+      "summary": "Миграция, удаляющая колонку theme и сопутствующий индекс из таблицы order_templates.",
+      "tags": ["database", "migration", "templates"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00008_order_history.sql",
+      "type": "table",
+      "name": "00008_order_history.sql",
+      "filePath": "migrations/00008_order_history.sql",
+      "summary": "Миграция аудита: создаёт таблицы order_history и order_history_items для отслеживания изменений заказов и их позиций.",
+      "tags": ["database", "migration", "audit", "orders"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00008_order_history.sql:order_history",
+      "type": "table",
+      "name": "order_history",
+      "filePath": "migrations/00008_order_history.sql",
+      "lineRange": [2, 7],
+      "summary": "Запись истории изменений заказа: кто и когда внёс изменение, со ссылкой на orders.",
+      "tags": ["database", "audit", "orders"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00008_order_history.sql:order_history_items",
+      "type": "table",
+      "name": "order_history_items",
+      "filePath": "migrations/00008_order_history.sql",
+      "lineRange": [9, 19],
+      "summary": "Детализация истории: тип изменения и старые/новые значения количества и резерва по каждому продукту.",
+      "tags": ["database", "audit", "line-items"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00009_dish_catalog.sql",
+      "type": "table",
+      "name": "00009_dish_catalog.sql",
+      "filePath": "migrations/00009_dish_catalog.sql",
+      "summary": "Миграция, создающая таблицу dish_catalog (каталог блюд) с кодом, темой и индексами по коду и нормализованному имени.",
+      "tags": ["database", "migration", "catalog"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00009_dish_catalog.sql:dish_catalog",
+      "type": "table",
+      "name": "dish_catalog",
+      "filePath": "migrations/00009_dish_catalog.sql",
+      "lineRange": [2, 9],
+      "summary": "Каталог блюд с кодом, названием и темой; используется в админ-управлении блюдами.",
+      "tags": ["database", "catalog", "core-entity"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00010_drop_order_templates.sql",
+      "type": "table",
+      "name": "00010_drop_order_templates.sql",
+      "filePath": "migrations/00010_drop_order_templates.sql",
+      "summary": "Миграция, удаляющая таблицу order_templates (down-секция воссоздаёт её); функциональность шаблонов упразднена.",
+      "tags": ["database", "migration", "templates", "cleanup"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00011_dish_catalog_sort_order.sql",
+      "type": "table",
+      "name": "00011_dish_catalog_sort_order.sql",
+      "filePath": "migrations/00011_dish_catalog_sort_order.sql",
+      "summary": "Миграция, добавляющая в dish_catalog колонку sort_order с индексом для ручного упорядочивания блюд.",
+      "tags": ["database", "migration", "catalog"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00012_timestamptz_and_per_shop_counter.sql",
+      "type": "table",
+      "name": "00012_timestamptz_and_per_shop_counter.sql",
+      "filePath": "migrations/00012_timestamptz_and_per_shop_counter.sql",
+      "summary": "Масштабная миграция: конвертирует TEXT-колонки времени в timestamptz по всем таблицам, переводит order_counters на per-shop ключ (day, department_id) и ужесточает foreign key заказов на отделы до ON DELETE RESTRICT.",
+      "tags": ["database", "migration", "timestamptz", "data-transformation"],
+      "complexity": "complex",
+      "languageNotes": "Использует USING col::timestamptz для in-place преобразования типов и NULLIF для безопасного парсинга пустых строк; полностью симметричная down-секция возвращает TEXT-представление."
+    },
+    {
+      "id": "table:migrations/00013_unique_telegram_username.sql",
+      "type": "table",
+      "name": "00013_unique_telegram_username.sql",
+      "filePath": "migrations/00013_unique_telegram_username.sql",
+      "summary": "Миграция, заменяющая обычный индекс на telegram_username уникальным частичным индексом для предотвращения дублирования учётных записей.",
+      "tags": ["database", "migration", "users", "constraint"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00014_order_outbox.sql",
+      "type": "table",
+      "name": "00014_order_outbox.sql",
+      "filePath": "migrations/00014_order_outbox.sql",
+      "summary": "Миграция, создающая таблицу order_outbox для transactional outbox-паттерна: события заказов с payload, correlation_id и частичным индексом по неопубликованным записям.",
+      "tags": ["database", "migration", "outbox", "events"],
+      "complexity": "simple",
+      "languageNotes": "Реализует transactional outbox: частичный индекс WHERE published_at IS NULL ускоряет выборку неопубликованных событий."
+    },
+    {
+      "id": "table:migrations/00014_order_outbox.sql:order_outbox",
+      "type": "table",
+      "name": "order_outbox",
+      "filePath": "migrations/00014_order_outbox.sql",
+      "lineRange": [6, 14],
+      "summary": "Таблица transactional outbox для событий заказов: тип события, JSONB payload, correlation_id и время публикации.",
+      "tags": ["database", "outbox", "events"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00015_order_comments.sql",
+      "type": "table",
+      "name": "00015_order_comments.sql",
+      "filePath": "migrations/00015_order_comments.sql",
+      "summary": "Миграция, добавляющая в orders JSONB-колонку comments для общего примечания и комментариев по отдельным позициям.",
+      "tags": ["database", "migration", "orders", "jsonb"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00016_order_favorite.sql",
+      "type": "table",
+      "name": "00016_order_favorite.sql",
+      "filePath": "migrations/00016_order_favorite.sql",
+      "summary": "Миграция, добавляющая в orders булеву колонку is_favorite для закрепления избранных заказов, переживающих очистку по retention.",
+      "tags": ["database", "migration", "orders"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:migrations/00017_orders_created_at_index.sql",
+      "type": "table",
+      "name": "00017_orders_created_at_index.sql",
+      "filePath": "migrations/00017_orders_created_at_index.sql",
+      "summary": "Миграция, добавляющая частичный индекс по orders.created_at для незакреплённых заказов, ускоряющий выборку для retention-очистки.",
+      "tags": ["database", "migration", "orders", "index"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {"source": "table:migrations/00001_init.sql", "target": "table:migrations/00001_init.sql:auth_users", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00001_init.sql", "target": "table:migrations/00001_init.sql:order_counters", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00001_init.sql", "target": "table:migrations/00001_init.sql:orders", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00001_init.sql", "target": "table:migrations/00001_init.sql:iiko_products", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00001_init.sql", "target": "table:migrations/00001_init.sql:order_items", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00001_init.sql", "target": "table:migrations/00001_init.sql:iiko_sync_runs", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00001_init.sql", "target": "table:migrations/00001_init.sql:iiko_assembly_charts", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00001_init.sql", "target": "table:migrations/00001_init.sql:iiko_assembly_chart_items", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00001_init.sql", "target": "table:migrations/00001_init.sql:iiko_prepared_charts", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00001_init.sql", "target": "table:migrations/00001_init.sql:iiko_prepared_chart_items", "type": "migrates", "direction": "forward", "weight": 0.7},
+
+    {"source": "table:migrations/00002_departments.sql", "target": "table:migrations/00002_departments.sql:departments", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00002_departments.sql", "target": "table:migrations/00001_init.sql:auth_users", "type": "migrates", "direction": "forward", "weight": 0.7},
+
+    {"source": "table:migrations/00003_default_departments_order_locations.sql", "target": "table:migrations/00001_init.sql:orders", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00003_default_departments_order_locations.sql", "target": "table:migrations/00001_init.sql:auth_users", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00003_default_departments_order_locations.sql", "target": "table:migrations/00002_departments.sql:departments", "type": "related", "direction": "forward", "weight": 0.5},
+
+    {"source": "table:migrations/00004_order_fulfillment_reserved_quantity.sql", "target": "table:migrations/00001_init.sql:orders", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00004_order_fulfillment_reserved_quantity.sql", "target": "table:migrations/00001_init.sql:order_items", "type": "migrates", "direction": "forward", "weight": 0.7},
+
+    {"source": "table:migrations/00005_order_created_by_username.sql", "target": "table:migrations/00001_init.sql:orders", "type": "migrates", "direction": "forward", "weight": 0.7},
+
+    {"source": "table:migrations/00006_order_templates_and_updates.sql", "target": "table:migrations/00006_order_templates_and_updates.sql:order_templates", "type": "migrates", "direction": "forward", "weight": 0.7},
+
+    {"source": "table:migrations/00007_drop_order_template_theme.sql", "target": "table:migrations/00006_order_templates_and_updates.sql:order_templates", "type": "migrates", "direction": "forward", "weight": 0.7},
+
+    {"source": "table:migrations/00008_order_history.sql", "target": "table:migrations/00008_order_history.sql:order_history", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00008_order_history.sql", "target": "table:migrations/00008_order_history.sql:order_history_items", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00008_order_history.sql", "target": "table:migrations/00001_init.sql:orders", "type": "related", "direction": "forward", "weight": 0.5},
+
+    {"source": "table:migrations/00009_dish_catalog.sql", "target": "table:migrations/00009_dish_catalog.sql:dish_catalog", "type": "migrates", "direction": "forward", "weight": 0.7},
+
+    {"source": "table:migrations/00010_drop_order_templates.sql", "target": "table:migrations/00006_order_templates_and_updates.sql:order_templates", "type": "migrates", "direction": "forward", "weight": 0.7},
+
+    {"source": "table:migrations/00011_dish_catalog_sort_order.sql", "target": "table:migrations/00009_dish_catalog.sql:dish_catalog", "type": "migrates", "direction": "forward", "weight": 0.7},
+
+    {"source": "table:migrations/00012_timestamptz_and_per_shop_counter.sql", "target": "table:migrations/00001_init.sql:auth_users", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00012_timestamptz_and_per_shop_counter.sql", "target": "table:migrations/00002_departments.sql:departments", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00012_timestamptz_and_per_shop_counter.sql", "target": "table:migrations/00001_init.sql:orders", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00012_timestamptz_and_per_shop_counter.sql", "target": "table:migrations/00001_init.sql:order_counters", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00012_timestamptz_and_per_shop_counter.sql", "target": "table:migrations/00008_order_history.sql:order_history", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00012_timestamptz_and_per_shop_counter.sql", "target": "table:migrations/00001_init.sql:iiko_products", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00012_timestamptz_and_per_shop_counter.sql", "target": "table:migrations/00001_init.sql:iiko_assembly_charts", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00012_timestamptz_and_per_shop_counter.sql", "target": "table:migrations/00001_init.sql:iiko_prepared_charts", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00012_timestamptz_and_per_shop_counter.sql", "target": "table:migrations/00001_init.sql:iiko_sync_runs", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "table:migrations/00012_timestamptz_and_per_shop_counter.sql", "target": "table:migrations/00009_dish_catalog.sql:dish_catalog", "type": "migrates", "direction": "forward", "weight": 0.7},
+
+    {"source": "table:migrations/00013_unique_telegram_username.sql", "target": "table:migrations/00001_init.sql:auth_users", "type": "migrates", "direction": "forward", "weight": 0.7},
+
+    {"source": "table:migrations/00014_order_outbox.sql", "target": "table:migrations/00014_order_outbox.sql:order_outbox", "type": "migrates", "direction": "forward", "weight": 0.7},
+
+    {"source": "table:migrations/00015_order_comments.sql", "target": "table:migrations/00001_init.sql:orders", "type": "migrates", "direction": "forward", "weight": 0.7},
+
+    {"source": "table:migrations/00016_order_favorite.sql", "target": "table:migrations/00001_init.sql:orders", "type": "migrates", "direction": "forward", "weight": 0.7},
+
+    {"source": "table:migrations/00017_orders_created_at_index.sql", "target": "table:migrations/00001_init.sql:orders", "type": "migrates", "direction": "forward", "weight": 0.7}
+  ]
+}

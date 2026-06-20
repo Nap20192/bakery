@@ -1,0 +1,1410 @@
+{
+  "scriptCompleted": true,
+  "files": [
+    {
+      "path": ".dockerignore",
+      "language": "unknown",
+      "sizeLines": 24,
+      "fileCategory": "infra"
+    },
+    {
+      "path": ".env.example",
+      "language": "config",
+      "sizeLines": 46,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".golangci.yml",
+      "language": "yaml",
+      "sizeLines": 60,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".understand-anything/.understandignore",
+      "language": "unknown",
+      "sizeLines": 55,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".understand-anything/config.json",
+      "language": "json",
+      "sizeLines": 1,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".understand-anything/intermediate/scan-result.json",
+      "language": "json",
+      "sizeLines": 2787,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".understand-anything/tmp/ua-import-map-input.json",
+      "language": "json",
+      "sizeLines": 0,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".understand-anything/tmp/ua-import-map-output.json",
+      "language": "json",
+      "sizeLines": 1198,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".understand-anything/tmp/ua-scan-files.json",
+      "language": "json",
+      "sizeLines": 1596,
+      "fileCategory": "config"
+    },
+    {
+      "path": "AGENTS.md",
+      "language": "markdown",
+      "sizeLines": 378,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "cmd/bot/main.go",
+      "language": "go",
+      "sizeLines": 113,
+      "fileCategory": "code"
+    },
+    {
+      "path": "cmd/worker/main.go",
+      "language": "go",
+      "sizeLines": 133,
+      "fileCategory": "code"
+    },
+    {
+      "path": "deploy/Dockerfile.bot",
+      "language": "dockerfile",
+      "sizeLines": 36,
+      "fileCategory": "infra"
+    },
+    {
+      "path": "deploy/Dockerfile.worker",
+      "language": "dockerfile",
+      "sizeLines": 36,
+      "fileCategory": "infra"
+    },
+    {
+      "path": "docker-compose.yml",
+      "language": "yaml",
+      "sizeLines": 100,
+      "fileCategory": "infra"
+    },
+    {
+      "path": "frontend/.env.example",
+      "language": "config",
+      "sizeLines": 16,
+      "fileCategory": "config"
+    },
+    {
+      "path": "frontend/Dockerfile",
+      "language": "dockerfile",
+      "sizeLines": 24,
+      "fileCategory": "infra"
+    },
+    {
+      "path": "frontend/eslint.config.js",
+      "language": "javascript",
+      "sizeLines": 36,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/FRONTEND_BEHAVIOR.md",
+      "language": "markdown",
+      "sizeLines": 206,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "frontend/index.html",
+      "language": "html",
+      "sizeLines": 13,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/package.json",
+      "language": "json",
+      "sizeLines": 27,
+      "fileCategory": "config"
+    },
+    {
+      "path": "frontend/railway.json",
+      "language": "json",
+      "sizeLines": 16,
+      "fileCategory": "config"
+    },
+    {
+      "path": "frontend/RAILWAY.md",
+      "language": "markdown",
+      "sizeLines": 73,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "frontend/server.js",
+      "language": "javascript",
+      "sizeLines": 218,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/skills-lock.json",
+      "language": "json",
+      "sizeLines": 47,
+      "fileCategory": "config"
+    },
+    {
+      "path": "frontend/src/api/auth.js",
+      "language": "javascript",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/api/client.js",
+      "language": "javascript",
+      "sizeLines": 81,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/api/dishes.js",
+      "language": "javascript",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/api/orders.js",
+      "language": "javascript",
+      "sizeLines": 70,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/api/users.js",
+      "language": "javascript",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/app/App.jsx",
+      "language": "javascript",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/app/routes.js",
+      "language": "javascript",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/Button.jsx",
+      "language": "javascript",
+      "sizeLines": 13,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/CopyButton.jsx",
+      "language": "javascript",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/EmptyState.jsx",
+      "language": "javascript",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/Field.jsx",
+      "language": "javascript",
+      "sizeLines": 24,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/Icon.jsx",
+      "language": "javascript",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/Login.jsx",
+      "language": "javascript",
+      "sizeLines": 70,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/MetaCell.jsx",
+      "language": "javascript",
+      "sizeLines": 8,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/Panel.jsx",
+      "language": "javascript",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/config/env.js",
+      "language": "javascript",
+      "sizeLines": 5,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/account/Me.jsx",
+      "language": "javascript",
+      "sizeLines": 38,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/admin/AdminDishes.jsx",
+      "language": "javascript",
+      "sizeLines": 103,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/admin/AdminUsers.jsx",
+      "language": "javascript",
+      "sizeLines": 208,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/BakerOrderCard.jsx",
+      "language": "javascript",
+      "sizeLines": 72,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/BakerOrderFilters.jsx",
+      "language": "javascript",
+      "sizeLines": 50,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/BakerOrderReview.jsx",
+      "language": "javascript",
+      "sizeLines": 43,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/BakerOrdersView.jsx",
+      "language": "javascript",
+      "sizeLines": 118,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/BakerSelectionReview.jsx",
+      "language": "javascript",
+      "sizeLines": 61,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/MonitorReports.jsx",
+      "language": "javascript",
+      "sizeLines": 82,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/OrderDetails.jsx",
+      "language": "javascript",
+      "sizeLines": 193,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/OrderEditor.jsx",
+      "language": "javascript",
+      "sizeLines": 332,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/OrderList.jsx",
+      "language": "javascript",
+      "sizeLines": 120,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/OrderPagination.jsx",
+      "language": "javascript",
+      "sizeLines": 21,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/OrderPreviewModal.jsx",
+      "language": "javascript",
+      "sizeLines": 37,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/OrdersLayout.jsx",
+      "language": "javascript",
+      "sizeLines": 94,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/OrdersPage.jsx",
+      "language": "javascript",
+      "sizeLines": 456,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/ShopOrdersView.jsx",
+      "language": "javascript",
+      "sizeLines": 79,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/lib/auth.js",
+      "language": "javascript",
+      "sizeLines": 44,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/lib/format.js",
+      "language": "javascript",
+      "sizeLines": 18,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/lib/logger.js",
+      "language": "javascript",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/lib/orders.js",
+      "language": "javascript",
+      "sizeLines": 45,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/lib/telegram.js",
+      "language": "javascript",
+      "sizeLines": 16,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/lib/url.js",
+      "language": "javascript",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/main.jsx",
+      "language": "javascript",
+      "sizeLines": 8,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/styles.css",
+      "language": "css",
+      "sizeLines": 80,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/vite.config.js",
+      "language": "javascript",
+      "sizeLines": 18,
+      "fileCategory": "code"
+    },
+    {
+      "path": "go.mod",
+      "language": "mod",
+      "sizeLines": 20,
+      "fileCategory": "config"
+    },
+    {
+      "path": "go.sum",
+      "language": "sum",
+      "sizeLines": 878,
+      "fileCategory": "config"
+    },
+    {
+      "path": "internal/config/config.go",
+      "language": "go",
+      "sizeLines": 200,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/config/dotenv.go",
+      "language": "go",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/deps/deps.go",
+      "language": "go",
+      "sizeLines": 187,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/deps/infra.go",
+      "language": "go",
+      "sizeLines": 98,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/api/httpx/apperror.go",
+      "language": "go",
+      "sizeLines": 37,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth_test.go",
+      "language": "go",
+      "sizeLines": 114,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth.go",
+      "language": "go",
+      "sizeLines": 294,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/api/httpx/respond.go",
+      "language": "go",
+      "sizeLines": 81,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/api/middleware.go",
+      "language": "go",
+      "sizeLines": 76,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/api/server.go",
+      "language": "go",
+      "sizeLines": 88,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/action_menu_test.go",
+      "language": "go",
+      "sizeLines": 136,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/action_menu.go",
+      "language": "go",
+      "sizeLines": 274,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/bot.go",
+      "language": "go",
+      "sizeLines": 109,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/handler_events.go",
+      "language": "go",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/handler_monitor.go",
+      "language": "go",
+      "sizeLines": 107,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/handler_order.go",
+      "language": "go",
+      "sizeLines": 390,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/handler_orders_test.go",
+      "language": "go",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/handler_orders.go",
+      "language": "go",
+      "sizeLines": 334,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/handler_start.go",
+      "language": "go",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/handler_techcard.go",
+      "language": "go",
+      "sizeLines": 26,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/handler_templates.go",
+      "language": "go",
+      "sizeLines": 80,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/messages.go",
+      "language": "go",
+      "sizeLines": 10,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/middleware.go",
+      "language": "go",
+      "sizeLines": 87,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/mini_app_test.go",
+      "language": "go",
+      "sizeLines": 35,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/mini_app.go",
+      "language": "go",
+      "sizeLines": 51,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/ports.go",
+      "language": "go",
+      "sizeLines": 68,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/render.go",
+      "language": "go",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/response/builder_monitor_test.go",
+      "language": "go",
+      "sizeLines": 89,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/response/builder_order_test.go",
+      "language": "go",
+      "sizeLines": 40,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/response/builder.go",
+      "language": "go",
+      "sizeLines": 322,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/routes.go",
+      "language": "go",
+      "sizeLines": 84,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/sender_test.go",
+      "language": "go",
+      "sizeLines": 105,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/sender.go",
+      "language": "go",
+      "sizeLines": 183,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/session_test.go",
+      "language": "go",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/session.go",
+      "language": "go",
+      "sizeLines": 120,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/postgres.go",
+      "language": "go",
+      "sizeLines": 60,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/sqlc/auth.sql.go",
+      "language": "go",
+      "sizeLines": 430,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/sqlc/db.go",
+      "language": "go",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/sqlc/departments.sql.go",
+      "language": "go",
+      "sizeLines": 188,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/sqlc/iiko_snapshot.sql.go",
+      "language": "go",
+      "sizeLines": 438,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/sqlc/models.go",
+      "language": "go",
+      "sizeLines": 179,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/sqlc/monitor.sql.go",
+      "language": "go",
+      "sizeLines": 220,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/sqlc/order_outbox.sql.go",
+      "language": "go",
+      "sizeLines": 101,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/sqlc/orders.sql.go",
+      "language": "go",
+      "sizeLines": 621,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/sqlc/products.sql.go",
+      "language": "go",
+      "sizeLines": 283,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/sqlc/querier.go",
+      "language": "go",
+      "sizeLines": 76,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/iiko/api.go",
+      "language": "go",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/iiko/client_test.go",
+      "language": "go",
+      "sizeLines": 135,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/iiko/client.go",
+      "language": "go",
+      "sizeLines": 234,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/iiko/consts.go",
+      "language": "go",
+      "sizeLines": 11,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/iiko/dto.go",
+      "language": "go",
+      "sizeLines": 342,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/iiko/testdata/results/01_auth.json",
+      "language": "json",
+      "sizeLines": 3,
+      "fileCategory": "config"
+    },
+    {
+      "path": "internal/outbound/iiko/testdata/results/02_list_products.json",
+      "language": "json",
+      "sizeLines": 78080,
+      "fileCategory": "config"
+    },
+    {
+      "path": "internal/outbound/iiko/testdata/results/03_assembly_charts_get_all.json",
+      "language": "json",
+      "sizeLines": 161361,
+      "fileCategory": "config"
+    },
+    {
+      "path": "internal/outbound/iiko/testdata/results/05_assembly_chart_by_id.json",
+      "language": "json",
+      "sizeLines": 7,
+      "fileCategory": "config"
+    },
+    {
+      "path": "internal/outbound/iiko/testdata/results/07_assembly_charts_get_assembled.json",
+      "language": "json",
+      "sizeLines": 27,
+      "fileCategory": "config"
+    },
+    {
+      "path": "internal/outbound/iiko/testdata/results/08_assembly_charts_get_prepared.json",
+      "language": "json",
+      "sizeLines": 20,
+      "fileCategory": "config"
+    },
+    {
+      "path": "internal/pkg/apperr/apperr_test.go",
+      "language": "go",
+      "sizeLines": 40,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/apperr/apperr.go",
+      "language": "go",
+      "sizeLines": 98,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/authtoken/authtoken_test.go",
+      "language": "go",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/authtoken/authtoken.go",
+      "language": "go",
+      "sizeLines": 74,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/correlation/correlation.go",
+      "language": "go",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/dbmigrate/migrate_test.go",
+      "language": "go",
+      "sizeLines": 77,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/dbmigrate/migrate.go",
+      "language": "go",
+      "sizeLines": 194,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/enum/enum.go",
+      "language": "go",
+      "sizeLines": 74,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/enum/rabbitmq.go",
+      "language": "go",
+      "sizeLines": 27,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/helpers/db.go",
+      "language": "go",
+      "sizeLines": 10,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/helpers/env.go",
+      "language": "go",
+      "sizeLines": 46,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/helpers/format.go",
+      "language": "go",
+      "sizeLines": 16,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/helpers/time.go",
+      "language": "go",
+      "sizeLines": 22,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/sharedkernel/aggregate_root.go",
+      "language": "go",
+      "sizeLines": 22,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/sharedkernel/event.go",
+      "language": "go",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/admin/app/app.go",
+      "language": "go",
+      "sizeLines": 40,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/admin/infra/http/handler.go",
+      "language": "go",
+      "sizeLines": 203,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/admin/usecase/admin/admin.go",
+      "language": "go",
+      "sizeLines": 147,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/admin/usecase/admin/interfaces.go",
+      "language": "go",
+      "sizeLines": 69,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/auth/app/app.go",
+      "language": "go",
+      "sizeLines": 16,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/auth/domain/auth.go",
+      "language": "go",
+      "sizeLines": 47,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/auth/infra/http/handler.go",
+      "language": "go",
+      "sizeLines": 115,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/auth/infra/repo/auth_repo.go",
+      "language": "go",
+      "sizeLines": 232,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/auth/usecase/auth/auth_test.go",
+      "language": "go",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/auth/usecase/auth/auth.go",
+      "language": "go",
+      "sizeLines": 225,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/auth/usecase/auth/interfaces.go",
+      "language": "go",
+      "sizeLines": 64,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/auth/usecase/auth/rbac.go",
+      "language": "go",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/department/app/app.go",
+      "language": "go",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/department/infra/http/handler.go",
+      "language": "go",
+      "sizeLines": 64,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/department/infra/repo/department_repo.go",
+      "language": "go",
+      "sizeLines": 64,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/department/usecase/department/department.go",
+      "language": "go",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/department/usecase/department/interfaces.go",
+      "language": "go",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/monitor/app/app.go",
+      "language": "go",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/monitor/domain/model.go",
+      "language": "go",
+      "sizeLines": 42,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/monitor/domain/service_test.go",
+      "language": "go",
+      "sizeLines": 112,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/monitor/domain/service.go",
+      "language": "go",
+      "sizeLines": 119,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/monitor/infra/http/handler.go",
+      "language": "go",
+      "sizeLines": 218,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/monitor/infra/repo/monitor_repo.go",
+      "language": "go",
+      "sizeLines": 170,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/monitor/usecase/monitor/interfaces.go",
+      "language": "go",
+      "sizeLines": 42,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/monitor/usecase/monitor/monitor.go",
+      "language": "go",
+      "sizeLines": 163,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/app/app.go",
+      "language": "go",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/domain/events.go",
+      "language": "go",
+      "sizeLines": 48,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/domain/model.go",
+      "language": "go",
+      "sizeLines": 115,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/domain/order_specs.go",
+      "language": "go",
+      "sizeLines": 180,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/domain/service_test.go",
+      "language": "go",
+      "sizeLines": 223,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/domain/service.go",
+      "language": "go",
+      "sizeLines": 186,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/domain/specification.go",
+      "language": "go",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/infra/http/handler_admin.go",
+      "language": "go",
+      "sizeLines": 84,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/infra/http/handler_test.go",
+      "language": "go",
+      "sizeLines": 100,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/infra/http/handler_write.go",
+      "language": "go",
+      "sizeLines": 247,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/infra/http/handler.go",
+      "language": "go",
+      "sizeLines": 139,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/infra/http/presenter.go",
+      "language": "go",
+      "sizeLines": 185,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/infra/outbox/relay.go",
+      "language": "go",
+      "sizeLines": 78,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/infra/repo/order_repo.go",
+      "language": "go",
+      "sizeLines": 519,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/usecase/order/interfaces.go",
+      "language": "go",
+      "sizeLines": 119,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/usecase/order/order_test.go",
+      "language": "go",
+      "sizeLines": 336,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/usecase/order/order.go",
+      "language": "go",
+      "sizeLines": 578,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/sync/app/app.go",
+      "language": "go",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/sync/infra/repo/sync_repo.go",
+      "language": "go",
+      "sizeLines": 245,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/sync/usecase/sync/interfaces.go",
+      "language": "go",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/sync/usecase/sync/sync.go",
+      "language": "go",
+      "sizeLines": 106,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/techcard/app/app.go",
+      "language": "go",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/techcard/domain/model.go",
+      "language": "go",
+      "sizeLines": 21,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/techcard/infra/repo/techcard_repo.go",
+      "language": "go",
+      "sizeLines": 134,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/techcard/usecase/techcard/interfaces.go",
+      "language": "go",
+      "sizeLines": 18,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/techcard/usecase/techcard/techcard.go",
+      "language": "go",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "Makefile",
+      "language": "makefile",
+      "sizeLines": 42,
+      "fileCategory": "infra"
+    },
+    {
+      "path": "migrations/00001_init.sql",
+      "language": "sql",
+      "sizeLines": 153,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00002_departments.sql",
+      "language": "sql",
+      "sizeLines": 39,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00003_default_departments_order_locations.sql",
+      "language": "sql",
+      "sizeLines": 40,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00004_order_fulfillment_reserved_quantity.sql",
+      "language": "sql",
+      "sizeLines": 18,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00005_order_created_by_username.sql",
+      "language": "sql",
+      "sizeLines": 13,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00006_order_templates_and_updates.sql",
+      "language": "sql",
+      "sizeLines": 22,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00007_drop_order_template_theme.sql",
+      "language": "sql",
+      "sizeLines": 12,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00008_order_history.sql",
+      "language": "sql",
+      "sizeLines": 36,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00009_dish_catalog.sql",
+      "language": "sql",
+      "sizeLines": 20,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00010_drop_order_templates.sql",
+      "language": "sql",
+      "sizeLines": 15,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00011_dish_catalog_sort_order.sql",
+      "language": "sql",
+      "sizeLines": 12,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00012_timestamptz_and_per_shop_counter.sql",
+      "language": "sql",
+      "sizeLines": 141,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00013_unique_telegram_username.sql",
+      "language": "sql",
+      "sizeLines": 16,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00014_order_outbox.sql",
+      "language": "sql",
+      "sizeLines": 22,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00015_order_comments.sql",
+      "language": "sql",
+      "sizeLines": 9,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00016_order_favorite.sql",
+      "language": "sql",
+      "sizeLines": 6,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00017_orders_created_at_index.sql",
+      "language": "sql",
+      "sizeLines": 8,
+      "fileCategory": "data"
+    },
+    {
+      "path": "pkg/logger/context.go",
+      "language": "go",
+      "sizeLines": 227,
+      "fileCategory": "code"
+    },
+    {
+      "path": "pkg/logger/log.go",
+      "language": "go",
+      "sizeLines": 98,
+      "fileCategory": "code"
+    },
+    {
+      "path": "pkg/logger/pretty.go",
+      "language": "go",
+      "sizeLines": 311,
+      "fileCategory": "code"
+    },
+    {
+      "path": "pkg/rabbitmq/client.go",
+      "language": "go",
+      "sizeLines": 38,
+      "fileCategory": "code"
+    },
+    {
+      "path": "pkg/rabbitmq/consumer/consumer.go",
+      "language": "go",
+      "sizeLines": 187,
+      "fileCategory": "code"
+    },
+    {
+      "path": "pkg/rabbitmq/publisher/publisher.go",
+      "language": "go",
+      "sizeLines": 161,
+      "fileCategory": "code"
+    },
+    {
+      "path": "prepared_dough_codes.txt",
+      "language": "txt",
+      "sizeLines": 45,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "queries/auth.sql",
+      "language": "sql",
+      "sizeLines": 100,
+      "fileCategory": "data"
+    },
+    {
+      "path": "queries/departments.sql",
+      "language": "sql",
+      "sizeLines": 45,
+      "fileCategory": "data"
+    },
+    {
+      "path": "queries/iiko_snapshot.sql",
+      "language": "sql",
+      "sizeLines": 191,
+      "fileCategory": "data"
+    },
+    {
+      "path": "queries/monitor.sql",
+      "language": "sql",
+      "sizeLines": 58,
+      "fileCategory": "data"
+    },
+    {
+      "path": "queries/order_outbox.sql",
+      "language": "sql",
+      "sizeLines": 25,
+      "fileCategory": "data"
+    },
+    {
+      "path": "queries/orders.sql",
+      "language": "sql",
+      "sizeLines": 175,
+      "fileCategory": "data"
+    },
+    {
+      "path": "queries/products.sql",
+      "language": "sql",
+      "sizeLines": 81,
+      "fileCategory": "data"
+    },
+    {
+      "path": "README.md",
+      "language": "markdown",
+      "sizeLines": 40,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "skills-lock.json",
+      "language": "json",
+      "sizeLines": 17,
+      "fileCategory": "config"
+    },
+    {
+      "path": "sqlc.yaml",
+      "language": "yaml",
+      "sizeLines": 14,
+      "fileCategory": "config"
+    },
+    {
+      "path": "templates/dishes.txt",
+      "language": "txt",
+      "sizeLines": 104,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "TODO.md",
+      "language": "markdown",
+      "sizeLines": 41,
+      "fileCategory": "docs"
+    }
+  ],
+  "totalFiles": 229,
+  "filteredByIgnore": 35,
+  "estimatedComplexity": "large",
+  "stats": {
+    "filesScanned": 229,
+    "byCategory": {
+      "infra": 6,
+      "config": 21,
+      "code": 169,
+      "docs": 7,
+      "markup": 2,
+      "data": 24
+    },
+    "byLanguage": {
+      "unknown": 2,
+      "config": 2,
+      "yaml": 3,
+      "json": 15,
+      "markdown": 5,
+      "go": 125,
+      "dockerfile": 3,
+      "javascript": 43,
+      "html": 1,
+      "css": 1,
+      "mod": 1,
+      "sum": 1,
+      "makefile": 1,
+      "sql": 24,
+      "txt": 2
+    }
+  }
+}

@@ -1,0 +1,1004 @@
+{
+  "nodes": [
+    {
+      "id": "file:internal/pkg/authtoken/authtoken_test.go",
+      "type": "file",
+      "name": "authtoken_test.go",
+      "filePath": "internal/pkg/authtoken/authtoken_test.go",
+      "summary": "Тест round-trip для пакета authtoken: проверяет, что выпущенный токен корректно парсится и что истёкшие или испорченные токены отклоняются.",
+      "tags": [
+        "test",
+        "authentication",
+        "security",
+        "token"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/pkg/enum/enum.go",
+      "type": "file",
+      "name": "enum.go",
+      "filePath": "internal/pkg/enum/enum.go",
+      "summary": "Общие перечисления домена (роли, типы подразделений, типы продуктов iiko) с хелперами нормализации и валидации ролей.",
+      "tags": [
+        "enum",
+        "type-definition",
+        "validation",
+        "domain"
+      ],
+      "complexity": "simple",
+      "languageNotes": "Go-стиль enum через строковые типы и константы."
+    },
+    {
+      "id": "function:internal/pkg/enum/enum.go:IsValidRole",
+      "type": "function",
+      "name": "IsValidRole",
+      "filePath": "internal/pkg/enum/enum.go",
+      "lineRange": [
+        24,
+        31
+      ],
+      "summary": "Проверяет, является ли переданная роль одной из допустимых после нормализации.",
+      "tags": [
+        "validation",
+        "rbac",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/pkg/enum/rabbitmq.go",
+      "type": "file",
+      "name": "rabbitmq.go",
+      "filePath": "internal/pkg/enum/rabbitmq.go",
+      "summary": "Перечисления RabbitMQ (имена exchange, очередей, вид exchange) со строковым представлением для использования publisher/consumer.",
+      "tags": [
+        "enum",
+        "type-definition",
+        "messaging",
+        "rabbitmq"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/services/admin/app/app.go",
+      "type": "file",
+      "name": "app.go",
+      "filePath": "internal/services/admin/app/app.go",
+      "summary": "Композиционный слой admin-сервиса: собирает usecase управления пользователями и адаптер подразделений в единое приложение.",
+      "tags": [
+        "service",
+        "composition",
+        "dependency-injection",
+        "clean-architecture"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:internal/services/admin/app/app.go:departmentsAdapter",
+      "type": "class",
+      "name": "departmentsAdapter",
+      "filePath": "internal/services/admin/app/app.go",
+      "lineRange": [
+        18,
+        20
+      ],
+      "summary": "Адаптер, оборачивающий сервис подразделений под интерфейс Departments, ожидаемый admin usecase.",
+      "tags": [
+        "adapter",
+        "clean-architecture",
+        "anti-corruption-layer"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/services/admin/infra/http/handler.go",
+      "type": "file",
+      "name": "handler.go",
+      "filePath": "internal/services/admin/infra/http/handler.go",
+      "summary": "HTTP-обработчики админ-панели: CRUD пользователей и список подразделений, защищённые middleware RequireAdmin.",
+      "tags": [
+        "api-handler",
+        "http",
+        "admin",
+        "crud"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:internal/services/admin/infra/http/handler.go:Handler",
+      "type": "class",
+      "name": "Handler",
+      "filePath": "internal/services/admin/infra/http/handler.go",
+      "lineRange": [
+        18,
+        20
+      ],
+      "summary": "HTTP-обработчик admin-сервиса, делегирующий операции admin usecase и сериализующий ответы.",
+      "tags": [
+        "api-handler",
+        "http",
+        "admin"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/admin/infra/http/handler.go:RegisterRoutes",
+      "type": "function",
+      "name": "RegisterRoutes",
+      "filePath": "internal/services/admin/infra/http/handler.go",
+      "lineRange": [
+        27,
+        33
+      ],
+      "summary": "Регистрирует админ-маршруты (пользователи, подразделения) в mux, оборачивая каждый в middleware RequireAdmin.",
+      "tags": [
+        "routing",
+        "http",
+        "middleware"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:internal/services/admin/infra/http/handler.go:handleCreateUser",
+      "type": "function",
+      "name": "handleCreateUser",
+      "filePath": "internal/services/admin/infra/http/handler.go",
+      "lineRange": [
+        89,
+        112
+      ],
+      "summary": "Декодирует запрос создания пользователя, валидирует имя и делегирует создание admin usecase.",
+      "tags": [
+        "api-handler",
+        "validation",
+        "user-management"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/admin/infra/http/handler.go:handleUpdateUser",
+      "type": "function",
+      "name": "handleUpdateUser",
+      "filePath": "internal/services/admin/infra/http/handler.go",
+      "lineRange": [
+        114,
+        167
+      ],
+      "summary": "Обрабатывает частичное обновление пользователя: имя, роль, подразделение и пароль через последовательные вызовы usecase.",
+      "tags": [
+        "api-handler",
+        "user-management",
+        "update"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:internal/services/admin/usecase/admin/admin.go",
+      "type": "file",
+      "name": "admin.go",
+      "filePath": "internal/services/admin/usecase/admin/admin.go",
+      "summary": "Usecase admin-сервиса: бизнес-логика управления пользователями (создание, смена роли/имени/пароля, привязка подразделения, удаление).",
+      "tags": [
+        "usecase",
+        "service",
+        "user-management",
+        "clean-architecture"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:internal/services/admin/usecase/admin/admin.go:Service",
+      "type": "class",
+      "name": "Service",
+      "filePath": "internal/services/admin/usecase/admin/admin.go",
+      "lineRange": [
+        16,
+        19
+      ],
+      "summary": "Сервис admin usecase, координирующий репозиторий учётных записей и подразделения для административных операций.",
+      "tags": [
+        "usecase",
+        "service",
+        "user-management"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/admin/usecase/admin/admin.go:CreateUser",
+      "type": "function",
+      "name": "CreateUser",
+      "filePath": "internal/services/admin/usecase/admin/admin.go",
+      "lineRange": [
+        39,
+        59
+      ],
+      "summary": "Создаёт пользователя с паролем: нормализует/валидирует роль, разрешает подразделение по коду и сохраняет учётную запись.",
+      "tags": [
+        "usecase",
+        "validation",
+        "user-management"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/admin/usecase/admin/admin.go:toUser",
+      "type": "function",
+      "name": "toUser",
+      "filePath": "internal/services/admin/usecase/admin/admin.go",
+      "lineRange": [
+        132,
+        147
+      ],
+      "summary": "Маппер из доменной модели пользователя auth в DTO User слоя admin usecase.",
+      "tags": [
+        "mapper",
+        "serialization",
+        "dto"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/services/admin/usecase/admin/interfaces.go",
+      "type": "file",
+      "name": "interfaces.go",
+      "filePath": "internal/services/admin/usecase/admin/interfaces.go",
+      "summary": "Порты admin usecase: интерфейсы UseCase, UserAccounts, Departments и DTO-структуры пользователей и подразделений.",
+      "tags": [
+        "type-definition",
+        "interface",
+        "ports",
+        "clean-architecture"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/services/auth/domain/auth.go",
+      "type": "file",
+      "name": "auth.go",
+      "filePath": "internal/services/auth/domain/auth.go",
+      "summary": "Доменные модели аутентификации (AuthUser, PasswordAuthUserInput) и хелперы нормализации/валидации ролей поверх пакета enum.",
+      "tags": [
+        "data-model",
+        "domain",
+        "authentication",
+        "clean-architecture"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/services/auth/infra/http/handler.go",
+      "type": "file",
+      "name": "handler.go",
+      "filePath": "internal/services/auth/infra/http/handler.go",
+      "summary": "HTTP-обработчики auth-сервиса: вход по логину/паролю с выдачей токена и эндпоинт /me с данными текущего пользователя и его подразделения.",
+      "tags": [
+        "api-handler",
+        "http",
+        "authentication",
+        "token"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:internal/services/auth/infra/http/handler.go:Handler",
+      "type": "class",
+      "name": "Handler",
+      "filePath": "internal/services/auth/infra/http/handler.go",
+      "lineRange": [
+        21,
+        25
+      ],
+      "summary": "HTTP-обработчик auth-сервиса, использующий auth usecase, сервис подразделений и токен бота для аутентификации.",
+      "tags": [
+        "api-handler",
+        "http",
+        "authentication"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/auth/infra/http/handler.go:handleLogin",
+      "type": "function",
+      "name": "handleLogin",
+      "filePath": "internal/services/auth/infra/http/handler.go",
+      "lineRange": [
+        60,
+        94
+      ],
+      "summary": "Проверяет логин/пароль через usecase и выдаёт подписанный сессионный токен с временем истечения.",
+      "tags": [
+        "api-handler",
+        "authentication",
+        "token",
+        "security"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/auth/infra/http/handler.go:handleMe",
+      "type": "function",
+      "name": "handleMe",
+      "filePath": "internal/services/auth/infra/http/handler.go",
+      "lineRange": [
+        96,
+        115
+      ],
+      "summary": "Возвращает профиль текущего mini-app пользователя вместе с данными его подразделения.",
+      "tags": [
+        "api-handler",
+        "authentication",
+        "user-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/services/auth/usecase/auth/auth.go",
+      "type": "file",
+      "name": "auth.go",
+      "filePath": "internal/services/auth/usecase/auth/auth.go",
+      "summary": "Usecase аутентификации: управление пользователями, проверка пароля (PBKDF2 с постоянным временем сравнения), привязка Telegram и обеспечение admin-пользователя.",
+      "tags": [
+        "usecase",
+        "authentication",
+        "security",
+        "user-management"
+      ],
+      "complexity": "complex",
+      "languageNotes": "Хеширование пароля через PBKDF2 + соль, сравнение через subtle.ConstantTimeCompare для защиты от timing-атак."
+    },
+    {
+      "id": "class:internal/services/auth/usecase/auth/auth.go:Service",
+      "type": "class",
+      "name": "Service",
+      "filePath": "internal/services/auth/usecase/auth/auth.go",
+      "lineRange": [
+        34,
+        36
+      ],
+      "summary": "Сервис auth usecase, инкапсулирующий репозиторий пользователей и всю логику аутентификации и управления учётными записями.",
+      "tags": [
+        "usecase",
+        "service",
+        "authentication"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:internal/services/auth/usecase/auth/auth.go:CreateUserWithPassword",
+      "type": "function",
+      "name": "CreateUserWithPassword",
+      "filePath": "internal/services/auth/usecase/auth/auth.go",
+      "lineRange": [
+        44,
+        75
+      ],
+      "summary": "Создаёт пользователя с паролем: валидирует входные данные и роль, хеширует пароль и сохраняет через репозиторий.",
+      "tags": [
+        "usecase",
+        "validation",
+        "security",
+        "user-management"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/auth/usecase/auth/auth.go:EnsureAdminUser",
+      "type": "function",
+      "name": "EnsureAdminUser",
+      "filePath": "internal/services/auth/usecase/auth/auth.go",
+      "lineRange": [
+        77,
+        103
+      ],
+      "summary": "Гарантирует наличие admin-пользователя: создаёт его, если отсутствует, при старте приложения.",
+      "tags": [
+        "usecase",
+        "bootstrap",
+        "user-management"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/auth/usecase/auth/auth.go:VerifyPassword",
+      "type": "function",
+      "name": "VerifyPassword",
+      "filePath": "internal/services/auth/usecase/auth/auth.go",
+      "lineRange": [
+        105,
+        117
+      ],
+      "summary": "Проверяет пароль пользователя по логину, возвращая ошибку при неверных учётных данных.",
+      "tags": [
+        "usecase",
+        "authentication",
+        "security"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:internal/services/auth/usecase/auth/auth.go:hashPassword",
+      "type": "function",
+      "name": "hashPassword",
+      "filePath": "internal/services/auth/usecase/auth/auth.go",
+      "lineRange": [
+        186,
+        202
+      ],
+      "summary": "Хеширует пароль через PBKDF2 со случайной солью и кодирует результат в строку для хранения.",
+      "tags": [
+        "security",
+        "hashing",
+        "pbkdf2"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/auth/usecase/auth/auth.go:verifyPassword",
+      "type": "function",
+      "name": "verifyPassword",
+      "filePath": "internal/services/auth/usecase/auth/auth.go",
+      "lineRange": [
+        204,
+        225
+      ],
+      "summary": "Разбирает закодированный хеш пароля и сравнивает его с введённым паролем через постоянное по времени сравнение.",
+      "tags": [
+        "security",
+        "hashing",
+        "pbkdf2"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:internal/services/auth/usecase/auth/auth_test.go",
+      "type": "file",
+      "name": "auth_test.go",
+      "filePath": "internal/services/auth/usecase/auth/auth_test.go",
+      "summary": "Тест auth usecase: проверяет, что AuthenticateTelegram находит пользователя по Telegram-username и привязывает к нему Telegram ID.",
+      "tags": [
+        "test",
+        "authentication",
+        "usecase"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:internal/services/auth/usecase/auth/auth_test.go:fakeAuthRepo",
+      "type": "class",
+      "name": "fakeAuthRepo",
+      "filePath": "internal/services/auth/usecase/auth/auth_test.go",
+      "lineRange": [
+        30,
+        34
+      ],
+      "summary": "Тестовая заглушка репозитория аутентификации, фиксирующая привязку пользователя по Telegram-username.",
+      "tags": [
+        "test",
+        "mock",
+        "fixture"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:internal/pkg/authtoken/authtoken_test.go",
+      "target": "file:internal/pkg/authtoken/authtoken.go",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:internal/pkg/enum/enum.go",
+      "target": "function:internal/pkg/enum/enum.go:IsValidRole",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/pkg/enum/enum.go",
+      "target": "function:internal/pkg/enum/enum.go:IsValidRole",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/admin/app/app.go",
+      "target": "class:internal/services/admin/app/app.go:departmentsAdapter",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/admin/app/app.go",
+      "target": "file:internal/services/admin/usecase/admin/admin.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/admin/app/app.go",
+      "target": "file:internal/services/admin/usecase/admin/interfaces.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/admin/app/app.go",
+      "target": "file:internal/services/auth/usecase/auth/auth_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/admin/app/app.go",
+      "target": "file:internal/services/auth/usecase/auth/auth.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/admin/app/app.go",
+      "target": "file:internal/services/auth/usecase/auth/interfaces.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/admin/app/app.go",
+      "target": "file:internal/services/auth/usecase/auth/rbac.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/admin/app/app.go",
+      "target": "file:internal/services/department/usecase/department/department.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/admin/app/app.go",
+      "target": "file:internal/services/department/usecase/department/interfaces.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/admin/app/app.go",
+      "target": "class:internal/services/admin/usecase/admin/admin.go:Service",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:internal/services/admin/infra/http/handler.go",
+      "target": "class:internal/services/admin/infra/http/handler.go:Handler",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/admin/infra/http/handler.go",
+      "target": "class:internal/services/admin/infra/http/handler.go:Handler",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/admin/infra/http/handler.go",
+      "target": "function:internal/services/admin/infra/http/handler.go:RegisterRoutes",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/admin/infra/http/handler.go",
+      "target": "function:internal/services/admin/infra/http/handler.go:RegisterRoutes",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/admin/infra/http/handler.go",
+      "target": "function:internal/services/admin/infra/http/handler.go:handleCreateUser",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/admin/infra/http/handler.go",
+      "target": "function:internal/services/admin/infra/http/handler.go:handleUpdateUser",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/admin/infra/http/handler.go",
+      "target": "file:internal/inbound/api/httpx/apperror.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/admin/infra/http/handler.go",
+      "target": "file:internal/inbound/api/httpx/auth_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/admin/infra/http/handler.go",
+      "target": "file:internal/inbound/api/httpx/auth.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/admin/infra/http/handler.go",
+      "target": "file:internal/inbound/api/httpx/respond.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/admin/infra/http/handler.go",
+      "target": "file:internal/services/admin/usecase/admin/admin.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/admin/infra/http/handler.go",
+      "target": "file:internal/services/admin/usecase/admin/interfaces.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "function:internal/services/admin/infra/http/handler.go:handleCreateUser",
+      "target": "function:internal/services/admin/usecase/admin/admin.go:CreateUser",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/admin/usecase/admin/admin.go",
+      "target": "class:internal/services/admin/usecase/admin/admin.go:Service",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/admin/usecase/admin/admin.go",
+      "target": "class:internal/services/admin/usecase/admin/admin.go:Service",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/admin/usecase/admin/admin.go",
+      "target": "function:internal/services/admin/usecase/admin/admin.go:CreateUser",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/admin/usecase/admin/admin.go",
+      "target": "function:internal/services/admin/usecase/admin/admin.go:CreateUser",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/admin/usecase/admin/admin.go",
+      "target": "function:internal/services/admin/usecase/admin/admin.go:toUser",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/admin/usecase/admin/admin.go",
+      "target": "file:internal/pkg/apperr/apperr_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/admin/usecase/admin/admin.go",
+      "target": "file:internal/pkg/apperr/apperr.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/admin/usecase/admin/admin.go",
+      "target": "file:internal/services/auth/domain/auth.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "function:internal/services/admin/usecase/admin/admin.go:CreateUser",
+      "target": "function:internal/services/auth/domain/auth.go:NormalizeRole",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/admin/usecase/admin/interfaces.go",
+      "target": "file:internal/services/auth/domain/auth.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/auth/domain/auth.go",
+      "target": "file:internal/pkg/enum/enum.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/auth/domain/auth.go",
+      "target": "file:internal/pkg/enum/rabbitmq.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "function:internal/services/admin/usecase/admin/admin.go:CreateUser",
+      "target": "function:internal/pkg/enum/enum.go:IsValidRole",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/auth/infra/http/handler.go",
+      "target": "class:internal/services/auth/infra/http/handler.go:Handler",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/auth/infra/http/handler.go",
+      "target": "class:internal/services/auth/infra/http/handler.go:Handler",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/auth/infra/http/handler.go",
+      "target": "function:internal/services/auth/infra/http/handler.go:handleLogin",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/auth/infra/http/handler.go",
+      "target": "function:internal/services/auth/infra/http/handler.go:handleMe",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/auth/infra/http/handler.go",
+      "target": "file:internal/inbound/api/httpx/apperror.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/auth/infra/http/handler.go",
+      "target": "file:internal/inbound/api/httpx/auth_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/auth/infra/http/handler.go",
+      "target": "file:internal/inbound/api/httpx/auth.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/auth/infra/http/handler.go",
+      "target": "file:internal/inbound/api/httpx/respond.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/auth/infra/http/handler.go",
+      "target": "file:internal/pkg/authtoken/authtoken_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/auth/infra/http/handler.go",
+      "target": "file:internal/pkg/authtoken/authtoken.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/auth/infra/http/handler.go",
+      "target": "file:internal/services/auth/usecase/auth/auth_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/auth/infra/http/handler.go",
+      "target": "file:internal/services/auth/usecase/auth/auth.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/auth/infra/http/handler.go",
+      "target": "file:internal/services/auth/usecase/auth/interfaces.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/auth/infra/http/handler.go",
+      "target": "file:internal/services/auth/usecase/auth/rbac.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/auth/infra/http/handler.go",
+      "target": "file:internal/services/department/usecase/department/department.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/auth/infra/http/handler.go",
+      "target": "file:internal/services/department/usecase/department/interfaces.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "function:internal/services/auth/infra/http/handler.go:handleLogin",
+      "target": "function:internal/services/auth/usecase/auth/auth.go:VerifyPassword",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/auth/usecase/auth/auth.go",
+      "target": "class:internal/services/auth/usecase/auth/auth.go:Service",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/auth/usecase/auth/auth.go",
+      "target": "class:internal/services/auth/usecase/auth/auth.go:Service",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/auth/usecase/auth/auth.go",
+      "target": "function:internal/services/auth/usecase/auth/auth.go:CreateUserWithPassword",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/auth/usecase/auth/auth.go",
+      "target": "function:internal/services/auth/usecase/auth/auth.go:CreateUserWithPassword",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/auth/usecase/auth/auth.go",
+      "target": "function:internal/services/auth/usecase/auth/auth.go:EnsureAdminUser",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/auth/usecase/auth/auth.go",
+      "target": "function:internal/services/auth/usecase/auth/auth.go:EnsureAdminUser",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/auth/usecase/auth/auth.go",
+      "target": "function:internal/services/auth/usecase/auth/auth.go:VerifyPassword",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/auth/usecase/auth/auth.go",
+      "target": "function:internal/services/auth/usecase/auth/auth.go:VerifyPassword",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/auth/usecase/auth/auth.go",
+      "target": "function:internal/services/auth/usecase/auth/auth.go:hashPassword",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/auth/usecase/auth/auth.go",
+      "target": "function:internal/services/auth/usecase/auth/auth.go:verifyPassword",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/auth/usecase/auth/auth.go",
+      "target": "file:internal/pkg/apperr/apperr_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/auth/usecase/auth/auth.go",
+      "target": "file:internal/pkg/apperr/apperr.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/auth/usecase/auth/auth.go",
+      "target": "file:internal/services/auth/domain/auth.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "function:internal/services/auth/usecase/auth/auth.go:CreateUserWithPassword",
+      "target": "function:internal/services/auth/usecase/auth/auth.go:hashPassword",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:internal/services/auth/usecase/auth/auth.go:VerifyPassword",
+      "target": "function:internal/services/auth/usecase/auth/auth.go:verifyPassword",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/auth/usecase/auth/auth_test.go",
+      "target": "class:internal/services/auth/usecase/auth/auth_test.go:fakeAuthRepo",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/auth/usecase/auth/auth_test.go",
+      "target": "file:internal/services/auth/domain/auth.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/auth/usecase/auth/auth.go",
+      "target": "file:internal/services/auth/usecase/auth/auth_test.go",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

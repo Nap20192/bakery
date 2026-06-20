@@ -1,0 +1,111 @@
+{
+  "nodes": [
+    {
+      "id": "table:queries/auth.sql",
+      "type": "table",
+      "name": "auth.sql",
+      "filePath": "queries/auth.sql",
+      "summary": "sqlc-запросы для таблицы auth_users: создание/upsert пользователей, поиск по telegram_id, username и роли, обновление роли, username, пароля, привязка telegram_id и удаление.",
+      "tags": ["database", "sqlc", "authentication", "rbac", "crud"],
+      "complexity": "moderate",
+      "languageNotes": "Использует sqlc.arg/sqlc.narg для генерации типобезопасного Go-кода; ON CONFLICT(username) для idempotent upsert."
+    },
+    {
+      "id": "table:queries/departments.sql",
+      "type": "table",
+      "name": "departments.sql",
+      "filePath": "queries/departments.sql",
+      "summary": "sqlc-запросы для таблицы departments: создание подразделения, выборка по id и code, фильтруемый список по типу и привязка пользователя к подразделению.",
+      "tags": ["database", "sqlc", "departments", "crud"],
+      "complexity": "simple",
+      "languageNotes": "COALESCE(sqlc.narg('type'), type) реализует опциональную фильтрацию по типу."
+    },
+    {
+      "id": "table:queries/iiko_snapshot.sql",
+      "type": "table",
+      "name": "iiko_snapshot.sql",
+      "filePath": "queries/iiko_snapshot.sql",
+      "summary": "sqlc-запросы записи снимка данных iiko API: учёт sync-прогонов (iiko_sync_runs), upsert продуктов, технологических карт сборки и заготовок вместе с их позициями.",
+      "tags": ["database", "sqlc", "iiko", "data-pipeline", "upsert"],
+      "complexity": "complex",
+      "languageNotes": "Массовый upsert через ON CONFLICT DO UPDATE; raw_json колонки хранят исходный ответ iiko API для последующей обработки."
+    },
+    {
+      "id": "table:queries/monitor.sql",
+      "type": "table",
+      "name": "monitor.sql",
+      "filePath": "queries/monitor.sql",
+      "summary": "sqlc-запросы чтения активных техкарт iiko (сборка и заготовка) по продукту и дате заказа, а также списков их позиций с join к iiko_products.",
+      "tags": ["database", "sqlc", "iiko", "tech-card", "read-model"],
+      "complexity": "moderate",
+      "languageNotes": "Диапазонная выборка по date_from/date_to с приведением ::date; LEFT JOIN на iiko_products обогащает позиции названием и кодом."
+    },
+    {
+      "id": "table:queries/order_outbox.sql",
+      "type": "table",
+      "name": "order_outbox.sql",
+      "filePath": "queries/order_outbox.sql",
+      "summary": "sqlc-запросы для transactional outbox заказов: вставка события с correlation_id, выборка неопубликованных событий и пометка о публикации.",
+      "tags": ["database", "sqlc", "outbox", "messaging", "orders"],
+      "complexity": "simple",
+      "languageNotes": "Реализует паттерн transactional outbox; published_at IS NULL отбирает недоставленные события."
+    },
+    {
+      "id": "table:queries/orders.sql",
+      "type": "table",
+      "name": "orders.sql",
+      "filePath": "queries/orders.sql",
+      "summary": "sqlc-запросы домена заказов: счётчики номеров по дням, CRUD заказов и позиций, история изменений, пагинируемый список с фильтрами, избранное и очистка старых заказов.",
+      "tags": ["database", "sqlc", "orders", "crud", "pagination"],
+      "complexity": "complex",
+      "languageNotes": "GetOrderItemsByOrderIDs с ANY(...::BIGINT[]) устраняет N+1; CTE с RETURNING подсчитывает удалённые неизбранные заказы."
+    },
+    {
+      "id": "table:queries/products.sql",
+      "type": "table",
+      "name": "products.sql",
+      "filePath": "queries/products.sql",
+      "summary": "sqlc-запросы для продуктов iiko и каталога блюд: проверка наличия блюда по коду, поиск продуктов по коду/id/имени и CRUD позиций dish_catalog.",
+      "tags": ["database", "sqlc", "iiko", "catalog", "crud"],
+      "complexity": "moderate",
+      "languageNotes": "Приоритизация type='DISH' через CASE в ORDER BY; trim/lower нормализуют поиск по имени."
+    }
+  ],
+  "edges": [
+    {
+      "source": "table:queries/auth.sql",
+      "target": "table:queries/departments.sql",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "table:queries/monitor.sql",
+      "target": "table:queries/iiko_snapshot.sql",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "table:queries/products.sql",
+      "target": "table:queries/iiko_snapshot.sql",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "table:queries/order_outbox.sql",
+      "target": "table:queries/orders.sql",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "table:queries/orders.sql",
+      "target": "table:queries/products.sql",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

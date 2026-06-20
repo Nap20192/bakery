@@ -1,0 +1,819 @@
+{
+  "nodes": [
+    {
+      "id": "file:internal/inbound/bot/response/builder_monitor_test.go",
+      "type": "file",
+      "name": "builder_monitor_test.go",
+      "filePath": "internal/inbound/bot/response/builder_monitor_test.go",
+      "summary": "Тесты, проверяющие что отчёты мониторинга скрывают коды продуктов.",
+      "tags": [
+        "test",
+        "bot",
+        "monitoring"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:internal/inbound/bot/response/builder_order_test.go",
+      "type": "file",
+      "name": "builder_order_test.go",
+      "filePath": "internal/inbound/bot/response/builder_order_test.go",
+      "summary": "Тесты, проверяющие что позиции заказа выводятся как копируемый код-блок.",
+      "tags": [
+        "test",
+        "bot",
+        "order"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/inbound/bot/session.go",
+      "type": "file",
+      "name": "session.go",
+      "filePath": "internal/inbound/bot/session.go",
+      "summary": "Управление сессиями бота: обновление, сброс, слияние позиций заказа и фоновая очистка устаревших сессий.",
+      "tags": [
+        "bot",
+        "session",
+        "state",
+        "utility"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:internal/inbound/bot/session_test.go",
+      "type": "file",
+      "name": "session_test.go",
+      "filePath": "internal/inbound/bot/session_test.go",
+      "summary": "Тесты слияния позиций сессии: замена количества и удаление при нулевом количестве.",
+      "tags": [
+        "test",
+        "bot",
+        "session"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/pkg/sharedkernel/aggregate_root.go",
+      "type": "file",
+      "name": "aggregate_root.go",
+      "filePath": "internal/pkg/sharedkernel/aggregate_root.go",
+      "summary": "Базовый AggregateRoot: накапливает доменные события и отдаёт их через PullDomainEvents (паттерн DDD).",
+      "tags": [
+        "data-model",
+        "ddd",
+        "shared-kernel",
+        "aggregate"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/pkg/sharedkernel/event.go",
+      "type": "file",
+      "name": "event.go",
+      "filePath": "internal/pkg/sharedkernel/event.go",
+      "summary": "Базовые типы доменных событий: интерфейс DomainEvent и встраиваемая структура Event с идентификатором и временем.",
+      "tags": [
+        "type-definition",
+        "ddd",
+        "shared-kernel",
+        "event-handler"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/services/monitor/domain/model.go",
+      "type": "file",
+      "name": "model.go",
+      "filePath": "internal/services/monitor/domain/model.go",
+      "summary": "Доменные модели мониторинга: расход ингредиентов, разбивка по блюдам и агрегированные отчёты по заказу и партии.",
+      "tags": [
+        "data-model",
+        "monitoring",
+        "domain"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/services/monitor/domain/service.go",
+      "type": "file",
+      "name": "service.go",
+      "filePath": "internal/services/monitor/domain/service.go",
+      "summary": "Доменный сервис расчёта расхода ингредиентов по рецептам сборки и полуфабрикатов с защитой от циклов.",
+      "tags": [
+        "service",
+        "monitoring",
+        "domain",
+        "calculation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/response/builder_monitor_test.go:TestMonitorReportsHidesProductCodes",
+      "type": "function",
+      "name": "TestMonitorReportsHidesProductCodes",
+      "filePath": "internal/inbound/bot/response/builder_monitor_test.go",
+      "lineRange": [
+        11,
+        41
+      ],
+      "summary": "Проверяет, что отчёт мониторинга скрывает коды продуктов.",
+      "tags": [
+        "test",
+        "monitoring",
+        "bot"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/response/builder_monitor_test.go:TestBatchMonitorReportsHidesProductCodes",
+      "type": "function",
+      "name": "TestBatchMonitorReportsHidesProductCodes",
+      "filePath": "internal/inbound/bot/response/builder_monitor_test.go",
+      "lineRange": [
+        43,
+        70
+      ],
+      "summary": "Проверяет, что пакетный отчёт мониторинга скрывает коды продуктов.",
+      "tags": [
+        "test",
+        "monitoring",
+        "bot"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/response/builder_monitor_test.go:monitorReportFixture",
+      "type": "function",
+      "name": "monitorReportFixture",
+      "filePath": "internal/inbound/bot/response/builder_monitor_test.go",
+      "lineRange": [
+        72,
+        89
+      ],
+      "summary": "Фикстура отчёта мониторинга для тестов.",
+      "tags": [
+        "test",
+        "monitoring",
+        "fixture"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/response/builder_order_test.go:TestOrderViewShowsOrderItemsAsCopyableCodeBlock",
+      "type": "function",
+      "name": "TestOrderViewShowsOrderItemsAsCopyableCodeBlock",
+      "filePath": "internal/inbound/bot/response/builder_order_test.go",
+      "lineRange": [
+        13,
+        27
+      ],
+      "summary": "Проверяет вывод позиций заказа как копируемого код-блока в OrderView.",
+      "tags": [
+        "test",
+        "order",
+        "bot"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/response/builder_order_test.go:TestOrderDraftShowsOrderItemsAsCopyableCodeBlock",
+      "type": "function",
+      "name": "TestOrderDraftShowsOrderItemsAsCopyableCodeBlock",
+      "filePath": "internal/inbound/bot/response/builder_order_test.go",
+      "lineRange": [
+        29,
+        40
+      ],
+      "summary": "Проверяет вывод позиций заказа как код-блока в OrderDraft.",
+      "tags": [
+        "test",
+        "order",
+        "bot"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/session.go:updateSession",
+      "type": "function",
+      "name": "updateSession",
+      "filePath": "internal/inbound/bot/session.go",
+      "lineRange": [
+        27,
+        37
+      ],
+      "summary": "Обновляет состояние сессии бота для пользователя.",
+      "tags": [
+        "session",
+        "bot",
+        "state"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/session.go:resetSession",
+      "type": "function",
+      "name": "resetSession",
+      "filePath": "internal/inbound/bot/session.go",
+      "lineRange": [
+        47,
+        56
+      ],
+      "summary": "Сбрасывает сессию в начальное состояние.",
+      "tags": [
+        "session",
+        "bot",
+        "state"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/session.go:mergeSessionItems",
+      "type": "function",
+      "name": "mergeSessionItems",
+      "filePath": "internal/inbound/bot/session.go",
+      "lineRange": [
+        63,
+        97
+      ],
+      "summary": "Сливает новые позиции заказа в сессию: заменяет количество, удаляет при нуле.",
+      "tags": [
+        "session",
+        "order",
+        "business-logic"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/session.go:cleanupLoop",
+      "type": "function",
+      "name": "cleanupLoop",
+      "filePath": "internal/inbound/bot/session.go",
+      "lineRange": [
+        100,
+        120
+      ],
+      "summary": "Фоновый цикл очистки устаревших сессий.",
+      "tags": [
+        "session",
+        "bot",
+        "background"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/session_test.go:TestMergeSessionItemsReplacesExistingQuantity",
+      "type": "function",
+      "name": "TestMergeSessionItemsReplacesExistingQuantity",
+      "filePath": "internal/inbound/bot/session_test.go",
+      "lineRange": [
+        9,
+        27
+      ],
+      "summary": "Проверяет замену количества при слиянии позиций сессии.",
+      "tags": [
+        "test",
+        "session",
+        "order"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/session_test.go:TestMergeSessionItemsZeroQuantityRemovesExistingItem",
+      "type": "function",
+      "name": "TestMergeSessionItemsZeroQuantityRemovesExistingItem",
+      "filePath": "internal/inbound/bot/session_test.go",
+      "lineRange": [
+        29,
+        41
+      ],
+      "summary": "Проверяет удаление позиции при нулевом количестве.",
+      "tags": [
+        "test",
+        "session",
+        "order"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:internal/pkg/sharedkernel/aggregate_root.go:AggregateRoot",
+      "type": "class",
+      "name": "AggregateRoot",
+      "filePath": "internal/pkg/sharedkernel/aggregate_root.go",
+      "lineRange": [
+        5,
+        7
+      ],
+      "summary": "Базовый агрегат DDD: накапливает доменные события.",
+      "tags": [
+        "ddd",
+        "aggregate",
+        "shared-kernel"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:internal/pkg/sharedkernel/aggregate_root.go:PullDomainEvents",
+      "type": "function",
+      "name": "PullDomainEvents",
+      "filePath": "internal/pkg/sharedkernel/aggregate_root.go",
+      "lineRange": [
+        18,
+        22
+      ],
+      "summary": "Возвращает и очищает накопленные доменные события агрегата.",
+      "tags": [
+        "ddd",
+        "aggregate",
+        "event-handler"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:internal/pkg/sharedkernel/event.go:Event",
+      "type": "class",
+      "name": "Event",
+      "filePath": "internal/pkg/sharedkernel/event.go",
+      "lineRange": [
+        18,
+        21
+      ],
+      "summary": "Базовая структура доменного события с идентификатором и временем создания.",
+      "tags": [
+        "ddd",
+        "event-handler",
+        "shared-kernel"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:internal/services/monitor/domain/service.go:Service",
+      "type": "class",
+      "name": "Service",
+      "filePath": "internal/services/monitor/domain/service.go",
+      "lineRange": [
+        28,
+        30
+      ],
+      "summary": "Доменный сервис расчёта расхода ингредиентов.",
+      "tags": [
+        "service",
+        "monitoring",
+        "domain"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/monitor/domain/service.go:calculateIngredientUsage",
+      "type": "function",
+      "name": "calculateIngredientUsage",
+      "filePath": "internal/services/monitor/domain/service.go",
+      "lineRange": [
+        43,
+        78
+      ],
+      "summary": "Рекурсивно рассчитывает расход ингредиентов по рецепту.",
+      "tags": [
+        "calculation",
+        "monitoring",
+        "domain"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/monitor/domain/service.go:calculateAssemblyUsage",
+      "type": "function",
+      "name": "calculateAssemblyUsage",
+      "filePath": "internal/services/monitor/domain/service.go",
+      "lineRange": [
+        80,
+        101
+      ],
+      "summary": "Рассчитывает расход для рецепта сборки.",
+      "tags": [
+        "calculation",
+        "monitoring",
+        "domain"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/monitor/domain/service.go:calculatePreparedUsage",
+      "type": "function",
+      "name": "calculatePreparedUsage",
+      "filePath": "internal/services/monitor/domain/service.go",
+      "lineRange": [
+        103,
+        119
+      ],
+      "summary": "Рассчитывает расход для полуфабриката.",
+      "tags": [
+        "calculation",
+        "monitoring",
+        "domain"
+      ],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:internal/inbound/bot/response/builder_monitor_test.go",
+      "target": "function:internal/inbound/bot/response/builder_monitor_test.go:TestMonitorReportsHidesProductCodes",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_monitor_test.go",
+      "target": "function:internal/inbound/bot/response/builder_monitor_test.go:TestMonitorReportsHidesProductCodes",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_monitor_test.go",
+      "target": "function:internal/inbound/bot/response/builder_monitor_test.go:TestBatchMonitorReportsHidesProductCodes",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_monitor_test.go",
+      "target": "function:internal/inbound/bot/response/builder_monitor_test.go:TestBatchMonitorReportsHidesProductCodes",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_monitor_test.go",
+      "target": "function:internal/inbound/bot/response/builder_monitor_test.go:monitorReportFixture",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_order_test.go",
+      "target": "function:internal/inbound/bot/response/builder_order_test.go:TestOrderViewShowsOrderItemsAsCopyableCodeBlock",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_order_test.go",
+      "target": "function:internal/inbound/bot/response/builder_order_test.go:TestOrderViewShowsOrderItemsAsCopyableCodeBlock",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_order_test.go",
+      "target": "function:internal/inbound/bot/response/builder_order_test.go:TestOrderDraftShowsOrderItemsAsCopyableCodeBlock",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_order_test.go",
+      "target": "function:internal/inbound/bot/response/builder_order_test.go:TestOrderDraftShowsOrderItemsAsCopyableCodeBlock",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/inbound/bot/session.go",
+      "target": "function:internal/inbound/bot/session.go:updateSession",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/session.go",
+      "target": "function:internal/inbound/bot/session.go:resetSession",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/session.go",
+      "target": "function:internal/inbound/bot/session.go:mergeSessionItems",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/session.go",
+      "target": "function:internal/inbound/bot/session.go:cleanupLoop",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/session_test.go",
+      "target": "function:internal/inbound/bot/session_test.go:TestMergeSessionItemsReplacesExistingQuantity",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/session_test.go",
+      "target": "function:internal/inbound/bot/session_test.go:TestMergeSessionItemsReplacesExistingQuantity",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/inbound/bot/session_test.go",
+      "target": "function:internal/inbound/bot/session_test.go:TestMergeSessionItemsZeroQuantityRemovesExistingItem",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/session_test.go",
+      "target": "function:internal/inbound/bot/session_test.go:TestMergeSessionItemsZeroQuantityRemovesExistingItem",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/pkg/sharedkernel/aggregate_root.go",
+      "target": "class:internal/pkg/sharedkernel/aggregate_root.go:AggregateRoot",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/pkg/sharedkernel/aggregate_root.go",
+      "target": "class:internal/pkg/sharedkernel/aggregate_root.go:AggregateRoot",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/pkg/sharedkernel/aggregate_root.go",
+      "target": "function:internal/pkg/sharedkernel/aggregate_root.go:PullDomainEvents",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/pkg/sharedkernel/aggregate_root.go",
+      "target": "function:internal/pkg/sharedkernel/aggregate_root.go:PullDomainEvents",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/pkg/sharedkernel/event.go",
+      "target": "class:internal/pkg/sharedkernel/event.go:Event",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/pkg/sharedkernel/event.go",
+      "target": "class:internal/pkg/sharedkernel/event.go:Event",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/monitor/domain/service.go",
+      "target": "class:internal/services/monitor/domain/service.go:Service",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/monitor/domain/service.go",
+      "target": "class:internal/services/monitor/domain/service.go:Service",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/monitor/domain/service.go",
+      "target": "function:internal/services/monitor/domain/service.go:calculateIngredientUsage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/monitor/domain/service.go",
+      "target": "function:internal/services/monitor/domain/service.go:calculateAssemblyUsage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/monitor/domain/service.go",
+      "target": "function:internal/services/monitor/domain/service.go:calculatePreparedUsage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_monitor_test.go",
+      "target": "file:internal/services/monitor/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_monitor_test.go",
+      "target": "file:internal/services/monitor/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_monitor_test.go",
+      "target": "file:internal/services/monitor/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_monitor_test.go",
+      "target": "file:internal/services/order/domain/events.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_monitor_test.go",
+      "target": "file:internal/services/order/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_monitor_test.go",
+      "target": "file:internal/services/order/domain/order_specs.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_monitor_test.go",
+      "target": "file:internal/services/order/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_monitor_test.go",
+      "target": "file:internal/services/order/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_monitor_test.go",
+      "target": "file:internal/services/order/domain/specification.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_order_test.go",
+      "target": "file:internal/services/order/domain/events.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_order_test.go",
+      "target": "file:internal/services/order/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_order_test.go",
+      "target": "file:internal/services/order/domain/order_specs.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_order_test.go",
+      "target": "file:internal/services/order/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_order_test.go",
+      "target": "file:internal/services/order/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder_order_test.go",
+      "target": "file:internal/services/order/domain/specification.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/session.go",
+      "target": "file:internal/services/order/domain/events.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/session.go",
+      "target": "file:internal/services/order/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/session.go",
+      "target": "file:internal/services/order/domain/order_specs.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/session.go",
+      "target": "file:internal/services/order/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/session.go",
+      "target": "file:internal/services/order/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/session.go",
+      "target": "file:internal/services/order/domain/specification.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/session_test.go",
+      "target": "file:internal/services/order/domain/events.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/session_test.go",
+      "target": "file:internal/services/order/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/session_test.go",
+      "target": "file:internal/services/order/domain/order_specs.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/session_test.go",
+      "target": "file:internal/services/order/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/session_test.go",
+      "target": "file:internal/services/order/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/session_test.go",
+      "target": "file:internal/services/order/domain/specification.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/session.go",
+      "target": "file:internal/inbound/bot/session_test.go",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:internal/services/monitor/domain/service.go",
+      "target": "file:internal/services/monitor/domain/service_test.go",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

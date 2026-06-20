@@ -1,0 +1,9 @@
+{
+  "projectRoot": "/home/vnkjd/Projects/bakery",
+  "batchFiles": [
+    {"path": "frontend/Dockerfile", "language": "dockerfile", "sizeLines": 24, "fileCategory": "infra"}
+  ],
+  "batchImportData": {
+    "frontend/Dockerfile": []
+  }
+}

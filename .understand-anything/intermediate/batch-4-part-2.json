@@ -1,0 +1,1032 @@
+{
+  "nodes": [
+    {
+      "id": "file:internal/services/auth/usecase/auth/interfaces.go",
+      "type": "file",
+      "name": "interfaces.go",
+      "filePath": "internal/services/auth/usecase/auth/interfaces.go",
+      "summary": "Порты auth usecase: интерфейсы UseCase и Repository и DTO CreatePasswordUserInput.",
+      "tags": [
+        "type-definition",
+        "interface",
+        "ports",
+        "clean-architecture"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/services/auth/usecase/auth/rbac.go",
+      "type": "file",
+      "name": "rbac.go",
+      "filePath": "internal/services/auth/usecase/auth/rbac.go",
+      "summary": "Матрица RBAC: строит соответствие ролей и разрешений и проверяет наличие разрешения у роли.",
+      "tags": [
+        "rbac",
+        "authorization",
+        "security",
+        "permissions"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:internal/services/auth/usecase/auth/rbac.go:RBAC",
+      "type": "class",
+      "name": "RBAC",
+      "filePath": "internal/services/auth/usecase/auth/rbac.go",
+      "lineRange": [
+        10,
+        12
+      ],
+      "summary": "Структура RBAC, хранящая карту разрешений по ролям и предоставляющая проверку доступа.",
+      "tags": [
+        "rbac",
+        "authorization",
+        "permissions"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:internal/services/auth/usecase/auth/rbac.go:NewRBAC",
+      "type": "function",
+      "name": "NewRBAC",
+      "filePath": "internal/services/auth/usecase/auth/rbac.go",
+      "lineRange": [
+        14,
+        38
+      ],
+      "summary": "Конструирует RBAC, наполняя матрицу разрешений для ролей admin/shop/baker.",
+      "tags": [
+        "rbac",
+        "authorization",
+        "factory"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:internal/services/department/infra/http/handler.go",
+      "type": "file",
+      "name": "handler.go",
+      "filePath": "internal/services/department/infra/http/handler.go",
+      "summary": "HTTP-обработчик department-сервиса: список подразделений по типу с учётом роли пользователя (shop видит ограниченный набор).",
+      "tags": [
+        "api-handler",
+        "http",
+        "department",
+        "rbac"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/department/infra/http/handler.go:handleListDepartments",
+      "type": "function",
+      "name": "handleListDepartments",
+      "filePath": "internal/services/department/infra/http/handler.go",
+      "lineRange": [
+        27,
+        64
+      ],
+      "summary": "Возвращает список подразделений по типу, ограничивая выдачу для shop-пользователей и сериализуя ответ.",
+      "tags": [
+        "api-handler",
+        "department",
+        "rbac",
+        "filtering"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:internal/services/department/usecase/department/department.go",
+      "type": "file",
+      "name": "department.go",
+      "filePath": "internal/services/department/usecase/department/department.go",
+      "summary": "Usecase department-сервиса: тонкая обёртка над репозиторием для выборки подразделений по типу, коду и ID.",
+      "tags": [
+        "usecase",
+        "service",
+        "department",
+        "clean-architecture"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:internal/services/department/usecase/department/department.go:Service",
+      "type": "class",
+      "name": "Service",
+      "filePath": "internal/services/department/usecase/department/department.go",
+      "lineRange": [
+        11,
+        13
+      ],
+      "summary": "Сервис department usecase, делегирующий запросы подразделений репозиторию.",
+      "tags": [
+        "usecase",
+        "service",
+        "department"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/services/department/usecase/department/interfaces.go",
+      "type": "file",
+      "name": "interfaces.go",
+      "filePath": "internal/services/department/usecase/department/interfaces.go",
+      "summary": "Порты department usecase: интерфейсы UseCase и Repository и DTO Department.",
+      "tags": [
+        "type-definition",
+        "interface",
+        "ports",
+        "clean-architecture"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/services/order/infra/http/handler_admin.go",
+      "type": "file",
+      "name": "handler_admin.go",
+      "filePath": "internal/services/order/infra/http/handler_admin.go",
+      "summary": "Админские HTTP-обработчики order-сервиса: пометка заказа избранным и CRUD каталога блюд под middleware RequireAdmin.",
+      "tags": [
+        "api-handler",
+        "http",
+        "admin",
+        "crud"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/infra/http/handler_admin.go:RegisterAdminRoutes",
+      "type": "function",
+      "name": "RegisterAdminRoutes",
+      "filePath": "internal/services/order/infra/http/handler_admin.go",
+      "lineRange": [
+        23,
+        28
+      ],
+      "summary": "Регистрирует админские маршруты заказов (избранное, каталог блюд) в mux с middleware RequireAdmin.",
+      "tags": [
+        "routing",
+        "http",
+        "middleware"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:internal/services/order/infra/http/handler_admin.go:handleSetFavorite",
+      "type": "function",
+      "name": "handleSetFavorite",
+      "filePath": "internal/services/order/infra/http/handler_admin.go",
+      "lineRange": [
+        34,
+        47
+      ],
+      "summary": "Устанавливает или снимает признак избранного у заказа и возвращает обновлённый ответ через presenter.",
+      "tags": [
+        "api-handler",
+        "order",
+        "favorite"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/services/order/infra/http/handler_test.go",
+      "type": "file",
+      "name": "handler_test.go",
+      "filePath": "internal/services/order/infra/http/handler_test.go",
+      "summary": "Тесты HTTP-слоя order-сервиса: декодирование запроса записи заказа, определение автора mini-app и проверка прав чтения заказа.",
+      "tags": [
+        "test",
+        "http",
+        "order",
+        "authorization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/infra/http/handler_test.go:TestDecodeOrderWriteRequest",
+      "type": "function",
+      "name": "TestDecodeOrderWriteRequest",
+      "filePath": "internal/services/order/infra/http/handler_test.go",
+      "lineRange": [
+        15,
+        53
+      ],
+      "summary": "Табличный тест декодирования и валидации тела запроса на запись заказа.",
+      "tags": [
+        "test",
+        "validation",
+        "order"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/infra/http/handler_test.go:TestUserCanReadOrder",
+      "type": "function",
+      "name": "TestUserCanReadOrder",
+      "filePath": "internal/services/order/infra/http/handler_test.go",
+      "lineRange": [
+        76,
+        100
+      ],
+      "summary": "Тест проверки прав чтения заказа для разных ролей и принадлежности пользователя.",
+      "tags": [
+        "test",
+        "authorization",
+        "rbac"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:internal/services/order/infra/http/presenter.go",
+      "type": "file",
+      "name": "presenter.go",
+      "filePath": "internal/services/order/infra/http/presenter.go",
+      "summary": "Presenter order-сервиса: преобразует доменные заказы, позиции, историю и комментарии в HTTP DTO, подтягивая данные подразделений.",
+      "tags": [
+        "presenter",
+        "serialization",
+        "dto",
+        "order"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:internal/services/order/infra/http/presenter.go:OrderPresenter",
+      "type": "class",
+      "name": "OrderPresenter",
+      "filePath": "internal/services/order/infra/http/presenter.go",
+      "lineRange": [
+        18,
+        20
+      ],
+      "summary": "Presenter, формирующий ответы по заказам и обогащающий их данными подразделений через сервис.",
+      "tags": [
+        "presenter",
+        "serialization",
+        "order"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/infra/http/presenter.go:BuildOrderResponse",
+      "type": "function",
+      "name": "BuildOrderResponse",
+      "filePath": "internal/services/order/infra/http/presenter.go",
+      "lineRange": [
+        104,
+        140
+      ],
+      "summary": "Собирает полный DTO ответа по одному заказу: позиции, подразделения, даты, комментарии и историю изменений.",
+      "tags": [
+        "presenter",
+        "serialization",
+        "order",
+        "mapper"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/infra/http/presenter.go:buildOrderHistoryResponse",
+      "type": "function",
+      "name": "buildOrderHistoryResponse",
+      "filePath": "internal/services/order/infra/http/presenter.go",
+      "lineRange": [
+        142,
+        169
+      ],
+      "summary": "Преобразует записи истории изменений заказа в DTO с детализацией по позициям.",
+      "tags": [
+        "presenter",
+        "serialization",
+        "history",
+        "mapper"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:pkg/rabbitmq/consumer/consumer.go",
+      "type": "file",
+      "name": "consumer.go",
+      "filePath": "pkg/rabbitmq/consumer/consumer.go",
+      "summary": "RabbitMQ consumer: объявляет exchange/очередь, потребляет сообщения пулом воркеров с ack/nack и корректным graceful-завершением.",
+      "tags": [
+        "messaging",
+        "rabbitmq",
+        "consumer",
+        "concurrency"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "Пул воркеров через sync.WaitGroup, контроль ack через мьютекс, отмена по context."
+    },
+    {
+      "id": "class:pkg/rabbitmq/consumer/consumer.go:Consumer",
+      "type": "class",
+      "name": "Consumer",
+      "filePath": "pkg/rabbitmq/consumer/consumer.go",
+      "lineRange": [
+        44,
+        51
+      ],
+      "summary": "Consumer RabbitMQ с настройками exchange/очереди, размером пула воркеров и AMQP-соединением.",
+      "tags": [
+        "messaging",
+        "rabbitmq",
+        "consumer"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:pkg/rabbitmq/consumer/consumer.go:StartConsumer",
+      "type": "function",
+      "name": "StartConsumer",
+      "filePath": "pkg/rabbitmq/consumer/consumer.go",
+      "lineRange": [
+        65,
+        119
+      ],
+      "summary": "Запускает потребление сообщений: создаёт канал, поднимает пул воркеров и обеспечивает graceful-остановку по отмене контекста.",
+      "tags": [
+        "messaging",
+        "rabbitmq",
+        "concurrency",
+        "lifecycle"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:pkg/rabbitmq/consumer/consumer.go:consume",
+      "type": "function",
+      "name": "consume",
+      "filePath": "pkg/rabbitmq/consumer/consumer.go",
+      "lineRange": [
+        121,
+        160
+      ],
+      "summary": "Цикл обработки доставленных сообщений одним воркером: вызывает handler и подтверждает (ack) или отклоняет (nack) сообщение.",
+      "tags": [
+        "messaging",
+        "rabbitmq",
+        "event-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:pkg/rabbitmq/consumer/consumer.go:createChannel",
+      "type": "function",
+      "name": "createChannel",
+      "filePath": "pkg/rabbitmq/consumer/consumer.go",
+      "lineRange": [
+        162,
+        187
+      ],
+      "summary": "Открывает AMQP-канал, объявляет exchange, очередь, биндинг и настраивает QoS prefetch.",
+      "tags": [
+        "messaging",
+        "rabbitmq",
+        "setup"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:pkg/rabbitmq/publisher/publisher.go",
+      "type": "file",
+      "name": "publisher.go",
+      "filePath": "pkg/rabbitmq/publisher/publisher.go",
+      "summary": "RabbitMQ publisher: упаковывает доменные события в envelope и публикует их в fanout-exchange с correlation ID.",
+      "tags": [
+        "messaging",
+        "rabbitmq",
+        "publisher",
+        "serialization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:pkg/rabbitmq/publisher/publisher.go:Publisher",
+      "type": "class",
+      "name": "Publisher",
+      "filePath": "pkg/rabbitmq/publisher/publisher.go",
+      "lineRange": [
+        29,
+        34
+      ],
+      "summary": "Publisher RabbitMQ с настройками exchange и AMQP-соединением для отправки событий.",
+      "tags": [
+        "messaging",
+        "rabbitmq",
+        "publisher"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:pkg/rabbitmq/publisher/publisher.go:PublishEvents",
+      "type": "function",
+      "name": "PublishEvents",
+      "filePath": "pkg/rabbitmq/publisher/publisher.go",
+      "lineRange": [
+        46,
+        78
+      ],
+      "summary": "Сериализует и публикует набор доменных событий, оборачивая каждое в envelope.",
+      "tags": [
+        "messaging",
+        "rabbitmq",
+        "publisher",
+        "serialization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:pkg/rabbitmq/publisher/publisher.go:publish",
+      "type": "function",
+      "name": "publish",
+      "filePath": "pkg/rabbitmq/publisher/publisher.go",
+      "lineRange": [
+        121,
+        161
+      ],
+      "summary": "Открывает канал, объявляет exchange и публикует тело сообщения с correlation ID и временной меткой.",
+      "tags": [
+        "messaging",
+        "rabbitmq",
+        "publisher"
+      ],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:internal/services/auth/usecase/auth/interfaces.go",
+      "target": "file:internal/services/auth/domain/auth.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/auth/usecase/auth/rbac.go",
+      "target": "class:internal/services/auth/usecase/auth/rbac.go:RBAC",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/auth/usecase/auth/rbac.go",
+      "target": "class:internal/services/auth/usecase/auth/rbac.go:RBAC",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/auth/usecase/auth/rbac.go",
+      "target": "function:internal/services/auth/usecase/auth/rbac.go:NewRBAC",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/auth/usecase/auth/rbac.go",
+      "target": "function:internal/services/auth/usecase/auth/rbac.go:NewRBAC",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/auth/usecase/auth/rbac.go",
+      "target": "file:internal/pkg/enum/enum.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/auth/usecase/auth/rbac.go",
+      "target": "file:internal/pkg/enum/rabbitmq.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/department/infra/http/handler.go",
+      "target": "function:internal/services/department/infra/http/handler.go:handleListDepartments",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/department/infra/http/handler.go",
+      "target": "file:internal/inbound/api/httpx/apperror.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/department/infra/http/handler.go",
+      "target": "file:internal/inbound/api/httpx/auth_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/department/infra/http/handler.go",
+      "target": "file:internal/inbound/api/httpx/auth.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/department/infra/http/handler.go",
+      "target": "file:internal/inbound/api/httpx/respond.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/department/infra/http/handler.go",
+      "target": "file:internal/pkg/enum/enum.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/department/infra/http/handler.go",
+      "target": "file:internal/pkg/enum/rabbitmq.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/department/infra/http/handler.go",
+      "target": "file:internal/services/department/usecase/department/department.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/department/infra/http/handler.go",
+      "target": "file:internal/services/department/usecase/department/interfaces.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "function:internal/services/department/infra/http/handler.go:handleListDepartments",
+      "target": "class:internal/services/department/usecase/department/department.go:Service",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/department/usecase/department/department.go",
+      "target": "class:internal/services/department/usecase/department/department.go:Service",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/department/usecase/department/department.go",
+      "target": "class:internal/services/department/usecase/department/department.go:Service",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/department/usecase/department/department.go",
+      "target": "file:internal/pkg/enum/enum.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/department/usecase/department/department.go",
+      "target": "file:internal/pkg/enum/rabbitmq.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/department/usecase/department/interfaces.go",
+      "target": "file:internal/pkg/enum/enum.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/department/usecase/department/interfaces.go",
+      "target": "file:internal/pkg/enum/rabbitmq.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_admin.go",
+      "target": "function:internal/services/order/infra/http/handler_admin.go:RegisterAdminRoutes",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_admin.go",
+      "target": "function:internal/services/order/infra/http/handler_admin.go:RegisterAdminRoutes",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_admin.go",
+      "target": "function:internal/services/order/infra/http/handler_admin.go:handleSetFavorite",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_admin.go",
+      "target": "file:internal/inbound/api/httpx/apperror.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_admin.go",
+      "target": "file:internal/inbound/api/httpx/auth_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_admin.go",
+      "target": "file:internal/inbound/api/httpx/auth.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_admin.go",
+      "target": "file:internal/inbound/api/httpx/respond.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "function:internal/services/order/infra/http/handler_admin.go:handleSetFavorite",
+      "target": "class:internal/services/order/infra/http/presenter.go:OrderPresenter",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_test.go",
+      "target": "function:internal/services/order/infra/http/handler_test.go:TestDecodeOrderWriteRequest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_test.go",
+      "target": "function:internal/services/order/infra/http/handler_test.go:TestUserCanReadOrder",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_test.go",
+      "target": "file:internal/inbound/api/httpx/apperror.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_test.go",
+      "target": "file:internal/inbound/api/httpx/auth_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_test.go",
+      "target": "file:internal/inbound/api/httpx/auth.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_test.go",
+      "target": "file:internal/inbound/api/httpx/respond.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_test.go",
+      "target": "file:internal/pkg/enum/enum.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_test.go",
+      "target": "file:internal/pkg/enum/rabbitmq.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_test.go",
+      "target": "file:internal/services/auth/domain/auth.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_test.go",
+      "target": "file:internal/services/order/domain/events.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_test.go",
+      "target": "file:internal/services/order/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_test.go",
+      "target": "file:internal/services/order/domain/order_specs.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_test.go",
+      "target": "file:internal/services/order/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_test.go",
+      "target": "file:internal/services/order/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_test.go",
+      "target": "file:internal/services/order/domain/specification.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/presenter.go",
+      "target": "class:internal/services/order/infra/http/presenter.go:OrderPresenter",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/order/infra/http/presenter.go",
+      "target": "class:internal/services/order/infra/http/presenter.go:OrderPresenter",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/infra/http/presenter.go",
+      "target": "function:internal/services/order/infra/http/presenter.go:BuildOrderResponse",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/order/infra/http/presenter.go",
+      "target": "function:internal/services/order/infra/http/presenter.go:BuildOrderResponse",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/infra/http/presenter.go",
+      "target": "function:internal/services/order/infra/http/presenter.go:buildOrderHistoryResponse",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/services/order/infra/http/presenter.go",
+      "target": "file:internal/inbound/api/httpx/apperror.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/presenter.go",
+      "target": "file:internal/inbound/api/httpx/auth_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/presenter.go",
+      "target": "file:internal/inbound/api/httpx/auth.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/presenter.go",
+      "target": "file:internal/inbound/api/httpx/respond.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/presenter.go",
+      "target": "file:internal/services/department/usecase/department/department.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/presenter.go",
+      "target": "file:internal/services/department/usecase/department/interfaces.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/presenter.go",
+      "target": "file:internal/services/order/domain/events.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/presenter.go",
+      "target": "file:internal/services/order/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/presenter.go",
+      "target": "file:internal/services/order/domain/order_specs.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/presenter.go",
+      "target": "file:internal/services/order/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/presenter.go",
+      "target": "file:internal/services/order/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/presenter.go",
+      "target": "file:internal/services/order/domain/specification.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "function:internal/services/order/infra/http/presenter.go:BuildOrderResponse",
+      "target": "function:internal/services/order/infra/http/presenter.go:buildOrderHistoryResponse",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:pkg/rabbitmq/consumer/consumer.go",
+      "target": "class:pkg/rabbitmq/consumer/consumer.go:Consumer",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:pkg/rabbitmq/consumer/consumer.go",
+      "target": "class:pkg/rabbitmq/consumer/consumer.go:Consumer",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:pkg/rabbitmq/consumer/consumer.go",
+      "target": "function:pkg/rabbitmq/consumer/consumer.go:StartConsumer",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:pkg/rabbitmq/consumer/consumer.go",
+      "target": "function:pkg/rabbitmq/consumer/consumer.go:StartConsumer",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:pkg/rabbitmq/consumer/consumer.go",
+      "target": "function:pkg/rabbitmq/consumer/consumer.go:consume",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:pkg/rabbitmq/consumer/consumer.go",
+      "target": "function:pkg/rabbitmq/consumer/consumer.go:createChannel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:pkg/rabbitmq/consumer/consumer.go",
+      "target": "file:internal/pkg/enum/enum.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:pkg/rabbitmq/consumer/consumer.go",
+      "target": "file:internal/pkg/enum/rabbitmq.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "function:pkg/rabbitmq/consumer/consumer.go:StartConsumer",
+      "target": "function:pkg/rabbitmq/consumer/consumer.go:createChannel",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:pkg/rabbitmq/consumer/consumer.go:StartConsumer",
+      "target": "function:pkg/rabbitmq/consumer/consumer.go:consume",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:pkg/rabbitmq/publisher/publisher.go",
+      "target": "class:pkg/rabbitmq/publisher/publisher.go:Publisher",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:pkg/rabbitmq/publisher/publisher.go",
+      "target": "class:pkg/rabbitmq/publisher/publisher.go:Publisher",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:pkg/rabbitmq/publisher/publisher.go",
+      "target": "function:pkg/rabbitmq/publisher/publisher.go:PublishEvents",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:pkg/rabbitmq/publisher/publisher.go",
+      "target": "function:pkg/rabbitmq/publisher/publisher.go:PublishEvents",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:pkg/rabbitmq/publisher/publisher.go",
+      "target": "function:pkg/rabbitmq/publisher/publisher.go:publish",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:pkg/rabbitmq/publisher/publisher.go",
+      "target": "file:internal/pkg/enum/enum.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:pkg/rabbitmq/publisher/publisher.go",
+      "target": "file:internal/pkg/enum/rabbitmq.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "function:pkg/rabbitmq/publisher/publisher.go:PublishEvents",
+      "target": "function:pkg/rabbitmq/publisher/publisher.go:publish",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    }
+  ]
+}

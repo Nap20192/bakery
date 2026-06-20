@@ -1,0 +1,271 @@
+{
+  "projectRoot": "/home/vnkjd/Projects/bakery",
+  "batchFiles": [
+    {
+      "path": "internal/deps/deps.go",
+      "language": "go",
+      "sizeLines": 187,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/api/httpx/apperror.go",
+      "language": "go",
+      "sizeLines": 37,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth.go",
+      "language": "go",
+      "sizeLines": 294,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth_test.go",
+      "language": "go",
+      "sizeLines": 114,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/api/httpx/respond.go",
+      "language": "go",
+      "sizeLines": 81,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/api/middleware.go",
+      "language": "go",
+      "sizeLines": 76,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/api/server.go",
+      "language": "go",
+      "sizeLines": 88,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/action_menu.go",
+      "language": "go",
+      "sizeLines": 274,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/action_menu_test.go",
+      "language": "go",
+      "sizeLines": 136,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/bot.go",
+      "language": "go",
+      "sizeLines": 109,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/handler_start.go",
+      "language": "go",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/handler_templates.go",
+      "language": "go",
+      "sizeLines": 80,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/messages.go",
+      "language": "go",
+      "sizeLines": 10,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/middleware.go",
+      "language": "go",
+      "sizeLines": 87,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/mini_app.go",
+      "language": "go",
+      "sizeLines": 51,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/mini_app_test.go",
+      "language": "go",
+      "sizeLines": 35,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/sender.go",
+      "language": "go",
+      "sizeLines": 183,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/sender_test.go",
+      "language": "go",
+      "sizeLines": 105,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/apperr/apperr.go",
+      "language": "go",
+      "sizeLines": 98,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/apperr/apperr_test.go",
+      "language": "go",
+      "sizeLines": 40,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/authtoken/authtoken.go",
+      "language": "go",
+      "sizeLines": 74,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "internal/deps/deps.go": [
+      "internal/inbound/api/middleware.go",
+      "internal/inbound/api/server.go",
+      "internal/inbound/bot/action_menu_test.go",
+      "internal/inbound/bot/action_menu.go",
+      "internal/inbound/bot/bot.go",
+      "internal/inbound/bot/handler_events.go",
+      "internal/inbound/bot/handler_monitor.go",
+      "internal/inbound/bot/handler_order.go",
+      "internal/inbound/bot/handler_orders_test.go",
+      "internal/inbound/bot/handler_orders.go",
+      "internal/inbound/bot/handler_start.go",
+      "internal/inbound/bot/handler_techcard.go",
+      "internal/inbound/bot/handler_templates.go",
+      "internal/inbound/bot/messages.go",
+      "internal/inbound/bot/middleware.go",
+      "internal/inbound/bot/mini_app_test.go",
+      "internal/inbound/bot/mini_app.go",
+      "internal/inbound/bot/ports.go",
+      "internal/inbound/bot/render.go",
+      "internal/inbound/bot/routes.go",
+      "internal/inbound/bot/sender_test.go",
+      "internal/inbound/bot/sender.go",
+      "internal/inbound/bot/session_test.go",
+      "internal/inbound/bot/session.go",
+      "internal/services/admin/app/app.go",
+      "internal/services/admin/usecase/admin/admin.go",
+      "internal/services/admin/usecase/admin/interfaces.go",
+      "internal/services/auth/app/app.go",
+      "internal/services/auth/usecase/auth/auth_test.go",
+      "internal/services/auth/usecase/auth/auth.go",
+      "internal/services/auth/usecase/auth/interfaces.go",
+      "internal/services/auth/usecase/auth/rbac.go",
+      "internal/services/department/app/app.go",
+      "internal/services/department/usecase/department/department.go",
+      "internal/services/department/usecase/department/interfaces.go",
+      "internal/services/monitor/app/app.go",
+      "internal/services/monitor/usecase/monitor/interfaces.go",
+      "internal/services/monitor/usecase/monitor/monitor.go",
+      "internal/services/order/app/app.go",
+      "internal/services/order/infra/outbox/relay.go",
+      "internal/services/order/usecase/order/interfaces.go",
+      "internal/services/order/usecase/order/order_test.go",
+      "internal/services/order/usecase/order/order.go",
+      "internal/services/sync/app/app.go",
+      "internal/services/sync/usecase/sync/interfaces.go",
+      "internal/services/sync/usecase/sync/sync.go",
+      "internal/services/techcard/app/app.go",
+      "internal/services/techcard/usecase/techcard/interfaces.go",
+      "internal/services/techcard/usecase/techcard/techcard.go"
+    ],
+    "internal/inbound/api/httpx/apperror.go": [
+      "internal/pkg/apperr/apperr_test.go",
+      "internal/pkg/apperr/apperr.go"
+    ],
+    "internal/inbound/api/httpx/auth.go": [
+      "internal/pkg/authtoken/authtoken_test.go",
+      "internal/pkg/authtoken/authtoken.go",
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go",
+      "internal/services/auth/domain/auth.go",
+      "internal/services/auth/usecase/auth/auth_test.go",
+      "internal/services/auth/usecase/auth/auth.go",
+      "internal/services/auth/usecase/auth/interfaces.go",
+      "internal/services/auth/usecase/auth/rbac.go",
+      "internal/services/department/usecase/department/department.go",
+      "internal/services/department/usecase/department/interfaces.go"
+    ],
+    "internal/inbound/api/httpx/auth_test.go": [],
+    "internal/inbound/api/httpx/respond.go": [],
+    "internal/inbound/api/middleware.go": [
+      "internal/inbound/api/httpx/apperror.go",
+      "internal/inbound/api/httpx/auth_test.go",
+      "internal/inbound/api/httpx/auth.go",
+      "internal/inbound/api/httpx/respond.go"
+    ],
+    "internal/inbound/api/server.go": [
+      "internal/inbound/api/httpx/apperror.go",
+      "internal/inbound/api/httpx/auth_test.go",
+      "internal/inbound/api/httpx/auth.go",
+      "internal/inbound/api/httpx/respond.go",
+      "internal/services/admin/infra/http/handler.go",
+      "internal/services/admin/usecase/admin/admin.go",
+      "internal/services/admin/usecase/admin/interfaces.go",
+      "internal/services/auth/infra/http/handler.go",
+      "internal/services/auth/usecase/auth/auth_test.go",
+      "internal/services/auth/usecase/auth/auth.go",
+      "internal/services/auth/usecase/auth/interfaces.go",
+      "internal/services/auth/usecase/auth/rbac.go",
+      "internal/services/department/infra/http/handler.go",
+      "internal/services/department/usecase/department/department.go",
+      "internal/services/department/usecase/department/interfaces.go",
+      "internal/services/monitor/infra/http/handler.go",
+      "internal/services/monitor/usecase/monitor/interfaces.go",
+      "internal/services/monitor/usecase/monitor/monitor.go",
+      "internal/services/order/infra/http/handler_admin.go",
+      "internal/services/order/infra/http/handler_test.go",
+      "internal/services/order/infra/http/handler_write.go",
+      "internal/services/order/infra/http/handler.go",
+      "internal/services/order/infra/http/presenter.go",
+      "internal/services/order/usecase/order/interfaces.go",
+      "internal/services/order/usecase/order/order_test.go",
+      "internal/services/order/usecase/order/order.go"
+    ],
+    "internal/inbound/bot/action_menu.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go",
+      "internal/services/auth/domain/auth.go"
+    ],
+    "internal/inbound/bot/action_menu_test.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go"
+    ],
+    "internal/inbound/bot/bot.go": [
+      "pkg/rabbitmq/consumer/consumer.go"
+    ],
+    "internal/inbound/bot/handler_start.go": [],
+    "internal/inbound/bot/handler_templates.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go"
+    ],
+    "internal/inbound/bot/messages.go": [],
+    "internal/inbound/bot/middleware.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go",
+      "internal/services/auth/domain/auth.go",
+      "internal/services/auth/usecase/auth/auth_test.go",
+      "internal/services/auth/usecase/auth/auth.go",
+      "internal/services/auth/usecase/auth/interfaces.go",
+      "internal/services/auth/usecase/auth/rbac.go"
+    ],
+    "internal/inbound/bot/mini_app.go": [],
+    "internal/inbound/bot/mini_app_test.go": [],
+    "internal/inbound/bot/sender.go": [],
+    "internal/inbound/bot/sender_test.go": [],
+    "internal/pkg/apperr/apperr.go": [],
+    "internal/pkg/apperr/apperr_test.go": [],
+    "internal/pkg/authtoken/authtoken.go": []
+  }
+}

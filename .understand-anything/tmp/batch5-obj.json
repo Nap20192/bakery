@@ -1,0 +1,673 @@
+{
+  "batchIndex": 5,
+  "files": [
+    {
+      "path": "frontend/src/api/auth.js",
+      "language": "javascript",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/api/client.js",
+      "language": "javascript",
+      "sizeLines": 81,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/api/dishes.js",
+      "language": "javascript",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/api/orders.js",
+      "language": "javascript",
+      "sizeLines": 70,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/api/users.js",
+      "language": "javascript",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/app/App.jsx",
+      "language": "javascript",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/app/routes.js",
+      "language": "javascript",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/Button.jsx",
+      "language": "javascript",
+      "sizeLines": 13,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/CopyButton.jsx",
+      "language": "javascript",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/EmptyState.jsx",
+      "language": "javascript",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/Field.jsx",
+      "language": "javascript",
+      "sizeLines": 24,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/Icon.jsx",
+      "language": "javascript",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/Login.jsx",
+      "language": "javascript",
+      "sizeLines": 70,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/MetaCell.jsx",
+      "language": "javascript",
+      "sizeLines": 8,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/Panel.jsx",
+      "language": "javascript",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/config/env.js",
+      "language": "javascript",
+      "sizeLines": 5,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/account/Me.jsx",
+      "language": "javascript",
+      "sizeLines": 38,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/admin/AdminDishes.jsx",
+      "language": "javascript",
+      "sizeLines": 103,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/admin/AdminUsers.jsx",
+      "language": "javascript",
+      "sizeLines": 208,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/BakerOrderCard.jsx",
+      "language": "javascript",
+      "sizeLines": 72,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "frontend/src/api/auth.js": [
+      "frontend/src/config/env.js",
+      "frontend/src/lib/url.js"
+    ],
+    "frontend/src/api/client.js": [
+      "frontend/src/config/env.js",
+      "frontend/src/lib/auth.js",
+      "frontend/src/lib/logger.js",
+      "frontend/src/lib/url.js"
+    ],
+    "frontend/src/api/dishes.js": [
+      "frontend/src/api/client.js"
+    ],
+    "frontend/src/api/orders.js": [
+      "frontend/src/api/client.js"
+    ],
+    "frontend/src/api/users.js": [
+      "frontend/src/api/client.js"
+    ],
+    "frontend/src/app/App.jsx": [
+      "frontend/src/app/routes.js",
+      "frontend/src/features/orders/OrdersPage.jsx"
+    ],
+    "frontend/src/app/routes.js": [],
+    "frontend/src/components/Button.jsx": [],
+    "frontend/src/components/CopyButton.jsx": [
+      "frontend/src/components/Button.jsx",
+      "frontend/src/components/Icon.jsx"
+    ],
+    "frontend/src/components/EmptyState.jsx": [],
+    "frontend/src/components/Field.jsx": [],
+    "frontend/src/components/Icon.jsx": [],
+    "frontend/src/components/Login.jsx": [
+      "frontend/src/api/auth.js",
+      "frontend/src/components/Button.jsx",
+      "frontend/src/lib/auth.js",
+      "frontend/src/lib/logger.js"
+    ],
+    "frontend/src/components/MetaCell.jsx": [],
+    "frontend/src/components/Panel.jsx": [],
+    "frontend/src/config/env.js": [],
+    "frontend/src/features/account/Me.jsx": [
+      "frontend/src/components/Button.jsx",
+      "frontend/src/lib/auth.js"
+    ],
+    "frontend/src/features/admin/AdminDishes.jsx": [
+      "frontend/src/api/dishes.js",
+      "frontend/src/components/Button.jsx"
+    ],
+    "frontend/src/features/admin/AdminUsers.jsx": [
+      "frontend/src/api/users.js",
+      "frontend/src/components/Button.jsx",
+      "frontend/src/lib/logger.js"
+    ],
+    "frontend/src/features/orders/BakerOrderCard.jsx": [
+      "frontend/src/components/Button.jsx",
+      "frontend/src/components/Icon.jsx",
+      "frontend/src/lib/format.js",
+      "frontend/src/lib/orders.js"
+    ]
+  },
+  "neighborMap": {
+    "frontend/src/api/auth.js": [
+      {
+        "path": "frontend/src/lib/url.js",
+        "batchIndex": 6,
+        "symbols": [
+          "trimString",
+          "apiURL",
+          "orderNumberFromLocation",
+          "miniAppModeFromLocation",
+          "orderNumbersFromLocation",
+          "syncOrderURL"
+        ]
+      }
+    ],
+    "frontend/src/api/client.js": [
+      {
+        "path": "frontend/src/lib/auth.js",
+        "batchIndex": 6,
+        "symbols": [
+          "isWebMode",
+          "getToken",
+          "setToken",
+          "clearToken",
+          "authHeader"
+        ]
+      },
+      {
+        "path": "frontend/src/lib/logger.js",
+        "batchIndex": 6,
+        "symbols": [
+          "logInfo",
+          "logWarn"
+        ]
+      },
+      {
+        "path": "frontend/src/lib/url.js",
+        "batchIndex": 6,
+        "symbols": [
+          "trimString",
+          "apiURL",
+          "orderNumberFromLocation",
+          "miniAppModeFromLocation",
+          "orderNumbersFromLocation",
+          "syncOrderURL"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/OrdersPage.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrdersPage"
+        ]
+      }
+    ],
+    "frontend/src/api/orders.js": [
+      {
+        "path": "frontend/src/features/orders/OrdersPage.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrdersPage"
+        ]
+      }
+    ],
+    "frontend/src/app/App.jsx": [
+      {
+        "path": "frontend/src/features/orders/OrdersPage.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrdersPage"
+        ]
+      },
+      {
+        "path": "frontend/src/main.jsx",
+        "batchIndex": 6,
+        "symbols": []
+      }
+    ],
+    "frontend/src/components/Button.jsx": [
+      {
+        "path": "frontend/src/features/orders/BakerOrderFilters.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "BakerOrderFilters"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/BakerOrderReview.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "BakerOrderReview"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/BakerOrdersView.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "BakerOrdersView"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/BakerSelectionReview.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "BakerSelectionReview"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/MonitorReports.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "MonitorReports"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/OrderDetails.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrderDetails"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/OrderEditor.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrderEditor"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/OrderList.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrderList"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/OrderPagination.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrderPagination"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/OrderPreviewModal.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrderPreviewModal"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/OrdersLayout.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrdersLayout"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/ShopOrdersView.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "ShopOrdersView"
+        ]
+      }
+    ],
+    "frontend/src/components/CopyButton.jsx": [
+      {
+        "path": "frontend/src/features/orders/MonitorReports.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "MonitorReports"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/OrderDetails.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrderDetails"
+        ]
+      }
+    ],
+    "frontend/src/components/EmptyState.jsx": [
+      {
+        "path": "frontend/src/features/orders/BakerOrderReview.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "BakerOrderReview"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/BakerOrdersView.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "BakerOrdersView"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/BakerSelectionReview.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "BakerSelectionReview"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/MonitorReports.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "MonitorReports"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/OrderDetails.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrderDetails"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/OrderEditor.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrderEditor"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/OrderList.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrderList"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/ShopOrdersView.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "ShopOrdersView"
+        ]
+      }
+    ],
+    "frontend/src/components/Field.jsx": [
+      {
+        "path": "frontend/src/features/orders/BakerOrderFilters.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "BakerOrderFilters"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/OrderList.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrderList"
+        ]
+      }
+    ],
+    "frontend/src/components/Icon.jsx": [
+      {
+        "path": "frontend/src/features/orders/BakerOrderFilters.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "BakerOrderFilters"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/BakerOrderReview.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "BakerOrderReview"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/BakerSelectionReview.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "BakerSelectionReview"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/MonitorReports.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "MonitorReports"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/OrderDetails.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrderDetails"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/OrderEditor.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrderEditor"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/OrderPagination.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrderPagination"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/OrderPreviewModal.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrderPreviewModal"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/OrdersLayout.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrdersLayout"
+        ]
+      }
+    ],
+    "frontend/src/components/Login.jsx": [
+      {
+        "path": "frontend/src/lib/auth.js",
+        "batchIndex": 6,
+        "symbols": [
+          "isWebMode",
+          "getToken",
+          "setToken",
+          "clearToken",
+          "authHeader"
+        ]
+      },
+      {
+        "path": "frontend/src/lib/logger.js",
+        "batchIndex": 6,
+        "symbols": [
+          "logInfo",
+          "logWarn"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/OrdersPage.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrdersPage"
+        ]
+      }
+    ],
+    "frontend/src/components/MetaCell.jsx": [
+      {
+        "path": "frontend/src/features/orders/OrderDetails.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrderDetails"
+        ]
+      }
+    ],
+    "frontend/src/components/Panel.jsx": [
+      {
+        "path": "frontend/src/features/orders/BakerOrderReview.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "BakerOrderReview"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/BakerSelectionReview.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "BakerSelectionReview"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/OrderDetails.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrderDetails"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/OrderEditor.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrderEditor"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/ShopOrdersView.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "ShopOrdersView"
+        ]
+      }
+    ],
+    "frontend/src/config/env.js": [
+      {
+        "path": "frontend/src/features/orders/OrdersPage.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrdersPage"
+        ]
+      },
+      {
+        "path": "frontend/src/lib/logger.js",
+        "batchIndex": 6,
+        "symbols": [
+          "logInfo",
+          "logWarn"
+        ]
+      }
+    ],
+    "frontend/src/features/account/Me.jsx": [
+      {
+        "path": "frontend/src/lib/auth.js",
+        "batchIndex": 6,
+        "symbols": [
+          "isWebMode",
+          "getToken",
+          "setToken",
+          "clearToken",
+          "authHeader"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/OrdersPage.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrdersPage"
+        ]
+      }
+    ],
+    "frontend/src/features/admin/AdminDishes.jsx": [
+      {
+        "path": "frontend/src/features/orders/OrdersPage.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrdersPage"
+        ]
+      }
+    ],
+    "frontend/src/features/admin/AdminUsers.jsx": [
+      {
+        "path": "frontend/src/lib/logger.js",
+        "batchIndex": 6,
+        "symbols": [
+          "logInfo",
+          "logWarn"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/OrdersPage.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "OrdersPage"
+        ]
+      }
+    ],
+    "frontend/src/features/orders/BakerOrderCard.jsx": [
+      {
+        "path": "frontend/src/lib/format.js",
+        "batchIndex": 6,
+        "symbols": [
+          "formatQuantity",
+          "formatDate",
+          "formatFulfillmentDate"
+        ]
+      },
+      {
+        "path": "frontend/src/lib/orders.js",
+        "batchIndex": 6,
+        "symbols": [
+          "orderQuantity",
+          "orderSource",
+          "orderCreator",
+          "monitorToText",
+          "orderItemsToText"
+        ]
+      },
+      {
+        "path": "frontend/src/features/orders/BakerOrdersView.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "BakerOrdersView"
+        ]
+      }
+    ]
+  }
+}

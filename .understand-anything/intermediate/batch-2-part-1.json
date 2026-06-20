@@ -1,0 +1,1840 @@
+{
+  "nodes": [
+    {
+      "id": "file:internal/inbound/bot/handler_events.go",
+      "type": "file",
+      "name": "handler_events.go",
+      "filePath": "internal/inbound/bot/handler_events.go",
+      "summary": "Обработчик событий заказа из RabbitMQ: десериализует конверт события и рассылает уведомления через notifyOrder.",
+      "tags": [
+        "event-handler",
+        "bot",
+        "messaging",
+        "middleware"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/inbound/bot/handler_monitor.go",
+      "type": "file",
+      "name": "handler_monitor.go",
+      "filePath": "internal/inbound/bot/handler_monitor.go",
+      "summary": "Telegram-обработчики команд мониторинга и синхронизации iiko: формирует и рассылает отчёты по ингредиентам.",
+      "tags": [
+        "bot",
+        "event-handler",
+        "monitoring",
+        "api-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:internal/inbound/bot/handler_order.go",
+      "type": "file",
+      "name": "handler_order.go",
+      "filePath": "internal/inbound/bot/handler_order.go",
+      "summary": "Основной обработчик жизненного цикла заказа в боте: создание, подтверждение, редактирование, обновление и рассылка уведомлений по цехам.",
+      "tags": [
+        "bot",
+        "api-handler",
+        "order",
+        "event-handler"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:internal/inbound/bot/handler_orders.go",
+      "type": "file",
+      "name": "handler_orders.go",
+      "filePath": "internal/inbound/bot/handler_orders.go",
+      "summary": "Обработчики списка заказов в боте: фильтрация, инлайн-разметка, reply-фильтры по дате и магазину, callback-навигация.",
+      "tags": [
+        "bot",
+        "api-handler",
+        "order",
+        "event-handler"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:internal/inbound/bot/handler_orders_test.go",
+      "type": "file",
+      "name": "handler_orders_test.go",
+      "filePath": "internal/inbound/bot/handler_orders_test.go",
+      "summary": "Юнит-тест форматирования текста кнопки заказа в списке.",
+      "tags": [
+        "test",
+        "bot",
+        "order"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/inbound/bot/ports.go",
+      "type": "file",
+      "name": "ports.go",
+      "filePath": "internal/inbound/bot/ports.go",
+      "summary": "Определяет порты (интерфейсы) бота к бэкендам: заказы, авторизация, цеха, мониторинг, синхронизация, техкарты — граница clean architecture.",
+      "tags": [
+        "type-definition",
+        "bot",
+        "ports",
+        "interface"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:internal/inbound/bot/render.go",
+      "type": "file",
+      "name": "render.go",
+      "filePath": "internal/inbound/bot/render.go",
+      "summary": "Тонкий алиас на пакет response для рендеринга сообщений бота.",
+      "tags": [
+        "bot",
+        "barrel",
+        "rendering"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/inbound/bot/response/builder.go",
+      "type": "file",
+      "name": "builder.go",
+      "filePath": "internal/inbound/bot/response/builder.go",
+      "summary": "Builder сообщений бота: формирует тексты заказов, черновиков, отчётов мониторинга и техкарт в Markdown.",
+      "tags": [
+        "bot",
+        "rendering",
+        "serialization",
+        "builder"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_events.go:ConsumeOrderEvents",
+      "type": "function",
+      "name": "ConsumeOrderEvents",
+      "filePath": "internal/inbound/bot/handler_events.go",
+      "lineRange": [
+        14,
+        20
+      ],
+      "summary": "Подписывается на очередь событий заказа и обрабатывает каждое через handleOrderEvent.",
+      "tags": [
+        "event-handler",
+        "messaging",
+        "bot"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_events.go:handleOrderEvent",
+      "type": "function",
+      "name": "handleOrderEvent",
+      "filePath": "internal/inbound/bot/handler_events.go",
+      "lineRange": [
+        31,
+        62
+      ],
+      "summary": "Десериализует конверт события заказа и инициирует рассылку уведомлений.",
+      "tags": [
+        "event-handler",
+        "serialization",
+        "bot"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_monitor.go:handleMonitor",
+      "type": "function",
+      "name": "handleMonitor",
+      "filePath": "internal/inbound/bot/handler_monitor.go",
+      "lineRange": [
+        17,
+        35
+      ],
+      "summary": "Обрабатывает команду мониторинга: запрашивает отчёты по ингредиентам и отправляет их пользователю.",
+      "tags": [
+        "bot",
+        "monitoring",
+        "api-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_monitor.go:handleSync",
+      "type": "function",
+      "name": "handleSync",
+      "filePath": "internal/inbound/bot/handler_monitor.go",
+      "lineRange": [
+        37,
+        56
+      ],
+      "summary": "Обрабатывает команду синхронизации с iiko ERP и сообщает результат.",
+      "tags": [
+        "bot",
+        "monitoring",
+        "api-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_monitor.go:buildMonitorReports",
+      "type": "function",
+      "name": "buildMonitorReports",
+      "filePath": "internal/inbound/bot/handler_monitor.go",
+      "lineRange": [
+        66,
+        79
+      ],
+      "summary": "Строит отчёты мониторинга по выбранным заказам.",
+      "tags": [
+        "monitoring",
+        "rendering",
+        "bot"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_monitor.go:sendBatchMonitorReports",
+      "type": "function",
+      "name": "sendBatchMonitorReports",
+      "filePath": "internal/inbound/bot/handler_monitor.go",
+      "lineRange": [
+        81,
+        107
+      ],
+      "summary": "Формирует и постранично отправляет пакетные отчёты мониторинга.",
+      "tags": [
+        "monitoring",
+        "bot",
+        "rendering"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_order.go:handleActionText",
+      "type": "function",
+      "name": "handleActionText",
+      "filePath": "internal/inbound/bot/handler_order.go",
+      "lineRange": [
+        45,
+        68
+      ],
+      "summary": "Обрабатывает текстовое действие пользователя с проверкой прав на операцию.",
+      "tags": [
+        "bot",
+        "order",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_order.go:handleBulkOrder",
+      "type": "function",
+      "name": "handleBulkOrder",
+      "filePath": "internal/inbound/bot/handler_order.go",
+      "lineRange": [
+        81,
+        111
+      ],
+      "summary": "Парсит и валидирует массовый (bulk) ввод заказа из текста сообщения.",
+      "tags": [
+        "bot",
+        "order",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_order.go:handleConfirm",
+      "type": "function",
+      "name": "handleConfirm",
+      "filePath": "internal/inbound/bot/handler_order.go",
+      "lineRange": [
+        132,
+        178
+      ],
+      "summary": "Подтверждает черновик заказа: создаёт заказ через usecase и рассылает уведомления.",
+      "tags": [
+        "bot",
+        "order",
+        "api-handler"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_order.go:createdByUsername",
+      "type": "function",
+      "name": "createdByUsername",
+      "filePath": "internal/inbound/bot/handler_order.go",
+      "lineRange": [
+        180,
+        195
+      ],
+      "summary": "Определяет username создателя заказа для отображения.",
+      "tags": [
+        "bot",
+        "order",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_order.go:handleEditOrder",
+      "type": "function",
+      "name": "handleEditOrder",
+      "filePath": "internal/inbound/bot/handler_order.go",
+      "lineRange": [
+        197,
+        221
+      ],
+      "summary": "Запускает режим редактирования существующего заказа.",
+      "tags": [
+        "bot",
+        "order",
+        "api-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_order.go:handleUpdateOrder",
+      "type": "function",
+      "name": "handleUpdateOrder",
+      "filePath": "internal/inbound/bot/handler_order.go",
+      "lineRange": [
+        223,
+        268
+      ],
+      "summary": "Применяет обновление заказа и рассылает уведомления об изменениях.",
+      "tags": [
+        "bot",
+        "order",
+        "api-handler"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_order.go:orderDepartmentsForSender",
+      "type": "function",
+      "name": "orderDepartmentsForSender",
+      "filePath": "internal/inbound/bot/handler_order.go",
+      "lineRange": [
+        270,
+        291
+      ],
+      "summary": "Вычисляет цеха заказа для отправителя на основе ролей и контекста.",
+      "tags": [
+        "bot",
+        "order",
+        "business-logic"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_order.go:orderDepartmentsForSelected",
+      "type": "function",
+      "name": "orderDepartmentsForSelected",
+      "filePath": "internal/inbound/bot/handler_order.go",
+      "lineRange": [
+        293,
+        313
+      ],
+      "summary": "Вычисляет цеха заказа по выбранным позициям.",
+      "tags": [
+        "bot",
+        "order",
+        "business-logic"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_order.go:notifyOrder",
+      "type": "function",
+      "name": "notifyOrder",
+      "filePath": "internal/inbound/bot/handler_order.go",
+      "lineRange": [
+        338,
+        390
+      ],
+      "summary": "Рассылает уведомления о заказе по релевантным цехам и пользователям.",
+      "tags": [
+        "bot",
+        "order",
+        "event-handler"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_orders.go:handleOrders",
+      "type": "function",
+      "name": "handleOrders",
+      "filePath": "internal/inbound/bot/handler_orders.go",
+      "lineRange": [
+        21,
+        45
+      ],
+      "summary": "Обрабатывает команду списка заказов с учётом видимости по ролям.",
+      "tags": [
+        "bot",
+        "order",
+        "api-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_orders.go:listVisibleOrders",
+      "type": "function",
+      "name": "listVisibleOrders",
+      "filePath": "internal/inbound/bot/handler_orders.go",
+      "lineRange": [
+        47,
+        71
+      ],
+      "summary": "Загружает заказы, видимые пользователю, с учётом фильтров.",
+      "tags": [
+        "bot",
+        "order",
+        "business-logic"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_orders.go:handleMonitorFilteredOrdersCallback",
+      "type": "function",
+      "name": "handleMonitorFilteredOrdersCallback",
+      "filePath": "internal/inbound/bot/handler_orders.go",
+      "lineRange": [
+        77,
+        96
+      ],
+      "summary": "Callback мониторинга по отфильтрованному списку заказов.",
+      "tags": [
+        "bot",
+        "order",
+        "event-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_orders.go:handleMonitorOrderCallback",
+      "type": "function",
+      "name": "handleMonitorOrderCallback",
+      "filePath": "internal/inbound/bot/handler_orders.go",
+      "lineRange": [
+        118,
+        132
+      ],
+      "summary": "Callback запуска мониторинга по конкретному заказу.",
+      "tags": [
+        "bot",
+        "monitoring",
+        "event-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_orders.go:handleCopyOrderCallback",
+      "type": "function",
+      "name": "handleCopyOrderCallback",
+      "filePath": "internal/inbound/bot/handler_orders.go",
+      "lineRange": [
+        134,
+        148
+      ],
+      "summary": "Callback копирования заказа в новый черновик.",
+      "tags": [
+        "bot",
+        "order",
+        "event-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_orders.go:ordersInlineMarkup",
+      "type": "function",
+      "name": "ordersInlineMarkup",
+      "filePath": "internal/inbound/bot/handler_orders.go",
+      "lineRange": [
+        163,
+        182
+      ],
+      "summary": "Строит инлайн-клавиатуру для списка заказов.",
+      "tags": [
+        "bot",
+        "order",
+        "rendering"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_orders.go:handleOrdersReplyText",
+      "type": "function",
+      "name": "handleOrdersReplyText",
+      "filePath": "internal/inbound/bot/handler_orders.go",
+      "lineRange": [
+        191,
+        217
+      ],
+      "summary": "Обрабатывает reply-текст в режиме списка заказов (применение фильтров).",
+      "tags": [
+        "bot",
+        "order",
+        "event-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_orders.go:shopIDByReplyName",
+      "type": "function",
+      "name": "shopIDByReplyName",
+      "filePath": "internal/inbound/bot/handler_orders.go",
+      "lineRange": [
+        263,
+        275
+      ],
+      "summary": "Сопоставляет имя магазина из reply-текста с его ID.",
+      "tags": [
+        "bot",
+        "order",
+        "utility"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_orders.go:currentOrderFilter",
+      "type": "function",
+      "name": "currentOrderFilter",
+      "filePath": "internal/inbound/bot/handler_orders.go",
+      "lineRange": [
+        291,
+        305
+      ],
+      "summary": "Извлекает текущий фильтр заказов из сессии.",
+      "tags": [
+        "bot",
+        "order",
+        "session"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_orders.go:orderActionsMarkup",
+      "type": "function",
+      "name": "orderActionsMarkup",
+      "filePath": "internal/inbound/bot/handler_orders.go",
+      "lineRange": [
+        307,
+        334
+      ],
+      "summary": "Строит клавиатуру действий над конкретным заказом.",
+      "tags": [
+        "bot",
+        "order",
+        "rendering"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/handler_orders_test.go:TestOrderListButtonText",
+      "type": "function",
+      "name": "TestOrderListButtonText",
+      "filePath": "internal/inbound/bot/handler_orders_test.go",
+      "lineRange": [
+        10,
+        19
+      ],
+      "summary": "Проверяет форматирование текста кнопки заказа.",
+      "tags": [
+        "test",
+        "bot",
+        "order"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:internal/inbound/bot/ports.go:OrderBackend",
+      "type": "class",
+      "name": "OrderBackend",
+      "filePath": "internal/inbound/bot/ports.go",
+      "lineRange": [
+        23,
+        32
+      ],
+      "summary": "Порт бота к бэкенду заказов: создание, обновление, чтение, валидация и шаблоны.",
+      "tags": [
+        "ports",
+        "interface",
+        "order",
+        "bot"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:internal/inbound/bot/ports.go:AuthBackend",
+      "type": "class",
+      "name": "AuthBackend",
+      "filePath": "internal/inbound/bot/ports.go",
+      "lineRange": [
+        35,
+        40
+      ],
+      "summary": "Порт бота к сервису авторизации: аутентификация Telegram и поиск пользователей.",
+      "tags": [
+        "ports",
+        "interface",
+        "auth",
+        "bot"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:internal/inbound/bot/ports.go:DepartmentBackend",
+      "type": "class",
+      "name": "DepartmentBackend",
+      "filePath": "internal/inbound/bot/ports.go",
+      "lineRange": [
+        48,
+        52
+      ],
+      "summary": "Порт бота к сервису цехов: листинг и поиск по коду/ID.",
+      "tags": [
+        "ports",
+        "interface",
+        "bot"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:internal/inbound/bot/ports.go:MonitorBackend",
+      "type": "class",
+      "name": "MonitorBackend",
+      "filePath": "internal/inbound/bot/ports.go",
+      "lineRange": [
+        55,
+        58
+      ],
+      "summary": "Порт бота к сервису мониторинга ингредиентов.",
+      "tags": [
+        "ports",
+        "interface",
+        "monitoring",
+        "bot"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:internal/inbound/bot/response/builder.go:Builder",
+      "type": "class",
+      "name": "Builder",
+      "filePath": "internal/inbound/bot/response/builder.go",
+      "lineRange": [
+        18,
+        18
+      ],
+      "summary": "Builder сообщений бота: рендерит заказы, черновики, отчёты мониторинга и техкарты в Markdown.",
+      "tags": [
+        "builder",
+        "rendering",
+        "bot",
+        "serialization"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:internal/inbound/bot/response/builder.go:OrderDraft",
+      "type": "function",
+      "name": "OrderDraft",
+      "filePath": "internal/inbound/bot/response/builder.go",
+      "lineRange": [
+        90,
+        112
+      ],
+      "summary": "Рендерит черновик заказа с деталями, комментариями и копируемым код-блоком позиций.",
+      "tags": [
+        "rendering",
+        "order",
+        "bot"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/response/builder.go:writeOrderDetails",
+      "type": "function",
+      "name": "writeOrderDetails",
+      "filePath": "internal/inbound/bot/response/builder.go",
+      "lineRange": [
+        114,
+        128
+      ],
+      "summary": "Записывает детали заказа в текст сообщения.",
+      "tags": [
+        "rendering",
+        "order",
+        "bot"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/response/builder.go:MonitorReports",
+      "type": "function",
+      "name": "MonitorReports",
+      "filePath": "internal/inbound/bot/response/builder.go",
+      "lineRange": [
+        169,
+        192
+      ],
+      "summary": "Рендерит отчёты мониторинга по ингредиентам, скрывая коды продуктов.",
+      "tags": [
+        "rendering",
+        "monitoring",
+        "bot"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/response/builder.go:BatchMonitorReports",
+      "type": "function",
+      "name": "BatchMonitorReports",
+      "filePath": "internal/inbound/bot/response/builder.go",
+      "lineRange": [
+        194,
+        214
+      ],
+      "summary": "Рендерит пакетные отчёты мониторинга.",
+      "tags": [
+        "rendering",
+        "monitoring",
+        "bot"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/response/builder.go:writeMonitorReports",
+      "type": "function",
+      "name": "writeMonitorReports",
+      "filePath": "internal/inbound/bot/response/builder.go",
+      "lineRange": [
+        216,
+        238
+      ],
+      "summary": "Записывает блок отчётов мониторинга в сообщение.",
+      "tags": [
+        "rendering",
+        "monitoring",
+        "bot"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/response/builder.go:TechCard",
+      "type": "function",
+      "name": "TechCard",
+      "filePath": "internal/inbound/bot/response/builder.go",
+      "lineRange": [
+        240,
+        262
+      ],
+      "summary": "Рендерит техкарту блюда с валидацией и составом.",
+      "tags": [
+        "rendering",
+        "bot"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/response/builder.go:writeValidationErrors",
+      "type": "function",
+      "name": "writeValidationErrors",
+      "filePath": "internal/inbound/bot/response/builder.go",
+      "lineRange": [
+        264,
+        286
+      ],
+      "summary": "Записывает ошибки валидации в текст сообщения.",
+      "tags": [
+        "rendering",
+        "validation",
+        "bot"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/response/builder.go:writeTechCardItem",
+      "type": "function",
+      "name": "writeTechCardItem",
+      "filePath": "internal/inbound/bot/response/builder.go",
+      "lineRange": [
+        288,
+        305
+      ],
+      "summary": "Записывает позицию техкарты в сообщение.",
+      "tags": [
+        "rendering",
+        "bot"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/inbound/bot/response/builder.go:writePreparedTechCardItem",
+      "type": "function",
+      "name": "writePreparedTechCardItem",
+      "filePath": "internal/inbound/bot/response/builder.go",
+      "lineRange": [
+        307,
+        322
+      ],
+      "summary": "Записывает позицию полуфабриката техкарты в сообщение.",
+      "tags": [
+        "rendering",
+        "bot"
+      ],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:internal/inbound/bot/handler_events.go",
+      "target": "function:internal/inbound/bot/handler_events.go:ConsumeOrderEvents",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_events.go",
+      "target": "function:internal/inbound/bot/handler_events.go:ConsumeOrderEvents",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_events.go",
+      "target": "function:internal/inbound/bot/handler_events.go:handleOrderEvent",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_monitor.go",
+      "target": "function:internal/inbound/bot/handler_monitor.go:handleMonitor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_monitor.go",
+      "target": "function:internal/inbound/bot/handler_monitor.go:handleSync",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_monitor.go",
+      "target": "function:internal/inbound/bot/handler_monitor.go:buildMonitorReports",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_monitor.go",
+      "target": "function:internal/inbound/bot/handler_monitor.go:sendBatchMonitorReports",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "function:internal/inbound/bot/handler_order.go:handleActionText",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "function:internal/inbound/bot/handler_order.go:handleBulkOrder",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "function:internal/inbound/bot/handler_order.go:handleConfirm",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "function:internal/inbound/bot/handler_order.go:createdByUsername",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "function:internal/inbound/bot/handler_order.go:handleEditOrder",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "function:internal/inbound/bot/handler_order.go:handleUpdateOrder",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "function:internal/inbound/bot/handler_order.go:orderDepartmentsForSender",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "function:internal/inbound/bot/handler_order.go:orderDepartmentsForSelected",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "function:internal/inbound/bot/handler_order.go:notifyOrder",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "function:internal/inbound/bot/handler_orders.go:handleOrders",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "function:internal/inbound/bot/handler_orders.go:listVisibleOrders",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "function:internal/inbound/bot/handler_orders.go:handleMonitorFilteredOrdersCallback",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "function:internal/inbound/bot/handler_orders.go:handleMonitorOrderCallback",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "function:internal/inbound/bot/handler_orders.go:handleCopyOrderCallback",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "function:internal/inbound/bot/handler_orders.go:ordersInlineMarkup",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "function:internal/inbound/bot/handler_orders.go:handleOrdersReplyText",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "function:internal/inbound/bot/handler_orders.go:shopIDByReplyName",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "function:internal/inbound/bot/handler_orders.go:currentOrderFilter",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "function:internal/inbound/bot/handler_orders.go:orderActionsMarkup",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders_test.go",
+      "target": "function:internal/inbound/bot/handler_orders_test.go:TestOrderListButtonText",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders_test.go",
+      "target": "function:internal/inbound/bot/handler_orders_test.go:TestOrderListButtonText",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "class:internal/inbound/bot/ports.go:OrderBackend",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "class:internal/inbound/bot/ports.go:OrderBackend",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "class:internal/inbound/bot/ports.go:AuthBackend",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "class:internal/inbound/bot/ports.go:AuthBackend",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "class:internal/inbound/bot/ports.go:DepartmentBackend",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "class:internal/inbound/bot/ports.go:DepartmentBackend",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "class:internal/inbound/bot/ports.go:MonitorBackend",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "class:internal/inbound/bot/ports.go:MonitorBackend",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "class:internal/inbound/bot/response/builder.go:Builder",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "class:internal/inbound/bot/response/builder.go:Builder",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "function:internal/inbound/bot/response/builder.go:OrderDraft",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "function:internal/inbound/bot/response/builder.go:OrderDraft",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "function:internal/inbound/bot/response/builder.go:writeOrderDetails",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "function:internal/inbound/bot/response/builder.go:MonitorReports",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "function:internal/inbound/bot/response/builder.go:MonitorReports",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "function:internal/inbound/bot/response/builder.go:BatchMonitorReports",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "function:internal/inbound/bot/response/builder.go:BatchMonitorReports",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "function:internal/inbound/bot/response/builder.go:writeMonitorReports",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "function:internal/inbound/bot/response/builder.go:TechCard",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "function:internal/inbound/bot/response/builder.go:TechCard",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "function:internal/inbound/bot/response/builder.go:writeValidationErrors",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "function:internal/inbound/bot/response/builder.go:writeTechCardItem",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "function:internal/inbound/bot/response/builder.go:writePreparedTechCardItem",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_events.go",
+      "target": "file:internal/services/order/domain/events.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_events.go",
+      "target": "file:internal/services/order/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_events.go",
+      "target": "file:internal/services/order/domain/order_specs.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_events.go",
+      "target": "file:internal/services/order/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_events.go",
+      "target": "file:internal/services/order/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_events.go",
+      "target": "file:internal/services/order/domain/specification.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_monitor.go",
+      "target": "file:internal/services/monitor/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_monitor.go",
+      "target": "file:internal/services/monitor/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_monitor.go",
+      "target": "file:internal/services/monitor/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_monitor.go",
+      "target": "file:internal/services/order/domain/events.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_monitor.go",
+      "target": "file:internal/services/order/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_monitor.go",
+      "target": "file:internal/services/order/domain/order_specs.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_monitor.go",
+      "target": "file:internal/services/order/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_monitor.go",
+      "target": "file:internal/services/order/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_monitor.go",
+      "target": "file:internal/services/order/domain/specification.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_monitor.go",
+      "target": "file:pkg/logger/context.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_monitor.go",
+      "target": "file:pkg/logger/log.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_monitor.go",
+      "target": "file:pkg/logger/pretty.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "file:internal/pkg/enum/enum.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "file:internal/pkg/enum/rabbitmq.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "file:internal/services/auth/usecase/auth/auth_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "file:internal/services/auth/usecase/auth/auth.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "file:internal/services/auth/usecase/auth/interfaces.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "file:internal/services/auth/usecase/auth/rbac.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "file:internal/services/order/domain/events.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "file:internal/services/order/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "file:internal/services/order/domain/order_specs.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "file:internal/services/order/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "file:internal/services/order/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "file:internal/services/order/domain/specification.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "file:internal/services/order/usecase/order/interfaces.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "file:internal/services/order/usecase/order/order_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "file:internal/services/order/usecase/order/order.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "file:pkg/logger/context.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "file:pkg/logger/log.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_order.go",
+      "target": "file:pkg/logger/pretty.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "file:internal/pkg/enum/enum.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "file:internal/pkg/enum/rabbitmq.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "file:internal/services/auth/domain/auth.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "file:internal/services/monitor/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "file:internal/services/monitor/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "file:internal/services/monitor/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "file:internal/services/order/domain/events.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "file:internal/services/order/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "file:internal/services/order/domain/order_specs.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "file:internal/services/order/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "file:internal/services/order/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "file:internal/services/order/domain/specification.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "file:internal/services/order/usecase/order/interfaces.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "file:internal/services/order/usecase/order/order_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "file:internal/services/order/usecase/order/order.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "file:pkg/logger/context.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "file:pkg/logger/log.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "file:pkg/logger/pretty.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders_test.go",
+      "target": "file:internal/services/order/domain/events.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders_test.go",
+      "target": "file:internal/services/order/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders_test.go",
+      "target": "file:internal/services/order/domain/order_specs.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders_test.go",
+      "target": "file:internal/services/order/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders_test.go",
+      "target": "file:internal/services/order/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders_test.go",
+      "target": "file:internal/services/order/domain/specification.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "file:internal/pkg/enum/enum.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "file:internal/pkg/enum/rabbitmq.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "file:internal/services/auth/domain/auth.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "file:internal/services/department/usecase/department/department.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "file:internal/services/department/usecase/department/interfaces.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "file:internal/services/monitor/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "file:internal/services/monitor/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "file:internal/services/monitor/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "file:internal/services/order/domain/events.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "file:internal/services/order/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "file:internal/services/order/domain/order_specs.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "file:internal/services/order/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "file:internal/services/order/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "file:internal/services/order/domain/specification.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "file:internal/services/order/usecase/order/interfaces.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "file:internal/services/order/usecase/order/order_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "file:internal/services/order/usecase/order/order.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/ports.go",
+      "target": "file:internal/services/techcard/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/render.go",
+      "target": "file:internal/inbound/bot/response/builder_monitor_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/render.go",
+      "target": "file:internal/inbound/bot/response/builder_order_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/render.go",
+      "target": "file:internal/inbound/bot/response/builder.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "file:internal/pkg/helpers/db.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "file:internal/pkg/helpers/env.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "file:internal/pkg/helpers/format.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "file:internal/pkg/helpers/time.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "file:internal/services/monitor/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "file:internal/services/monitor/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "file:internal/services/monitor/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "file:internal/services/order/domain/events.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "file:internal/services/order/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "file:internal/services/order/domain/order_specs.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "file:internal/services/order/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "file:internal/services/order/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "file:internal/services/order/domain/specification.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "file:internal/services/techcard/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/inbound/bot/handler_orders.go",
+      "target": "file:internal/inbound/bot/handler_orders_test.go",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "file:internal/inbound/bot/response/builder_monitor_test.go",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:internal/inbound/bot/response/builder.go",
+      "target": "file:internal/inbound/bot/response/builder_order_test.go",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

@@ -1,0 +1,1053 @@
+{
+ "nodes": [
+  {
+   "id": "file:internal/services/department/app/app.go",
+   "type": "file",
+   "name": "app.go",
+   "filePath": "internal/services/department/app/app.go",
+   "summary": "Композиция приложения сервиса департаментов: сборка usecase из репозитория.",
+   "tags": [
+    "wiring",
+    "dependency-injection",
+    "app-composition"
+   ],
+   "complexity": "simple"
+  },
+  {
+   "id": "file:internal/services/department/infra/repo/department_repo.go",
+   "type": "file",
+   "name": "department_repo.go",
+   "filePath": "internal/services/department/infra/repo/department_repo.go",
+   "summary": "Репозиторий департаментов поверх sqlc: выборки по типу, коду и ID с маппингом в домен.",
+   "tags": [
+    "repository",
+    "data-access",
+    "infrastructure"
+   ],
+   "complexity": "moderate"
+  },
+  {
+   "id": "file:internal/services/monitor/app/app.go",
+   "type": "file",
+   "name": "app.go",
+   "filePath": "internal/services/monitor/app/app.go",
+   "summary": "Композиция приложения сервиса монитора: сборка usecase из репозитория.",
+   "tags": [
+    "wiring",
+    "dependency-injection",
+    "app-composition"
+   ],
+   "complexity": "simple"
+  },
+  {
+   "id": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "type": "file",
+   "name": "monitor_repo.go",
+   "filePath": "internal/services/monitor/infra/repo/monitor_repo.go",
+   "summary": "Репозиторий монитора: разрешение ингредиентов и загрузка графа техкарт заказа из снапшота iiko.",
+   "tags": [
+    "repository",
+    "data-access",
+    "monitor",
+    "infrastructure"
+   ],
+   "complexity": "complex"
+  },
+  {
+   "id": "file:internal/services/order/app/app.go",
+   "type": "file",
+   "name": "app.go",
+   "filePath": "internal/services/order/app/app.go",
+   "summary": "Композиция приложения сервиса заказов: сборка usecase и outbox-relay из репозитория и публикатора.",
+   "tags": [
+    "wiring",
+    "dependency-injection",
+    "orders",
+    "app-composition"
+   ],
+   "complexity": "simple"
+  },
+  {
+   "id": "file:internal/services/order/infra/outbox/relay.go",
+   "type": "file",
+   "name": "relay.go",
+   "filePath": "internal/services/order/infra/outbox/relay.go",
+   "summary": "Outbox-relay: периодически читает неопубликованные события заказов и публикует их через Publisher.",
+   "tags": [
+    "outbox",
+    "relay",
+    "messaging",
+    "infrastructure"
+   ],
+   "complexity": "moderate"
+  },
+  {
+   "id": "class:internal/services/department/infra/repo/department_repo.go:DepartmentRepository",
+   "type": "class",
+   "name": "DepartmentRepository",
+   "filePath": "internal/services/department/infra/repo/department_repo.go",
+   "lineRange": [
+    15,
+    17
+   ],
+   "summary": "Репозиторий департаментов поверх sqlc.",
+   "tags": [
+    "repository",
+    "data-access"
+   ],
+   "complexity": "moderate"
+  },
+  {
+   "id": "function:internal/services/department/infra/repo/department_repo.go:ListByType",
+   "type": "function",
+   "name": "ListByType",
+   "filePath": "internal/services/department/infra/repo/department_repo.go",
+   "lineRange": [
+    25,
+    44
+   ],
+   "summary": "Возвращает департаменты по типу.",
+   "tags": [
+    "repository"
+   ],
+   "complexity": "simple"
+  },
+  {
+   "id": "class:internal/services/monitor/infra/repo/monitor_repo.go:MonitorRepository",
+   "type": "class",
+   "name": "MonitorRepository",
+   "filePath": "internal/services/monitor/infra/repo/monitor_repo.go",
+   "lineRange": [
+    23,
+    25
+   ],
+   "summary": "Репозиторий монитора поверх снапшота iiko.",
+   "tags": [
+    "repository",
+    "monitor",
+    "data-access"
+   ],
+   "complexity": "moderate"
+  },
+  {
+   "id": "function:internal/services/monitor/infra/repo/monitor_repo.go:ResolveIngredient",
+   "type": "function",
+   "name": "ResolveIngredient",
+   "filePath": "internal/services/monitor/infra/repo/monitor_repo.go",
+   "lineRange": [
+    33,
+    52
+   ],
+   "summary": "Разрешает ингредиент продукта по активным техкартам.",
+   "tags": [
+    "repository",
+    "monitor"
+   ],
+   "complexity": "simple"
+  },
+  {
+   "id": "function:internal/services/monitor/infra/repo/monitor_repo.go:LoadOrderGraph",
+   "type": "function",
+   "name": "LoadOrderGraph",
+   "filePath": "internal/services/monitor/infra/repo/monitor_repo.go",
+   "lineRange": [
+    54,
+    81
+   ],
+   "summary": "Загружает граф техкарт заказа.",
+   "tags": [
+    "repository",
+    "monitor"
+   ],
+   "complexity": "moderate"
+  },
+  {
+   "id": "function:internal/services/monitor/infra/repo/monitor_repo.go:loadGraph",
+   "type": "function",
+   "name": "loadGraph",
+   "filePath": "internal/services/monitor/infra/repo/monitor_repo.go",
+   "lineRange": [
+    83,
+    155
+   ],
+   "summary": "Рекурсивно строит граф ингредиентов и техкарт.",
+   "tags": [
+    "repository",
+    "monitor",
+    "recursion"
+   ],
+   "complexity": "complex"
+  },
+  {
+   "id": "function:internal/services/order/app/app.go:New",
+   "type": "function",
+   "name": "New",
+   "filePath": "internal/services/order/app/app.go",
+   "lineRange": [
+    16,
+    18
+   ],
+   "summary": "Собирает usecase заказов из репозитория.",
+   "tags": [
+    "wiring",
+    "orders"
+   ],
+   "complexity": "simple"
+  },
+  {
+   "id": "function:internal/services/order/app/app.go:NewOutboxRelay",
+   "type": "function",
+   "name": "NewOutboxRelay",
+   "filePath": "internal/services/order/app/app.go",
+   "lineRange": [
+    21,
+    23
+   ],
+   "summary": "Собирает outbox-relay заказов.",
+   "tags": [
+    "wiring",
+    "orders",
+    "outbox"
+   ],
+   "complexity": "simple"
+  },
+  {
+   "id": "class:internal/services/order/infra/outbox/relay.go:Relay",
+   "type": "class",
+   "name": "Relay",
+   "filePath": "internal/services/order/infra/outbox/relay.go",
+   "lineRange": [
+    28,
+    33
+   ],
+   "summary": "Outbox-relay публикации событий заказов.",
+   "tags": [
+    "outbox",
+    "relay",
+    "messaging"
+   ],
+   "complexity": "moderate"
+  },
+  {
+   "id": "class:internal/services/order/infra/outbox/relay.go:Publisher",
+   "type": "class",
+   "name": "Publisher",
+   "filePath": "internal/services/order/infra/outbox/relay.go",
+   "lineRange": [
+    23,
+    25
+   ],
+   "summary": "Интерфейс публикатора событий.",
+   "tags": [
+    "interface",
+    "messaging"
+   ],
+   "complexity": "simple"
+  },
+  {
+   "id": "function:internal/services/order/infra/outbox/relay.go:Run",
+   "type": "function",
+   "name": "Run",
+   "filePath": "internal/services/order/infra/outbox/relay.go",
+   "lineRange": [
+    44,
+    57
+   ],
+   "summary": "Запускает периодический цикл публикации outbox-событий.",
+   "tags": [
+    "outbox",
+    "relay",
+    "scheduler"
+   ],
+   "complexity": "simple"
+  },
+  {
+   "id": "function:internal/services/order/infra/outbox/relay.go:drain",
+   "type": "function",
+   "name": "drain",
+   "filePath": "internal/services/order/infra/outbox/relay.go",
+   "lineRange": [
+    62,
+    78
+   ],
+   "summary": "Публикует пачку неопубликованных событий и помечает их.",
+   "tags": [
+    "outbox",
+    "messaging"
+   ],
+   "complexity": "simple"
+  }
+ ],
+ "edges": [
+  {
+   "source": "file:internal/services/department/infra/repo/department_repo.go",
+   "target": "class:internal/services/department/infra/repo/department_repo.go:DepartmentRepository",
+   "type": "contains",
+   "direction": "forward",
+   "weight": 1.0
+  },
+  {
+   "source": "file:internal/services/department/infra/repo/department_repo.go",
+   "target": "class:internal/services/department/infra/repo/department_repo.go:DepartmentRepository",
+   "type": "exports",
+   "direction": "forward",
+   "weight": 0.8
+  },
+  {
+   "source": "file:internal/services/department/infra/repo/department_repo.go",
+   "target": "function:internal/services/department/infra/repo/department_repo.go:ListByType",
+   "type": "contains",
+   "direction": "forward",
+   "weight": 1.0
+  },
+  {
+   "source": "file:internal/services/department/infra/repo/department_repo.go",
+   "target": "function:internal/services/department/infra/repo/department_repo.go:ListByType",
+   "type": "exports",
+   "direction": "forward",
+   "weight": 0.8
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "class:internal/services/monitor/infra/repo/monitor_repo.go:MonitorRepository",
+   "type": "contains",
+   "direction": "forward",
+   "weight": 1.0
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "class:internal/services/monitor/infra/repo/monitor_repo.go:MonitorRepository",
+   "type": "exports",
+   "direction": "forward",
+   "weight": 0.8
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "function:internal/services/monitor/infra/repo/monitor_repo.go:ResolveIngredient",
+   "type": "contains",
+   "direction": "forward",
+   "weight": 1.0
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "function:internal/services/monitor/infra/repo/monitor_repo.go:ResolveIngredient",
+   "type": "exports",
+   "direction": "forward",
+   "weight": 0.8
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "function:internal/services/monitor/infra/repo/monitor_repo.go:LoadOrderGraph",
+   "type": "contains",
+   "direction": "forward",
+   "weight": 1.0
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "function:internal/services/monitor/infra/repo/monitor_repo.go:LoadOrderGraph",
+   "type": "exports",
+   "direction": "forward",
+   "weight": 0.8
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "function:internal/services/monitor/infra/repo/monitor_repo.go:loadGraph",
+   "type": "contains",
+   "direction": "forward",
+   "weight": 1.0
+  },
+  {
+   "source": "file:internal/services/order/app/app.go",
+   "target": "function:internal/services/order/app/app.go:New",
+   "type": "contains",
+   "direction": "forward",
+   "weight": 1.0
+  },
+  {
+   "source": "file:internal/services/order/app/app.go",
+   "target": "function:internal/services/order/app/app.go:New",
+   "type": "exports",
+   "direction": "forward",
+   "weight": 0.8
+  },
+  {
+   "source": "file:internal/services/order/app/app.go",
+   "target": "function:internal/services/order/app/app.go:NewOutboxRelay",
+   "type": "contains",
+   "direction": "forward",
+   "weight": 1.0
+  },
+  {
+   "source": "file:internal/services/order/app/app.go",
+   "target": "function:internal/services/order/app/app.go:NewOutboxRelay",
+   "type": "exports",
+   "direction": "forward",
+   "weight": 0.8
+  },
+  {
+   "source": "file:internal/services/order/infra/outbox/relay.go",
+   "target": "class:internal/services/order/infra/outbox/relay.go:Relay",
+   "type": "contains",
+   "direction": "forward",
+   "weight": 1.0
+  },
+  {
+   "source": "file:internal/services/order/infra/outbox/relay.go",
+   "target": "class:internal/services/order/infra/outbox/relay.go:Relay",
+   "type": "exports",
+   "direction": "forward",
+   "weight": 0.8
+  },
+  {
+   "source": "file:internal/services/order/infra/outbox/relay.go",
+   "target": "class:internal/services/order/infra/outbox/relay.go:Publisher",
+   "type": "contains",
+   "direction": "forward",
+   "weight": 1.0
+  },
+  {
+   "source": "file:internal/services/order/infra/outbox/relay.go",
+   "target": "class:internal/services/order/infra/outbox/relay.go:Publisher",
+   "type": "exports",
+   "direction": "forward",
+   "weight": 0.8
+  },
+  {
+   "source": "file:internal/services/order/infra/outbox/relay.go",
+   "target": "function:internal/services/order/infra/outbox/relay.go:Run",
+   "type": "contains",
+   "direction": "forward",
+   "weight": 1.0
+  },
+  {
+   "source": "file:internal/services/order/infra/outbox/relay.go",
+   "target": "function:internal/services/order/infra/outbox/relay.go:Run",
+   "type": "exports",
+   "direction": "forward",
+   "weight": 0.8
+  },
+  {
+   "source": "file:internal/services/order/infra/outbox/relay.go",
+   "target": "function:internal/services/order/infra/outbox/relay.go:drain",
+   "type": "contains",
+   "direction": "forward",
+   "weight": 1.0
+  },
+  {
+   "source": "file:internal/services/department/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/auth.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/db.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/departments.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/iiko_snapshot.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/models.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/monitor.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/order_outbox.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/orders.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/products.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/querier.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/app/app.go",
+   "target": "file:internal/services/department/infra/repo/department_repo.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/app/app.go",
+   "target": "file:internal/services/department/usecase/department/department.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/app/app.go",
+   "target": "file:internal/services/department/usecase/department/interfaces.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/infra/repo/department_repo.go",
+   "target": "file:internal/outbound/db/sqlc/auth.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/infra/repo/department_repo.go",
+   "target": "file:internal/outbound/db/sqlc/db.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/infra/repo/department_repo.go",
+   "target": "file:internal/outbound/db/sqlc/departments.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/infra/repo/department_repo.go",
+   "target": "file:internal/outbound/db/sqlc/iiko_snapshot.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/infra/repo/department_repo.go",
+   "target": "file:internal/outbound/db/sqlc/models.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/infra/repo/department_repo.go",
+   "target": "file:internal/outbound/db/sqlc/monitor.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/infra/repo/department_repo.go",
+   "target": "file:internal/outbound/db/sqlc/order_outbox.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/infra/repo/department_repo.go",
+   "target": "file:internal/outbound/db/sqlc/orders.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/infra/repo/department_repo.go",
+   "target": "file:internal/outbound/db/sqlc/products.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/infra/repo/department_repo.go",
+   "target": "file:internal/outbound/db/sqlc/querier.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/infra/repo/department_repo.go",
+   "target": "file:internal/pkg/enum/enum.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/infra/repo/department_repo.go",
+   "target": "file:internal/pkg/enum/rabbitmq.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/infra/repo/department_repo.go",
+   "target": "file:internal/services/department/usecase/department/department.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/department/infra/repo/department_repo.go",
+   "target": "file:internal/services/department/usecase/department/interfaces.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/auth.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/db.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/departments.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/iiko_snapshot.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/models.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/monitor.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/order_outbox.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/orders.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/products.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/querier.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/app/app.go",
+   "target": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/app/app.go",
+   "target": "file:internal/services/monitor/usecase/monitor/interfaces.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/app/app.go",
+   "target": "file:internal/services/monitor/usecase/monitor/monitor.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/outbound/db/sqlc/auth.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/outbound/db/sqlc/db.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/outbound/db/sqlc/departments.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/outbound/db/sqlc/iiko_snapshot.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/outbound/db/sqlc/models.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/outbound/db/sqlc/monitor.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/outbound/db/sqlc/order_outbox.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/outbound/db/sqlc/orders.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/outbound/db/sqlc/products.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/outbound/db/sqlc/querier.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/pkg/enum/enum.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/pkg/enum/rabbitmq.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/services/monitor/domain/model.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/services/monitor/domain/service_test.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/services/monitor/domain/service.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/services/monitor/usecase/monitor/interfaces.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/services/monitor/usecase/monitor/monitor.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/services/order/domain/events.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/services/order/domain/model.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/services/order/domain/order_specs.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/services/order/domain/service_test.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/services/order/domain/service.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/monitor/infra/repo/monitor_repo.go",
+   "target": "file:internal/services/order/domain/specification.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/auth.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/db.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/departments.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/iiko_snapshot.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/models.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/monitor.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/order_outbox.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/orders.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/products.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/app/app.go",
+   "target": "file:internal/outbound/db/sqlc/querier.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/app/app.go",
+   "target": "file:internal/services/order/infra/outbox/relay.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/app/app.go",
+   "target": "file:internal/services/order/infra/repo/order_repo.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/app/app.go",
+   "target": "file:internal/services/order/usecase/order/interfaces.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/app/app.go",
+   "target": "file:internal/services/order/usecase/order/order_test.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/app/app.go",
+   "target": "file:internal/services/order/usecase/order/order.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/infra/outbox/relay.go",
+   "target": "file:internal/outbound/db/sqlc/auth.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/infra/outbox/relay.go",
+   "target": "file:internal/outbound/db/sqlc/db.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/infra/outbox/relay.go",
+   "target": "file:internal/outbound/db/sqlc/departments.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/infra/outbox/relay.go",
+   "target": "file:internal/outbound/db/sqlc/iiko_snapshot.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/infra/outbox/relay.go",
+   "target": "file:internal/outbound/db/sqlc/models.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/infra/outbox/relay.go",
+   "target": "file:internal/outbound/db/sqlc/monitor.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/infra/outbox/relay.go",
+   "target": "file:internal/outbound/db/sqlc/order_outbox.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/infra/outbox/relay.go",
+   "target": "file:internal/outbound/db/sqlc/orders.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/infra/outbox/relay.go",
+   "target": "file:internal/outbound/db/sqlc/products.sql.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:internal/services/order/infra/outbox/relay.go",
+   "target": "file:internal/outbound/db/sqlc/querier.go",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  }
+ ]
+}

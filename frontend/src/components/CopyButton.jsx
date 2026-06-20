@@ -3,7 +3,7 @@ import { Button } from './Button';
 import { Icon } from './Icon';
 
 // CopyButton copies text to the clipboard and shows brief "copied" feedback.
-export function CopyButton({ getText, label = 'Копировать', copiedLabel = 'Скопировано', className = '', ...props }) {
+export function CopyButton({ getText, label = 'Копировать', copiedLabel = 'Скопировано', className = '', labelClassName = '', ...props }) {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -24,9 +24,9 @@ export function CopyButton({ getText, label = 'Копировать', copiedLabe
   }
 
   return (
-    <Button type="button" onClick={copy} className={className} {...props}>
+    <Button type="button" onClick={copy} className={className} title={label} aria-label={label} {...props}>
       <Icon name={copied ? 'select' : 'orders'} size={15} />
-      {copied ? copiedLabel : label}
+      <span className={labelClassName}>{copied ? copiedLabel : label}</span>
     </Button>
   );
 }

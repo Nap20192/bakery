@@ -1,0 +1,1629 @@
+{
+  "internal/pkg/authtoken/authtoken_test.go": [
+    {
+      "path": "internal/inbound/api/httpx/auth.go",
+      "batchIndex": 3,
+      "symbols": [
+        "MiniAppUser",
+        "Authenticator",
+        "NewAuthenticator",
+        "RequireMiniAppAuth",
+        "RequireAuth",
+        "RequireAdmin",
+        "WithMiniAppUser",
+        "MiniAppUserFromContext",
+        "IsShopUser",
+        "IsWorkshopUser",
+        "TelegramUsernameOf"
+      ]
+    }
+  ],
+  "internal/pkg/enum/enum.go": [
+    {
+      "path": "internal/inbound/api/httpx/auth.go",
+      "batchIndex": 3,
+      "symbols": [
+        "MiniAppUser",
+        "Authenticator",
+        "NewAuthenticator",
+        "RequireMiniAppAuth",
+        "RequireAuth",
+        "RequireAdmin",
+        "WithMiniAppUser",
+        "MiniAppUserFromContext",
+        "IsShopUser",
+        "IsWorkshopUser",
+        "TelegramUsernameOf"
+      ]
+    },
+    {
+      "path": "internal/inbound/bot/action_menu_test.go",
+      "batchIndex": 3,
+      "symbols": [
+        "TestActionMenuSnapshotRows",
+        "TestActionMenuSnapshotResolveState",
+        "TestDepartmentTypeForRole"
+      ]
+    },
+    {
+      "path": "internal/inbound/bot/action_menu.go",
+      "batchIndex": 3,
+      "symbols": []
+    },
+    {
+      "path": "internal/inbound/bot/handler_order.go",
+      "batchIndex": 2,
+      "symbols": []
+    },
+    {
+      "path": "internal/inbound/bot/handler_orders.go",
+      "batchIndex": 2,
+      "symbols": []
+    },
+    {
+      "path": "internal/inbound/bot/handler_templates.go",
+      "batchIndex": 3,
+      "symbols": []
+    },
+    {
+      "path": "internal/inbound/bot/middleware.go",
+      "batchIndex": 3,
+      "symbols": []
+    },
+    {
+      "path": "internal/inbound/bot/ports.go",
+      "batchIndex": 2,
+      "symbols": [
+        "OrderBackend",
+        "AuthBackend",
+        "Authorizer",
+        "DepartmentBackend",
+        "MonitorBackend",
+        "SyncBackend",
+        "TechCardBackend"
+      ]
+    },
+    {
+      "path": "internal/inbound/bot/routes.go",
+      "batchIndex": 7,
+      "symbols": []
+    },
+    {
+      "path": "internal/services/department/infra/repo/department_repo.go",
+      "batchIndex": 1,
+      "symbols": [
+        "DepartmentRepository",
+        "New",
+        "ListByType",
+        "GetByCode",
+        "GetByID"
+      ]
+    },
+    {
+      "path": "internal/services/monitor/infra/repo/monitor_repo.go",
+      "batchIndex": 1,
+      "symbols": [
+        "MonitorRepository",
+        "New",
+        "ResolveIngredient",
+        "LoadOrderGraph"
+      ]
+    },
+    {
+      "path": "internal/services/order/usecase/order/order.go",
+      "batchIndex": 2,
+      "symbols": [
+        "Service",
+        "NewService",
+        "CreateOrder",
+        "UpdateOrder",
+        "GetOrderByNumber",
+        "ListOrders",
+        "SetOrderFavorite",
+        "ValidateBulkOrder",
+        "ListDishCatalog",
+        "AddDishCatalogItem",
+        "DeleteDishCatalogItem",
+        "ListOrderTemplates",
+        "CombinedOrderTemplate",
+        "GetOrderTemplate",
+        "GetTemplate",
+        "EnsureDefaultOrderTemplates",
+        "DeleteOrdersOlderThan",
+        "RunCleanupTicker"
+      ]
+    },
+    {
+      "path": "internal/services/sync/infra/repo/sync_repo.go",
+      "batchIndex": 1,
+      "symbols": [
+        "SyncRepository",
+        "New",
+        "SaveSnapshot"
+      ]
+    }
+  ],
+  "internal/pkg/enum/rabbitmq.go": [
+    {
+      "path": "internal/inbound/api/httpx/auth.go",
+      "batchIndex": 3,
+      "symbols": [
+        "MiniAppUser",
+        "Authenticator",
+        "NewAuthenticator",
+        "RequireMiniAppAuth",
+        "RequireAuth",
+        "RequireAdmin",
+        "WithMiniAppUser",
+        "MiniAppUserFromContext",
+        "IsShopUser",
+        "IsWorkshopUser",
+        "TelegramUsernameOf"
+      ]
+    },
+    {
+      "path": "internal/inbound/bot/action_menu_test.go",
+      "batchIndex": 3,
+      "symbols": [
+        "TestActionMenuSnapshotRows",
+        "TestActionMenuSnapshotResolveState",
+        "TestDepartmentTypeForRole"
+      ]
+    },
+    {
+      "path": "internal/inbound/bot/action_menu.go",
+      "batchIndex": 3,
+      "symbols": []
+    },
+    {
+      "path": "internal/inbound/bot/handler_order.go",
+      "batchIndex": 2,
+      "symbols": []
+    },
+    {
+      "path": "internal/inbound/bot/handler_orders.go",
+      "batchIndex": 2,
+      "symbols": []
+    },
+    {
+      "path": "internal/inbound/bot/handler_templates.go",
+      "batchIndex": 3,
+      "symbols": []
+    },
+    {
+      "path": "internal/inbound/bot/middleware.go",
+      "batchIndex": 3,
+      "symbols": []
+    },
+    {
+      "path": "internal/inbound/bot/ports.go",
+      "batchIndex": 2,
+      "symbols": [
+        "OrderBackend",
+        "AuthBackend",
+        "Authorizer",
+        "DepartmentBackend",
+        "MonitorBackend",
+        "SyncBackend",
+        "TechCardBackend"
+      ]
+    },
+    {
+      "path": "internal/inbound/bot/routes.go",
+      "batchIndex": 7,
+      "symbols": []
+    },
+    {
+      "path": "internal/services/department/infra/repo/department_repo.go",
+      "batchIndex": 1,
+      "symbols": [
+        "DepartmentRepository",
+        "New",
+        "ListByType",
+        "GetByCode",
+        "GetByID"
+      ]
+    },
+    {
+      "path": "internal/services/monitor/infra/repo/monitor_repo.go",
+      "batchIndex": 1,
+      "symbols": [
+        "MonitorRepository",
+        "New",
+        "ResolveIngredient",
+        "LoadOrderGraph"
+      ]
+    },
+    {
+      "path": "internal/services/order/usecase/order/order.go",
+      "batchIndex": 2,
+      "symbols": [
+        "Service",
+        "NewService",
+        "CreateOrder",
+        "UpdateOrder",
+        "GetOrderByNumber",
+        "ListOrders",
+        "SetOrderFavorite",
+        "ValidateBulkOrder",
+        "ListDishCatalog",
+        "AddDishCatalogItem",
+        "DeleteDishCatalogItem",
+        "ListOrderTemplates",
+        "CombinedOrderTemplate",
+        "GetOrderTemplate",
+        "GetTemplate",
+        "EnsureDefaultOrderTemplates",
+        "DeleteOrdersOlderThan",
+        "RunCleanupTicker"
+      ]
+    },
+    {
+      "path": "internal/services/sync/infra/repo/sync_repo.go",
+      "batchIndex": 1,
+      "symbols": [
+        "SyncRepository",
+        "New",
+        "SaveSnapshot"
+      ]
+    }
+  ],
+  "internal/services/admin/app/app.go": [
+    {
+      "path": "internal/deps/deps.go",
+      "batchIndex": 3,
+      "symbols": [
+        "AppDeps",
+        "NewAppDeps",
+        "WithAuthService",
+        "WithAdminService",
+        "WithRbacService",
+        "WithOrderService",
+        "WithOrderOutboxRelay",
+        "WithDepartmentService",
+        "WithMonitorService",
+        "WithTechCardService",
+        "WithSyncService",
+        "WithOrderBot",
+        "WithAPIServerConfig"
+      ]
+    }
+  ],
+  "internal/services/admin/infra/http/handler.go": [
+    {
+      "path": "internal/inbound/api/httpx/apperror.go",
+      "batchIndex": 3,
+      "symbols": [
+        "WriteAppError"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth_test.go",
+      "batchIndex": 3,
+      "symbols": [
+        "TestValidateMiniAppInitData",
+        "TestAuthorizationCredentials"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth.go",
+      "batchIndex": 3,
+      "symbols": [
+        "MiniAppUser",
+        "Authenticator",
+        "NewAuthenticator",
+        "RequireMiniAppAuth",
+        "RequireAuth",
+        "RequireAdmin",
+        "WithMiniAppUser",
+        "MiniAppUserFromContext",
+        "IsShopUser",
+        "IsWorkshopUser",
+        "TelegramUsernameOf"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/respond.go",
+      "batchIndex": 3,
+      "symbols": [
+        "ErrorResponse",
+        "DepartmentResponse",
+        "WriteJSON",
+        "WriteError",
+        "Trim",
+        "ParseRequestDate",
+        "UniqueQueryValues"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/server.go",
+      "batchIndex": 3,
+      "symbols": [
+        "ServerConfig",
+        "Server",
+        "NewServer",
+        "Start",
+        "Shutdown"
+      ]
+    }
+  ],
+  "internal/services/admin/usecase/admin/admin.go": [
+    {
+      "path": "internal/pkg/apperr/apperr_test.go",
+      "batchIndex": 3,
+      "symbols": [
+        "TestKindOf",
+        "TestSentinelIdentity"
+      ]
+    },
+    {
+      "path": "internal/pkg/apperr/apperr.go",
+      "batchIndex": 3,
+      "symbols": [
+        "Error",
+        "Error",
+        "Unwrap",
+        "New",
+        "Wrap",
+        "Invalid",
+        "NotFound",
+        "Conflict",
+        "Unauthorized",
+        "Forbidden",
+        "Internal",
+        "KindOf",
+        "MessageOf",
+        "As"
+      ]
+    },
+    {
+      "path": "internal/deps/deps.go",
+      "batchIndex": 3,
+      "symbols": [
+        "AppDeps",
+        "NewAppDeps",
+        "WithAuthService",
+        "WithAdminService",
+        "WithRbacService",
+        "WithOrderService",
+        "WithOrderOutboxRelay",
+        "WithDepartmentService",
+        "WithMonitorService",
+        "WithTechCardService",
+        "WithSyncService",
+        "WithOrderBot",
+        "WithAPIServerConfig"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/server.go",
+      "batchIndex": 3,
+      "symbols": [
+        "ServerConfig",
+        "Server",
+        "NewServer",
+        "Start",
+        "Shutdown"
+      ]
+    }
+  ],
+  "internal/services/admin/usecase/admin/interfaces.go": [
+    {
+      "path": "internal/deps/deps.go",
+      "batchIndex": 3,
+      "symbols": [
+        "AppDeps",
+        "NewAppDeps",
+        "WithAuthService",
+        "WithAdminService",
+        "WithRbacService",
+        "WithOrderService",
+        "WithOrderOutboxRelay",
+        "WithDepartmentService",
+        "WithMonitorService",
+        "WithTechCardService",
+        "WithSyncService",
+        "WithOrderBot",
+        "WithAPIServerConfig"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/server.go",
+      "batchIndex": 3,
+      "symbols": [
+        "ServerConfig",
+        "Server",
+        "NewServer",
+        "Start",
+        "Shutdown"
+      ]
+    }
+  ],
+  "internal/services/auth/domain/auth.go": [
+    {
+      "path": "internal/inbound/api/httpx/auth.go",
+      "batchIndex": 3,
+      "symbols": [
+        "MiniAppUser",
+        "Authenticator",
+        "NewAuthenticator",
+        "RequireMiniAppAuth",
+        "RequireAuth",
+        "RequireAdmin",
+        "WithMiniAppUser",
+        "MiniAppUserFromContext",
+        "IsShopUser",
+        "IsWorkshopUser",
+        "TelegramUsernameOf"
+      ]
+    },
+    {
+      "path": "internal/inbound/bot/action_menu.go",
+      "batchIndex": 3,
+      "symbols": []
+    },
+    {
+      "path": "internal/inbound/bot/handler_orders.go",
+      "batchIndex": 2,
+      "symbols": []
+    },
+    {
+      "path": "internal/inbound/bot/middleware.go",
+      "batchIndex": 3,
+      "symbols": []
+    },
+    {
+      "path": "internal/inbound/bot/ports.go",
+      "batchIndex": 2,
+      "symbols": [
+        "OrderBackend",
+        "AuthBackend",
+        "Authorizer",
+        "DepartmentBackend",
+        "MonitorBackend",
+        "SyncBackend",
+        "TechCardBackend"
+      ]
+    },
+    {
+      "path": "internal/services/auth/infra/repo/auth_repo.go",
+      "batchIndex": 1,
+      "symbols": [
+        "AuthRepository",
+        "New",
+        "CreatePasswordUser",
+        "GetByUsername",
+        "GetByID",
+        "ListAll",
+        "SetRole",
+        "SetUsername",
+        "GetByTelegramID",
+        "GetByTelegramUsername",
+        "ListByRole",
+        "ListByDepartmentID",
+        "BindTelegramID",
+        "SetPasswordHash",
+        "Delete",
+        "AssignUserDepartment"
+      ]
+    }
+  ],
+  "internal/services/auth/infra/http/handler.go": [
+    {
+      "path": "internal/inbound/api/httpx/apperror.go",
+      "batchIndex": 3,
+      "symbols": [
+        "WriteAppError"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth_test.go",
+      "batchIndex": 3,
+      "symbols": [
+        "TestValidateMiniAppInitData",
+        "TestAuthorizationCredentials"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth.go",
+      "batchIndex": 3,
+      "symbols": [
+        "MiniAppUser",
+        "Authenticator",
+        "NewAuthenticator",
+        "RequireMiniAppAuth",
+        "RequireAuth",
+        "RequireAdmin",
+        "WithMiniAppUser",
+        "MiniAppUserFromContext",
+        "IsShopUser",
+        "IsWorkshopUser",
+        "TelegramUsernameOf"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/respond.go",
+      "batchIndex": 3,
+      "symbols": [
+        "ErrorResponse",
+        "DepartmentResponse",
+        "WriteJSON",
+        "WriteError",
+        "Trim",
+        "ParseRequestDate",
+        "UniqueQueryValues"
+      ]
+    },
+    {
+      "path": "internal/pkg/authtoken/authtoken.go",
+      "batchIndex": 3,
+      "symbols": [
+        "Claims",
+        "Issue",
+        "Parse"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/server.go",
+      "batchIndex": 3,
+      "symbols": [
+        "ServerConfig",
+        "Server",
+        "NewServer",
+        "Start",
+        "Shutdown"
+      ]
+    }
+  ],
+  "internal/services/auth/usecase/auth/auth.go": [
+    {
+      "path": "internal/pkg/apperr/apperr_test.go",
+      "batchIndex": 3,
+      "symbols": [
+        "TestKindOf",
+        "TestSentinelIdentity"
+      ]
+    },
+    {
+      "path": "internal/pkg/apperr/apperr.go",
+      "batchIndex": 3,
+      "symbols": [
+        "Error",
+        "Error",
+        "Unwrap",
+        "New",
+        "Wrap",
+        "Invalid",
+        "NotFound",
+        "Conflict",
+        "Unauthorized",
+        "Forbidden",
+        "Internal",
+        "KindOf",
+        "MessageOf",
+        "As"
+      ]
+    },
+    {
+      "path": "internal/deps/deps.go",
+      "batchIndex": 3,
+      "symbols": [
+        "AppDeps",
+        "NewAppDeps",
+        "WithAuthService",
+        "WithAdminService",
+        "WithRbacService",
+        "WithOrderService",
+        "WithOrderOutboxRelay",
+        "WithDepartmentService",
+        "WithMonitorService",
+        "WithTechCardService",
+        "WithSyncService",
+        "WithOrderBot",
+        "WithAPIServerConfig"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth.go",
+      "batchIndex": 3,
+      "symbols": [
+        "MiniAppUser",
+        "Authenticator",
+        "NewAuthenticator",
+        "RequireMiniAppAuth",
+        "RequireAuth",
+        "RequireAdmin",
+        "WithMiniAppUser",
+        "MiniAppUserFromContext",
+        "IsShopUser",
+        "IsWorkshopUser",
+        "TelegramUsernameOf"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/server.go",
+      "batchIndex": 3,
+      "symbols": [
+        "ServerConfig",
+        "Server",
+        "NewServer",
+        "Start",
+        "Shutdown"
+      ]
+    },
+    {
+      "path": "internal/inbound/bot/handler_order.go",
+      "batchIndex": 2,
+      "symbols": []
+    },
+    {
+      "path": "internal/inbound/bot/middleware.go",
+      "batchIndex": 3,
+      "symbols": []
+    },
+    {
+      "path": "internal/services/auth/app/app.go",
+      "batchIndex": 1,
+      "symbols": [
+        "New",
+        "NewRBAC"
+      ]
+    },
+    {
+      "path": "internal/services/auth/infra/repo/auth_repo.go",
+      "batchIndex": 1,
+      "symbols": [
+        "AuthRepository",
+        "New",
+        "CreatePasswordUser",
+        "GetByUsername",
+        "GetByID",
+        "ListAll",
+        "SetRole",
+        "SetUsername",
+        "GetByTelegramID",
+        "GetByTelegramUsername",
+        "ListByRole",
+        "ListByDepartmentID",
+        "BindTelegramID",
+        "SetPasswordHash",
+        "Delete",
+        "AssignUserDepartment"
+      ]
+    }
+  ],
+  "internal/services/auth/usecase/auth/auth_test.go": [
+    {
+      "path": "internal/deps/deps.go",
+      "batchIndex": 3,
+      "symbols": [
+        "AppDeps",
+        "NewAppDeps",
+        "WithAuthService",
+        "WithAdminService",
+        "WithRbacService",
+        "WithOrderService",
+        "WithOrderOutboxRelay",
+        "WithDepartmentService",
+        "WithMonitorService",
+        "WithTechCardService",
+        "WithSyncService",
+        "WithOrderBot",
+        "WithAPIServerConfig"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth.go",
+      "batchIndex": 3,
+      "symbols": [
+        "MiniAppUser",
+        "Authenticator",
+        "NewAuthenticator",
+        "RequireMiniAppAuth",
+        "RequireAuth",
+        "RequireAdmin",
+        "WithMiniAppUser",
+        "MiniAppUserFromContext",
+        "IsShopUser",
+        "IsWorkshopUser",
+        "TelegramUsernameOf"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/server.go",
+      "batchIndex": 3,
+      "symbols": [
+        "ServerConfig",
+        "Server",
+        "NewServer",
+        "Start",
+        "Shutdown"
+      ]
+    },
+    {
+      "path": "internal/inbound/bot/handler_order.go",
+      "batchIndex": 2,
+      "symbols": []
+    },
+    {
+      "path": "internal/inbound/bot/middleware.go",
+      "batchIndex": 3,
+      "symbols": []
+    },
+    {
+      "path": "internal/services/auth/app/app.go",
+      "batchIndex": 1,
+      "symbols": [
+        "New",
+        "NewRBAC"
+      ]
+    },
+    {
+      "path": "internal/services/auth/infra/repo/auth_repo.go",
+      "batchIndex": 1,
+      "symbols": [
+        "AuthRepository",
+        "New",
+        "CreatePasswordUser",
+        "GetByUsername",
+        "GetByID",
+        "ListAll",
+        "SetRole",
+        "SetUsername",
+        "GetByTelegramID",
+        "GetByTelegramUsername",
+        "ListByRole",
+        "ListByDepartmentID",
+        "BindTelegramID",
+        "SetPasswordHash",
+        "Delete",
+        "AssignUserDepartment"
+      ]
+    }
+  ],
+  "internal/services/auth/usecase/auth/interfaces.go": [
+    {
+      "path": "internal/deps/deps.go",
+      "batchIndex": 3,
+      "symbols": [
+        "AppDeps",
+        "NewAppDeps",
+        "WithAuthService",
+        "WithAdminService",
+        "WithRbacService",
+        "WithOrderService",
+        "WithOrderOutboxRelay",
+        "WithDepartmentService",
+        "WithMonitorService",
+        "WithTechCardService",
+        "WithSyncService",
+        "WithOrderBot",
+        "WithAPIServerConfig"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth.go",
+      "batchIndex": 3,
+      "symbols": [
+        "MiniAppUser",
+        "Authenticator",
+        "NewAuthenticator",
+        "RequireMiniAppAuth",
+        "RequireAuth",
+        "RequireAdmin",
+        "WithMiniAppUser",
+        "MiniAppUserFromContext",
+        "IsShopUser",
+        "IsWorkshopUser",
+        "TelegramUsernameOf"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/server.go",
+      "batchIndex": 3,
+      "symbols": [
+        "ServerConfig",
+        "Server",
+        "NewServer",
+        "Start",
+        "Shutdown"
+      ]
+    },
+    {
+      "path": "internal/inbound/bot/handler_order.go",
+      "batchIndex": 2,
+      "symbols": []
+    },
+    {
+      "path": "internal/inbound/bot/middleware.go",
+      "batchIndex": 3,
+      "symbols": []
+    },
+    {
+      "path": "internal/services/auth/app/app.go",
+      "batchIndex": 1,
+      "symbols": [
+        "New",
+        "NewRBAC"
+      ]
+    },
+    {
+      "path": "internal/services/auth/infra/repo/auth_repo.go",
+      "batchIndex": 1,
+      "symbols": [
+        "AuthRepository",
+        "New",
+        "CreatePasswordUser",
+        "GetByUsername",
+        "GetByID",
+        "ListAll",
+        "SetRole",
+        "SetUsername",
+        "GetByTelegramID",
+        "GetByTelegramUsername",
+        "ListByRole",
+        "ListByDepartmentID",
+        "BindTelegramID",
+        "SetPasswordHash",
+        "Delete",
+        "AssignUserDepartment"
+      ]
+    }
+  ],
+  "internal/services/auth/usecase/auth/rbac.go": [
+    {
+      "path": "internal/deps/deps.go",
+      "batchIndex": 3,
+      "symbols": [
+        "AppDeps",
+        "NewAppDeps",
+        "WithAuthService",
+        "WithAdminService",
+        "WithRbacService",
+        "WithOrderService",
+        "WithOrderOutboxRelay",
+        "WithDepartmentService",
+        "WithMonitorService",
+        "WithTechCardService",
+        "WithSyncService",
+        "WithOrderBot",
+        "WithAPIServerConfig"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth.go",
+      "batchIndex": 3,
+      "symbols": [
+        "MiniAppUser",
+        "Authenticator",
+        "NewAuthenticator",
+        "RequireMiniAppAuth",
+        "RequireAuth",
+        "RequireAdmin",
+        "WithMiniAppUser",
+        "MiniAppUserFromContext",
+        "IsShopUser",
+        "IsWorkshopUser",
+        "TelegramUsernameOf"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/server.go",
+      "batchIndex": 3,
+      "symbols": [
+        "ServerConfig",
+        "Server",
+        "NewServer",
+        "Start",
+        "Shutdown"
+      ]
+    },
+    {
+      "path": "internal/inbound/bot/handler_order.go",
+      "batchIndex": 2,
+      "symbols": []
+    },
+    {
+      "path": "internal/inbound/bot/middleware.go",
+      "batchIndex": 3,
+      "symbols": []
+    },
+    {
+      "path": "internal/services/auth/app/app.go",
+      "batchIndex": 1,
+      "symbols": [
+        "New",
+        "NewRBAC"
+      ]
+    },
+    {
+      "path": "internal/services/auth/infra/repo/auth_repo.go",
+      "batchIndex": 1,
+      "symbols": [
+        "AuthRepository",
+        "New",
+        "CreatePasswordUser",
+        "GetByUsername",
+        "GetByID",
+        "ListAll",
+        "SetRole",
+        "SetUsername",
+        "GetByTelegramID",
+        "GetByTelegramUsername",
+        "ListByRole",
+        "ListByDepartmentID",
+        "BindTelegramID",
+        "SetPasswordHash",
+        "Delete",
+        "AssignUserDepartment"
+      ]
+    }
+  ],
+  "internal/services/department/infra/http/handler.go": [
+    {
+      "path": "internal/inbound/api/httpx/apperror.go",
+      "batchIndex": 3,
+      "symbols": [
+        "WriteAppError"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth_test.go",
+      "batchIndex": 3,
+      "symbols": [
+        "TestValidateMiniAppInitData",
+        "TestAuthorizationCredentials"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth.go",
+      "batchIndex": 3,
+      "symbols": [
+        "MiniAppUser",
+        "Authenticator",
+        "NewAuthenticator",
+        "RequireMiniAppAuth",
+        "RequireAuth",
+        "RequireAdmin",
+        "WithMiniAppUser",
+        "MiniAppUserFromContext",
+        "IsShopUser",
+        "IsWorkshopUser",
+        "TelegramUsernameOf"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/respond.go",
+      "batchIndex": 3,
+      "symbols": [
+        "ErrorResponse",
+        "DepartmentResponse",
+        "WriteJSON",
+        "WriteError",
+        "Trim",
+        "ParseRequestDate",
+        "UniqueQueryValues"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/server.go",
+      "batchIndex": 3,
+      "symbols": [
+        "ServerConfig",
+        "Server",
+        "NewServer",
+        "Start",
+        "Shutdown"
+      ]
+    }
+  ],
+  "internal/services/department/usecase/department/department.go": [
+    {
+      "path": "internal/deps/deps.go",
+      "batchIndex": 3,
+      "symbols": [
+        "AppDeps",
+        "NewAppDeps",
+        "WithAuthService",
+        "WithAdminService",
+        "WithRbacService",
+        "WithOrderService",
+        "WithOrderOutboxRelay",
+        "WithDepartmentService",
+        "WithMonitorService",
+        "WithTechCardService",
+        "WithSyncService",
+        "WithOrderBot",
+        "WithAPIServerConfig"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth.go",
+      "batchIndex": 3,
+      "symbols": [
+        "MiniAppUser",
+        "Authenticator",
+        "NewAuthenticator",
+        "RequireMiniAppAuth",
+        "RequireAuth",
+        "RequireAdmin",
+        "WithMiniAppUser",
+        "MiniAppUserFromContext",
+        "IsShopUser",
+        "IsWorkshopUser",
+        "TelegramUsernameOf"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/server.go",
+      "batchIndex": 3,
+      "symbols": [
+        "ServerConfig",
+        "Server",
+        "NewServer",
+        "Start",
+        "Shutdown"
+      ]
+    },
+    {
+      "path": "internal/inbound/bot/ports.go",
+      "batchIndex": 2,
+      "symbols": [
+        "OrderBackend",
+        "AuthBackend",
+        "Authorizer",
+        "DepartmentBackend",
+        "MonitorBackend",
+        "SyncBackend",
+        "TechCardBackend"
+      ]
+    },
+    {
+      "path": "internal/services/department/app/app.go",
+      "batchIndex": 1,
+      "symbols": [
+        "New"
+      ]
+    },
+    {
+      "path": "internal/services/department/infra/repo/department_repo.go",
+      "batchIndex": 1,
+      "symbols": [
+        "DepartmentRepository",
+        "New",
+        "ListByType",
+        "GetByCode",
+        "GetByID"
+      ]
+    },
+    {
+      "path": "internal/services/order/infra/http/handler.go",
+      "batchIndex": 2,
+      "symbols": [
+        "Handler",
+        "New",
+        "RegisterRoutes",
+        "UserCanReadOrder"
+      ]
+    }
+  ],
+  "internal/services/department/usecase/department/interfaces.go": [
+    {
+      "path": "internal/deps/deps.go",
+      "batchIndex": 3,
+      "symbols": [
+        "AppDeps",
+        "NewAppDeps",
+        "WithAuthService",
+        "WithAdminService",
+        "WithRbacService",
+        "WithOrderService",
+        "WithOrderOutboxRelay",
+        "WithDepartmentService",
+        "WithMonitorService",
+        "WithTechCardService",
+        "WithSyncService",
+        "WithOrderBot",
+        "WithAPIServerConfig"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth.go",
+      "batchIndex": 3,
+      "symbols": [
+        "MiniAppUser",
+        "Authenticator",
+        "NewAuthenticator",
+        "RequireMiniAppAuth",
+        "RequireAuth",
+        "RequireAdmin",
+        "WithMiniAppUser",
+        "MiniAppUserFromContext",
+        "IsShopUser",
+        "IsWorkshopUser",
+        "TelegramUsernameOf"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/server.go",
+      "batchIndex": 3,
+      "symbols": [
+        "ServerConfig",
+        "Server",
+        "NewServer",
+        "Start",
+        "Shutdown"
+      ]
+    },
+    {
+      "path": "internal/inbound/bot/ports.go",
+      "batchIndex": 2,
+      "symbols": [
+        "OrderBackend",
+        "AuthBackend",
+        "Authorizer",
+        "DepartmentBackend",
+        "MonitorBackend",
+        "SyncBackend",
+        "TechCardBackend"
+      ]
+    },
+    {
+      "path": "internal/services/department/app/app.go",
+      "batchIndex": 1,
+      "symbols": [
+        "New"
+      ]
+    },
+    {
+      "path": "internal/services/department/infra/repo/department_repo.go",
+      "batchIndex": 1,
+      "symbols": [
+        "DepartmentRepository",
+        "New",
+        "ListByType",
+        "GetByCode",
+        "GetByID"
+      ]
+    },
+    {
+      "path": "internal/services/order/infra/http/handler.go",
+      "batchIndex": 2,
+      "symbols": [
+        "Handler",
+        "New",
+        "RegisterRoutes",
+        "UserCanReadOrder"
+      ]
+    }
+  ],
+  "internal/services/order/infra/http/handler_admin.go": [
+    {
+      "path": "internal/inbound/api/httpx/apperror.go",
+      "batchIndex": 3,
+      "symbols": [
+        "WriteAppError"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth_test.go",
+      "batchIndex": 3,
+      "symbols": [
+        "TestValidateMiniAppInitData",
+        "TestAuthorizationCredentials"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth.go",
+      "batchIndex": 3,
+      "symbols": [
+        "MiniAppUser",
+        "Authenticator",
+        "NewAuthenticator",
+        "RequireMiniAppAuth",
+        "RequireAuth",
+        "RequireAdmin",
+        "WithMiniAppUser",
+        "MiniAppUserFromContext",
+        "IsShopUser",
+        "IsWorkshopUser",
+        "TelegramUsernameOf"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/respond.go",
+      "batchIndex": 3,
+      "symbols": [
+        "ErrorResponse",
+        "DepartmentResponse",
+        "WriteJSON",
+        "WriteError",
+        "Trim",
+        "ParseRequestDate",
+        "UniqueQueryValues"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/server.go",
+      "batchIndex": 3,
+      "symbols": [
+        "ServerConfig",
+        "Server",
+        "NewServer",
+        "Start",
+        "Shutdown"
+      ]
+    },
+    {
+      "path": "internal/services/monitor/infra/http/handler.go",
+      "batchIndex": 2,
+      "symbols": [
+        "Handler",
+        "New",
+        "RegisterRoutes"
+      ]
+    }
+  ],
+  "internal/services/order/infra/http/handler_test.go": [
+    {
+      "path": "internal/inbound/api/httpx/apperror.go",
+      "batchIndex": 3,
+      "symbols": [
+        "WriteAppError"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth_test.go",
+      "batchIndex": 3,
+      "symbols": [
+        "TestValidateMiniAppInitData",
+        "TestAuthorizationCredentials"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth.go",
+      "batchIndex": 3,
+      "symbols": [
+        "MiniAppUser",
+        "Authenticator",
+        "NewAuthenticator",
+        "RequireMiniAppAuth",
+        "RequireAuth",
+        "RequireAdmin",
+        "WithMiniAppUser",
+        "MiniAppUserFromContext",
+        "IsShopUser",
+        "IsWorkshopUser",
+        "TelegramUsernameOf"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/respond.go",
+      "batchIndex": 3,
+      "symbols": [
+        "ErrorResponse",
+        "DepartmentResponse",
+        "WriteJSON",
+        "WriteError",
+        "Trim",
+        "ParseRequestDate",
+        "UniqueQueryValues"
+      ]
+    },
+    {
+      "path": "internal/services/order/domain/events.go",
+      "batchIndex": 2,
+      "symbols": [
+        "OrderCreatedEvent",
+        "Identity",
+        "OrderUpdatedEvent",
+        "Identity",
+        "RecordCreated",
+        "RecordUpdated"
+      ]
+    },
+    {
+      "path": "internal/services/order/domain/model.go",
+      "batchIndex": 2,
+      "symbols": [
+        "Order",
+        "OrderComments",
+        "ItemComment",
+        "OrderHistory",
+        "OrderHistoryItem",
+        "OrderTemplate",
+        "DishCatalogItem",
+        "CreateOrderInput",
+        "OrderItem",
+        "CommentsFromItems",
+        "ProductionQuantity"
+      ]
+    },
+    {
+      "path": "internal/services/order/domain/order_specs.go",
+      "batchIndex": 2,
+      "symbols": [
+        "BulkOrderLine",
+        "ParsedOrderLine",
+        "OrderLineProcessableSpecification",
+        "IsValid",
+        "OrderLineFormatSpecification",
+        "IsValid",
+        "ParseOrderLine",
+        "PositiveQuantitySpecification",
+        "IsValid",
+        "QuantityValue",
+        "ReservedQuantityValue",
+        "ParseFulfillmentDateLine",
+        "UniqueOrderItemsSpecification",
+        "IsValid",
+        "DuplicateOrderItemErrors",
+        "IsTemplateHeaderLine"
+      ]
+    },
+    {
+      "path": "internal/services/order/domain/service_test.go",
+      "batchIndex": 2,
+      "symbols": [
+        "TestOrderServiceParseBulkOrder",
+        "TestOrderServiceUsesInjectedSpec",
+        "TestOrderServiceValidateUniqueItems",
+        "TestOrderServiceOrderNumberRules",
+        "TestOrderLineProcessableSpecificationSkipsUppercaseHeaders",
+        "TestPositiveQuantitySpecification",
+        "TestOrderLineFormatSpecificationReservedQuantity",
+        "TestDuplicateOrderItemErrors"
+      ]
+    },
+    {
+      "path": "internal/services/order/domain/service.go",
+      "batchIndex": 2,
+      "symbols": [
+        "BulkOrderValidationResult",
+        "BulkOrderValidationError",
+        "OrderService",
+        "OrderSpec",
+        "NewOrderService",
+        "NewOrderSpec",
+        "NormalizeCreatedAt",
+        "NormalizeFulfillmentDate",
+        "OrderCounterDay",
+        "BuildOrderNumber",
+        "ParseBulkOrder",
+        "ValidateUniqueItems"
+      ]
+    },
+    {
+      "path": "internal/services/order/domain/specification.go",
+      "batchIndex": 2,
+      "symbols": [
+        "BulkOrderLineSpecification",
+        "ParsedOrderLineSpecification",
+        "OrderItemsSpecification",
+        "IsValid"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/server.go",
+      "batchIndex": 3,
+      "symbols": [
+        "ServerConfig",
+        "Server",
+        "NewServer",
+        "Start",
+        "Shutdown"
+      ]
+    },
+    {
+      "path": "internal/services/monitor/infra/http/handler.go",
+      "batchIndex": 2,
+      "symbols": [
+        "Handler",
+        "New",
+        "RegisterRoutes"
+      ]
+    }
+  ],
+  "internal/services/order/infra/http/presenter.go": [
+    {
+      "path": "internal/inbound/api/httpx/apperror.go",
+      "batchIndex": 3,
+      "symbols": [
+        "WriteAppError"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth_test.go",
+      "batchIndex": 3,
+      "symbols": [
+        "TestValidateMiniAppInitData",
+        "TestAuthorizationCredentials"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth.go",
+      "batchIndex": 3,
+      "symbols": [
+        "MiniAppUser",
+        "Authenticator",
+        "NewAuthenticator",
+        "RequireMiniAppAuth",
+        "RequireAuth",
+        "RequireAdmin",
+        "WithMiniAppUser",
+        "MiniAppUserFromContext",
+        "IsShopUser",
+        "IsWorkshopUser",
+        "TelegramUsernameOf"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/httpx/respond.go",
+      "batchIndex": 3,
+      "symbols": [
+        "ErrorResponse",
+        "DepartmentResponse",
+        "WriteJSON",
+        "WriteError",
+        "Trim",
+        "ParseRequestDate",
+        "UniqueQueryValues"
+      ]
+    },
+    {
+      "path": "internal/services/order/domain/events.go",
+      "batchIndex": 2,
+      "symbols": [
+        "OrderCreatedEvent",
+        "Identity",
+        "OrderUpdatedEvent",
+        "Identity",
+        "RecordCreated",
+        "RecordUpdated"
+      ]
+    },
+    {
+      "path": "internal/services/order/domain/model.go",
+      "batchIndex": 2,
+      "symbols": [
+        "Order",
+        "OrderComments",
+        "ItemComment",
+        "OrderHistory",
+        "OrderHistoryItem",
+        "OrderTemplate",
+        "DishCatalogItem",
+        "CreateOrderInput",
+        "OrderItem",
+        "CommentsFromItems",
+        "ProductionQuantity"
+      ]
+    },
+    {
+      "path": "internal/services/order/domain/order_specs.go",
+      "batchIndex": 2,
+      "symbols": [
+        "BulkOrderLine",
+        "ParsedOrderLine",
+        "OrderLineProcessableSpecification",
+        "IsValid",
+        "OrderLineFormatSpecification",
+        "IsValid",
+        "ParseOrderLine",
+        "PositiveQuantitySpecification",
+        "IsValid",
+        "QuantityValue",
+        "ReservedQuantityValue",
+        "ParseFulfillmentDateLine",
+        "UniqueOrderItemsSpecification",
+        "IsValid",
+        "DuplicateOrderItemErrors",
+        "IsTemplateHeaderLine"
+      ]
+    },
+    {
+      "path": "internal/services/order/domain/service_test.go",
+      "batchIndex": 2,
+      "symbols": [
+        "TestOrderServiceParseBulkOrder",
+        "TestOrderServiceUsesInjectedSpec",
+        "TestOrderServiceValidateUniqueItems",
+        "TestOrderServiceOrderNumberRules",
+        "TestOrderLineProcessableSpecificationSkipsUppercaseHeaders",
+        "TestPositiveQuantitySpecification",
+        "TestOrderLineFormatSpecificationReservedQuantity",
+        "TestDuplicateOrderItemErrors"
+      ]
+    },
+    {
+      "path": "internal/services/order/domain/service.go",
+      "batchIndex": 2,
+      "symbols": [
+        "BulkOrderValidationResult",
+        "BulkOrderValidationError",
+        "OrderService",
+        "OrderSpec",
+        "NewOrderService",
+        "NewOrderSpec",
+        "NormalizeCreatedAt",
+        "NormalizeFulfillmentDate",
+        "OrderCounterDay",
+        "BuildOrderNumber",
+        "ParseBulkOrder",
+        "ValidateUniqueItems"
+      ]
+    },
+    {
+      "path": "internal/services/order/domain/specification.go",
+      "batchIndex": 2,
+      "symbols": [
+        "BulkOrderLineSpecification",
+        "ParsedOrderLineSpecification",
+        "OrderItemsSpecification",
+        "IsValid"
+      ]
+    },
+    {
+      "path": "internal/inbound/api/server.go",
+      "batchIndex": 3,
+      "symbols": [
+        "ServerConfig",
+        "Server",
+        "NewServer",
+        "Start",
+        "Shutdown"
+      ]
+    },
+    {
+      "path": "internal/services/monitor/infra/http/handler.go",
+      "batchIndex": 2,
+      "symbols": [
+        "Handler",
+        "New",
+        "RegisterRoutes"
+      ]
+    }
+  ],
+  "pkg/rabbitmq/consumer/consumer.go": [
+    {
+      "path": "internal/deps/infra.go",
+      "batchIndex": 1,
+      "symbols": [
+        "InfraDeps",
+        "NewInfraDeps",
+        "WithConfig",
+        "WithPostgres",
+        "WithRepositories",
+        "WithRabbitMQ",
+        "WithIikoClient"
+      ]
+    },
+    {
+      "path": "internal/inbound/bot/bot.go",
+      "batchIndex": 3,
+      "symbols": [
+        "OrderBot",
+        "NewOrderBot",
+        "Start",
+        "Name",
+        "Username",
+        "Stop"
+      ]
+    }
+  ],
+  "pkg/rabbitmq/publisher/publisher.go": [
+    {
+      "path": "internal/deps/infra.go",
+      "batchIndex": 1,
+      "symbols": [
+        "InfraDeps",
+        "NewInfraDeps",
+        "WithConfig",
+        "WithPostgres",
+        "WithRepositories",
+        "WithRabbitMQ",
+        "WithIikoClient"
+      ]
+    }
+  ]
+}

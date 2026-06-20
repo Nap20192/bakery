@@ -1,0 +1,85 @@
+{
+  "nodes": [
+    {
+      "id": "file:internal/pkg/apperr/apperr.go",
+      "type": "file",
+      "name": "apperr.go",
+      "filePath": "internal/pkg/apperr/apperr.go",
+      "summary": "Доменный тип ошибок приложения с классификацией (Kind), кодом и сообщением, плюс конструкторы Invalid/NotFound/Conflict/Unauthorized/Forbidden/Internal.",
+      "tags": [
+        "error-handling",
+        "utility",
+        "type-definition"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "Реализует интерфейсы error и Unwrap для совместимости с errors.As/Is."
+    },
+    {
+      "id": "class:internal/pkg/apperr/apperr.go:Error",
+      "type": "class",
+      "name": "Error",
+      "filePath": "internal/pkg/apperr/apperr.go",
+      "lineRange": [
+        38,
+        43
+      ],
+      "summary": "Структура ошибки с полями Kind, Code, Message и обёрнутой причиной; реализует error и Unwrap.",
+      "tags": [
+        "error-handling",
+        "data-model",
+        "type-definition"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/pkg/apperr/apperr_test.go",
+      "type": "file",
+      "name": "apperr_test.go",
+      "filePath": "internal/pkg/apperr/apperr_test.go",
+      "summary": "Тесты доменного пакета ошибок: проверка классификации Kind, извлечения сообщения и обёртывания причин.",
+      "tags": [
+        "test",
+        "error-handling"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/pkg/authtoken/authtoken.go",
+      "type": "file",
+      "name": "authtoken.go",
+      "filePath": "internal/pkg/authtoken/authtoken.go",
+      "summary": "Генерация и разбор подписанных HMAC-токенов аутентификации с проверкой срока действия для Bearer-авторизации.",
+      "tags": [
+        "security",
+        "authentication",
+        "token",
+        "utility"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "Подпись токенов через HMAC обеспечивает целостность без обращения к БД при проверке."
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:internal/pkg/apperr/apperr.go",
+      "target": "class:internal/pkg/apperr/apperr.go:Error",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:internal/pkg/apperr/apperr.go",
+      "target": "class:internal/pkg/apperr/apperr.go:Error",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/pkg/apperr/apperr.go",
+      "target": "file:internal/pkg/apperr/apperr_test.go",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

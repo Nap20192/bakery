@@ -1,0 +1,350 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 7,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "deploy/Dockerfile.bot",
+      "language": "dockerfile",
+      "fileCategory": "infra",
+      "totalLines": 36,
+      "nonEmptyLines": 24,
+      "metrics": {}
+    },
+    {
+      "path": "deploy/Dockerfile.worker",
+      "language": "dockerfile",
+      "fileCategory": "infra",
+      "totalLines": 36,
+      "nonEmptyLines": 24,
+      "metrics": {}
+    },
+    {
+      "path": "frontend/eslint.config.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 36,
+      "nonEmptyLines": 35,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "frontend/server.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 218,
+      "nonEmptyLines": 199,
+      "functions": [
+        {
+          "name": "proxyAPI",
+          "startLine": 63,
+          "endLine": 129,
+          "params": [
+            "req",
+            "res",
+            "requestID"
+          ]
+        },
+        {
+          "name": "serveStatic",
+          "startLine": 131,
+          "endLine": 170,
+          "params": [
+            "req",
+            "res",
+            "requestID"
+          ]
+        },
+        {
+          "name": "sanitizeURL",
+          "startLine": 172,
+          "endLine": 177,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "requestLogHeaders",
+          "startLine": 179,
+          "endLine": 190,
+          "params": [
+            "headers"
+          ]
+        },
+        {
+          "name": "responseLogHeaders",
+          "startLine": 192,
+          "endLine": 198,
+          "params": [
+            "headers"
+          ]
+        },
+        {
+          "name": "log",
+          "startLine": 200,
+          "endLine": 218,
+          "params": [
+            "level",
+            "message"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "proxyAPI",
+          "callee": "req.url.replace",
+          "lineNumber": 64
+        },
+        {
+          "caller": "proxyAPI",
+          "callee": "Date.now",
+          "lineNumber": 67
+        },
+        {
+          "caller": "proxyAPI",
+          "callee": "log",
+          "lineNumber": 69
+        },
+        {
+          "caller": "proxyAPI",
+          "callee": "requestLogHeaders",
+          "lineNumber": 73
+        },
+        {
+          "caller": "proxyAPI",
+          "callee": "sanitizeURL",
+          "lineNumber": 75
+        },
+        {
+          "caller": "proxyAPI",
+          "callee": "transport",
+          "lineNumber": 82
+        },
+        {
+          "caller": "proxyAPI",
+          "callee": "log",
+          "lineNumber": 92
+        },
+        {
+          "caller": "proxyAPI",
+          "callee": "sanitizeURL",
+          "lineNumber": 96
+        },
+        {
+          "caller": "proxyAPI",
+          "callee": "responseLogHeaders",
+          "lineNumber": 98
+        },
+        {
+          "caller": "proxyAPI",
+          "callee": "Date.now",
+          "lineNumber": 99
+        },
+        {
+          "caller": "proxyAPI",
+          "callee": "res.writeHead",
+          "lineNumber": 101
+        },
+        {
+          "caller": "proxyAPI",
+          "callee": "proxyRes.pipe",
+          "lineNumber": 102
+        },
+        {
+          "caller": "proxyAPI",
+          "callee": "proxyReq.on",
+          "lineNumber": 106
+        },
+        {
+          "caller": "proxyAPI",
+          "callee": "log",
+          "lineNumber": 107
+        },
+        {
+          "caller": "proxyAPI",
+          "callee": "sanitizeURL",
+          "lineNumber": 112
+        },
+        {
+          "caller": "proxyAPI",
+          "callee": "Date.now",
+          "lineNumber": 116
+        },
+        {
+          "caller": "proxyAPI",
+          "callee": "res.writeHead",
+          "lineNumber": 124
+        },
+        {
+          "caller": "proxyAPI",
+          "callee": "res.end",
+          "lineNumber": 125
+        },
+        {
+          "caller": "proxyAPI",
+          "callee": "JSON.stringify",
+          "lineNumber": 125
+        },
+        {
+          "caller": "proxyAPI",
+          "callee": "req.pipe",
+          "lineNumber": 128
+        },
+        {
+          "caller": "serveStatic",
+          "callee": "normalize(decodeURIComponent(url.pathname)).replace",
+          "lineNumber": 133
+        },
+        {
+          "caller": "serveStatic",
+          "callee": "normalize",
+          "lineNumber": 133
+        },
+        {
+          "caller": "serveStatic",
+          "callee": "decodeURIComponent",
+          "lineNumber": 133
+        },
+        {
+          "caller": "serveStatic",
+          "callee": "join",
+          "lineNumber": 134
+        },
+        {
+          "caller": "serveStatic",
+          "callee": "stat",
+          "lineNumber": 138
+        },
+        {
+          "caller": "serveStatic",
+          "callee": "info.isDirectory",
+          "lineNumber": 139
+        },
+        {
+          "caller": "serveStatic",
+          "callee": "join",
+          "lineNumber": 140
+        },
+        {
+          "caller": "serveStatic",
+          "callee": "join",
+          "lineNumber": 143
+        },
+        {
+          "caller": "serveStatic",
+          "callee": "existsSync",
+          "lineNumber": 147
+        },
+        {
+          "caller": "serveStatic",
+          "callee": "log",
+          "lineNumber": 148
+        },
+        {
+          "caller": "serveStatic",
+          "callee": "res.writeHead",
+          "lineNumber": 153
+        },
+        {
+          "caller": "serveStatic",
+          "callee": "res.end",
+          "lineNumber": 154
+        },
+        {
+          "caller": "serveStatic",
+          "callee": "log",
+          "lineNumber": 159
+        },
+        {
+          "caller": "serveStatic",
+          "callee": "res.writeHead",
+          "lineNumber": 166
+        },
+        {
+          "caller": "serveStatic",
+          "callee": "extname",
+          "lineNumber": 167
+        },
+        {
+          "caller": "serveStatic",
+          "callee": "createReadStream(filePath).pipe",
+          "lineNumber": 169
+        },
+        {
+          "caller": "serveStatic",
+          "callee": "createReadStream",
+          "lineNumber": 169
+        },
+        {
+          "caller": "sanitizeURL",
+          "callee": "url.toString",
+          "lineNumber": 176
+        },
+        {
+          "caller": "log",
+          "callee": "new Date().toISOString",
+          "lineNumber": 205
+        },
+        {
+          "caller": "log",
+          "callee": "JSON.stringify",
+          "lineNumber": 208
+        },
+        {
+          "caller": "log",
+          "callee": "console.error",
+          "lineNumber": 210
+        },
+        {
+          "caller": "log",
+          "callee": "console.warn",
+          "lineNumber": 214
+        },
+        {
+          "caller": "log",
+          "callee": "console.log",
+          "lineNumber": 217
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 6,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "frontend/src/styles.css",
+      "language": "css",
+      "fileCategory": "markup",
+      "totalLines": 80,
+      "nonEmptyLines": 68,
+      "metrics": {}
+    },
+    {
+      "path": "frontend/vite.config.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 18,
+      "nonEmptyLines": 16,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "templates/dishes.txt",
+      "language": "txt",
+      "fileCategory": "docs",
+      "totalLines": 104,
+      "nonEmptyLines": 92,
+      "metrics": {}
+    }
+  ]
+}

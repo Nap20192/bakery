@@ -1,0 +1,1309 @@
+{
+  "nodes": [
+    {
+      "id": "file:internal/services/monitor/domain/service_test.go",
+      "type": "file",
+      "name": "service_test.go",
+      "filePath": "internal/services/monitor/domain/service_test.go",
+      "summary": "Тесты доменного расчёта расхода ингредиентов: масштаб сборки, полуфабрикаты, вложенные рецепты и циклы.",
+      "tags": [
+        "test",
+        "monitoring",
+        "domain"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:internal/services/monitor/infra/http/handler.go",
+      "type": "file",
+      "name": "handler.go",
+      "filePath": "internal/services/monitor/infra/http/handler.go",
+      "summary": "HTTP-обработчик мониторинга: маршруты расчёта ингредиентов по умолчанию, по продукту и пакетно с маппингом в DTO.",
+      "tags": [
+        "api-handler",
+        "monitoring",
+        "http",
+        "infra"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:internal/services/monitor/usecase/monitor/interfaces.go",
+      "type": "file",
+      "name": "interfaces.go",
+      "filePath": "internal/services/monitor/usecase/monitor/interfaces.go",
+      "summary": "Порты usecase мониторинга: UseCase и Repository, плюс модели ингредиента и графа заказа.",
+      "tags": [
+        "type-definition",
+        "monitoring",
+        "ports",
+        "usecase"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/services/monitor/usecase/monitor/monitor.go",
+      "type": "file",
+      "name": "monitor.go",
+      "filePath": "internal/services/monitor/usecase/monitor/monitor.go",
+      "summary": "Usecase мониторинга: разрешает ингредиенты по кодам, строит граф заказа и считает отчёты расхода пакетно.",
+      "tags": [
+        "service",
+        "monitoring",
+        "usecase",
+        "calculation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:internal/services/order/domain/events.go",
+      "type": "file",
+      "name": "events.go",
+      "filePath": "internal/services/order/domain/events.go",
+      "summary": "Доменные события заказа OrderCreated/OrderUpdated со снапшотом для outbox-публикации.",
+      "tags": [
+        "data-model",
+        "ddd",
+        "order",
+        "event-handler"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/services/order/domain/model.go",
+      "type": "file",
+      "name": "model.go",
+      "filePath": "internal/services/order/domain/model.go",
+      "summary": "Доменные модели заказа: Order-агрегат, позиции, комментарии, история, шаблоны и каталог блюд.",
+      "tags": [
+        "data-model",
+        "order",
+        "domain",
+        "aggregate"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:internal/services/order/domain/order_specs.go",
+      "type": "file",
+      "name": "order_specs.go",
+      "filePath": "internal/services/order/domain/order_specs.go",
+      "summary": "Спецификации заказа: парсинг строк bulk-заказа, валидация формата, положительного количества и уникальности позиций.",
+      "tags": [
+        "validation",
+        "order",
+        "domain",
+        "specification"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:internal/services/order/domain/service.go",
+      "type": "file",
+      "name": "service.go",
+      "filePath": "internal/services/order/domain/service.go",
+      "summary": "Доменный сервис заказа: нормализация дат, генерация номера заказа, разбор bulk-заказа и валидация позиций.",
+      "tags": [
+        "service",
+        "order",
+        "domain",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/monitor/domain/service_test.go:TestService_CalculateIngredientUsage_AssemblyScale",
+      "type": "function",
+      "name": "TestService_CalculateIngredientUsage_AssemblyScale",
+      "filePath": "internal/services/monitor/domain/service_test.go",
+      "lineRange": [
+        5,
+        25
+      ],
+      "summary": "Проверяет масштабирование расхода для сборки.",
+      "tags": [
+        "test",
+        "monitoring",
+        "domain"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/monitor/domain/service_test.go:TestService_CalculateIngredientUsage_PreparedAmount",
+      "type": "function",
+      "name": "TestService_CalculateIngredientUsage_PreparedAmount",
+      "filePath": "internal/services/monitor/domain/service_test.go",
+      "lineRange": [
+        27,
+        46
+      ],
+      "summary": "Проверяет расчёт расхода полуфабриката.",
+      "tags": [
+        "test",
+        "monitoring",
+        "domain"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/monitor/domain/service_test.go:TestService_CalculateIngredientUsage_NestedRecipe",
+      "type": "function",
+      "name": "TestService_CalculateIngredientUsage_NestedRecipe",
+      "filePath": "internal/services/monitor/domain/service_test.go",
+      "lineRange": [
+        48,
+        75
+      ],
+      "summary": "Проверяет расчёт по вложенному рецепту.",
+      "tags": [
+        "test",
+        "monitoring",
+        "domain"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/monitor/domain/service_test.go:TestService_CalculateIngredientUsage_CycleReturnsZero",
+      "type": "function",
+      "name": "TestService_CalculateIngredientUsage_CycleReturnsZero",
+      "filePath": "internal/services/monitor/domain/service_test.go",
+      "lineRange": [
+        86,
+        112
+      ],
+      "summary": "Проверяет, что цикл в рецепте возвращает нулевой расход.",
+      "tags": [
+        "test",
+        "monitoring",
+        "domain"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:internal/services/monitor/infra/http/handler.go:Handler",
+      "type": "class",
+      "name": "Handler",
+      "filePath": "internal/services/monitor/infra/http/handler.go",
+      "lineRange": [
+        20,
+        24
+      ],
+      "summary": "HTTP-обработчик мониторинга ингредиентов.",
+      "tags": [
+        "api-handler",
+        "monitoring",
+        "http"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:internal/services/monitor/infra/http/handler.go:RegisterRoutes",
+      "type": "function",
+      "name": "RegisterRoutes",
+      "filePath": "internal/services/monitor/infra/http/handler.go",
+      "lineRange": [
+        31,
+        35
+      ],
+      "summary": "Регистрирует HTTP-маршруты мониторинга.",
+      "tags": [
+        "http",
+        "monitoring",
+        "routing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:internal/services/monitor/infra/http/handler.go:handleMonitorDefault",
+      "type": "function",
+      "name": "handleMonitorDefault",
+      "filePath": "internal/services/monitor/infra/http/handler.go",
+      "lineRange": [
+        57,
+        91
+      ],
+      "summary": "Обрабатывает запрос расчёта ингредиентов по умолчанию.",
+      "tags": [
+        "api-handler",
+        "monitoring",
+        "http"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/monitor/infra/http/handler.go:handleMonitorByProduct",
+      "type": "function",
+      "name": "handleMonitorByProduct",
+      "filePath": "internal/services/monitor/infra/http/handler.go",
+      "lineRange": [
+        93,
+        126
+      ],
+      "summary": "Обрабатывает запрос расчёта ингредиентов по продукту.",
+      "tags": [
+        "api-handler",
+        "monitoring",
+        "http"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/monitor/infra/http/handler.go:handleMonitorBatch",
+      "type": "function",
+      "name": "handleMonitorBatch",
+      "filePath": "internal/services/monitor/infra/http/handler.go",
+      "lineRange": [
+        128,
+        166
+      ],
+      "summary": "Обрабатывает пакетный запрос расчёта ингредиентов.",
+      "tags": [
+        "api-handler",
+        "monitoring",
+        "http"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/monitor/infra/http/handler.go:buildBatchMonitorResponse",
+      "type": "function",
+      "name": "buildBatchMonitorResponse",
+      "filePath": "internal/services/monitor/infra/http/handler.go",
+      "lineRange": [
+        175,
+        218
+      ],
+      "summary": "Маппит доменные отчёты в DTO пакетного ответа.",
+      "tags": [
+        "serialization",
+        "monitoring",
+        "http"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:internal/services/monitor/usecase/monitor/interfaces.go:UseCase",
+      "type": "class",
+      "name": "UseCase",
+      "filePath": "internal/services/monitor/usecase/monitor/interfaces.go",
+      "lineRange": [
+        14,
+        17
+      ],
+      "summary": "Порт usecase мониторинга.",
+      "tags": [
+        "ports",
+        "interface",
+        "monitoring",
+        "usecase"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:internal/services/monitor/usecase/monitor/interfaces.go:Repository",
+      "type": "class",
+      "name": "Repository",
+      "filePath": "internal/services/monitor/usecase/monitor/interfaces.go",
+      "lineRange": [
+        20,
+        23
+      ],
+      "summary": "Порт репозитория мониторинга: разрешение ингредиентов и загрузка графа заказа.",
+      "tags": [
+        "ports",
+        "interface",
+        "monitoring",
+        "usecase"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:internal/services/monitor/usecase/monitor/monitor.go:Service",
+      "type": "class",
+      "name": "Service",
+      "filePath": "internal/services/monitor/usecase/monitor/monitor.go",
+      "lineRange": [
+        13,
+        16
+      ],
+      "summary": "Usecase мониторинга: расчёт расхода ингредиентов по заказам.",
+      "tags": [
+        "service",
+        "monitoring",
+        "usecase"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/monitor/usecase/monitor/monitor.go:GetIngredientsByCode",
+      "type": "function",
+      "name": "GetIngredientsByCode",
+      "filePath": "internal/services/monitor/usecase/monitor/monitor.go",
+      "lineRange": [
+        24,
+        34
+      ],
+      "summary": "Возвращает расход ингредиентов по коду продукта.",
+      "tags": [
+        "monitoring",
+        "usecase",
+        "calculation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/monitor/usecase/monitor/monitor.go:GetBatchIngredientsByCodes",
+      "type": "function",
+      "name": "GetBatchIngredientsByCodes",
+      "filePath": "internal/services/monitor/usecase/monitor/monitor.go",
+      "lineRange": [
+        36,
+        118
+      ],
+      "summary": "Строит граф заказов и считает пакетный расход ингредиентов по кодам.",
+      "tags": [
+        "monitoring",
+        "usecase",
+        "calculation"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:internal/services/monitor/usecase/monitor/monitor.go:calculateIngredientReport",
+      "type": "function",
+      "name": "calculateIngredientReport",
+      "filePath": "internal/services/monitor/usecase/monitor/monitor.go",
+      "lineRange": [
+        120,
+        143
+      ],
+      "summary": "Формирует отчёт расхода по одному ингредиенту.",
+      "tags": [
+        "monitoring",
+        "usecase",
+        "calculation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/monitor/usecase/monitor/monitor.go:calculateOrderItemIngredientUsage",
+      "type": "function",
+      "name": "calculateOrderItemIngredientUsage",
+      "filePath": "internal/services/monitor/usecase/monitor/monitor.go",
+      "lineRange": [
+        145,
+        163
+      ],
+      "summary": "Считает расход ингредиентов для позиции заказа.",
+      "tags": [
+        "monitoring",
+        "usecase",
+        "calculation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:internal/services/order/domain/events.go:OrderCreatedEvent",
+      "type": "class",
+      "name": "OrderCreatedEvent",
+      "filePath": "internal/services/order/domain/events.go",
+      "lineRange": [
+        18,
+        21
+      ],
+      "summary": "Доменное событие создания заказа.",
+      "tags": [
+        "ddd",
+        "order",
+        "event-handler"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:internal/services/order/domain/events.go:OrderUpdatedEvent",
+      "type": "class",
+      "name": "OrderUpdatedEvent",
+      "filePath": "internal/services/order/domain/events.go",
+      "lineRange": [
+        26,
+        29
+      ],
+      "summary": "Доменное событие обновления заказа.",
+      "tags": [
+        "ddd",
+        "order",
+        "event-handler"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:internal/services/order/domain/model.go:Order",
+      "type": "class",
+      "name": "Order",
+      "filePath": "internal/services/order/domain/model.go",
+      "lineRange": [
+        12,
+        27
+      ],
+      "summary": "Агрегат заказа: позиции, статус, цеха, метаданные и доменные события.",
+      "tags": [
+        "data-model",
+        "order",
+        "aggregate",
+        "domain"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/domain/model.go:CommentsFromItems",
+      "type": "function",
+      "name": "CommentsFromItems",
+      "filePath": "internal/services/order/domain/model.go",
+      "lineRange": [
+        101,
+        111
+      ],
+      "summary": "Собирает комментарии заказа из его позиций.",
+      "tags": [
+        "order",
+        "domain",
+        "utility"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/domain/order_specs.go:ParseOrderLine",
+      "type": "function",
+      "name": "ParseOrderLine",
+      "filePath": "internal/services/order/domain/order_specs.go",
+      "lineRange": [
+        45,
+        66
+      ],
+      "summary": "Парсит строку bulk-заказа в структурированную позицию.",
+      "tags": [
+        "validation",
+        "order",
+        "parsing"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/domain/order_specs.go:isOrderCode",
+      "type": "function",
+      "name": "isOrderCode",
+      "filePath": "internal/services/order/domain/order_specs.go",
+      "lineRange": [
+        68,
+        78
+      ],
+      "summary": "Определяет, является ли токен кодом заказа.",
+      "tags": [
+        "validation",
+        "order",
+        "parsing"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/domain/order_specs.go:ParseFulfillmentDateLine",
+      "type": "function",
+      "name": "ParseFulfillmentDateLine",
+      "filePath": "internal/services/order/domain/order_specs.go",
+      "lineRange": [
+        111,
+        129
+      ],
+      "summary": "Парсит строку даты выполнения заказа.",
+      "tags": [
+        "validation",
+        "order",
+        "parsing"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/domain/order_specs.go:DuplicateOrderItemErrors",
+      "type": "function",
+      "name": "DuplicateOrderItemErrors",
+      "filePath": "internal/services/order/domain/order_specs.go",
+      "lineRange": [
+        145,
+        158
+      ],
+      "summary": "Возвращает ошибки по дублирующимся позициям заказа.",
+      "tags": [
+        "validation",
+        "order",
+        "specification"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/domain/order_specs.go:IsTemplateHeaderLine",
+      "type": "function",
+      "name": "IsTemplateHeaderLine",
+      "filePath": "internal/services/order/domain/order_specs.go",
+      "lineRange": [
+        160,
+        180
+      ],
+      "summary": "Определяет, является ли строка заголовком шаблона.",
+      "tags": [
+        "validation",
+        "order",
+        "parsing"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:internal/services/order/domain/service.go:OrderService",
+      "type": "class",
+      "name": "OrderService",
+      "filePath": "internal/services/order/domain/service.go",
+      "lineRange": [
+        25,
+        27
+      ],
+      "summary": "Доменный сервис заказа: номера, нормализация дат и разбор bulk.",
+      "tags": [
+        "service",
+        "order",
+        "domain"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/domain/service.go:shopOrderPrefix",
+      "type": "function",
+      "name": "shopOrderPrefix",
+      "filePath": "internal/services/order/domain/service.go",
+      "lineRange": [
+        75,
+        102
+      ],
+      "summary": "Вычисляет префикс номера заказа по магазину.",
+      "tags": [
+        "order",
+        "domain",
+        "business-logic"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/domain/service.go:splitLineComment",
+      "type": "function",
+      "name": "splitLineComment",
+      "filePath": "internal/services/order/domain/service.go",
+      "lineRange": [
+        107,
+        120
+      ],
+      "summary": "Разделяет строку заказа и встроенный комментарий.",
+      "tags": [
+        "order",
+        "domain",
+        "parsing"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/domain/service.go:ParseBulkOrder",
+      "type": "function",
+      "name": "ParseBulkOrder",
+      "filePath": "internal/services/order/domain/service.go",
+      "lineRange": [
+        122,
+        179
+      ],
+      "summary": "Разбирает и валидирует массовый ввод заказа в результат с ошибками.",
+      "tags": [
+        "order",
+        "domain",
+        "validation"
+      ],
+      "complexity": "complex"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:internal/services/monitor/domain/service_test.go",
+      "target": "function:internal/services/monitor/domain/service_test.go:TestService_CalculateIngredientUsage_AssemblyScale",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/monitor/domain/service_test.go",
+      "target": "function:internal/services/monitor/domain/service_test.go:TestService_CalculateIngredientUsage_AssemblyScale",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/monitor/domain/service_test.go",
+      "target": "function:internal/services/monitor/domain/service_test.go:TestService_CalculateIngredientUsage_PreparedAmount",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/monitor/domain/service_test.go",
+      "target": "function:internal/services/monitor/domain/service_test.go:TestService_CalculateIngredientUsage_PreparedAmount",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/monitor/domain/service_test.go",
+      "target": "function:internal/services/monitor/domain/service_test.go:TestService_CalculateIngredientUsage_NestedRecipe",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/monitor/domain/service_test.go",
+      "target": "function:internal/services/monitor/domain/service_test.go:TestService_CalculateIngredientUsage_NestedRecipe",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/monitor/domain/service_test.go",
+      "target": "function:internal/services/monitor/domain/service_test.go:TestService_CalculateIngredientUsage_CycleReturnsZero",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/monitor/domain/service_test.go",
+      "target": "function:internal/services/monitor/domain/service_test.go:TestService_CalculateIngredientUsage_CycleReturnsZero",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "class:internal/services/monitor/infra/http/handler.go:Handler",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "class:internal/services/monitor/infra/http/handler.go:Handler",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "function:internal/services/monitor/infra/http/handler.go:RegisterRoutes",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "function:internal/services/monitor/infra/http/handler.go:RegisterRoutes",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "function:internal/services/monitor/infra/http/handler.go:handleMonitorDefault",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "function:internal/services/monitor/infra/http/handler.go:handleMonitorByProduct",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "function:internal/services/monitor/infra/http/handler.go:handleMonitorBatch",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "function:internal/services/monitor/infra/http/handler.go:buildBatchMonitorResponse",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/interfaces.go",
+      "target": "class:internal/services/monitor/usecase/monitor/interfaces.go:UseCase",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/interfaces.go",
+      "target": "class:internal/services/monitor/usecase/monitor/interfaces.go:UseCase",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/interfaces.go",
+      "target": "class:internal/services/monitor/usecase/monitor/interfaces.go:Repository",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/interfaces.go",
+      "target": "class:internal/services/monitor/usecase/monitor/interfaces.go:Repository",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/monitor.go",
+      "target": "class:internal/services/monitor/usecase/monitor/monitor.go:Service",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/monitor.go",
+      "target": "class:internal/services/monitor/usecase/monitor/monitor.go:Service",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/monitor.go",
+      "target": "function:internal/services/monitor/usecase/monitor/monitor.go:GetIngredientsByCode",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/monitor.go",
+      "target": "function:internal/services/monitor/usecase/monitor/monitor.go:GetIngredientsByCode",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/monitor.go",
+      "target": "function:internal/services/monitor/usecase/monitor/monitor.go:GetBatchIngredientsByCodes",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/monitor.go",
+      "target": "function:internal/services/monitor/usecase/monitor/monitor.go:GetBatchIngredientsByCodes",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/monitor.go",
+      "target": "function:internal/services/monitor/usecase/monitor/monitor.go:calculateIngredientReport",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/monitor.go",
+      "target": "function:internal/services/monitor/usecase/monitor/monitor.go:calculateOrderItemIngredientUsage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/domain/events.go",
+      "target": "class:internal/services/order/domain/events.go:OrderCreatedEvent",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/domain/events.go",
+      "target": "class:internal/services/order/domain/events.go:OrderCreatedEvent",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/domain/events.go",
+      "target": "class:internal/services/order/domain/events.go:OrderUpdatedEvent",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/domain/events.go",
+      "target": "class:internal/services/order/domain/events.go:OrderUpdatedEvent",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/domain/model.go",
+      "target": "class:internal/services/order/domain/model.go:Order",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/domain/model.go",
+      "target": "class:internal/services/order/domain/model.go:Order",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/domain/model.go",
+      "target": "function:internal/services/order/domain/model.go:CommentsFromItems",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/domain/model.go",
+      "target": "function:internal/services/order/domain/model.go:CommentsFromItems",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/domain/order_specs.go",
+      "target": "function:internal/services/order/domain/order_specs.go:ParseOrderLine",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/domain/order_specs.go",
+      "target": "function:internal/services/order/domain/order_specs.go:ParseOrderLine",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/domain/order_specs.go",
+      "target": "function:internal/services/order/domain/order_specs.go:isOrderCode",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/domain/order_specs.go",
+      "target": "function:internal/services/order/domain/order_specs.go:ParseFulfillmentDateLine",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/domain/order_specs.go",
+      "target": "function:internal/services/order/domain/order_specs.go:ParseFulfillmentDateLine",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/domain/order_specs.go",
+      "target": "function:internal/services/order/domain/order_specs.go:DuplicateOrderItemErrors",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/domain/order_specs.go",
+      "target": "function:internal/services/order/domain/order_specs.go:DuplicateOrderItemErrors",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/domain/order_specs.go",
+      "target": "function:internal/services/order/domain/order_specs.go:IsTemplateHeaderLine",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/domain/order_specs.go",
+      "target": "function:internal/services/order/domain/order_specs.go:IsTemplateHeaderLine",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/domain/service.go",
+      "target": "class:internal/services/order/domain/service.go:OrderService",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/domain/service.go",
+      "target": "class:internal/services/order/domain/service.go:OrderService",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/domain/service.go",
+      "target": "function:internal/services/order/domain/service.go:shopOrderPrefix",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/domain/service.go",
+      "target": "function:internal/services/order/domain/service.go:splitLineComment",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/domain/service.go",
+      "target": "function:internal/services/order/domain/service.go:ParseBulkOrder",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/domain/service.go",
+      "target": "function:internal/services/order/domain/service.go:ParseBulkOrder",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/inbound/api/httpx/apperror.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/inbound/api/httpx/auth_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/inbound/api/httpx/auth.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/inbound/api/httpx/respond.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/services/monitor/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/services/monitor/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/services/monitor/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/services/monitor/usecase/monitor/interfaces.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/services/monitor/usecase/monitor/monitor.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/services/order/domain/events.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/services/order/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/services/order/domain/order_specs.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/services/order/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/services/order/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/services/order/domain/specification.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/services/order/infra/http/handler_admin.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/services/order/infra/http/handler_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/services/order/infra/http/handler_write.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/services/order/infra/http/handler.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/services/order/infra/http/presenter.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/services/order/usecase/order/interfaces.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/services/order/usecase/order/order_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/infra/http/handler.go",
+      "target": "file:internal/services/order/usecase/order/order.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/interfaces.go",
+      "target": "file:internal/services/monitor/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/interfaces.go",
+      "target": "file:internal/services/monitor/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/interfaces.go",
+      "target": "file:internal/services/monitor/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/interfaces.go",
+      "target": "file:internal/services/order/domain/events.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/interfaces.go",
+      "target": "file:internal/services/order/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/interfaces.go",
+      "target": "file:internal/services/order/domain/order_specs.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/interfaces.go",
+      "target": "file:internal/services/order/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/interfaces.go",
+      "target": "file:internal/services/order/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/interfaces.go",
+      "target": "file:internal/services/order/domain/specification.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/monitor.go",
+      "target": "file:internal/services/monitor/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/monitor.go",
+      "target": "file:internal/services/monitor/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/monitor.go",
+      "target": "file:internal/services/monitor/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/monitor.go",
+      "target": "file:internal/services/order/domain/events.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/monitor.go",
+      "target": "file:internal/services/order/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/monitor.go",
+      "target": "file:internal/services/order/domain/order_specs.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/monitor.go",
+      "target": "file:internal/services/order/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/monitor.go",
+      "target": "file:internal/services/order/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/monitor/usecase/monitor/monitor.go",
+      "target": "file:internal/services/order/domain/specification.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/domain/events.go",
+      "target": "file:internal/pkg/sharedkernel/aggregate_root.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/domain/events.go",
+      "target": "file:internal/pkg/sharedkernel/event.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/domain/model.go",
+      "target": "file:internal/pkg/sharedkernel/aggregate_root.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/domain/model.go",
+      "target": "file:internal/pkg/sharedkernel/event.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/domain/service.go",
+      "target": "file:internal/services/order/domain/service_test.go",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}
