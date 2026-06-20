@@ -121,6 +121,9 @@ func writeOrderDetails(sb *strings.Builder, order orderdomain.Order, fromDepartm
 	if toDepartment != "" {
 		fmt.Fprintf(sb, "Куда: %s\n", html.EscapeString(toDepartment))
 	}
+	if sender := strings.TrimPrefix(strings.TrimSpace(order.CreatedByUsername), "@"); sender != "" {
+		fmt.Fprintf(sb, "Отправитель: @%s\n", html.EscapeString(sender))
+	}
 	sb.WriteString("\n<b>Состав:</b>\n")
 	writeOrderItemsCodeBlock(sb, order.Items)
 	writeOrderComments(sb, order.Comments)
