@@ -1,0 +1,206 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 6,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "internal/outbound/iiko/testdata/results/01_auth.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 3,
+      "nonEmptyLines": 3,
+      "sections": [
+        {
+          "heading": "status",
+          "level": 1,
+          "line": 2
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 1
+      }
+    },
+    {
+      "path": "internal/outbound/iiko/testdata/results/02_list_products.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 78080,
+      "nonEmptyLines": 78080,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 0
+      }
+    },
+    {
+      "path": "internal/outbound/iiko/testdata/results/03_assembly_charts_get_all.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 161361,
+      "nonEmptyLines": 161361,
+      "sections": [
+        {
+          "heading": "knownRevision",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "assemblyCharts",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "preparedCharts",
+          "level": 1,
+          "line": 84154
+        },
+        {
+          "heading": "deletedAssemblyChartIds",
+          "level": 1,
+          "line": 161359
+        },
+        {
+          "heading": "deletedPreparedChartIds",
+          "level": 1,
+          "line": 161360
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 5
+      }
+    },
+    {
+      "path": "internal/outbound/iiko/testdata/results/05_assembly_chart_by_id.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 7,
+      "nonEmptyLines": 7,
+      "sections": [
+        {
+          "heading": "knownRevision",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "assemblyCharts",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "preparedCharts",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "deletedAssemblyChartIds",
+          "level": 1,
+          "line": 5
+        },
+        {
+          "heading": "deletedPreparedChartIds",
+          "level": 1,
+          "line": 6
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 5
+      }
+    },
+    {
+      "path": "internal/outbound/iiko/testdata/results/07_assembly_charts_get_assembled.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 27,
+      "nonEmptyLines": 27,
+      "sections": [
+        {
+          "heading": "knownRevision",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "assemblyCharts",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "preparedCharts",
+          "level": 1,
+          "line": 24
+        },
+        {
+          "heading": "deletedAssemblyChartIds",
+          "level": 1,
+          "line": 25
+        },
+        {
+          "heading": "deletedPreparedChartIds",
+          "level": 1,
+          "line": 26
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 5
+      }
+    },
+    {
+      "path": "internal/outbound/iiko/testdata/results/08_assembly_charts_get_prepared.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 20,
+      "nonEmptyLines": 20,
+      "sections": [
+        {
+          "heading": "knownRevision",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "assemblyCharts",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "preparedCharts",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "deletedAssemblyChartIds",
+          "level": 1,
+          "line": 18
+        },
+        {
+          "heading": "deletedPreparedChartIds",
+          "level": 1,
+          "line": 19
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 5
+      }
+    }
+  ]
+}

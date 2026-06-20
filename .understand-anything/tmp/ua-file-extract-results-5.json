@@ -1,0 +1,2125 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 20,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "frontend/src/api/auth.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 19,
+      "nonEmptyLines": 18,
+      "functions": [
+        {
+          "name": "login",
+          "startLine": 6,
+          "endLine": 19,
+          "params": [
+            "username",
+            "password"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "login",
+          "line": 6,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "login",
+          "callee": "apiURL",
+          "lineNumber": 7
+        },
+        {
+          "caller": "login",
+          "callee": "fetch",
+          "lineNumber": 8
+        },
+        {
+          "caller": "login",
+          "callee": "JSON.stringify",
+          "lineNumber": 11
+        },
+        {
+          "caller": "login",
+          "callee": "response.headers.get",
+          "lineNumber": 13
+        },
+        {
+          "caller": "login",
+          "callee": "contentType.includes",
+          "lineNumber": 14
+        },
+        {
+          "caller": "login",
+          "callee": "response.json().catch",
+          "lineNumber": 14
+        },
+        {
+          "caller": "login",
+          "callee": "response.json",
+          "lineNumber": 14
+        }
+      ],
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "frontend/src/api/client.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 81,
+      "nonEmptyLines": 76,
+      "functions": [
+        {
+          "name": "apiRequest",
+          "startLine": 14,
+          "endLine": 81,
+          "params": [
+            "path"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "ApiError",
+          "startLine": 6,
+          "endLine": 12,
+          "methods": [
+            "constructor"
+          ],
+          "properties": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "ApiError",
+          "line": 6,
+          "isDefault": false
+        },
+        {
+          "name": "apiRequest",
+          "line": 14,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "constructor",
+          "callee": "super",
+          "lineNumber": 8
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "apiURL",
+          "lineNumber": 15
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "performance.now",
+          "lineNumber": 16
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "logInfo",
+          "lineNumber": 17
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "fetch",
+          "lineNumber": 26
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "authHeader",
+          "lineNumber": 30
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "logWarn",
+          "lineNumber": 34
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "Math.round",
+          "lineNumber": 38
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "performance.now",
+          "lineNumber": 38
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "String",
+          "lineNumber": 39
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "response.headers.get",
+          "lineNumber": 44
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "contentType.includes",
+          "lineNumber": 45
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "response.json().catch",
+          "lineNumber": 45
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "response.json",
+          "lineNumber": 45
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "logWarn",
+          "lineNumber": 47
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "Math.round",
+          "lineNumber": 53
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "performance.now",
+          "lineNumber": 53
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "contentType.includes",
+          "lineNumber": 61
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "logWarn",
+          "lineNumber": 62
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "Math.round",
+          "lineNumber": 68
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "performance.now",
+          "lineNumber": 68
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "logInfo",
+          "lineNumber": 73
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "Math.round",
+          "lineNumber": 78
+        },
+        {
+          "caller": "apiRequest",
+          "callee": "performance.now",
+          "lineNumber": 78
+        }
+      ],
+      "metrics": {
+        "importCount": 4,
+        "exportCount": 2,
+        "functionCount": 1,
+        "classCount": 1
+      }
+    },
+    {
+      "path": "frontend/src/api/dishes.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 17,
+      "nonEmptyLines": 14,
+      "functions": [
+        {
+          "name": "fetchDishes",
+          "startLine": 3,
+          "endLine": 5,
+          "params": []
+        },
+        {
+          "name": "createDish",
+          "startLine": 7,
+          "endLine": 13,
+          "params": [
+            "dish"
+          ]
+        },
+        {
+          "name": "deleteDish",
+          "startLine": 15,
+          "endLine": 17,
+          "params": [
+            "code"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "fetchDishes",
+          "line": 3,
+          "isDefault": false
+        },
+        {
+          "name": "createDish",
+          "line": 7,
+          "isDefault": false
+        },
+        {
+          "name": "deleteDish",
+          "line": 15,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "fetchDishes",
+          "callee": "apiRequest",
+          "lineNumber": 4
+        },
+        {
+          "caller": "createDish",
+          "callee": "apiRequest",
+          "lineNumber": 8
+        },
+        {
+          "caller": "createDish",
+          "callee": "JSON.stringify",
+          "lineNumber": 11
+        },
+        {
+          "caller": "deleteDish",
+          "callee": "apiRequest",
+          "lineNumber": 16
+        },
+        {
+          "caller": "deleteDish",
+          "callee": "encodeURIComponent",
+          "lineNumber": 16
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 3,
+        "functionCount": 3,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "frontend/src/api/orders.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 70,
+      "nonEmptyLines": 60,
+      "functions": [
+        {
+          "name": "fetchMe",
+          "startLine": 3,
+          "endLine": 5,
+          "params": []
+        },
+        {
+          "name": "fetchCatalog",
+          "startLine": 7,
+          "endLine": 9,
+          "params": []
+        },
+        {
+          "name": "fetchDepartments",
+          "startLine": 11,
+          "endLine": 16,
+          "params": []
+        },
+        {
+          "name": "fetchOrders",
+          "startLine": 18,
+          "endLine": 30,
+          "params": [
+            "page",
+            "limit"
+          ]
+        },
+        {
+          "name": "fetchOrder",
+          "startLine": 32,
+          "endLine": 34,
+          "params": [
+            "number"
+          ]
+        },
+        {
+          "name": "createOrder",
+          "startLine": 36,
+          "endLine": 42,
+          "params": [
+            "order"
+          ]
+        },
+        {
+          "name": "updateOrder",
+          "startLine": 44,
+          "endLine": 50,
+          "params": [
+            "number",
+            "order"
+          ]
+        },
+        {
+          "name": "setOrderFavorite",
+          "startLine": 52,
+          "endLine": 58,
+          "params": [
+            "number",
+            "favorite"
+          ]
+        },
+        {
+          "name": "fetchOrderMonitor",
+          "startLine": 60,
+          "endLine": 62,
+          "params": [
+            "number"
+          ]
+        },
+        {
+          "name": "fetchBatchOrderMonitor",
+          "startLine": 64,
+          "endLine": 70,
+          "params": [
+            "numbers"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "fetchMe",
+          "line": 3,
+          "isDefault": false
+        },
+        {
+          "name": "fetchCatalog",
+          "line": 7,
+          "isDefault": false
+        },
+        {
+          "name": "fetchDepartments",
+          "line": 11,
+          "isDefault": false
+        },
+        {
+          "name": "fetchOrders",
+          "line": 18,
+          "isDefault": false
+        },
+        {
+          "name": "fetchOrder",
+          "line": 32,
+          "isDefault": false
+        },
+        {
+          "name": "createOrder",
+          "line": 36,
+          "isDefault": false
+        },
+        {
+          "name": "updateOrder",
+          "line": 44,
+          "isDefault": false
+        },
+        {
+          "name": "setOrderFavorite",
+          "line": 52,
+          "isDefault": false
+        },
+        {
+          "name": "fetchOrderMonitor",
+          "line": 60,
+          "isDefault": false
+        },
+        {
+          "name": "fetchBatchOrderMonitor",
+          "line": 64,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "fetchMe",
+          "callee": "apiRequest",
+          "lineNumber": 4
+        },
+        {
+          "caller": "fetchCatalog",
+          "callee": "apiRequest",
+          "lineNumber": 8
+        },
+        {
+          "caller": "fetchDepartments",
+          "callee": "params.set",
+          "lineNumber": 13
+        },
+        {
+          "caller": "fetchDepartments",
+          "callee": "params.toString",
+          "lineNumber": 14
+        },
+        {
+          "caller": "fetchDepartments",
+          "callee": "apiRequest",
+          "lineNumber": 15
+        },
+        {
+          "caller": "fetchOrders",
+          "callee": "String",
+          "lineNumber": 20
+        },
+        {
+          "caller": "fetchOrders",
+          "callee": "String",
+          "lineNumber": 21
+        },
+        {
+          "caller": "fetchOrders",
+          "callee": "params.set",
+          "lineNumber": 24
+        },
+        {
+          "caller": "fetchOrders",
+          "callee": "String",
+          "lineNumber": 24
+        },
+        {
+          "caller": "fetchOrders",
+          "callee": "params.set",
+          "lineNumber": 27
+        },
+        {
+          "caller": "fetchOrders",
+          "callee": "apiRequest",
+          "lineNumber": 29
+        },
+        {
+          "caller": "fetchOrders",
+          "callee": "params.toString",
+          "lineNumber": 29
+        },
+        {
+          "caller": "fetchOrder",
+          "callee": "apiRequest",
+          "lineNumber": 33
+        },
+        {
+          "caller": "fetchOrder",
+          "callee": "encodeURIComponent",
+          "lineNumber": 33
+        },
+        {
+          "caller": "createOrder",
+          "callee": "apiRequest",
+          "lineNumber": 37
+        },
+        {
+          "caller": "createOrder",
+          "callee": "JSON.stringify",
+          "lineNumber": 40
+        },
+        {
+          "caller": "updateOrder",
+          "callee": "apiRequest",
+          "lineNumber": 45
+        },
+        {
+          "caller": "updateOrder",
+          "callee": "encodeURIComponent",
+          "lineNumber": 45
+        },
+        {
+          "caller": "updateOrder",
+          "callee": "JSON.stringify",
+          "lineNumber": 48
+        },
+        {
+          "caller": "setOrderFavorite",
+          "callee": "apiRequest",
+          "lineNumber": 53
+        },
+        {
+          "caller": "setOrderFavorite",
+          "callee": "encodeURIComponent",
+          "lineNumber": 53
+        },
+        {
+          "caller": "setOrderFavorite",
+          "callee": "JSON.stringify",
+          "lineNumber": 56
+        },
+        {
+          "caller": "fetchOrderMonitor",
+          "callee": "apiRequest",
+          "lineNumber": 61
+        },
+        {
+          "caller": "fetchOrderMonitor",
+          "callee": "encodeURIComponent",
+          "lineNumber": 61
+        },
+        {
+          "caller": "fetchBatchOrderMonitor",
+          "callee": "params.append",
+          "lineNumber": 67
+        },
+        {
+          "caller": "fetchBatchOrderMonitor",
+          "callee": "apiRequest",
+          "lineNumber": 69
+        },
+        {
+          "caller": "fetchBatchOrderMonitor",
+          "callee": "params.toString",
+          "lineNumber": 69
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 10,
+        "functionCount": 10,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "frontend/src/api/users.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 29,
+      "nonEmptyLines": 24,
+      "functions": [
+        {
+          "name": "fetchUsers",
+          "startLine": 3,
+          "endLine": 5,
+          "params": []
+        },
+        {
+          "name": "fetchAdminDepartments",
+          "startLine": 7,
+          "endLine": 9,
+          "params": []
+        },
+        {
+          "name": "createUser",
+          "startLine": 11,
+          "endLine": 17,
+          "params": [
+            "user"
+          ]
+        },
+        {
+          "name": "updateUser",
+          "startLine": 19,
+          "endLine": 25,
+          "params": [
+            "id",
+            "patch"
+          ]
+        },
+        {
+          "name": "deleteUser",
+          "startLine": 27,
+          "endLine": 29,
+          "params": [
+            "id"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "fetchUsers",
+          "line": 3,
+          "isDefault": false
+        },
+        {
+          "name": "fetchAdminDepartments",
+          "line": 7,
+          "isDefault": false
+        },
+        {
+          "name": "createUser",
+          "line": 11,
+          "isDefault": false
+        },
+        {
+          "name": "updateUser",
+          "line": 19,
+          "isDefault": false
+        },
+        {
+          "name": "deleteUser",
+          "line": 27,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "fetchUsers",
+          "callee": "apiRequest",
+          "lineNumber": 4
+        },
+        {
+          "caller": "fetchAdminDepartments",
+          "callee": "apiRequest",
+          "lineNumber": 8
+        },
+        {
+          "caller": "createUser",
+          "callee": "apiRequest",
+          "lineNumber": 12
+        },
+        {
+          "caller": "createUser",
+          "callee": "JSON.stringify",
+          "lineNumber": 15
+        },
+        {
+          "caller": "updateUser",
+          "callee": "apiRequest",
+          "lineNumber": 20
+        },
+        {
+          "caller": "updateUser",
+          "callee": "encodeURIComponent",
+          "lineNumber": 20
+        },
+        {
+          "caller": "updateUser",
+          "callee": "JSON.stringify",
+          "lineNumber": 23
+        },
+        {
+          "caller": "deleteUser",
+          "callee": "apiRequest",
+          "lineNumber": 28
+        },
+        {
+          "caller": "deleteUser",
+          "callee": "encodeURIComponent",
+          "lineNumber": 28
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 5,
+        "functionCount": 5,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "frontend/src/app/App.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 29,
+      "nonEmptyLines": 25,
+      "functions": [
+        {
+          "name": "App",
+          "startLine": 5,
+          "endLine": 29,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "App",
+          "line": 5,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "App",
+          "callee": "useState",
+          "lineNumber": 6
+        },
+        {
+          "caller": "App",
+          "callee": "parseRoute",
+          "lineNumber": 6
+        },
+        {
+          "caller": "App",
+          "callee": "useEffect",
+          "lineNumber": 8
+        },
+        {
+          "caller": "onPopState",
+          "callee": "setRoute",
+          "lineNumber": 9
+        },
+        {
+          "caller": "onPopState",
+          "callee": "parseRoute",
+          "lineNumber": 9
+        },
+        {
+          "caller": "App",
+          "callee": "window.addEventListener",
+          "lineNumber": 10
+        },
+        {
+          "caller": "App",
+          "callee": "window.removeEventListener",
+          "lineNumber": 11
+        },
+        {
+          "caller": "navigate",
+          "callee": "pathFor",
+          "lineNumber": 15
+        },
+        {
+          "caller": "navigate",
+          "callee": "setRoute",
+          "lineNumber": 17
+        },
+        {
+          "caller": "navigate",
+          "callee": "parseRoute",
+          "lineNumber": 17
+        },
+        {
+          "caller": "navigate",
+          "callee": "window.history.replaceState",
+          "lineNumber": 21
+        },
+        {
+          "caller": "navigate",
+          "callee": "window.history.pushState",
+          "lineNumber": 23
+        },
+        {
+          "caller": "navigate",
+          "callee": "setRoute",
+          "lineNumber": 25
+        },
+        {
+          "caller": "navigate",
+          "callee": "parseRoute",
+          "lineNumber": 25
+        }
+      ],
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "frontend/src/app/routes.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 41,
+      "nonEmptyLines": 39,
+      "functions": [
+        {
+          "name": "parseRoute",
+          "startLine": 1,
+          "endLine": 17,
+          "params": []
+        },
+        {
+          "name": "pathFor",
+          "startLine": 19,
+          "endLine": 41,
+          "params": [
+            "route"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "parseRoute",
+          "line": 1,
+          "isDefault": false
+        },
+        {
+          "name": "pathFor",
+          "line": 19,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "parseRoute",
+          "callee": "pathname.replace",
+          "lineNumber": 2
+        },
+        {
+          "caller": "parseRoute",
+          "callee": "path.split('/').filter(Boolean).map",
+          "lineNumber": 3
+        },
+        {
+          "caller": "parseRoute",
+          "callee": "path.split('/').filter",
+          "lineNumber": 3
+        },
+        {
+          "caller": "parseRoute",
+          "callee": "path.split",
+          "lineNumber": 3
+        },
+        {
+          "caller": "pathFor",
+          "callee": "encodeURIComponent",
+          "lineNumber": 32
+        },
+        {
+          "caller": "pathFor",
+          "callee": "encodeURIComponent",
+          "lineNumber": 34
+        },
+        {
+          "caller": "pathFor",
+          "callee": "encodeURIComponent",
+          "lineNumber": 36
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 2,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "frontend/src/components/Button.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 13,
+      "nonEmptyLines": 11,
+      "functions": [
+        {
+          "name": "Button",
+          "startLine": 11,
+          "endLine": 13,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "Button",
+          "line": 11,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "Button",
+          "callee": "`${variants[variant] ?? variants.default} ${className}`.trim",
+          "lineNumber": 12
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "frontend/src/components/CopyButton.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 32,
+      "nonEmptyLines": 28,
+      "functions": [
+        {
+          "name": "CopyButton",
+          "startLine": 6,
+          "endLine": 32,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "CopyButton",
+          "line": 6,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "CopyButton",
+          "callee": "useState",
+          "lineNumber": 7
+        },
+        {
+          "caller": "CopyButton",
+          "callee": "useEffect",
+          "lineNumber": 9
+        },
+        {
+          "caller": "CopyButton",
+          "callee": "setTimeout",
+          "lineNumber": 11
+        },
+        {
+          "caller": "CopyButton",
+          "callee": "setCopied",
+          "lineNumber": 11
+        },
+        {
+          "caller": "CopyButton",
+          "callee": "clearTimeout",
+          "lineNumber": 12
+        },
+        {
+          "caller": "copy",
+          "callee": "getText",
+          "lineNumber": 16
+        },
+        {
+          "caller": "copy",
+          "callee": "String",
+          "lineNumber": 16
+        },
+        {
+          "caller": "copy",
+          "callee": "navigator.clipboard.writeText",
+          "lineNumber": 19
+        },
+        {
+          "caller": "copy",
+          "callee": "setCopied",
+          "lineNumber": 20
+        }
+      ],
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "frontend/src/components/EmptyState.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 7,
+      "nonEmptyLines": 7,
+      "functions": [
+        {
+          "name": "EmptyState",
+          "startLine": 1,
+          "endLine": 7,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "EmptyState",
+          "line": 1,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "frontend/src/components/Field.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 24,
+      "nonEmptyLines": 21,
+      "functions": [
+        {
+          "name": "SelectField",
+          "startLine": 6,
+          "endLine": 15,
+          "params": []
+        },
+        {
+          "name": "InputField",
+          "startLine": 17,
+          "endLine": 24,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "SelectField",
+          "line": 6,
+          "isDefault": false
+        },
+        {
+          "name": "InputField",
+          "line": 17,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "SelectField",
+          "callee": "`block ${className}`.trim",
+          "lineNumber": 8
+        },
+        {
+          "caller": "InputField",
+          "callee": "`block ${className}`.trim",
+          "lineNumber": 19
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 2,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "frontend/src/components/Icon.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 33,
+      "nonEmptyLines": 32,
+      "functions": [
+        {
+          "name": "Icon",
+          "startLine": 16,
+          "endLine": 33,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "Icon",
+          "line": 16,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "frontend/src/components/Login.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 70,
+      "nonEmptyLines": 66,
+      "functions": [
+        {
+          "name": "Login",
+          "startLine": 13,
+          "endLine": 70,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "Login",
+          "line": 13,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "Login",
+          "callee": "useState",
+          "lineNumber": 14
+        },
+        {
+          "caller": "Login",
+          "callee": "useState",
+          "lineNumber": 15
+        },
+        {
+          "caller": "Login",
+          "callee": "useState",
+          "lineNumber": 16
+        },
+        {
+          "caller": "Login",
+          "callee": "useState",
+          "lineNumber": 17
+        },
+        {
+          "caller": "onSubmit",
+          "callee": "event.preventDefault",
+          "lineNumber": 20
+        },
+        {
+          "caller": "onSubmit",
+          "callee": "setError",
+          "lineNumber": 21
+        },
+        {
+          "caller": "onSubmit",
+          "callee": "setLoading",
+          "lineNumber": 22
+        },
+        {
+          "caller": "onSubmit",
+          "callee": "login",
+          "lineNumber": 24
+        },
+        {
+          "caller": "onSubmit",
+          "callee": "username.trim",
+          "lineNumber": 24
+        },
+        {
+          "caller": "onSubmit",
+          "callee": "setToken",
+          "lineNumber": 28
+        },
+        {
+          "caller": "onSubmit",
+          "callee": "onAuthenticated",
+          "lineNumber": 29
+        },
+        {
+          "caller": "onSubmit",
+          "callee": "logWarn",
+          "lineNumber": 31
+        },
+        {
+          "caller": "onSubmit",
+          "callee": "String",
+          "lineNumber": 31
+        },
+        {
+          "caller": "onSubmit",
+          "callee": "setError",
+          "lineNumber": 32
+        },
+        {
+          "caller": "onSubmit",
+          "callee": "String",
+          "lineNumber": 32
+        },
+        {
+          "caller": "onSubmit",
+          "callee": "setLoading",
+          "lineNumber": 34
+        },
+        {
+          "caller": "Login",
+          "callee": "setUsername",
+          "lineNumber": 48
+        },
+        {
+          "caller": "Login",
+          "callee": "setPassword",
+          "lineNumber": 58
+        },
+        {
+          "caller": "Login",
+          "callee": "username.trim",
+          "lineNumber": 61
+        }
+      ],
+      "metrics": {
+        "importCount": 4,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "frontend/src/components/MetaCell.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 8,
+      "nonEmptyLines": 8,
+      "functions": [
+        {
+          "name": "MetaCell",
+          "startLine": 1,
+          "endLine": 8,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "MetaCell",
+          "line": 1,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "frontend/src/components/Panel.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 17,
+      "nonEmptyLines": 16,
+      "functions": [
+        {
+          "name": "PanelHeader",
+          "startLine": 3,
+          "endLine": 17,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "panelClass",
+          "line": 1,
+          "isDefault": false
+        },
+        {
+          "name": "PanelHeader",
+          "line": 3,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 2,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "frontend/src/config/env.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 5,
+      "nonEmptyLines": 5,
+      "exports": [
+        {
+          "name": "apiBase",
+          "line": 1,
+          "isDefault": false
+        },
+        {
+          "name": "frontendLogsEnabled",
+          "line": 2,
+          "isDefault": false
+        },
+        {
+          "name": "buildMode",
+          "line": 3,
+          "isDefault": false
+        },
+        {
+          "name": "telegramBotUsername",
+          "line": 5,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 4,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "frontend/src/features/account/Me.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 38,
+      "nonEmptyLines": 36,
+      "functions": [
+        {
+          "name": "Row",
+          "startLine": 4,
+          "endLine": 11,
+          "params": []
+        },
+        {
+          "name": "MePanel",
+          "startLine": 16,
+          "endLine": 38,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "MePanel",
+          "line": 16,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "MePanel",
+          "callee": "isWebMode",
+          "lineNumber": 27
+        }
+      ],
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 1,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "frontend/src/features/admin/AdminDishes.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 103,
+      "nonEmptyLines": 91,
+      "functions": [
+        {
+          "name": "AdminDishes",
+          "startLine": 12,
+          "endLine": 103,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "AdminDishes",
+          "line": 12,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "AdminDishes",
+          "callee": "useState",
+          "lineNumber": 13
+        },
+        {
+          "caller": "AdminDishes",
+          "callee": "useState",
+          "lineNumber": 14
+        },
+        {
+          "caller": "AdminDishes",
+          "callee": "useState",
+          "lineNumber": 15
+        },
+        {
+          "caller": "AdminDishes",
+          "callee": "useState",
+          "lineNumber": 16
+        },
+        {
+          "caller": "AdminDishes",
+          "callee": "useState",
+          "lineNumber": 17
+        },
+        {
+          "caller": "load",
+          "callee": "fetchDishes()\n      .then((rows) => setDishes(Array.isArray(rows) ? rows : []))\n      .catch",
+          "lineNumber": 20
+        },
+        {
+          "caller": "load",
+          "callee": "fetchDishes()\n      .then",
+          "lineNumber": 20
+        },
+        {
+          "caller": "load",
+          "callee": "fetchDishes",
+          "lineNumber": 20
+        },
+        {
+          "caller": "load",
+          "callee": "setDishes",
+          "lineNumber": 21
+        },
+        {
+          "caller": "load",
+          "callee": "Array.isArray",
+          "lineNumber": 21
+        },
+        {
+          "caller": "load",
+          "callee": "setError",
+          "lineNumber": 22
+        },
+        {
+          "caller": "load",
+          "callee": "String",
+          "lineNumber": 22
+        },
+        {
+          "caller": "AdminDishes",
+          "callee": "useEffect",
+          "lineNumber": 25
+        },
+        {
+          "caller": "AdminDishes",
+          "callee": "useMemo",
+          "lineNumber": 27
+        },
+        {
+          "caller": "AdminDishes",
+          "callee": "query.trim().toLowerCase",
+          "lineNumber": 28
+        },
+        {
+          "caller": "AdminDishes",
+          "callee": "query.trim",
+          "lineNumber": 28
+        },
+        {
+          "caller": "AdminDishes",
+          "callee": "dishes.filter",
+          "lineNumber": 30
+        },
+        {
+          "caller": "AdminDishes",
+          "callee": "[d.name, d.theme].some",
+          "lineNumber": 30
+        },
+        {
+          "caller": "AdminDishes",
+          "callee": "String(f || '').toLowerCase().includes",
+          "lineNumber": 30
+        },
+        {
+          "caller": "AdminDishes",
+          "callee": "String(f || '').toLowerCase",
+          "lineNumber": 30
+        },
+        {
+          "caller": "AdminDishes",
+          "callee": "String",
+          "lineNumber": 30
+        },
+        {
+          "caller": "onCreate",
+          "callee": "event.preventDefault",
+          "lineNumber": 34
+        },
+        {
+          "caller": "onCreate",
+          "callee": "setError",
+          "lineNumber": 35
+        },
+        {
+          "caller": "onCreate",
+          "callee": "setBusy",
+          "lineNumber": 36
+        },
+        {
+          "caller": "onCreate",
+          "callee": "createDish",
+          "lineNumber": 38
+        },
+        {
+          "caller": "onCreate",
+          "callee": "form.name.trim",
+          "lineNumber": 38
+        },
+        {
+          "caller": "onCreate",
+          "callee": "form.theme.trim",
+          "lineNumber": 38
+        },
+        {
+          "caller": "onCreate",
+          "callee": "setForm",
+          "lineNumber": 39
+        },
+        {
+          "caller": "onCreate",
+          "callee": "load",
+          "lineNumber": 40
+        },
+        {
+          "caller": "onCreate",
+          "callee": "setError",
+          "lineNumber": 42
+        },
+        {
+          "caller": "onCreate",
+          "callee": "String",
+          "lineNumber": 42
+        },
+        {
+          "caller": "onCreate",
+          "callee": "setBusy",
+          "lineNumber": 44
+        },
+        {
+          "caller": "onDelete",
+          "callee": "window.confirm",
+          "lineNumber": 49
+        },
+        {
+          "caller": "onDelete",
+          "callee": "setError",
+          "lineNumber": 50
+        },
+        {
+          "caller": "onDelete",
+          "callee": "deleteDish",
+          "lineNumber": 52
+        },
+        {
+          "caller": "onDelete",
+          "callee": "load",
+          "lineNumber": 53
+        },
+        {
+          "caller": "onDelete",
+          "callee": "setError",
+          "lineNumber": 55
+        },
+        {
+          "caller": "onDelete",
+          "callee": "String",
+          "lineNumber": 55
+        },
+        {
+          "caller": "AdminDishes",
+          "callee": "setQuery",
+          "lineNumber": 72
+        },
+        {
+          "caller": "AdminDishes",
+          "callee": "setForm",
+          "lineNumber": 79
+        },
+        {
+          "caller": "AdminDishes",
+          "callee": "setForm",
+          "lineNumber": 80
+        },
+        {
+          "caller": "AdminDishes",
+          "callee": "form.name.trim",
+          "lineNumber": 81
+        },
+        {
+          "caller": "AdminDishes",
+          "callee": "filtered.map",
+          "lineNumber": 86
+        },
+        {
+          "caller": "AdminDishes",
+          "callee": "onDelete",
+          "lineNumber": 92
+        }
+      ],
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "frontend/src/features/admin/AdminUsers.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 208,
+      "nonEmptyLines": 189,
+      "functions": [
+        {
+          "name": "AdminUsers",
+          "startLine": 11,
+          "endLine": 185,
+          "params": []
+        },
+        {
+          "name": "UsernameCell",
+          "startLine": 188,
+          "endLine": 208,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "AdminUsers",
+          "line": 11,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "AdminUsers",
+          "callee": "useState",
+          "lineNumber": 12
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "useState",
+          "lineNumber": 13
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "useState",
+          "lineNumber": 14
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "useState",
+          "lineNumber": 15
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "useState",
+          "lineNumber": 16
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "useState",
+          "lineNumber": 17
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "useMemo",
+          "lineNumber": 19
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "useMemo",
+          "lineNumber": 25
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "query.trim().toLowerCase",
+          "lineNumber": 26
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "query.trim",
+          "lineNumber": 26
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "users.filter",
+          "lineNumber": 28
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "[u.username, u.telegram_username, u.role].some",
+          "lineNumber": 29
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "String(field || '').toLowerCase().includes",
+          "lineNumber": 29
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "String(field || '').toLowerCase",
+          "lineNumber": 29
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "String",
+          "lineNumber": 29
+        },
+        {
+          "caller": "load",
+          "callee": "fetchUsers()\n      .then((rows) => setUsers(Array.isArray(rows) ? rows : []))\n      .catch",
+          "lineNumber": 34
+        },
+        {
+          "caller": "load",
+          "callee": "fetchUsers()\n      .then",
+          "lineNumber": 34
+        },
+        {
+          "caller": "load",
+          "callee": "fetchUsers",
+          "lineNumber": 34
+        },
+        {
+          "caller": "load",
+          "callee": "setUsers",
+          "lineNumber": 35
+        },
+        {
+          "caller": "load",
+          "callee": "Array.isArray",
+          "lineNumber": 35
+        },
+        {
+          "caller": "load",
+          "callee": "setError",
+          "lineNumber": 36
+        },
+        {
+          "caller": "load",
+          "callee": "String",
+          "lineNumber": 36
+        },
+        {
+          "caller": "load",
+          "callee": "fetchAdminDepartments()\n      .then((rows) => setDepartments(Array.isArray(rows) ? rows : []))\n      .catch",
+          "lineNumber": 37
+        },
+        {
+          "caller": "load",
+          "callee": "fetchAdminDepartments()\n      .then",
+          "lineNumber": 37
+        },
+        {
+          "caller": "load",
+          "callee": "fetchAdminDepartments",
+          "lineNumber": 37
+        },
+        {
+          "caller": "load",
+          "callee": "setDepartments",
+          "lineNumber": 38
+        },
+        {
+          "caller": "load",
+          "callee": "Array.isArray",
+          "lineNumber": 38
+        },
+        {
+          "caller": "load",
+          "callee": "logWarn",
+          "lineNumber": 39
+        },
+        {
+          "caller": "load",
+          "callee": "String",
+          "lineNumber": 39
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "useEffect",
+          "lineNumber": 42
+        },
+        {
+          "caller": "onCreate",
+          "callee": "event.preventDefault",
+          "lineNumber": 45
+        },
+        {
+          "caller": "onCreate",
+          "callee": "setError",
+          "lineNumber": 46
+        },
+        {
+          "caller": "onCreate",
+          "callee": "setBusy",
+          "lineNumber": 47
+        },
+        {
+          "caller": "onCreate",
+          "callee": "createUser",
+          "lineNumber": 49
+        },
+        {
+          "caller": "onCreate",
+          "callee": "form.username.trim",
+          "lineNumber": 50
+        },
+        {
+          "caller": "onCreate",
+          "callee": "form.telegram_username.trim",
+          "lineNumber": 52
+        },
+        {
+          "caller": "onCreate",
+          "callee": "setForm",
+          "lineNumber": 56
+        },
+        {
+          "caller": "onCreate",
+          "callee": "load",
+          "lineNumber": 57
+        },
+        {
+          "caller": "onCreate",
+          "callee": "logWarn",
+          "lineNumber": 59
+        },
+        {
+          "caller": "onCreate",
+          "callee": "String",
+          "lineNumber": 59
+        },
+        {
+          "caller": "onCreate",
+          "callee": "setError",
+          "lineNumber": 60
+        },
+        {
+          "caller": "onCreate",
+          "callee": "String",
+          "lineNumber": 60
+        },
+        {
+          "caller": "onCreate",
+          "callee": "setBusy",
+          "lineNumber": 62
+        },
+        {
+          "caller": "patchUser",
+          "callee": "setError",
+          "lineNumber": 67
+        },
+        {
+          "caller": "patchUser",
+          "callee": "updateUser",
+          "lineNumber": 69
+        },
+        {
+          "caller": "patchUser",
+          "callee": "load",
+          "lineNumber": 70
+        },
+        {
+          "caller": "patchUser",
+          "callee": "setError",
+          "lineNumber": 72
+        },
+        {
+          "caller": "patchUser",
+          "callee": "String",
+          "lineNumber": 72
+        },
+        {
+          "caller": "onResetPassword",
+          "callee": "window.prompt",
+          "lineNumber": 77
+        },
+        {
+          "caller": "onResetPassword",
+          "callee": "patchUser",
+          "lineNumber": 79
+        },
+        {
+          "caller": "onDelete",
+          "callee": "window.confirm",
+          "lineNumber": 83
+        },
+        {
+          "caller": "onDelete",
+          "callee": "setError",
+          "lineNumber": 84
+        },
+        {
+          "caller": "onDelete",
+          "callee": "deleteUser",
+          "lineNumber": 86
+        },
+        {
+          "caller": "onDelete",
+          "callee": "load",
+          "lineNumber": 87
+        },
+        {
+          "caller": "onDelete",
+          "callee": "setError",
+          "lineNumber": 89
+        },
+        {
+          "caller": "onDelete",
+          "callee": "String",
+          "lineNumber": 89
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "setQuery",
+          "lineNumber": 111
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "setForm",
+          "lineNumber": 118
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "setForm",
+          "lineNumber": 119
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "setForm",
+          "lineNumber": 120
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "setForm",
+          "lineNumber": 121
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "ROLES.map",
+          "lineNumber": 122
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "setForm",
+          "lineNumber": 124
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "departments.map",
+          "lineNumber": 126
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "form.username.trim",
+          "lineNumber": 128
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "filteredUsers.map",
+          "lineNumber": 147
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "patchUser",
+          "lineNumber": 151
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "onResetPassword",
+          "lineNumber": 156
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "patchUser",
+          "lineNumber": 159
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "ROLES.map",
+          "lineNumber": 160
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "deptCodeOf",
+          "lineNumber": 164
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "patchUser",
+          "lineNumber": 164
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "departments.map",
+          "lineNumber": 166
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "u.created_at.slice",
+          "lineNumber": 169
+        },
+        {
+          "caller": "AdminUsers",
+          "callee": "onDelete",
+          "lineNumber": 171
+        },
+        {
+          "caller": "UsernameCell",
+          "callee": "useState",
+          "lineNumber": 189
+        },
+        {
+          "caller": "commit",
+          "callee": "value.trim",
+          "lineNumber": 192
+        },
+        {
+          "caller": "commit",
+          "callee": "onSave",
+          "lineNumber": 193
+        },
+        {
+          "caller": "commit",
+          "callee": "setValue",
+          "lineNumber": 194
+        },
+        {
+          "caller": "UsernameCell",
+          "callee": "setValue",
+          "lineNumber": 201
+        },
+        {
+          "caller": "UsernameCell",
+          "callee": "e.currentTarget.blur",
+          "lineNumber": 204
+        }
+      ],
+      "metrics": {
+        "importCount": 3,
+        "exportCount": 1,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "frontend/src/features/orders/BakerOrderCard.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 72,
+      "nonEmptyLines": 67,
+      "functions": [
+        {
+          "name": "BakerOrderCard",
+          "startLine": 6,
+          "endLine": 63,
+          "params": []
+        },
+        {
+          "name": "Fact",
+          "startLine": 65,
+          "endLine": 72,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "BakerOrderCard",
+          "line": 6,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "BakerOrderCard",
+          "callee": "orderSource",
+          "lineNumber": 32
+        },
+        {
+          "caller": "BakerOrderCard",
+          "callee": "formatFulfillmentDate",
+          "lineNumber": 40
+        }
+      ],
+      "metrics": {
+        "importCount": 4,
+        "exportCount": 1,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    }
+  ]
+}

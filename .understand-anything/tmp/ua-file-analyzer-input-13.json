@@ -1,0 +1,21 @@
+{
+  "projectRoot": "/home/vnkjd/Projects/bakery",
+  "batchFiles": [
+    {"path": "queries/auth.sql", "language": "sql", "sizeLines": 100, "fileCategory": "data"},
+    {"path": "queries/departments.sql", "language": "sql", "sizeLines": 45, "fileCategory": "data"},
+    {"path": "queries/iiko_snapshot.sql", "language": "sql", "sizeLines": 191, "fileCategory": "data"},
+    {"path": "queries/monitor.sql", "language": "sql", "sizeLines": 58, "fileCategory": "data"},
+    {"path": "queries/order_outbox.sql", "language": "sql", "sizeLines": 25, "fileCategory": "data"},
+    {"path": "queries/orders.sql", "language": "sql", "sizeLines": 175, "fileCategory": "data"},
+    {"path": "queries/products.sql", "language": "sql", "sizeLines": 81, "fileCategory": "data"}
+  ],
+  "batchImportData": {
+    "queries/auth.sql": [],
+    "queries/departments.sql": [],
+    "queries/iiko_snapshot.sql": [],
+    "queries/monitor.sql": [],
+    "queries/order_outbox.sql": [],
+    "queries/orders.sql": [],
+    "queries/products.sql": []
+  }
+}

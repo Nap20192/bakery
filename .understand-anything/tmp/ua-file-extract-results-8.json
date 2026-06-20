@@ -1,0 +1,117 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 1,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "frontend/Dockerfile",
+      "language": "dockerfile",
+      "fileCategory": "infra",
+      "totalLines": 24,
+      "nonEmptyLines": 15,
+      "services": [
+        {
+          "name": "builder",
+          "image": "node:22-alpine",
+          "ports": [],
+          "startLine": 1,
+          "endLine": 10
+        },
+        {
+          "name": "node",
+          "image": "node:22-alpine",
+          "ports": [
+            8080
+          ],
+          "startLine": 11,
+          "endLine": 25
+        }
+      ],
+      "steps": [
+        {
+          "name": "FROM node:22-alpine AS builder",
+          "startLine": 1,
+          "endLine": 1
+        },
+        {
+          "name": "WORKDIR /src/frontend",
+          "startLine": 3,
+          "endLine": 3
+        },
+        {
+          "name": "COPY package.json package-lock.json ./",
+          "startLine": 5,
+          "endLine": 5
+        },
+        {
+          "name": "RUN npm ci",
+          "startLine": 6,
+          "endLine": 6
+        },
+        {
+          "name": "COPY . ./",
+          "startLine": 8,
+          "endLine": 8
+        },
+        {
+          "name": "RUN npm run build",
+          "startLine": 9,
+          "endLine": 9
+        },
+        {
+          "name": "FROM node:22-alpine",
+          "startLine": 11,
+          "endLine": 11
+        },
+        {
+          "name": "ENV HOST=0.0.0.0",
+          "startLine": 13,
+          "endLine": 13
+        },
+        {
+          "name": "ENV PORT=8080",
+          "startLine": 14,
+          "endLine": 14
+        },
+        {
+          "name": "ENV BACKEND_URL=http://bakery.railway.internal:8080",
+          "startLine": 15,
+          "endLine": 15
+        },
+        {
+          "name": "WORKDIR /app",
+          "startLine": 17,
+          "endLine": 17
+        },
+        {
+          "name": "COPY server.js ./server.js",
+          "startLine": 19,
+          "endLine": 19
+        },
+        {
+          "name": "COPY --from=builder /src/frontend/dist ./dist",
+          "startLine": 20,
+          "endLine": 20
+        },
+        {
+          "name": "EXPOSE 8080",
+          "startLine": 22,
+          "endLine": 22
+        },
+        {
+          "name": "CMD [\"node\", \"server.js\"]",
+          "startLine": 24,
+          "endLine": 24
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "serviceCount": 2,
+        "stepCount": 15
+      }
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "projectRoot": "/home/vnkjd/Projects/bakery",
+  "batchFiles": [
+    {"path": ".dockerignore", "language": "unknown", "sizeLines": 24, "fileCategory": "infra"},
+    {"path": ".env.example", "language": "config", "sizeLines": 46, "fileCategory": "config"},
+    {"path": ".golangci.yml", "language": "yaml", "sizeLines": 60, "fileCategory": "config"},
+    {"path": "AGENTS.md", "language": "markdown", "sizeLines": 378, "fileCategory": "docs"},
+    {"path": "Makefile", "language": "makefile", "sizeLines": 42, "fileCategory": "infra"},
+    {"path": "README.md", "language": "markdown", "sizeLines": 40, "fileCategory": "docs"},
+    {"path": "TODO.md", "language": "markdown", "sizeLines": 41, "fileCategory": "docs"},
+    {"path": "docker-compose.yml", "language": "yaml", "sizeLines": 100, "fileCategory": "infra"},
+    {"path": "go.mod", "language": "mod", "sizeLines": 20, "fileCategory": "config"},
+    {"path": "go.sum", "language": "sum", "sizeLines": 878, "fileCategory": "config"},
+    {"path": "prepared_dough_codes.txt", "language": "txt", "sizeLines": 45, "fileCategory": "docs"},
+    {"path": "skills-lock.json", "language": "json", "sizeLines": 17, "fileCategory": "config"},
+    {"path": "sqlc.yaml", "language": "yaml", "sizeLines": 14, "fileCategory": "config"}
+  ],
+  "batchImportData": {
+    ".dockerignore": [], ".env.example": [], ".golangci.yml": [], "AGENTS.md": [],
+    "Makefile": [], "README.md": [], "TODO.md": [], "docker-compose.yml": [],
+    "go.mod": [], "go.sum": [], "prepared_dough_codes.txt": [], "skills-lock.json": [], "sqlc.yaml": []
+  }
+}

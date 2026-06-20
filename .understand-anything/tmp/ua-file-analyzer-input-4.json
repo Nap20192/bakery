@@ -1,0 +1,256 @@
+{
+  "projectRoot": "/home/vnkjd/Projects/bakery",
+  "batchFiles": [
+    {
+      "path": "internal/pkg/authtoken/authtoken_test.go",
+      "language": "go",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/enum/enum.go",
+      "language": "go",
+      "sizeLines": 74,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/enum/rabbitmq.go",
+      "language": "go",
+      "sizeLines": 27,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/admin/app/app.go",
+      "language": "go",
+      "sizeLines": 40,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/admin/infra/http/handler.go",
+      "language": "go",
+      "sizeLines": 203,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/admin/usecase/admin/admin.go",
+      "language": "go",
+      "sizeLines": 147,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/admin/usecase/admin/interfaces.go",
+      "language": "go",
+      "sizeLines": 69,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/auth/domain/auth.go",
+      "language": "go",
+      "sizeLines": 47,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/auth/infra/http/handler.go",
+      "language": "go",
+      "sizeLines": 115,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/auth/usecase/auth/auth.go",
+      "language": "go",
+      "sizeLines": 225,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/auth/usecase/auth/auth_test.go",
+      "language": "go",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/auth/usecase/auth/interfaces.go",
+      "language": "go",
+      "sizeLines": 64,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/auth/usecase/auth/rbac.go",
+      "language": "go",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/department/infra/http/handler.go",
+      "language": "go",
+      "sizeLines": 64,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/department/usecase/department/department.go",
+      "language": "go",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/department/usecase/department/interfaces.go",
+      "language": "go",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/infra/http/handler_admin.go",
+      "language": "go",
+      "sizeLines": 84,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/infra/http/handler_test.go",
+      "language": "go",
+      "sizeLines": 100,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/infra/http/presenter.go",
+      "language": "go",
+      "sizeLines": 185,
+      "fileCategory": "code"
+    },
+    {
+      "path": "pkg/rabbitmq/consumer/consumer.go",
+      "language": "go",
+      "sizeLines": 187,
+      "fileCategory": "code"
+    },
+    {
+      "path": "pkg/rabbitmq/publisher/publisher.go",
+      "language": "go",
+      "sizeLines": 161,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "internal/pkg/authtoken/authtoken_test.go": [],
+    "internal/pkg/enum/enum.go": [],
+    "internal/pkg/enum/rabbitmq.go": [],
+    "internal/services/admin/app/app.go": [
+      "internal/services/admin/usecase/admin/admin.go",
+      "internal/services/admin/usecase/admin/interfaces.go",
+      "internal/services/auth/usecase/auth/auth_test.go",
+      "internal/services/auth/usecase/auth/auth.go",
+      "internal/services/auth/usecase/auth/interfaces.go",
+      "internal/services/auth/usecase/auth/rbac.go",
+      "internal/services/department/usecase/department/department.go",
+      "internal/services/department/usecase/department/interfaces.go"
+    ],
+    "internal/services/admin/infra/http/handler.go": [
+      "internal/inbound/api/httpx/apperror.go",
+      "internal/inbound/api/httpx/auth_test.go",
+      "internal/inbound/api/httpx/auth.go",
+      "internal/inbound/api/httpx/respond.go",
+      "internal/services/admin/usecase/admin/admin.go",
+      "internal/services/admin/usecase/admin/interfaces.go"
+    ],
+    "internal/services/admin/usecase/admin/admin.go": [
+      "internal/pkg/apperr/apperr_test.go",
+      "internal/pkg/apperr/apperr.go",
+      "internal/services/auth/domain/auth.go"
+    ],
+    "internal/services/admin/usecase/admin/interfaces.go": [
+      "internal/services/auth/domain/auth.go"
+    ],
+    "internal/services/auth/domain/auth.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go"
+    ],
+    "internal/services/auth/infra/http/handler.go": [
+      "internal/inbound/api/httpx/apperror.go",
+      "internal/inbound/api/httpx/auth_test.go",
+      "internal/inbound/api/httpx/auth.go",
+      "internal/inbound/api/httpx/respond.go",
+      "internal/pkg/authtoken/authtoken_test.go",
+      "internal/pkg/authtoken/authtoken.go",
+      "internal/services/auth/usecase/auth/auth_test.go",
+      "internal/services/auth/usecase/auth/auth.go",
+      "internal/services/auth/usecase/auth/interfaces.go",
+      "internal/services/auth/usecase/auth/rbac.go",
+      "internal/services/department/usecase/department/department.go",
+      "internal/services/department/usecase/department/interfaces.go"
+    ],
+    "internal/services/auth/usecase/auth/auth.go": [
+      "internal/pkg/apperr/apperr_test.go",
+      "internal/pkg/apperr/apperr.go",
+      "internal/services/auth/domain/auth.go"
+    ],
+    "internal/services/auth/usecase/auth/auth_test.go": [
+      "internal/services/auth/domain/auth.go"
+    ],
+    "internal/services/auth/usecase/auth/interfaces.go": [
+      "internal/services/auth/domain/auth.go"
+    ],
+    "internal/services/auth/usecase/auth/rbac.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go"
+    ],
+    "internal/services/department/infra/http/handler.go": [
+      "internal/inbound/api/httpx/apperror.go",
+      "internal/inbound/api/httpx/auth_test.go",
+      "internal/inbound/api/httpx/auth.go",
+      "internal/inbound/api/httpx/respond.go",
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go",
+      "internal/services/department/usecase/department/department.go",
+      "internal/services/department/usecase/department/interfaces.go"
+    ],
+    "internal/services/department/usecase/department/department.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go"
+    ],
+    "internal/services/department/usecase/department/interfaces.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go"
+    ],
+    "internal/services/order/infra/http/handler_admin.go": [
+      "internal/inbound/api/httpx/apperror.go",
+      "internal/inbound/api/httpx/auth_test.go",
+      "internal/inbound/api/httpx/auth.go",
+      "internal/inbound/api/httpx/respond.go"
+    ],
+    "internal/services/order/infra/http/handler_test.go": [
+      "internal/inbound/api/httpx/apperror.go",
+      "internal/inbound/api/httpx/auth_test.go",
+      "internal/inbound/api/httpx/auth.go",
+      "internal/inbound/api/httpx/respond.go",
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go",
+      "internal/services/auth/domain/auth.go",
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go"
+    ],
+    "internal/services/order/infra/http/presenter.go": [
+      "internal/inbound/api/httpx/apperror.go",
+      "internal/inbound/api/httpx/auth_test.go",
+      "internal/inbound/api/httpx/auth.go",
+      "internal/inbound/api/httpx/respond.go",
+      "internal/services/department/usecase/department/department.go",
+      "internal/services/department/usecase/department/interfaces.go",
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go"
+    ],
+    "pkg/rabbitmq/consumer/consumer.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go"
+    ],
+    "pkg/rabbitmq/publisher/publisher.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go"
+    ]
+  }
+}

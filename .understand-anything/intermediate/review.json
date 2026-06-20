@@ -1,0 +1,57 @@
+{
+  "issues": [],
+  "warnings": [
+    "Node 'service:.dockerignore' has no edges (orphan)",
+    "Node 'config:.golangci.yml' has no edges (orphan)",
+    "Node 'document:AGENTS.md' has no edges (orphan)",
+    "Node 'pipeline:Makefile' has no edges (orphan)",
+    "Node 'document:README.md' has no edges (orphan)",
+    "Node 'document:TODO.md' has no edges (orphan)",
+    "Node 'config:go.mod' has no edges (orphan)",
+    "Node 'config:go.sum' has no edges (orphan)",
+    "Node 'document:prepared_dough_codes.txt' has no edges (orphan)",
+    "Node 'config:skills-lock.json' has no edges (orphan)",
+    "Node 'config:sqlc.yaml' has no edges (orphan)",
+    "Node 'config:frontend/skills-lock.json' has no edges (orphan)",
+    "Node 'config:internal/outbound/iiko/testdata/results/01_auth.json' has no edges (orphan)",
+    "Node 'config:internal/outbound/iiko/testdata/results/02_list_products.json' has no edges (orphan)",
+    "Node 'config:internal/outbound/iiko/testdata/results/03_assembly_charts_get_all.json' has no edges (orphan)",
+    "Node 'config:internal/outbound/iiko/testdata/results/05_assembly_chart_by_id.json' has no edges (orphan)",
+    "Node 'config:internal/outbound/iiko/testdata/results/07_assembly_charts_get_assembled.json' has no edges (orphan)",
+    "Node 'config:internal/outbound/iiko/testdata/results/08_assembly_charts_get_prepared.json' has no edges (orphan)",
+    "Node 'service:deploy/Dockerfile.bot' has no edges (orphan)",
+    "Node 'service:deploy/Dockerfile.worker' has no edges (orphan)",
+    "Node 'config:frontend/eslint.config.js' has no edges (orphan)",
+    "Node 'config:frontend/vite.config.js' has no edges (orphan)",
+    "Node 'document:templates/dishes.txt' has no edges (orphan)"
+  ],
+  "stats": {
+    "totalNodes": 613,
+    "totalEdges": 1519,
+    "totalLayers": 10,
+    "tourSteps": 14,
+    "nodeTypes": {
+      "file": 168,
+      "class": 68,
+      "function": 300,
+      "service": 10,
+      "table": 40,
+      "config": 19,
+      "document": 7,
+      "pipeline": 1
+    },
+    "edgeTypes": {
+      "contains": 368,
+      "exports": 214,
+      "imports": 818,
+      "tested_by": 17,
+      "depends_on": 9,
+      "calls": 35,
+      "deploys": 6,
+      "migrates": 39,
+      "related": 7,
+      "configures": 3,
+      "documents": 3
+    }
+  }
+}

@@ -1,0 +1,1753 @@
+{
+  "nodes": [
+    {
+      "id": "file:internal/services/order/domain/service_test.go",
+      "type": "file",
+      "name": "service_test.go",
+      "filePath": "internal/services/order/domain/service_test.go",
+      "summary": "Тесты доменного сервиса заказа: парсинг bulk, правила номера, уникальность и спецификации количества.",
+      "tags": [
+        "test",
+        "order",
+        "domain"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:internal/services/order/domain/specification.go",
+      "type": "file",
+      "name": "specification.go",
+      "filePath": "internal/services/order/domain/specification.go",
+      "summary": "Базовые интерфейсы спецификаций заказа (паттерн Specification).",
+      "tags": [
+        "type-definition",
+        "order",
+        "domain",
+        "specification"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:internal/services/order/infra/http/handler.go",
+      "type": "file",
+      "name": "handler.go",
+      "filePath": "internal/services/order/infra/http/handler.go",
+      "summary": "HTTP-обработчик чтения заказов: список с фильтрами/пагинацией, заказ по ID и проверка прав доступа.",
+      "tags": [
+        "api-handler",
+        "order",
+        "http",
+        "infra"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:internal/services/order/infra/http/handler_write.go",
+      "type": "file",
+      "name": "handler_write.go",
+      "filePath": "internal/services/order/infra/http/handler_write.go",
+      "summary": "HTTP-обработчик записи заказов: каталог блюд, создание и обновление заказа из mini-app с декодированием и валидацией запроса.",
+      "tags": [
+        "api-handler",
+        "order",
+        "http",
+        "validation"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:internal/services/order/usecase/order/interfaces.go",
+      "type": "file",
+      "name": "interfaces.go",
+      "filePath": "internal/services/order/usecase/order/interfaces.go",
+      "summary": "Порты usecase заказов: UseCase и Repository плюс DTO ввода/вывода для создания, обновления и листинга.",
+      "tags": [
+        "type-definition",
+        "order",
+        "ports",
+        "usecase"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:internal/services/order/usecase/order/order.go",
+      "type": "file",
+      "name": "order.go",
+      "filePath": "internal/services/order/usecase/order/order.go",
+      "summary": "Центральный usecase заказов: CRUD, валидация bulk, каталог блюд, шаблоны, фавориты и фоновая очистка устаревших заказов.",
+      "tags": [
+        "service",
+        "order",
+        "usecase",
+        "business-logic"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:internal/services/order/usecase/order/order_test.go",
+      "type": "file",
+      "name": "order_test.go",
+      "filePath": "internal/services/order/usecase/order/order_test.go",
+      "summary": "Тесты usecase заказов с fake-репозиторием: валидация bulk, шаблоны, очистка и правила даты выполнения.",
+      "tags": [
+        "test",
+        "order",
+        "usecase"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:internal/services/order/domain/service_test.go:TestOrderServiceParseBulkOrder",
+      "type": "function",
+      "name": "TestOrderServiceParseBulkOrder",
+      "filePath": "internal/services/order/domain/service_test.go",
+      "lineRange": [
+        11,
+        53
+      ],
+      "summary": "Проверяет разбор bulk-заказа доменным сервисом.",
+      "tags": [
+        "test",
+        "order",
+        "domain"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/domain/service_test.go:TestOrderServiceUsesInjectedSpec",
+      "type": "function",
+      "name": "TestOrderServiceUsesInjectedSpec",
+      "filePath": "internal/services/order/domain/service_test.go",
+      "lineRange": [
+        55,
+        71
+      ],
+      "summary": "Проверяет использование внедрённой спецификации.",
+      "tags": [
+        "test",
+        "order",
+        "domain"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/domain/service_test.go:TestOrderServiceValidateUniqueItems",
+      "type": "function",
+      "name": "TestOrderServiceValidateUniqueItems",
+      "filePath": "internal/services/order/domain/service_test.go",
+      "lineRange": [
+        73,
+        92
+      ],
+      "summary": "Проверяет валидацию уникальности позиций.",
+      "tags": [
+        "test",
+        "order",
+        "domain"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/domain/service_test.go:TestOrderServiceOrderNumberRules",
+      "type": "function",
+      "name": "TestOrderServiceOrderNumberRules",
+      "filePath": "internal/services/order/domain/service_test.go",
+      "lineRange": [
+        94,
+        122
+      ],
+      "summary": "Проверяет правила формирования номера заказа.",
+      "tags": [
+        "test",
+        "order",
+        "domain"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/domain/service_test.go:TestOrderLineProcessableSpecificationSkipsUppercaseHeaders",
+      "type": "function",
+      "name": "TestOrderLineProcessableSpecificationSkipsUppercaseHeaders",
+      "filePath": "internal/services/order/domain/service_test.go",
+      "lineRange": [
+        124,
+        141
+      ],
+      "summary": "Проверяет пропуск заголовков в верхнем регистре спецификацией.",
+      "tags": [
+        "test",
+        "order",
+        "specification"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/domain/service_test.go:TestPositiveQuantitySpecification",
+      "type": "function",
+      "name": "TestPositiveQuantitySpecification",
+      "filePath": "internal/services/order/domain/service_test.go",
+      "lineRange": [
+        143,
+        173
+      ],
+      "summary": "Проверяет спецификацию положительного количества.",
+      "tags": [
+        "test",
+        "order",
+        "specification"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/domain/service_test.go:TestOrderLineFormatSpecificationReservedQuantity",
+      "type": "function",
+      "name": "TestOrderLineFormatSpecificationReservedQuantity",
+      "filePath": "internal/services/order/domain/service_test.go",
+      "lineRange": [
+        175,
+        201
+      ],
+      "summary": "Проверяет спецификацию формата с зарезервированным количеством.",
+      "tags": [
+        "test",
+        "order",
+        "specification"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/domain/service_test.go:TestDuplicateOrderItemErrors",
+      "type": "function",
+      "name": "TestDuplicateOrderItemErrors",
+      "filePath": "internal/services/order/domain/service_test.go",
+      "lineRange": [
+        203,
+        216
+      ],
+      "summary": "Проверяет ошибки дублирующихся позиций.",
+      "tags": [
+        "test",
+        "order",
+        "specification"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:internal/services/order/infra/http/handler.go:Handler",
+      "type": "class",
+      "name": "Handler",
+      "filePath": "internal/services/order/infra/http/handler.go",
+      "lineRange": [
+        18,
+        22
+      ],
+      "summary": "HTTP-обработчик чтения заказов.",
+      "tags": [
+        "api-handler",
+        "order",
+        "http"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/infra/http/handler.go:RegisterRoutes",
+      "type": "function",
+      "name": "RegisterRoutes",
+      "filePath": "internal/services/order/infra/http/handler.go",
+      "lineRange": [
+        29,
+        36
+      ],
+      "summary": "Регистрирует HTTP-маршруты чтения заказов.",
+      "tags": [
+        "http",
+        "order",
+        "routing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:internal/services/order/infra/http/handler.go:handleListOrders",
+      "type": "function",
+      "name": "handleListOrders",
+      "filePath": "internal/services/order/infra/http/handler.go",
+      "lineRange": [
+        38,
+        101
+      ],
+      "summary": "Обрабатывает список заказов с фильтрами и пагинацией.",
+      "tags": [
+        "api-handler",
+        "order",
+        "http"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:internal/services/order/infra/http/handler.go:handleOrderByID",
+      "type": "function",
+      "name": "handleOrderByID",
+      "filePath": "internal/services/order/infra/http/handler.go",
+      "lineRange": [
+        103,
+        126
+      ],
+      "summary": "Возвращает заказ по идентификатору с проверкой прав.",
+      "tags": [
+        "api-handler",
+        "order",
+        "http"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/infra/http/handler.go:UserCanReadOrder",
+      "type": "function",
+      "name": "UserCanReadOrder",
+      "filePath": "internal/services/order/infra/http/handler.go",
+      "lineRange": [
+        130,
+        139
+      ],
+      "summary": "Проверяет, может ли пользователь читать заказ.",
+      "tags": [
+        "order",
+        "http",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:internal/services/order/infra/http/handler_write.go:handleCatalog",
+      "type": "function",
+      "name": "handleCatalog",
+      "filePath": "internal/services/order/infra/http/handler_write.go",
+      "lineRange": [
+        47,
+        64
+      ],
+      "summary": "Возвращает каталог блюд для mini-app.",
+      "tags": [
+        "api-handler",
+        "order",
+        "http"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/infra/http/handler_write.go:handleCreateOrder",
+      "type": "function",
+      "name": "handleCreateOrder",
+      "filePath": "internal/services/order/infra/http/handler_write.go",
+      "lineRange": [
+        66,
+        99
+      ],
+      "summary": "Обрабатывает создание заказа из mini-app.",
+      "tags": [
+        "api-handler",
+        "order",
+        "http"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/infra/http/handler_write.go:handleUpdateOrder",
+      "type": "function",
+      "name": "handleUpdateOrder",
+      "filePath": "internal/services/order/infra/http/handler_write.go",
+      "lineRange": [
+        101,
+        141
+      ],
+      "summary": "Обрабатывает обновление заказа из mini-app.",
+      "tags": [
+        "api-handler",
+        "order",
+        "http"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/infra/http/handler_write.go:buildComments",
+      "type": "function",
+      "name": "buildComments",
+      "filePath": "internal/services/order/infra/http/handler_write.go",
+      "lineRange": [
+        149,
+        160
+      ],
+      "summary": "Строит комментарии заказа из запроса записи.",
+      "tags": [
+        "order",
+        "http",
+        "serialization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/infra/http/handler_write.go:decodeOrderWriteRequest",
+      "type": "function",
+      "name": "decodeOrderWriteRequest",
+      "filePath": "internal/services/order/infra/http/handler_write.go",
+      "lineRange": [
+        162,
+        210
+      ],
+      "summary": "Декодирует и валидирует запрос записи заказа из mini-app.",
+      "tags": [
+        "validation",
+        "order",
+        "http",
+        "serialization"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:internal/services/order/infra/http/handler_write.go:miniAppOrderAuthor",
+      "type": "function",
+      "name": "miniAppOrderAuthor",
+      "filePath": "internal/services/order/infra/http/handler_write.go",
+      "lineRange": [
+        236,
+        247
+      ],
+      "summary": "Определяет автора заказа из контекста mini-app.",
+      "tags": [
+        "order",
+        "http",
+        "auth"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:internal/services/order/usecase/order/interfaces.go:UseCase",
+      "type": "class",
+      "name": "UseCase",
+      "filePath": "internal/services/order/usecase/order/interfaces.go",
+      "lineRange": [
+        18,
+        35
+      ],
+      "summary": "Порт usecase заказов: полный CRUD, каталог, шаблоны, фавориты и очистка.",
+      "tags": [
+        "ports",
+        "interface",
+        "order",
+        "usecase"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:internal/services/order/usecase/order/interfaces.go:Repository",
+      "type": "class",
+      "name": "Repository",
+      "filePath": "internal/services/order/usecase/order/interfaces.go",
+      "lineRange": [
+        39,
+        52
+      ],
+      "summary": "Порт репозитория заказов: персистентность заказов, цехов и каталога блюд.",
+      "tags": [
+        "ports",
+        "interface",
+        "order",
+        "usecase"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:internal/services/order/usecase/order/order.go:Service",
+      "type": "class",
+      "name": "Service",
+      "filePath": "internal/services/order/usecase/order/order.go",
+      "lineRange": [
+        27,
+        30
+      ],
+      "summary": "Usecase заказов: оркестрация домена, репозитория и фоновых задач.",
+      "tags": [
+        "service",
+        "order",
+        "usecase",
+        "business-logic"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:internal/services/order/usecase/order/order.go:CreateOrder",
+      "type": "function",
+      "name": "CreateOrder",
+      "filePath": "internal/services/order/usecase/order/order.go",
+      "lineRange": [
+        42,
+        76
+      ],
+      "summary": "Создаёт заказ: валидация, генерация номера, персистентность и события.",
+      "tags": [
+        "order",
+        "usecase",
+        "business-logic"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/usecase/order/order.go:UpdateOrder",
+      "type": "function",
+      "name": "UpdateOrder",
+      "filePath": "internal/services/order/usecase/order/order.go",
+      "lineRange": [
+        78,
+        129
+      ],
+      "summary": "Обновляет заказ: пересчёт позиций, история изменений и события.",
+      "tags": [
+        "order",
+        "usecase",
+        "business-logic"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:internal/services/order/usecase/order/order.go:ValidateBulkOrder",
+      "type": "function",
+      "name": "ValidateBulkOrder",
+      "filePath": "internal/services/order/usecase/order/order.go",
+      "lineRange": [
+        175,
+        205
+      ],
+      "summary": "Валидирует массовый ввод заказа, разрешая имена блюд из каталога.",
+      "tags": [
+        "order",
+        "usecase",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/usecase/order/order.go:ListDishCatalog",
+      "type": "function",
+      "name": "ListDishCatalog",
+      "filePath": "internal/services/order/usecase/order/order.go",
+      "lineRange": [
+        207,
+        222
+      ],
+      "summary": "Возвращает каталог блюд, скрывая внутренние коды.",
+      "tags": [
+        "order",
+        "usecase",
+        "business-logic"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/usecase/order/order.go:CombinedOrderTemplate",
+      "type": "function",
+      "name": "CombinedOrderTemplate",
+      "filePath": "internal/services/order/usecase/order/order.go",
+      "lineRange": [
+        256,
+        270
+      ],
+      "summary": "Строит объединённый шаблон заказа из каталога блюд.",
+      "tags": [
+        "order",
+        "usecase",
+        "business-logic"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/usecase/order/order.go:GetOrderTemplate",
+      "type": "function",
+      "name": "GetOrderTemplate",
+      "filePath": "internal/services/order/usecase/order/order.go",
+      "lineRange": [
+        272,
+        287
+      ],
+      "summary": "Возвращает шаблон заказа по идентификатору.",
+      "tags": [
+        "order",
+        "usecase",
+        "business-logic"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/usecase/order/order.go:EnsureDefaultOrderTemplates",
+      "type": "function",
+      "name": "EnsureDefaultOrderTemplates",
+      "filePath": "internal/services/order/usecase/order/order.go",
+      "lineRange": [
+        293,
+        313
+      ],
+      "summary": "Гарантирует наличие шаблонов заказа по умолчанию.",
+      "tags": [
+        "order",
+        "usecase",
+        "business-logic"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/usecase/order/order.go:DeleteOrdersOlderThan",
+      "type": "function",
+      "name": "DeleteOrdersOlderThan",
+      "filePath": "internal/services/order/usecase/order/order.go",
+      "lineRange": [
+        315,
+        325
+      ],
+      "summary": "Удаляет заказы старше заданной даты (кроме фаворитов).",
+      "tags": [
+        "order",
+        "usecase",
+        "cleanup"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/usecase/order/order.go:RunCleanupTicker",
+      "type": "function",
+      "name": "RunCleanupTicker",
+      "filePath": "internal/services/order/usecase/order/order.go",
+      "lineRange": [
+        327,
+        356
+      ],
+      "summary": "Фоновый тикер периодической очистки устаревших заказов.",
+      "tags": [
+        "order",
+        "usecase",
+        "background"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/usecase/order/order.go:resolveValidOrderItems",
+      "type": "function",
+      "name": "resolveValidOrderItems",
+      "filePath": "internal/services/order/usecase/order/order.go",
+      "lineRange": [
+        375,
+        394
+      ],
+      "summary": "Разрешает и валидирует позиции заказа по каталогу.",
+      "tags": [
+        "order",
+        "usecase",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/usecase/order/order.go:resolveOrderItem",
+      "type": "function",
+      "name": "resolveOrderItem",
+      "filePath": "internal/services/order/usecase/order/order.go",
+      "lineRange": [
+        408,
+        425
+      ],
+      "summary": "Разрешает одну позицию заказа в каталоге блюд.",
+      "tags": [
+        "order",
+        "usecase",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/usecase/order/order.go:diffOrderItems",
+      "type": "function",
+      "name": "diffOrderItems",
+      "filePath": "internal/services/order/usecase/order/order.go",
+      "lineRange": [
+        448,
+        475
+      ],
+      "summary": "Вычисляет разницу позиций для истории изменений заказа.",
+      "tags": [
+        "order",
+        "usecase",
+        "business-logic"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/usecase/order/order.go:orderHistoryItem",
+      "type": "function",
+      "name": "orderHistoryItem",
+      "filePath": "internal/services/order/usecase/order/order.go",
+      "lineRange": [
+        477,
+        500
+      ],
+      "summary": "Строит запись истории изменения позиции заказа.",
+      "tags": [
+        "order",
+        "usecase",
+        "business-logic"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/usecase/order/order.go:dishCatalogTemplates",
+      "type": "function",
+      "name": "dishCatalogTemplates",
+      "filePath": "internal/services/order/usecase/order/order.go",
+      "lineRange": [
+        506,
+        542
+      ],
+      "summary": "Формирует шаблоны заказа из каталога блюд.",
+      "tags": [
+        "order",
+        "usecase",
+        "business-logic"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/usecase/order/order.go:parseDefaultDishCatalogItems",
+      "type": "function",
+      "name": "parseDefaultDishCatalogItems",
+      "filePath": "internal/services/order/usecase/order/order.go",
+      "lineRange": [
+        548,
+        578
+      ],
+      "summary": "Парсит элементы каталога блюд по умолчанию.",
+      "tags": [
+        "order",
+        "usecase",
+        "parsing"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/usecase/order/order_test.go:TestServiceValidateBulkOrder",
+      "type": "function",
+      "name": "TestServiceValidateBulkOrder",
+      "filePath": "internal/services/order/usecase/order/order_test.go",
+      "lineRange": [
+        13,
+        39
+      ],
+      "summary": "Проверяет валидацию bulk-заказа usecase.",
+      "tags": [
+        "test",
+        "order",
+        "usecase"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/usecase/order/order_test.go:TestServiceValidateBulkOrderResolvesDishNames",
+      "type": "function",
+      "name": "TestServiceValidateBulkOrderResolvesDishNames",
+      "filePath": "internal/services/order/usecase/order/order_test.go",
+      "lineRange": [
+        59,
+        79
+      ],
+      "summary": "Проверяет разрешение имён блюд при валидации bulk.",
+      "tags": [
+        "test",
+        "order",
+        "usecase"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/usecase/order/order_test.go:TestServiceListOrderTemplatesBuildsFromDishCatalog",
+      "type": "function",
+      "name": "TestServiceListOrderTemplatesBuildsFromDishCatalog",
+      "filePath": "internal/services/order/usecase/order/order_test.go",
+      "lineRange": [
+        104,
+        132
+      ],
+      "summary": "Проверяет построение шаблонов из каталога блюд.",
+      "tags": [
+        "test",
+        "order",
+        "usecase"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/usecase/order/order_test.go:TestServiceDeleteOrdersOlderThan",
+      "type": "function",
+      "name": "TestServiceDeleteOrdersOlderThan",
+      "filePath": "internal/services/order/usecase/order/order_test.go",
+      "lineRange": [
+        149,
+        164
+      ],
+      "summary": "Проверяет удаление устаревших заказов.",
+      "tags": [
+        "test",
+        "order",
+        "usecase"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/usecase/order/order_test.go:TestServiceCreateOrderRejectsPastFulfillmentDate",
+      "type": "function",
+      "name": "TestServiceCreateOrderRejectsPastFulfillmentDate",
+      "filePath": "internal/services/order/usecase/order/order_test.go",
+      "lineRange": [
+        166,
+        190
+      ],
+      "summary": "Проверяет отклонение прошедшей даты выполнения.",
+      "tags": [
+        "test",
+        "order",
+        "usecase"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/usecase/order/order_test.go:TestServiceCreateOrderAllowsTodayFulfillmentDate",
+      "type": "function",
+      "name": "TestServiceCreateOrderAllowsTodayFulfillmentDate",
+      "filePath": "internal/services/order/usecase/order/order_test.go",
+      "lineRange": [
+        192,
+        220
+      ],
+      "summary": "Проверяет допустимость сегодняшней даты выполнения.",
+      "tags": [
+        "test",
+        "order",
+        "usecase"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:internal/services/order/usecase/order/order_test.go:TestParseDefaultDishCatalogItems",
+      "type": "function",
+      "name": "TestParseDefaultDishCatalogItems",
+      "filePath": "internal/services/order/usecase/order/order_test.go",
+      "lineRange": [
+        222,
+        241
+      ],
+      "summary": "Проверяет парсинг каталога блюд по умолчанию.",
+      "tags": [
+        "test",
+        "order",
+        "usecase"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:internal/services/order/usecase/order/order_test.go:fakeRepo",
+      "type": "class",
+      "name": "fakeRepo",
+      "filePath": "internal/services/order/usecase/order/order_test.go",
+      "lineRange": [
+        259,
+        269
+      ],
+      "summary": "Fake-репозиторий заказов для тестов usecase.",
+      "tags": [
+        "test",
+        "order",
+        "fixture"
+      ],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:internal/services/order/domain/service_test.go",
+      "target": "function:internal/services/order/domain/service_test.go:TestOrderServiceParseBulkOrder",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/domain/service_test.go",
+      "target": "function:internal/services/order/domain/service_test.go:TestOrderServiceParseBulkOrder",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/domain/service_test.go",
+      "target": "function:internal/services/order/domain/service_test.go:TestOrderServiceUsesInjectedSpec",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/domain/service_test.go",
+      "target": "function:internal/services/order/domain/service_test.go:TestOrderServiceUsesInjectedSpec",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/domain/service_test.go",
+      "target": "function:internal/services/order/domain/service_test.go:TestOrderServiceValidateUniqueItems",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/domain/service_test.go",
+      "target": "function:internal/services/order/domain/service_test.go:TestOrderServiceValidateUniqueItems",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/domain/service_test.go",
+      "target": "function:internal/services/order/domain/service_test.go:TestOrderServiceOrderNumberRules",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/domain/service_test.go",
+      "target": "function:internal/services/order/domain/service_test.go:TestOrderServiceOrderNumberRules",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/domain/service_test.go",
+      "target": "function:internal/services/order/domain/service_test.go:TestOrderLineProcessableSpecificationSkipsUppercaseHeaders",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/domain/service_test.go",
+      "target": "function:internal/services/order/domain/service_test.go:TestOrderLineProcessableSpecificationSkipsUppercaseHeaders",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/domain/service_test.go",
+      "target": "function:internal/services/order/domain/service_test.go:TestPositiveQuantitySpecification",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/domain/service_test.go",
+      "target": "function:internal/services/order/domain/service_test.go:TestPositiveQuantitySpecification",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/domain/service_test.go",
+      "target": "function:internal/services/order/domain/service_test.go:TestOrderLineFormatSpecificationReservedQuantity",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/domain/service_test.go",
+      "target": "function:internal/services/order/domain/service_test.go:TestOrderLineFormatSpecificationReservedQuantity",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/domain/service_test.go",
+      "target": "function:internal/services/order/domain/service_test.go:TestDuplicateOrderItemErrors",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/domain/service_test.go",
+      "target": "function:internal/services/order/domain/service_test.go:TestDuplicateOrderItemErrors",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "class:internal/services/order/infra/http/handler.go:Handler",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "class:internal/services/order/infra/http/handler.go:Handler",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "function:internal/services/order/infra/http/handler.go:RegisterRoutes",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "function:internal/services/order/infra/http/handler.go:RegisterRoutes",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "function:internal/services/order/infra/http/handler.go:handleListOrders",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "function:internal/services/order/infra/http/handler.go:handleOrderByID",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "function:internal/services/order/infra/http/handler.go:UserCanReadOrder",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "function:internal/services/order/infra/http/handler.go:UserCanReadOrder",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_write.go",
+      "target": "function:internal/services/order/infra/http/handler_write.go:handleCatalog",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_write.go",
+      "target": "function:internal/services/order/infra/http/handler_write.go:handleCreateOrder",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_write.go",
+      "target": "function:internal/services/order/infra/http/handler_write.go:handleUpdateOrder",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_write.go",
+      "target": "function:internal/services/order/infra/http/handler_write.go:buildComments",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_write.go",
+      "target": "function:internal/services/order/infra/http/handler_write.go:decodeOrderWriteRequest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_write.go",
+      "target": "function:internal/services/order/infra/http/handler_write.go:miniAppOrderAuthor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/interfaces.go",
+      "target": "class:internal/services/order/usecase/order/interfaces.go:UseCase",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/interfaces.go",
+      "target": "class:internal/services/order/usecase/order/interfaces.go:UseCase",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/interfaces.go",
+      "target": "class:internal/services/order/usecase/order/interfaces.go:Repository",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/interfaces.go",
+      "target": "class:internal/services/order/usecase/order/interfaces.go:Repository",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "class:internal/services/order/usecase/order/order.go:Service",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "class:internal/services/order/usecase/order/order.go:Service",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:CreateOrder",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:CreateOrder",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:UpdateOrder",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:UpdateOrder",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:ValidateBulkOrder",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:ValidateBulkOrder",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:ListDishCatalog",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:ListDishCatalog",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:CombinedOrderTemplate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:CombinedOrderTemplate",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:GetOrderTemplate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:GetOrderTemplate",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:EnsureDefaultOrderTemplates",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:EnsureDefaultOrderTemplates",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:DeleteOrdersOlderThan",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:DeleteOrdersOlderThan",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:RunCleanupTicker",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:RunCleanupTicker",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:resolveValidOrderItems",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:resolveOrderItem",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:diffOrderItems",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:orderHistoryItem",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:dishCatalogTemplates",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "function:internal/services/order/usecase/order/order.go:parseDefaultDishCatalogItems",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order_test.go",
+      "target": "function:internal/services/order/usecase/order/order_test.go:TestServiceValidateBulkOrder",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order_test.go",
+      "target": "function:internal/services/order/usecase/order/order_test.go:TestServiceValidateBulkOrder",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order_test.go",
+      "target": "function:internal/services/order/usecase/order/order_test.go:TestServiceValidateBulkOrderResolvesDishNames",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order_test.go",
+      "target": "function:internal/services/order/usecase/order/order_test.go:TestServiceValidateBulkOrderResolvesDishNames",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order_test.go",
+      "target": "function:internal/services/order/usecase/order/order_test.go:TestServiceListOrderTemplatesBuildsFromDishCatalog",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order_test.go",
+      "target": "function:internal/services/order/usecase/order/order_test.go:TestServiceListOrderTemplatesBuildsFromDishCatalog",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order_test.go",
+      "target": "function:internal/services/order/usecase/order/order_test.go:TestServiceDeleteOrdersOlderThan",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order_test.go",
+      "target": "function:internal/services/order/usecase/order/order_test.go:TestServiceDeleteOrdersOlderThan",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order_test.go",
+      "target": "function:internal/services/order/usecase/order/order_test.go:TestServiceCreateOrderRejectsPastFulfillmentDate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order_test.go",
+      "target": "function:internal/services/order/usecase/order/order_test.go:TestServiceCreateOrderRejectsPastFulfillmentDate",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order_test.go",
+      "target": "function:internal/services/order/usecase/order/order_test.go:TestServiceCreateOrderAllowsTodayFulfillmentDate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order_test.go",
+      "target": "function:internal/services/order/usecase/order/order_test.go:TestServiceCreateOrderAllowsTodayFulfillmentDate",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order_test.go",
+      "target": "function:internal/services/order/usecase/order/order_test.go:TestParseDefaultDishCatalogItems",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order_test.go",
+      "target": "function:internal/services/order/usecase/order/order_test.go:TestParseDefaultDishCatalogItems",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order_test.go",
+      "target": "class:internal/services/order/usecase/order/order_test.go:fakeRepo",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "file:internal/inbound/api/httpx/apperror.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "file:internal/inbound/api/httpx/auth_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "file:internal/inbound/api/httpx/auth.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "file:internal/inbound/api/httpx/respond.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "file:internal/services/department/usecase/department/department.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "file:internal/services/department/usecase/department/interfaces.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "file:internal/services/order/domain/events.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "file:internal/services/order/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "file:internal/services/order/domain/order_specs.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "file:internal/services/order/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "file:internal/services/order/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "file:internal/services/order/domain/specification.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "file:internal/services/order/usecase/order/interfaces.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "file:internal/services/order/usecase/order/order_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler.go",
+      "target": "file:internal/services/order/usecase/order/order.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_write.go",
+      "target": "file:internal/inbound/api/httpx/apperror.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_write.go",
+      "target": "file:internal/inbound/api/httpx/auth_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_write.go",
+      "target": "file:internal/inbound/api/httpx/auth.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_write.go",
+      "target": "file:internal/inbound/api/httpx/respond.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_write.go",
+      "target": "file:internal/services/order/domain/events.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_write.go",
+      "target": "file:internal/services/order/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_write.go",
+      "target": "file:internal/services/order/domain/order_specs.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_write.go",
+      "target": "file:internal/services/order/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_write.go",
+      "target": "file:internal/services/order/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_write.go",
+      "target": "file:internal/services/order/domain/specification.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_write.go",
+      "target": "file:internal/services/order/usecase/order/interfaces.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_write.go",
+      "target": "file:internal/services/order/usecase/order/order_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/infra/http/handler_write.go",
+      "target": "file:internal/services/order/usecase/order/order.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/interfaces.go",
+      "target": "file:internal/services/order/domain/events.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/interfaces.go",
+      "target": "file:internal/services/order/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/interfaces.go",
+      "target": "file:internal/services/order/domain/order_specs.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/interfaces.go",
+      "target": "file:internal/services/order/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/interfaces.go",
+      "target": "file:internal/services/order/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/interfaces.go",
+      "target": "file:internal/services/order/domain/specification.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "file:internal/pkg/apperr/apperr_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "file:internal/pkg/apperr/apperr.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "file:internal/pkg/enum/enum.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "file:internal/pkg/enum/rabbitmq.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "file:internal/services/order/domain/events.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "file:internal/services/order/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "file:internal/services/order/domain/order_specs.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "file:internal/services/order/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "file:internal/services/order/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "file:internal/services/order/domain/specification.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order_test.go",
+      "target": "file:internal/services/order/domain/events.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order_test.go",
+      "target": "file:internal/services/order/domain/model.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order_test.go",
+      "target": "file:internal/services/order/domain/order_specs.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order_test.go",
+      "target": "file:internal/services/order/domain/service_test.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order_test.go",
+      "target": "file:internal/services/order/domain/service.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order_test.go",
+      "target": "file:internal/services/order/domain/specification.go",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:internal/services/order/usecase/order/order.go",
+      "target": "file:internal/services/order/usecase/order/order_test.go",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

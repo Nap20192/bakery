@@ -1,0 +1,55 @@
+{
+  "nodes": [
+    {
+      "id": "service:frontend/Dockerfile",
+      "type": "service",
+      "name": "Dockerfile",
+      "filePath": "frontend/Dockerfile",
+      "summary": "Многоэтапная сборка Docker для фронтенда: stage `builder` на образе node:22-alpine собирает приложение через `npm run build`, а финальный runtime-образ копирует артефакты `dist` и `server.js` и запускает Node-сервер на порту 8080.",
+      "tags": ["containerization", "infrastructure", "deployment", "frontend"],
+      "complexity": "simple",
+      "languageNotes": "Multi-stage build: отдельный build stage с dev-зависимостями (npm ci) отделён от runtime stage, что уменьшает итоговый размер образа. ENV BACKEND_URL указывает на внутренний адрес бэкенда в сети Railway."
+    },
+    {
+      "id": "service:frontend/Dockerfile:builder",
+      "type": "service",
+      "name": "builder",
+      "filePath": "frontend/Dockerfile",
+      "summary": "Build stage на базе node:22-alpine: устанавливает зависимости через `npm ci` и собирает фронтенд командой `npm run build` в каталоге /src/frontend.",
+      "tags": ["containerization", "build-system", "frontend"],
+      "complexity": "simple"
+    },
+    {
+      "id": "service:frontend/Dockerfile:node",
+      "type": "service",
+      "name": "node",
+      "filePath": "frontend/Dockerfile",
+      "summary": "Runtime stage на базе node:22-alpine: копирует собранный `dist` из stage builder и `server.js`, задаёт переменные окружения (HOST, PORT, BACKEND_URL) и запускает Node-сервер на порту 8080.",
+      "tags": ["containerization", "deployment", "frontend"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "service:frontend/Dockerfile",
+      "target": "service:frontend/Dockerfile:builder",
+      "type": "deploys",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "service:frontend/Dockerfile",
+      "target": "service:frontend/Dockerfile:node",
+      "type": "deploys",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "service:frontend/Dockerfile:node",
+      "target": "service:frontend/Dockerfile:builder",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    }
+  ]
+}

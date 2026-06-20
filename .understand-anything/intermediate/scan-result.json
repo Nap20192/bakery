@@ -1,0 +1,2517 @@
+{
+  "name": "bakery",
+  "description": "Бэкенд на Go для пекарни: Telegram-бот, HTTP API и worker, организованные по clean architecture (cmd/bot, cmd/worker; сервисы order/auth/admin/department/monitor/sync/techcard; inbound bot/api, outbound db/iiko). Frontend — Telegram mini-app на React 19 + Vite + Tailwind v4. Хранилище Postgres через sqlc, очереди RabbitMQ, интеграция с ERP iiko. Note: this project has over 100 source files; consider scoping analysis to a subdirectory for faster results.",
+  "languages": [
+    "config",
+    "css",
+    "dockerfile",
+    "go",
+    "html",
+    "javascript",
+    "json",
+    "makefile",
+    "markdown",
+    "mod",
+    "sql",
+    "sum",
+    "txt",
+    "unknown",
+    "yaml"
+  ],
+  "frameworks": [
+    "React",
+    "Vite",
+    "Tailwind CSS",
+    "Docker",
+    "Docker Compose"
+  ],
+  "files": [
+    {
+      "path": ".dockerignore",
+      "language": "unknown",
+      "sizeLines": 24,
+      "fileCategory": "infra"
+    },
+    {
+      "path": ".env.example",
+      "language": "config",
+      "sizeLines": 46,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".golangci.yml",
+      "language": "yaml",
+      "sizeLines": 60,
+      "fileCategory": "config"
+    },
+    {
+      "path": "AGENTS.md",
+      "language": "markdown",
+      "sizeLines": 378,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "cmd/bot/main.go",
+      "language": "go",
+      "sizeLines": 113,
+      "fileCategory": "code"
+    },
+    {
+      "path": "cmd/worker/main.go",
+      "language": "go",
+      "sizeLines": 133,
+      "fileCategory": "code"
+    },
+    {
+      "path": "deploy/Dockerfile.bot",
+      "language": "dockerfile",
+      "sizeLines": 36,
+      "fileCategory": "infra"
+    },
+    {
+      "path": "deploy/Dockerfile.worker",
+      "language": "dockerfile",
+      "sizeLines": 36,
+      "fileCategory": "infra"
+    },
+    {
+      "path": "docker-compose.yml",
+      "language": "yaml",
+      "sizeLines": 100,
+      "fileCategory": "infra"
+    },
+    {
+      "path": "frontend/.env.example",
+      "language": "config",
+      "sizeLines": 16,
+      "fileCategory": "config"
+    },
+    {
+      "path": "frontend/Dockerfile",
+      "language": "dockerfile",
+      "sizeLines": 24,
+      "fileCategory": "infra"
+    },
+    {
+      "path": "frontend/eslint.config.js",
+      "language": "javascript",
+      "sizeLines": 36,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/FRONTEND_BEHAVIOR.md",
+      "language": "markdown",
+      "sizeLines": 206,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "frontend/index.html",
+      "language": "html",
+      "sizeLines": 13,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/package.json",
+      "language": "json",
+      "sizeLines": 27,
+      "fileCategory": "config"
+    },
+    {
+      "path": "frontend/railway.json",
+      "language": "json",
+      "sizeLines": 16,
+      "fileCategory": "config"
+    },
+    {
+      "path": "frontend/RAILWAY.md",
+      "language": "markdown",
+      "sizeLines": 73,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "frontend/server.js",
+      "language": "javascript",
+      "sizeLines": 218,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/skills-lock.json",
+      "language": "json",
+      "sizeLines": 47,
+      "fileCategory": "config"
+    },
+    {
+      "path": "frontend/src/api/auth.js",
+      "language": "javascript",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/api/client.js",
+      "language": "javascript",
+      "sizeLines": 81,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/api/dishes.js",
+      "language": "javascript",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/api/orders.js",
+      "language": "javascript",
+      "sizeLines": 70,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/api/users.js",
+      "language": "javascript",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/app/App.jsx",
+      "language": "javascript",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/app/routes.js",
+      "language": "javascript",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/Button.jsx",
+      "language": "javascript",
+      "sizeLines": 13,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/CopyButton.jsx",
+      "language": "javascript",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/EmptyState.jsx",
+      "language": "javascript",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/Field.jsx",
+      "language": "javascript",
+      "sizeLines": 24,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/Icon.jsx",
+      "language": "javascript",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/Login.jsx",
+      "language": "javascript",
+      "sizeLines": 70,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/MetaCell.jsx",
+      "language": "javascript",
+      "sizeLines": 8,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/Panel.jsx",
+      "language": "javascript",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/config/env.js",
+      "language": "javascript",
+      "sizeLines": 5,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/account/Me.jsx",
+      "language": "javascript",
+      "sizeLines": 38,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/admin/AdminDishes.jsx",
+      "language": "javascript",
+      "sizeLines": 103,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/admin/AdminUsers.jsx",
+      "language": "javascript",
+      "sizeLines": 208,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/BakerOrderCard.jsx",
+      "language": "javascript",
+      "sizeLines": 72,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/BakerOrderFilters.jsx",
+      "language": "javascript",
+      "sizeLines": 50,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/BakerOrderReview.jsx",
+      "language": "javascript",
+      "sizeLines": 43,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/BakerOrdersView.jsx",
+      "language": "javascript",
+      "sizeLines": 118,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/BakerSelectionReview.jsx",
+      "language": "javascript",
+      "sizeLines": 61,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/MonitorReports.jsx",
+      "language": "javascript",
+      "sizeLines": 82,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/OrderDetails.jsx",
+      "language": "javascript",
+      "sizeLines": 193,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/OrderEditor.jsx",
+      "language": "javascript",
+      "sizeLines": 332,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/OrderList.jsx",
+      "language": "javascript",
+      "sizeLines": 120,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/OrderPagination.jsx",
+      "language": "javascript",
+      "sizeLines": 21,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/OrderPreviewModal.jsx",
+      "language": "javascript",
+      "sizeLines": 37,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/OrdersLayout.jsx",
+      "language": "javascript",
+      "sizeLines": 94,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/OrdersPage.jsx",
+      "language": "javascript",
+      "sizeLines": 456,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/features/orders/ShopOrdersView.jsx",
+      "language": "javascript",
+      "sizeLines": 79,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/lib/auth.js",
+      "language": "javascript",
+      "sizeLines": 44,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/lib/format.js",
+      "language": "javascript",
+      "sizeLines": 18,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/lib/logger.js",
+      "language": "javascript",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/lib/orders.js",
+      "language": "javascript",
+      "sizeLines": 45,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/lib/telegram.js",
+      "language": "javascript",
+      "sizeLines": 16,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/lib/url.js",
+      "language": "javascript",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/main.jsx",
+      "language": "javascript",
+      "sizeLines": 8,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/styles.css",
+      "language": "css",
+      "sizeLines": 80,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/vite.config.js",
+      "language": "javascript",
+      "sizeLines": 18,
+      "fileCategory": "code"
+    },
+    {
+      "path": "go.mod",
+      "language": "mod",
+      "sizeLines": 20,
+      "fileCategory": "config"
+    },
+    {
+      "path": "go.sum",
+      "language": "sum",
+      "sizeLines": 878,
+      "fileCategory": "config"
+    },
+    {
+      "path": "internal/config/config.go",
+      "language": "go",
+      "sizeLines": 200,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/config/dotenv.go",
+      "language": "go",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/deps/deps.go",
+      "language": "go",
+      "sizeLines": 187,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/deps/infra.go",
+      "language": "go",
+      "sizeLines": 98,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/api/httpx/apperror.go",
+      "language": "go",
+      "sizeLines": 37,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth_test.go",
+      "language": "go",
+      "sizeLines": 114,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/api/httpx/auth.go",
+      "language": "go",
+      "sizeLines": 294,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/api/httpx/respond.go",
+      "language": "go",
+      "sizeLines": 81,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/api/middleware.go",
+      "language": "go",
+      "sizeLines": 76,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/api/server.go",
+      "language": "go",
+      "sizeLines": 88,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/action_menu_test.go",
+      "language": "go",
+      "sizeLines": 136,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/action_menu.go",
+      "language": "go",
+      "sizeLines": 274,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/bot.go",
+      "language": "go",
+      "sizeLines": 109,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/handler_events.go",
+      "language": "go",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/handler_monitor.go",
+      "language": "go",
+      "sizeLines": 107,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/handler_order.go",
+      "language": "go",
+      "sizeLines": 390,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/handler_orders_test.go",
+      "language": "go",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/handler_orders.go",
+      "language": "go",
+      "sizeLines": 334,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/handler_start.go",
+      "language": "go",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/handler_techcard.go",
+      "language": "go",
+      "sizeLines": 26,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/handler_templates.go",
+      "language": "go",
+      "sizeLines": 80,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/messages.go",
+      "language": "go",
+      "sizeLines": 10,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/middleware.go",
+      "language": "go",
+      "sizeLines": 87,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/mini_app_test.go",
+      "language": "go",
+      "sizeLines": 35,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/mini_app.go",
+      "language": "go",
+      "sizeLines": 51,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/ports.go",
+      "language": "go",
+      "sizeLines": 68,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/render.go",
+      "language": "go",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/response/builder_monitor_test.go",
+      "language": "go",
+      "sizeLines": 89,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/response/builder_order_test.go",
+      "language": "go",
+      "sizeLines": 40,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/response/builder.go",
+      "language": "go",
+      "sizeLines": 322,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/routes.go",
+      "language": "go",
+      "sizeLines": 84,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/sender_test.go",
+      "language": "go",
+      "sizeLines": 105,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/sender.go",
+      "language": "go",
+      "sizeLines": 183,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/session_test.go",
+      "language": "go",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/session.go",
+      "language": "go",
+      "sizeLines": 120,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/postgres.go",
+      "language": "go",
+      "sizeLines": 60,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/sqlc/auth.sql.go",
+      "language": "go",
+      "sizeLines": 430,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/sqlc/db.go",
+      "language": "go",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/sqlc/departments.sql.go",
+      "language": "go",
+      "sizeLines": 188,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/sqlc/iiko_snapshot.sql.go",
+      "language": "go",
+      "sizeLines": 438,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/sqlc/models.go",
+      "language": "go",
+      "sizeLines": 179,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/sqlc/monitor.sql.go",
+      "language": "go",
+      "sizeLines": 220,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/sqlc/order_outbox.sql.go",
+      "language": "go",
+      "sizeLines": 101,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/sqlc/orders.sql.go",
+      "language": "go",
+      "sizeLines": 621,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/sqlc/products.sql.go",
+      "language": "go",
+      "sizeLines": 283,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/sqlc/querier.go",
+      "language": "go",
+      "sizeLines": 76,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/iiko/api.go",
+      "language": "go",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/iiko/client_test.go",
+      "language": "go",
+      "sizeLines": 135,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/iiko/client.go",
+      "language": "go",
+      "sizeLines": 234,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/iiko/consts.go",
+      "language": "go",
+      "sizeLines": 11,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/iiko/dto.go",
+      "language": "go",
+      "sizeLines": 342,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/iiko/testdata/results/01_auth.json",
+      "language": "json",
+      "sizeLines": 3,
+      "fileCategory": "config"
+    },
+    {
+      "path": "internal/outbound/iiko/testdata/results/02_list_products.json",
+      "language": "json",
+      "sizeLines": 78080,
+      "fileCategory": "config"
+    },
+    {
+      "path": "internal/outbound/iiko/testdata/results/03_assembly_charts_get_all.json",
+      "language": "json",
+      "sizeLines": 161361,
+      "fileCategory": "config"
+    },
+    {
+      "path": "internal/outbound/iiko/testdata/results/05_assembly_chart_by_id.json",
+      "language": "json",
+      "sizeLines": 7,
+      "fileCategory": "config"
+    },
+    {
+      "path": "internal/outbound/iiko/testdata/results/07_assembly_charts_get_assembled.json",
+      "language": "json",
+      "sizeLines": 27,
+      "fileCategory": "config"
+    },
+    {
+      "path": "internal/outbound/iiko/testdata/results/08_assembly_charts_get_prepared.json",
+      "language": "json",
+      "sizeLines": 20,
+      "fileCategory": "config"
+    },
+    {
+      "path": "internal/pkg/apperr/apperr_test.go",
+      "language": "go",
+      "sizeLines": 40,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/apperr/apperr.go",
+      "language": "go",
+      "sizeLines": 98,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/authtoken/authtoken_test.go",
+      "language": "go",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/authtoken/authtoken.go",
+      "language": "go",
+      "sizeLines": 74,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/correlation/correlation.go",
+      "language": "go",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/dbmigrate/migrate_test.go",
+      "language": "go",
+      "sizeLines": 77,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/dbmigrate/migrate.go",
+      "language": "go",
+      "sizeLines": 194,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/enum/enum.go",
+      "language": "go",
+      "sizeLines": 74,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/enum/rabbitmq.go",
+      "language": "go",
+      "sizeLines": 27,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/helpers/db.go",
+      "language": "go",
+      "sizeLines": 10,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/helpers/env.go",
+      "language": "go",
+      "sizeLines": 46,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/helpers/format.go",
+      "language": "go",
+      "sizeLines": 16,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/helpers/time.go",
+      "language": "go",
+      "sizeLines": 22,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/sharedkernel/aggregate_root.go",
+      "language": "go",
+      "sizeLines": 22,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/sharedkernel/event.go",
+      "language": "go",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/admin/app/app.go",
+      "language": "go",
+      "sizeLines": 40,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/admin/infra/http/handler.go",
+      "language": "go",
+      "sizeLines": 203,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/admin/usecase/admin/admin.go",
+      "language": "go",
+      "sizeLines": 147,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/admin/usecase/admin/interfaces.go",
+      "language": "go",
+      "sizeLines": 69,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/auth/app/app.go",
+      "language": "go",
+      "sizeLines": 16,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/auth/domain/auth.go",
+      "language": "go",
+      "sizeLines": 47,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/auth/infra/http/handler.go",
+      "language": "go",
+      "sizeLines": 115,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/auth/infra/repo/auth_repo.go",
+      "language": "go",
+      "sizeLines": 232,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/auth/usecase/auth/auth_test.go",
+      "language": "go",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/auth/usecase/auth/auth.go",
+      "language": "go",
+      "sizeLines": 225,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/auth/usecase/auth/interfaces.go",
+      "language": "go",
+      "sizeLines": 64,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/auth/usecase/auth/rbac.go",
+      "language": "go",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/department/app/app.go",
+      "language": "go",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/department/infra/http/handler.go",
+      "language": "go",
+      "sizeLines": 64,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/department/infra/repo/department_repo.go",
+      "language": "go",
+      "sizeLines": 64,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/department/usecase/department/department.go",
+      "language": "go",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/department/usecase/department/interfaces.go",
+      "language": "go",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/monitor/app/app.go",
+      "language": "go",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/monitor/domain/model.go",
+      "language": "go",
+      "sizeLines": 42,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/monitor/domain/service_test.go",
+      "language": "go",
+      "sizeLines": 112,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/monitor/domain/service.go",
+      "language": "go",
+      "sizeLines": 119,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/monitor/infra/http/handler.go",
+      "language": "go",
+      "sizeLines": 218,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/monitor/infra/repo/monitor_repo.go",
+      "language": "go",
+      "sizeLines": 170,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/monitor/usecase/monitor/interfaces.go",
+      "language": "go",
+      "sizeLines": 42,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/monitor/usecase/monitor/monitor.go",
+      "language": "go",
+      "sizeLines": 163,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/app/app.go",
+      "language": "go",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/domain/events.go",
+      "language": "go",
+      "sizeLines": 48,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/domain/model.go",
+      "language": "go",
+      "sizeLines": 115,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/domain/order_specs.go",
+      "language": "go",
+      "sizeLines": 180,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/domain/service_test.go",
+      "language": "go",
+      "sizeLines": 223,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/domain/service.go",
+      "language": "go",
+      "sizeLines": 186,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/domain/specification.go",
+      "language": "go",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/infra/http/handler_admin.go",
+      "language": "go",
+      "sizeLines": 84,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/infra/http/handler_test.go",
+      "language": "go",
+      "sizeLines": 100,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/infra/http/handler_write.go",
+      "language": "go",
+      "sizeLines": 247,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/infra/http/handler.go",
+      "language": "go",
+      "sizeLines": 139,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/infra/http/presenter.go",
+      "language": "go",
+      "sizeLines": 185,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/infra/outbox/relay.go",
+      "language": "go",
+      "sizeLines": 78,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/infra/repo/order_repo.go",
+      "language": "go",
+      "sizeLines": 519,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/usecase/order/interfaces.go",
+      "language": "go",
+      "sizeLines": 119,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/usecase/order/order_test.go",
+      "language": "go",
+      "sizeLines": 336,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/order/usecase/order/order.go",
+      "language": "go",
+      "sizeLines": 578,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/sync/app/app.go",
+      "language": "go",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/sync/infra/repo/sync_repo.go",
+      "language": "go",
+      "sizeLines": 245,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/sync/usecase/sync/interfaces.go",
+      "language": "go",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/sync/usecase/sync/sync.go",
+      "language": "go",
+      "sizeLines": 106,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/techcard/app/app.go",
+      "language": "go",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/techcard/domain/model.go",
+      "language": "go",
+      "sizeLines": 21,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/techcard/infra/repo/techcard_repo.go",
+      "language": "go",
+      "sizeLines": 134,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/techcard/usecase/techcard/interfaces.go",
+      "language": "go",
+      "sizeLines": 18,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/services/techcard/usecase/techcard/techcard.go",
+      "language": "go",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "Makefile",
+      "language": "makefile",
+      "sizeLines": 42,
+      "fileCategory": "infra"
+    },
+    {
+      "path": "migrations/00001_init.sql",
+      "language": "sql",
+      "sizeLines": 153,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00002_departments.sql",
+      "language": "sql",
+      "sizeLines": 39,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00003_default_departments_order_locations.sql",
+      "language": "sql",
+      "sizeLines": 40,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00004_order_fulfillment_reserved_quantity.sql",
+      "language": "sql",
+      "sizeLines": 18,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00005_order_created_by_username.sql",
+      "language": "sql",
+      "sizeLines": 13,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00006_order_templates_and_updates.sql",
+      "language": "sql",
+      "sizeLines": 22,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00007_drop_order_template_theme.sql",
+      "language": "sql",
+      "sizeLines": 12,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00008_order_history.sql",
+      "language": "sql",
+      "sizeLines": 36,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00009_dish_catalog.sql",
+      "language": "sql",
+      "sizeLines": 20,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00010_drop_order_templates.sql",
+      "language": "sql",
+      "sizeLines": 15,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00011_dish_catalog_sort_order.sql",
+      "language": "sql",
+      "sizeLines": 12,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00012_timestamptz_and_per_shop_counter.sql",
+      "language": "sql",
+      "sizeLines": 141,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00013_unique_telegram_username.sql",
+      "language": "sql",
+      "sizeLines": 16,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00014_order_outbox.sql",
+      "language": "sql",
+      "sizeLines": 22,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00015_order_comments.sql",
+      "language": "sql",
+      "sizeLines": 9,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00016_order_favorite.sql",
+      "language": "sql",
+      "sizeLines": 6,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/00017_orders_created_at_index.sql",
+      "language": "sql",
+      "sizeLines": 8,
+      "fileCategory": "data"
+    },
+    {
+      "path": "pkg/logger/context.go",
+      "language": "go",
+      "sizeLines": 227,
+      "fileCategory": "code"
+    },
+    {
+      "path": "pkg/logger/log.go",
+      "language": "go",
+      "sizeLines": 98,
+      "fileCategory": "code"
+    },
+    {
+      "path": "pkg/logger/pretty.go",
+      "language": "go",
+      "sizeLines": 311,
+      "fileCategory": "code"
+    },
+    {
+      "path": "pkg/rabbitmq/client.go",
+      "language": "go",
+      "sizeLines": 38,
+      "fileCategory": "code"
+    },
+    {
+      "path": "pkg/rabbitmq/consumer/consumer.go",
+      "language": "go",
+      "sizeLines": 187,
+      "fileCategory": "code"
+    },
+    {
+      "path": "pkg/rabbitmq/publisher/publisher.go",
+      "language": "go",
+      "sizeLines": 161,
+      "fileCategory": "code"
+    },
+    {
+      "path": "prepared_dough_codes.txt",
+      "language": "txt",
+      "sizeLines": 45,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "queries/auth.sql",
+      "language": "sql",
+      "sizeLines": 100,
+      "fileCategory": "data"
+    },
+    {
+      "path": "queries/departments.sql",
+      "language": "sql",
+      "sizeLines": 45,
+      "fileCategory": "data"
+    },
+    {
+      "path": "queries/iiko_snapshot.sql",
+      "language": "sql",
+      "sizeLines": 191,
+      "fileCategory": "data"
+    },
+    {
+      "path": "queries/monitor.sql",
+      "language": "sql",
+      "sizeLines": 58,
+      "fileCategory": "data"
+    },
+    {
+      "path": "queries/order_outbox.sql",
+      "language": "sql",
+      "sizeLines": 25,
+      "fileCategory": "data"
+    },
+    {
+      "path": "queries/orders.sql",
+      "language": "sql",
+      "sizeLines": 175,
+      "fileCategory": "data"
+    },
+    {
+      "path": "queries/products.sql",
+      "language": "sql",
+      "sizeLines": 81,
+      "fileCategory": "data"
+    },
+    {
+      "path": "README.md",
+      "language": "markdown",
+      "sizeLines": 40,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "skills-lock.json",
+      "language": "json",
+      "sizeLines": 17,
+      "fileCategory": "config"
+    },
+    {
+      "path": "sqlc.yaml",
+      "language": "yaml",
+      "sizeLines": 14,
+      "fileCategory": "config"
+    },
+    {
+      "path": "templates/dishes.txt",
+      "language": "txt",
+      "sizeLines": 104,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "TODO.md",
+      "language": "markdown",
+      "sizeLines": 41,
+      "fileCategory": "docs"
+    }
+  ],
+  "totalFiles": 223,
+  "filteredByIgnore": 35,
+  "estimatedComplexity": "large",
+  "importMap": {
+    ".dockerignore": [],
+    ".env.example": [],
+    ".golangci.yml": [],
+    "AGENTS.md": [],
+    "cmd/bot/main.go": [
+      "internal/config/config.go",
+      "internal/config/dotenv.go",
+      "internal/deps/deps.go",
+      "internal/deps/infra.go",
+      "internal/outbound/db/postgres.go",
+      "internal/pkg/dbmigrate/migrate_test.go",
+      "internal/pkg/dbmigrate/migrate.go",
+      "internal/pkg/helpers/db.go",
+      "internal/pkg/helpers/env.go",
+      "internal/pkg/helpers/format.go",
+      "internal/pkg/helpers/time.go",
+      "pkg/logger/context.go",
+      "pkg/logger/log.go",
+      "pkg/logger/pretty.go",
+      "pkg/rabbitmq/client.go"
+    ],
+    "cmd/worker/main.go": [
+      "internal/config/config.go",
+      "internal/config/dotenv.go",
+      "internal/deps/deps.go",
+      "internal/deps/infra.go",
+      "internal/outbound/db/postgres.go",
+      "internal/pkg/dbmigrate/migrate_test.go",
+      "internal/pkg/dbmigrate/migrate.go",
+      "internal/pkg/helpers/db.go",
+      "internal/pkg/helpers/env.go",
+      "internal/pkg/helpers/format.go",
+      "internal/pkg/helpers/time.go",
+      "pkg/logger/context.go",
+      "pkg/logger/log.go",
+      "pkg/logger/pretty.go",
+      "pkg/rabbitmq/client.go"
+    ],
+    "deploy/Dockerfile.bot": [],
+    "deploy/Dockerfile.worker": [],
+    "docker-compose.yml": [],
+    "frontend/.env.example": [],
+    "frontend/Dockerfile": [],
+    "frontend/eslint.config.js": [],
+    "frontend/FRONTEND_BEHAVIOR.md": [],
+    "frontend/index.html": [],
+    "frontend/package.json": [],
+    "frontend/railway.json": [],
+    "frontend/RAILWAY.md": [],
+    "frontend/server.js": [],
+    "frontend/skills-lock.json": [],
+    "frontend/src/api/auth.js": [
+      "frontend/src/config/env.js",
+      "frontend/src/lib/url.js"
+    ],
+    "frontend/src/api/client.js": [
+      "frontend/src/config/env.js",
+      "frontend/src/lib/auth.js",
+      "frontend/src/lib/logger.js",
+      "frontend/src/lib/url.js"
+    ],
+    "frontend/src/api/dishes.js": [
+      "frontend/src/api/client.js"
+    ],
+    "frontend/src/api/orders.js": [
+      "frontend/src/api/client.js"
+    ],
+    "frontend/src/api/users.js": [
+      "frontend/src/api/client.js"
+    ],
+    "frontend/src/app/App.jsx": [
+      "frontend/src/app/routes.js",
+      "frontend/src/features/orders/OrdersPage.jsx"
+    ],
+    "frontend/src/app/routes.js": [],
+    "frontend/src/components/Button.jsx": [],
+    "frontend/src/components/CopyButton.jsx": [
+      "frontend/src/components/Button.jsx",
+      "frontend/src/components/Icon.jsx"
+    ],
+    "frontend/src/components/EmptyState.jsx": [],
+    "frontend/src/components/Field.jsx": [],
+    "frontend/src/components/Icon.jsx": [],
+    "frontend/src/components/Login.jsx": [
+      "frontend/src/api/auth.js",
+      "frontend/src/components/Button.jsx",
+      "frontend/src/lib/auth.js",
+      "frontend/src/lib/logger.js"
+    ],
+    "frontend/src/components/MetaCell.jsx": [],
+    "frontend/src/components/Panel.jsx": [],
+    "frontend/src/config/env.js": [],
+    "frontend/src/features/account/Me.jsx": [
+      "frontend/src/components/Button.jsx",
+      "frontend/src/lib/auth.js"
+    ],
+    "frontend/src/features/admin/AdminDishes.jsx": [
+      "frontend/src/api/dishes.js",
+      "frontend/src/components/Button.jsx"
+    ],
+    "frontend/src/features/admin/AdminUsers.jsx": [
+      "frontend/src/api/users.js",
+      "frontend/src/components/Button.jsx",
+      "frontend/src/lib/logger.js"
+    ],
+    "frontend/src/features/orders/BakerOrderCard.jsx": [
+      "frontend/src/components/Button.jsx",
+      "frontend/src/components/Icon.jsx",
+      "frontend/src/lib/format.js",
+      "frontend/src/lib/orders.js"
+    ],
+    "frontend/src/features/orders/BakerOrderFilters.jsx": [
+      "frontend/src/components/Button.jsx",
+      "frontend/src/components/Field.jsx",
+      "frontend/src/components/Icon.jsx"
+    ],
+    "frontend/src/features/orders/BakerOrderReview.jsx": [
+      "frontend/src/components/Button.jsx",
+      "frontend/src/components/EmptyState.jsx",
+      "frontend/src/components/Icon.jsx",
+      "frontend/src/components/Panel.jsx",
+      "frontend/src/features/orders/MonitorReports.jsx",
+      "frontend/src/features/orders/OrderDetails.jsx"
+    ],
+    "frontend/src/features/orders/BakerOrdersView.jsx": [
+      "frontend/src/components/Button.jsx",
+      "frontend/src/components/EmptyState.jsx",
+      "frontend/src/features/orders/BakerOrderCard.jsx",
+      "frontend/src/features/orders/BakerOrderFilters.jsx",
+      "frontend/src/features/orders/OrderPagination.jsx",
+      "frontend/src/features/orders/OrderPreviewModal.jsx"
+    ],
+    "frontend/src/features/orders/BakerSelectionReview.jsx": [
+      "frontend/src/components/Button.jsx",
+      "frontend/src/components/EmptyState.jsx",
+      "frontend/src/components/Icon.jsx",
+      "frontend/src/components/Panel.jsx",
+      "frontend/src/features/orders/MonitorReports.jsx",
+      "frontend/src/features/orders/OrderDetails.jsx"
+    ],
+    "frontend/src/features/orders/MonitorReports.jsx": [
+      "frontend/src/components/Button.jsx",
+      "frontend/src/components/CopyButton.jsx",
+      "frontend/src/components/EmptyState.jsx",
+      "frontend/src/components/Icon.jsx",
+      "frontend/src/lib/format.js",
+      "frontend/src/lib/orders.js"
+    ],
+    "frontend/src/features/orders/OrderDetails.jsx": [
+      "frontend/src/components/Button.jsx",
+      "frontend/src/components/CopyButton.jsx",
+      "frontend/src/components/EmptyState.jsx",
+      "frontend/src/components/Icon.jsx",
+      "frontend/src/components/MetaCell.jsx",
+      "frontend/src/components/Panel.jsx",
+      "frontend/src/lib/format.js",
+      "frontend/src/lib/orders.js"
+    ],
+    "frontend/src/features/orders/OrderEditor.jsx": [
+      "frontend/src/components/Button.jsx",
+      "frontend/src/components/EmptyState.jsx",
+      "frontend/src/components/Icon.jsx",
+      "frontend/src/components/Panel.jsx",
+      "frontend/src/lib/format.js"
+    ],
+    "frontend/src/features/orders/OrderList.jsx": [
+      "frontend/src/components/Button.jsx",
+      "frontend/src/components/EmptyState.jsx",
+      "frontend/src/components/Field.jsx",
+      "frontend/src/lib/format.js",
+      "frontend/src/lib/orders.js"
+    ],
+    "frontend/src/features/orders/OrderPagination.jsx": [
+      "frontend/src/components/Button.jsx",
+      "frontend/src/components/Icon.jsx"
+    ],
+    "frontend/src/features/orders/OrderPreviewModal.jsx": [
+      "frontend/src/components/Button.jsx",
+      "frontend/src/components/Icon.jsx",
+      "frontend/src/features/orders/OrderDetails.jsx"
+    ],
+    "frontend/src/features/orders/OrdersLayout.jsx": [
+      "frontend/src/components/Button.jsx",
+      "frontend/src/components/Icon.jsx",
+      "frontend/src/lib/auth.js"
+    ],
+    "frontend/src/features/orders/OrdersPage.jsx": [
+      "frontend/src/api/client.js",
+      "frontend/src/api/orders.js",
+      "frontend/src/components/Login.jsx",
+      "frontend/src/config/env.js",
+      "frontend/src/features/account/Me.jsx",
+      "frontend/src/features/admin/AdminDishes.jsx",
+      "frontend/src/features/admin/AdminUsers.jsx",
+      "frontend/src/features/orders/BakerOrderReview.jsx",
+      "frontend/src/features/orders/BakerOrdersView.jsx",
+      "frontend/src/features/orders/BakerSelectionReview.jsx",
+      "frontend/src/features/orders/OrdersLayout.jsx",
+      "frontend/src/features/orders/ShopOrdersView.jsx",
+      "frontend/src/lib/auth.js",
+      "frontend/src/lib/logger.js",
+      "frontend/src/lib/url.js"
+    ],
+    "frontend/src/features/orders/ShopOrdersView.jsx": [
+      "frontend/src/components/Button.jsx",
+      "frontend/src/components/EmptyState.jsx",
+      "frontend/src/components/Panel.jsx",
+      "frontend/src/features/orders/OrderDetails.jsx",
+      "frontend/src/features/orders/OrderEditor.jsx",
+      "frontend/src/features/orders/OrderList.jsx"
+    ],
+    "frontend/src/lib/auth.js": [
+      "frontend/src/lib/telegram.js"
+    ],
+    "frontend/src/lib/format.js": [],
+    "frontend/src/lib/logger.js": [
+      "frontend/src/config/env.js"
+    ],
+    "frontend/src/lib/orders.js": [
+      "frontend/src/lib/format.js"
+    ],
+    "frontend/src/lib/telegram.js": [],
+    "frontend/src/lib/url.js": [],
+    "frontend/src/main.jsx": [
+      "frontend/src/app/App.jsx",
+      "frontend/src/lib/telegram.js",
+      "frontend/src/styles.css"
+    ],
+    "frontend/src/styles.css": [],
+    "frontend/vite.config.js": [],
+    "go.mod": [],
+    "go.sum": [],
+    "internal/config/config.go": [
+      "internal/pkg/helpers/db.go",
+      "internal/pkg/helpers/env.go",
+      "internal/pkg/helpers/format.go",
+      "internal/pkg/helpers/time.go"
+    ],
+    "internal/config/dotenv.go": [],
+    "internal/deps/deps.go": [
+      "internal/inbound/api/middleware.go",
+      "internal/inbound/api/server.go",
+      "internal/inbound/bot/action_menu_test.go",
+      "internal/inbound/bot/action_menu.go",
+      "internal/inbound/bot/bot.go",
+      "internal/inbound/bot/handler_events.go",
+      "internal/inbound/bot/handler_monitor.go",
+      "internal/inbound/bot/handler_order.go",
+      "internal/inbound/bot/handler_orders_test.go",
+      "internal/inbound/bot/handler_orders.go",
+      "internal/inbound/bot/handler_start.go",
+      "internal/inbound/bot/handler_techcard.go",
+      "internal/inbound/bot/handler_templates.go",
+      "internal/inbound/bot/messages.go",
+      "internal/inbound/bot/middleware.go",
+      "internal/inbound/bot/mini_app_test.go",
+      "internal/inbound/bot/mini_app.go",
+      "internal/inbound/bot/ports.go",
+      "internal/inbound/bot/render.go",
+      "internal/inbound/bot/routes.go",
+      "internal/inbound/bot/sender_test.go",
+      "internal/inbound/bot/sender.go",
+      "internal/inbound/bot/session_test.go",
+      "internal/inbound/bot/session.go",
+      "internal/services/admin/app/app.go",
+      "internal/services/admin/usecase/admin/admin.go",
+      "internal/services/admin/usecase/admin/interfaces.go",
+      "internal/services/auth/app/app.go",
+      "internal/services/auth/usecase/auth/auth_test.go",
+      "internal/services/auth/usecase/auth/auth.go",
+      "internal/services/auth/usecase/auth/interfaces.go",
+      "internal/services/auth/usecase/auth/rbac.go",
+      "internal/services/department/app/app.go",
+      "internal/services/department/usecase/department/department.go",
+      "internal/services/department/usecase/department/interfaces.go",
+      "internal/services/monitor/app/app.go",
+      "internal/services/monitor/usecase/monitor/interfaces.go",
+      "internal/services/monitor/usecase/monitor/monitor.go",
+      "internal/services/order/app/app.go",
+      "internal/services/order/infra/outbox/relay.go",
+      "internal/services/order/usecase/order/interfaces.go",
+      "internal/services/order/usecase/order/order_test.go",
+      "internal/services/order/usecase/order/order.go",
+      "internal/services/sync/app/app.go",
+      "internal/services/sync/usecase/sync/interfaces.go",
+      "internal/services/sync/usecase/sync/sync.go",
+      "internal/services/techcard/app/app.go",
+      "internal/services/techcard/usecase/techcard/interfaces.go",
+      "internal/services/techcard/usecase/techcard/techcard.go"
+    ],
+    "internal/deps/infra.go": [
+      "internal/config/config.go",
+      "internal/config/dotenv.go",
+      "internal/outbound/db/sqlc/auth.sql.go",
+      "internal/outbound/db/sqlc/db.go",
+      "internal/outbound/db/sqlc/departments.sql.go",
+      "internal/outbound/db/sqlc/iiko_snapshot.sql.go",
+      "internal/outbound/db/sqlc/models.go",
+      "internal/outbound/db/sqlc/monitor.sql.go",
+      "internal/outbound/db/sqlc/order_outbox.sql.go",
+      "internal/outbound/db/sqlc/orders.sql.go",
+      "internal/outbound/db/sqlc/products.sql.go",
+      "internal/outbound/db/sqlc/querier.go",
+      "internal/outbound/iiko/api.go",
+      "internal/outbound/iiko/client_test.go",
+      "internal/outbound/iiko/client.go",
+      "internal/outbound/iiko/consts.go",
+      "internal/outbound/iiko/dto.go",
+      "pkg/rabbitmq/consumer/consumer.go",
+      "pkg/rabbitmq/publisher/publisher.go"
+    ],
+    "internal/inbound/api/httpx/apperror.go": [
+      "internal/pkg/apperr/apperr_test.go",
+      "internal/pkg/apperr/apperr.go"
+    ],
+    "internal/inbound/api/httpx/auth_test.go": [],
+    "internal/inbound/api/httpx/auth.go": [
+      "internal/pkg/authtoken/authtoken_test.go",
+      "internal/pkg/authtoken/authtoken.go",
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go",
+      "internal/services/auth/domain/auth.go",
+      "internal/services/auth/usecase/auth/auth_test.go",
+      "internal/services/auth/usecase/auth/auth.go",
+      "internal/services/auth/usecase/auth/interfaces.go",
+      "internal/services/auth/usecase/auth/rbac.go",
+      "internal/services/department/usecase/department/department.go",
+      "internal/services/department/usecase/department/interfaces.go"
+    ],
+    "internal/inbound/api/httpx/respond.go": [],
+    "internal/inbound/api/middleware.go": [
+      "internal/inbound/api/httpx/apperror.go",
+      "internal/inbound/api/httpx/auth_test.go",
+      "internal/inbound/api/httpx/auth.go",
+      "internal/inbound/api/httpx/respond.go"
+    ],
+    "internal/inbound/api/server.go": [
+      "internal/inbound/api/httpx/apperror.go",
+      "internal/inbound/api/httpx/auth_test.go",
+      "internal/inbound/api/httpx/auth.go",
+      "internal/inbound/api/httpx/respond.go",
+      "internal/services/admin/infra/http/handler.go",
+      "internal/services/admin/usecase/admin/admin.go",
+      "internal/services/admin/usecase/admin/interfaces.go",
+      "internal/services/auth/infra/http/handler.go",
+      "internal/services/auth/usecase/auth/auth_test.go",
+      "internal/services/auth/usecase/auth/auth.go",
+      "internal/services/auth/usecase/auth/interfaces.go",
+      "internal/services/auth/usecase/auth/rbac.go",
+      "internal/services/department/infra/http/handler.go",
+      "internal/services/department/usecase/department/department.go",
+      "internal/services/department/usecase/department/interfaces.go",
+      "internal/services/monitor/infra/http/handler.go",
+      "internal/services/monitor/usecase/monitor/interfaces.go",
+      "internal/services/monitor/usecase/monitor/monitor.go",
+      "internal/services/order/infra/http/handler_admin.go",
+      "internal/services/order/infra/http/handler_test.go",
+      "internal/services/order/infra/http/handler_write.go",
+      "internal/services/order/infra/http/handler.go",
+      "internal/services/order/infra/http/presenter.go",
+      "internal/services/order/usecase/order/interfaces.go",
+      "internal/services/order/usecase/order/order_test.go",
+      "internal/services/order/usecase/order/order.go"
+    ],
+    "internal/inbound/bot/action_menu_test.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go"
+    ],
+    "internal/inbound/bot/action_menu.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go",
+      "internal/services/auth/domain/auth.go"
+    ],
+    "internal/inbound/bot/bot.go": [
+      "pkg/rabbitmq/consumer/consumer.go"
+    ],
+    "internal/inbound/bot/handler_events.go": [
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go"
+    ],
+    "internal/inbound/bot/handler_monitor.go": [
+      "internal/services/monitor/domain/model.go",
+      "internal/services/monitor/domain/service_test.go",
+      "internal/services/monitor/domain/service.go",
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go",
+      "pkg/logger/context.go",
+      "pkg/logger/log.go",
+      "pkg/logger/pretty.go"
+    ],
+    "internal/inbound/bot/handler_order.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go",
+      "internal/services/auth/usecase/auth/auth_test.go",
+      "internal/services/auth/usecase/auth/auth.go",
+      "internal/services/auth/usecase/auth/interfaces.go",
+      "internal/services/auth/usecase/auth/rbac.go",
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go",
+      "internal/services/order/usecase/order/interfaces.go",
+      "internal/services/order/usecase/order/order_test.go",
+      "internal/services/order/usecase/order/order.go",
+      "pkg/logger/context.go",
+      "pkg/logger/log.go",
+      "pkg/logger/pretty.go"
+    ],
+    "internal/inbound/bot/handler_orders_test.go": [
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go"
+    ],
+    "internal/inbound/bot/handler_orders.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go",
+      "internal/services/auth/domain/auth.go",
+      "internal/services/monitor/domain/model.go",
+      "internal/services/monitor/domain/service_test.go",
+      "internal/services/monitor/domain/service.go",
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go",
+      "internal/services/order/usecase/order/interfaces.go",
+      "internal/services/order/usecase/order/order_test.go",
+      "internal/services/order/usecase/order/order.go",
+      "pkg/logger/context.go",
+      "pkg/logger/log.go",
+      "pkg/logger/pretty.go"
+    ],
+    "internal/inbound/bot/handler_start.go": [],
+    "internal/inbound/bot/handler_techcard.go": [
+      "pkg/logger/context.go",
+      "pkg/logger/log.go",
+      "pkg/logger/pretty.go"
+    ],
+    "internal/inbound/bot/handler_templates.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go"
+    ],
+    "internal/inbound/bot/messages.go": [],
+    "internal/inbound/bot/middleware.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go",
+      "internal/services/auth/domain/auth.go",
+      "internal/services/auth/usecase/auth/auth_test.go",
+      "internal/services/auth/usecase/auth/auth.go",
+      "internal/services/auth/usecase/auth/interfaces.go",
+      "internal/services/auth/usecase/auth/rbac.go"
+    ],
+    "internal/inbound/bot/mini_app_test.go": [],
+    "internal/inbound/bot/mini_app.go": [],
+    "internal/inbound/bot/ports.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go",
+      "internal/services/auth/domain/auth.go",
+      "internal/services/department/usecase/department/department.go",
+      "internal/services/department/usecase/department/interfaces.go",
+      "internal/services/monitor/domain/model.go",
+      "internal/services/monitor/domain/service_test.go",
+      "internal/services/monitor/domain/service.go",
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go",
+      "internal/services/order/usecase/order/interfaces.go",
+      "internal/services/order/usecase/order/order_test.go",
+      "internal/services/order/usecase/order/order.go",
+      "internal/services/techcard/domain/model.go"
+    ],
+    "internal/inbound/bot/render.go": [
+      "internal/inbound/bot/response/builder_monitor_test.go",
+      "internal/inbound/bot/response/builder_order_test.go",
+      "internal/inbound/bot/response/builder.go"
+    ],
+    "internal/inbound/bot/response/builder_monitor_test.go": [
+      "internal/services/monitor/domain/model.go",
+      "internal/services/monitor/domain/service_test.go",
+      "internal/services/monitor/domain/service.go",
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go"
+    ],
+    "internal/inbound/bot/response/builder_order_test.go": [
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go"
+    ],
+    "internal/inbound/bot/response/builder.go": [
+      "internal/pkg/helpers/db.go",
+      "internal/pkg/helpers/env.go",
+      "internal/pkg/helpers/format.go",
+      "internal/pkg/helpers/time.go",
+      "internal/services/monitor/domain/model.go",
+      "internal/services/monitor/domain/service_test.go",
+      "internal/services/monitor/domain/service.go",
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go",
+      "internal/services/techcard/domain/model.go"
+    ],
+    "internal/inbound/bot/routes.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go",
+      "pkg/logger/context.go",
+      "pkg/logger/log.go",
+      "pkg/logger/pretty.go"
+    ],
+    "internal/inbound/bot/sender_test.go": [],
+    "internal/inbound/bot/sender.go": [],
+    "internal/inbound/bot/session_test.go": [
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go"
+    ],
+    "internal/inbound/bot/session.go": [
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go"
+    ],
+    "internal/outbound/db/postgres.go": [],
+    "internal/outbound/db/sqlc/auth.sql.go": [],
+    "internal/outbound/db/sqlc/db.go": [],
+    "internal/outbound/db/sqlc/departments.sql.go": [],
+    "internal/outbound/db/sqlc/iiko_snapshot.sql.go": [],
+    "internal/outbound/db/sqlc/models.go": [],
+    "internal/outbound/db/sqlc/monitor.sql.go": [],
+    "internal/outbound/db/sqlc/order_outbox.sql.go": [],
+    "internal/outbound/db/sqlc/orders.sql.go": [],
+    "internal/outbound/db/sqlc/products.sql.go": [],
+    "internal/outbound/db/sqlc/querier.go": [],
+    "internal/outbound/iiko/api.go": [],
+    "internal/outbound/iiko/client_test.go": [],
+    "internal/outbound/iiko/client.go": [],
+    "internal/outbound/iiko/consts.go": [],
+    "internal/outbound/iiko/dto.go": [],
+    "internal/outbound/iiko/testdata/results/01_auth.json": [],
+    "internal/outbound/iiko/testdata/results/02_list_products.json": [],
+    "internal/outbound/iiko/testdata/results/03_assembly_charts_get_all.json": [],
+    "internal/outbound/iiko/testdata/results/05_assembly_chart_by_id.json": [],
+    "internal/outbound/iiko/testdata/results/07_assembly_charts_get_assembled.json": [],
+    "internal/outbound/iiko/testdata/results/08_assembly_charts_get_prepared.json": [],
+    "internal/pkg/apperr/apperr_test.go": [],
+    "internal/pkg/apperr/apperr.go": [],
+    "internal/pkg/authtoken/authtoken_test.go": [],
+    "internal/pkg/authtoken/authtoken.go": [],
+    "internal/pkg/correlation/correlation.go": [],
+    "internal/pkg/dbmigrate/migrate_test.go": [],
+    "internal/pkg/dbmigrate/migrate.go": [],
+    "internal/pkg/enum/enum.go": [],
+    "internal/pkg/enum/rabbitmq.go": [],
+    "internal/pkg/helpers/db.go": [],
+    "internal/pkg/helpers/env.go": [],
+    "internal/pkg/helpers/format.go": [],
+    "internal/pkg/helpers/time.go": [],
+    "internal/pkg/sharedkernel/aggregate_root.go": [],
+    "internal/pkg/sharedkernel/event.go": [],
+    "internal/services/admin/app/app.go": [
+      "internal/services/admin/usecase/admin/admin.go",
+      "internal/services/admin/usecase/admin/interfaces.go",
+      "internal/services/auth/usecase/auth/auth_test.go",
+      "internal/services/auth/usecase/auth/auth.go",
+      "internal/services/auth/usecase/auth/interfaces.go",
+      "internal/services/auth/usecase/auth/rbac.go",
+      "internal/services/department/usecase/department/department.go",
+      "internal/services/department/usecase/department/interfaces.go"
+    ],
+    "internal/services/admin/infra/http/handler.go": [
+      "internal/inbound/api/httpx/apperror.go",
+      "internal/inbound/api/httpx/auth_test.go",
+      "internal/inbound/api/httpx/auth.go",
+      "internal/inbound/api/httpx/respond.go",
+      "internal/services/admin/usecase/admin/admin.go",
+      "internal/services/admin/usecase/admin/interfaces.go"
+    ],
+    "internal/services/admin/usecase/admin/admin.go": [
+      "internal/pkg/apperr/apperr_test.go",
+      "internal/pkg/apperr/apperr.go",
+      "internal/services/auth/domain/auth.go"
+    ],
+    "internal/services/admin/usecase/admin/interfaces.go": [
+      "internal/services/auth/domain/auth.go"
+    ],
+    "internal/services/auth/app/app.go": [
+      "internal/outbound/db/sqlc/auth.sql.go",
+      "internal/outbound/db/sqlc/db.go",
+      "internal/outbound/db/sqlc/departments.sql.go",
+      "internal/outbound/db/sqlc/iiko_snapshot.sql.go",
+      "internal/outbound/db/sqlc/models.go",
+      "internal/outbound/db/sqlc/monitor.sql.go",
+      "internal/outbound/db/sqlc/order_outbox.sql.go",
+      "internal/outbound/db/sqlc/orders.sql.go",
+      "internal/outbound/db/sqlc/products.sql.go",
+      "internal/outbound/db/sqlc/querier.go",
+      "internal/services/auth/infra/repo/auth_repo.go",
+      "internal/services/auth/usecase/auth/auth_test.go",
+      "internal/services/auth/usecase/auth/auth.go",
+      "internal/services/auth/usecase/auth/interfaces.go",
+      "internal/services/auth/usecase/auth/rbac.go"
+    ],
+    "internal/services/auth/domain/auth.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go"
+    ],
+    "internal/services/auth/infra/http/handler.go": [
+      "internal/inbound/api/httpx/apperror.go",
+      "internal/inbound/api/httpx/auth_test.go",
+      "internal/inbound/api/httpx/auth.go",
+      "internal/inbound/api/httpx/respond.go",
+      "internal/pkg/authtoken/authtoken_test.go",
+      "internal/pkg/authtoken/authtoken.go",
+      "internal/services/auth/usecase/auth/auth_test.go",
+      "internal/services/auth/usecase/auth/auth.go",
+      "internal/services/auth/usecase/auth/interfaces.go",
+      "internal/services/auth/usecase/auth/rbac.go",
+      "internal/services/department/usecase/department/department.go",
+      "internal/services/department/usecase/department/interfaces.go"
+    ],
+    "internal/services/auth/infra/repo/auth_repo.go": [
+      "internal/outbound/db/sqlc/auth.sql.go",
+      "internal/outbound/db/sqlc/db.go",
+      "internal/outbound/db/sqlc/departments.sql.go",
+      "internal/outbound/db/sqlc/iiko_snapshot.sql.go",
+      "internal/outbound/db/sqlc/models.go",
+      "internal/outbound/db/sqlc/monitor.sql.go",
+      "internal/outbound/db/sqlc/order_outbox.sql.go",
+      "internal/outbound/db/sqlc/orders.sql.go",
+      "internal/outbound/db/sqlc/products.sql.go",
+      "internal/outbound/db/sqlc/querier.go",
+      "internal/pkg/apperr/apperr_test.go",
+      "internal/pkg/apperr/apperr.go",
+      "internal/pkg/helpers/db.go",
+      "internal/pkg/helpers/env.go",
+      "internal/pkg/helpers/format.go",
+      "internal/pkg/helpers/time.go",
+      "internal/services/auth/domain/auth.go",
+      "internal/services/auth/usecase/auth/auth_test.go",
+      "internal/services/auth/usecase/auth/auth.go",
+      "internal/services/auth/usecase/auth/interfaces.go",
+      "internal/services/auth/usecase/auth/rbac.go"
+    ],
+    "internal/services/auth/usecase/auth/auth_test.go": [
+      "internal/services/auth/domain/auth.go"
+    ],
+    "internal/services/auth/usecase/auth/auth.go": [
+      "internal/pkg/apperr/apperr_test.go",
+      "internal/pkg/apperr/apperr.go",
+      "internal/services/auth/domain/auth.go"
+    ],
+    "internal/services/auth/usecase/auth/interfaces.go": [
+      "internal/services/auth/domain/auth.go"
+    ],
+    "internal/services/auth/usecase/auth/rbac.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go"
+    ],
+    "internal/services/department/app/app.go": [
+      "internal/outbound/db/sqlc/auth.sql.go",
+      "internal/outbound/db/sqlc/db.go",
+      "internal/outbound/db/sqlc/departments.sql.go",
+      "internal/outbound/db/sqlc/iiko_snapshot.sql.go",
+      "internal/outbound/db/sqlc/models.go",
+      "internal/outbound/db/sqlc/monitor.sql.go",
+      "internal/outbound/db/sqlc/order_outbox.sql.go",
+      "internal/outbound/db/sqlc/orders.sql.go",
+      "internal/outbound/db/sqlc/products.sql.go",
+      "internal/outbound/db/sqlc/querier.go",
+      "internal/services/department/infra/repo/department_repo.go",
+      "internal/services/department/usecase/department/department.go",
+      "internal/services/department/usecase/department/interfaces.go"
+    ],
+    "internal/services/department/infra/http/handler.go": [
+      "internal/inbound/api/httpx/apperror.go",
+      "internal/inbound/api/httpx/auth_test.go",
+      "internal/inbound/api/httpx/auth.go",
+      "internal/inbound/api/httpx/respond.go",
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go",
+      "internal/services/department/usecase/department/department.go",
+      "internal/services/department/usecase/department/interfaces.go"
+    ],
+    "internal/services/department/infra/repo/department_repo.go": [
+      "internal/outbound/db/sqlc/auth.sql.go",
+      "internal/outbound/db/sqlc/db.go",
+      "internal/outbound/db/sqlc/departments.sql.go",
+      "internal/outbound/db/sqlc/iiko_snapshot.sql.go",
+      "internal/outbound/db/sqlc/models.go",
+      "internal/outbound/db/sqlc/monitor.sql.go",
+      "internal/outbound/db/sqlc/order_outbox.sql.go",
+      "internal/outbound/db/sqlc/orders.sql.go",
+      "internal/outbound/db/sqlc/products.sql.go",
+      "internal/outbound/db/sqlc/querier.go",
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go",
+      "internal/services/department/usecase/department/department.go",
+      "internal/services/department/usecase/department/interfaces.go"
+    ],
+    "internal/services/department/usecase/department/department.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go"
+    ],
+    "internal/services/department/usecase/department/interfaces.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go"
+    ],
+    "internal/services/monitor/app/app.go": [
+      "internal/outbound/db/sqlc/auth.sql.go",
+      "internal/outbound/db/sqlc/db.go",
+      "internal/outbound/db/sqlc/departments.sql.go",
+      "internal/outbound/db/sqlc/iiko_snapshot.sql.go",
+      "internal/outbound/db/sqlc/models.go",
+      "internal/outbound/db/sqlc/monitor.sql.go",
+      "internal/outbound/db/sqlc/order_outbox.sql.go",
+      "internal/outbound/db/sqlc/orders.sql.go",
+      "internal/outbound/db/sqlc/products.sql.go",
+      "internal/outbound/db/sqlc/querier.go",
+      "internal/services/monitor/infra/repo/monitor_repo.go",
+      "internal/services/monitor/usecase/monitor/interfaces.go",
+      "internal/services/monitor/usecase/monitor/monitor.go"
+    ],
+    "internal/services/monitor/domain/model.go": [],
+    "internal/services/monitor/domain/service_test.go": [],
+    "internal/services/monitor/domain/service.go": [],
+    "internal/services/monitor/infra/http/handler.go": [
+      "internal/inbound/api/httpx/apperror.go",
+      "internal/inbound/api/httpx/auth_test.go",
+      "internal/inbound/api/httpx/auth.go",
+      "internal/inbound/api/httpx/respond.go",
+      "internal/services/monitor/domain/model.go",
+      "internal/services/monitor/domain/service_test.go",
+      "internal/services/monitor/domain/service.go",
+      "internal/services/monitor/usecase/monitor/interfaces.go",
+      "internal/services/monitor/usecase/monitor/monitor.go",
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go",
+      "internal/services/order/infra/http/handler_admin.go",
+      "internal/services/order/infra/http/handler_test.go",
+      "internal/services/order/infra/http/handler_write.go",
+      "internal/services/order/infra/http/handler.go",
+      "internal/services/order/infra/http/presenter.go",
+      "internal/services/order/usecase/order/interfaces.go",
+      "internal/services/order/usecase/order/order_test.go",
+      "internal/services/order/usecase/order/order.go"
+    ],
+    "internal/services/monitor/infra/repo/monitor_repo.go": [
+      "internal/outbound/db/sqlc/auth.sql.go",
+      "internal/outbound/db/sqlc/db.go",
+      "internal/outbound/db/sqlc/departments.sql.go",
+      "internal/outbound/db/sqlc/iiko_snapshot.sql.go",
+      "internal/outbound/db/sqlc/models.go",
+      "internal/outbound/db/sqlc/monitor.sql.go",
+      "internal/outbound/db/sqlc/order_outbox.sql.go",
+      "internal/outbound/db/sqlc/orders.sql.go",
+      "internal/outbound/db/sqlc/products.sql.go",
+      "internal/outbound/db/sqlc/querier.go",
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go",
+      "internal/services/monitor/domain/model.go",
+      "internal/services/monitor/domain/service_test.go",
+      "internal/services/monitor/domain/service.go",
+      "internal/services/monitor/usecase/monitor/interfaces.go",
+      "internal/services/monitor/usecase/monitor/monitor.go",
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go"
+    ],
+    "internal/services/monitor/usecase/monitor/interfaces.go": [
+      "internal/services/monitor/domain/model.go",
+      "internal/services/monitor/domain/service_test.go",
+      "internal/services/monitor/domain/service.go",
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go"
+    ],
+    "internal/services/monitor/usecase/monitor/monitor.go": [
+      "internal/services/monitor/domain/model.go",
+      "internal/services/monitor/domain/service_test.go",
+      "internal/services/monitor/domain/service.go",
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go"
+    ],
+    "internal/services/order/app/app.go": [
+      "internal/outbound/db/sqlc/auth.sql.go",
+      "internal/outbound/db/sqlc/db.go",
+      "internal/outbound/db/sqlc/departments.sql.go",
+      "internal/outbound/db/sqlc/iiko_snapshot.sql.go",
+      "internal/outbound/db/sqlc/models.go",
+      "internal/outbound/db/sqlc/monitor.sql.go",
+      "internal/outbound/db/sqlc/order_outbox.sql.go",
+      "internal/outbound/db/sqlc/orders.sql.go",
+      "internal/outbound/db/sqlc/products.sql.go",
+      "internal/outbound/db/sqlc/querier.go",
+      "internal/services/order/infra/outbox/relay.go",
+      "internal/services/order/infra/repo/order_repo.go",
+      "internal/services/order/usecase/order/interfaces.go",
+      "internal/services/order/usecase/order/order_test.go",
+      "internal/services/order/usecase/order/order.go"
+    ],
+    "internal/services/order/domain/events.go": [
+      "internal/pkg/sharedkernel/aggregate_root.go",
+      "internal/pkg/sharedkernel/event.go"
+    ],
+    "internal/services/order/domain/model.go": [
+      "internal/pkg/sharedkernel/aggregate_root.go",
+      "internal/pkg/sharedkernel/event.go"
+    ],
+    "internal/services/order/domain/order_specs.go": [],
+    "internal/services/order/domain/service_test.go": [],
+    "internal/services/order/domain/service.go": [],
+    "internal/services/order/domain/specification.go": [],
+    "internal/services/order/infra/http/handler_admin.go": [
+      "internal/inbound/api/httpx/apperror.go",
+      "internal/inbound/api/httpx/auth_test.go",
+      "internal/inbound/api/httpx/auth.go",
+      "internal/inbound/api/httpx/respond.go"
+    ],
+    "internal/services/order/infra/http/handler_test.go": [
+      "internal/inbound/api/httpx/apperror.go",
+      "internal/inbound/api/httpx/auth_test.go",
+      "internal/inbound/api/httpx/auth.go",
+      "internal/inbound/api/httpx/respond.go",
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go",
+      "internal/services/auth/domain/auth.go",
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go"
+    ],
+    "internal/services/order/infra/http/handler_write.go": [
+      "internal/inbound/api/httpx/apperror.go",
+      "internal/inbound/api/httpx/auth_test.go",
+      "internal/inbound/api/httpx/auth.go",
+      "internal/inbound/api/httpx/respond.go",
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go",
+      "internal/services/order/usecase/order/interfaces.go",
+      "internal/services/order/usecase/order/order_test.go",
+      "internal/services/order/usecase/order/order.go"
+    ],
+    "internal/services/order/infra/http/handler.go": [
+      "internal/inbound/api/httpx/apperror.go",
+      "internal/inbound/api/httpx/auth_test.go",
+      "internal/inbound/api/httpx/auth.go",
+      "internal/inbound/api/httpx/respond.go",
+      "internal/services/department/usecase/department/department.go",
+      "internal/services/department/usecase/department/interfaces.go",
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go",
+      "internal/services/order/usecase/order/interfaces.go",
+      "internal/services/order/usecase/order/order_test.go",
+      "internal/services/order/usecase/order/order.go"
+    ],
+    "internal/services/order/infra/http/presenter.go": [
+      "internal/inbound/api/httpx/apperror.go",
+      "internal/inbound/api/httpx/auth_test.go",
+      "internal/inbound/api/httpx/auth.go",
+      "internal/inbound/api/httpx/respond.go",
+      "internal/services/department/usecase/department/department.go",
+      "internal/services/department/usecase/department/interfaces.go",
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go"
+    ],
+    "internal/services/order/infra/outbox/relay.go": [
+      "internal/outbound/db/sqlc/auth.sql.go",
+      "internal/outbound/db/sqlc/db.go",
+      "internal/outbound/db/sqlc/departments.sql.go",
+      "internal/outbound/db/sqlc/iiko_snapshot.sql.go",
+      "internal/outbound/db/sqlc/models.go",
+      "internal/outbound/db/sqlc/monitor.sql.go",
+      "internal/outbound/db/sqlc/order_outbox.sql.go",
+      "internal/outbound/db/sqlc/orders.sql.go",
+      "internal/outbound/db/sqlc/products.sql.go",
+      "internal/outbound/db/sqlc/querier.go"
+    ],
+    "internal/services/order/infra/repo/order_repo.go": [
+      "internal/outbound/db/sqlc/auth.sql.go",
+      "internal/outbound/db/sqlc/db.go",
+      "internal/outbound/db/sqlc/departments.sql.go",
+      "internal/outbound/db/sqlc/iiko_snapshot.sql.go",
+      "internal/outbound/db/sqlc/models.go",
+      "internal/outbound/db/sqlc/monitor.sql.go",
+      "internal/outbound/db/sqlc/order_outbox.sql.go",
+      "internal/outbound/db/sqlc/orders.sql.go",
+      "internal/outbound/db/sqlc/products.sql.go",
+      "internal/outbound/db/sqlc/querier.go",
+      "internal/pkg/apperr/apperr_test.go",
+      "internal/pkg/apperr/apperr.go",
+      "internal/pkg/correlation/correlation.go",
+      "internal/pkg/helpers/db.go",
+      "internal/pkg/helpers/env.go",
+      "internal/pkg/helpers/format.go",
+      "internal/pkg/helpers/time.go",
+      "internal/pkg/sharedkernel/aggregate_root.go",
+      "internal/pkg/sharedkernel/event.go",
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go",
+      "internal/services/order/usecase/order/interfaces.go",
+      "internal/services/order/usecase/order/order_test.go",
+      "internal/services/order/usecase/order/order.go"
+    ],
+    "internal/services/order/usecase/order/interfaces.go": [
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go"
+    ],
+    "internal/services/order/usecase/order/order_test.go": [
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go"
+    ],
+    "internal/services/order/usecase/order/order.go": [
+      "internal/pkg/apperr/apperr_test.go",
+      "internal/pkg/apperr/apperr.go",
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go",
+      "internal/services/order/domain/events.go",
+      "internal/services/order/domain/model.go",
+      "internal/services/order/domain/order_specs.go",
+      "internal/services/order/domain/service_test.go",
+      "internal/services/order/domain/service.go",
+      "internal/services/order/domain/specification.go"
+    ],
+    "internal/services/sync/app/app.go": [
+      "internal/outbound/db/sqlc/auth.sql.go",
+      "internal/outbound/db/sqlc/db.go",
+      "internal/outbound/db/sqlc/departments.sql.go",
+      "internal/outbound/db/sqlc/iiko_snapshot.sql.go",
+      "internal/outbound/db/sqlc/models.go",
+      "internal/outbound/db/sqlc/monitor.sql.go",
+      "internal/outbound/db/sqlc/order_outbox.sql.go",
+      "internal/outbound/db/sqlc/orders.sql.go",
+      "internal/outbound/db/sqlc/products.sql.go",
+      "internal/outbound/db/sqlc/querier.go",
+      "internal/outbound/iiko/api.go",
+      "internal/outbound/iiko/client_test.go",
+      "internal/outbound/iiko/client.go",
+      "internal/outbound/iiko/consts.go",
+      "internal/outbound/iiko/dto.go",
+      "internal/services/sync/infra/repo/sync_repo.go",
+      "internal/services/sync/usecase/sync/interfaces.go",
+      "internal/services/sync/usecase/sync/sync.go"
+    ],
+    "internal/services/sync/infra/repo/sync_repo.go": [
+      "internal/outbound/db/sqlc/auth.sql.go",
+      "internal/outbound/db/sqlc/db.go",
+      "internal/outbound/db/sqlc/departments.sql.go",
+      "internal/outbound/db/sqlc/iiko_snapshot.sql.go",
+      "internal/outbound/db/sqlc/models.go",
+      "internal/outbound/db/sqlc/monitor.sql.go",
+      "internal/outbound/db/sqlc/order_outbox.sql.go",
+      "internal/outbound/db/sqlc/orders.sql.go",
+      "internal/outbound/db/sqlc/products.sql.go",
+      "internal/outbound/db/sqlc/querier.go",
+      "internal/outbound/iiko/api.go",
+      "internal/outbound/iiko/client_test.go",
+      "internal/outbound/iiko/client.go",
+      "internal/outbound/iiko/consts.go",
+      "internal/outbound/iiko/dto.go",
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go",
+      "internal/pkg/helpers/db.go",
+      "internal/pkg/helpers/env.go",
+      "internal/pkg/helpers/format.go",
+      "internal/pkg/helpers/time.go",
+      "internal/services/sync/usecase/sync/interfaces.go",
+      "internal/services/sync/usecase/sync/sync.go"
+    ],
+    "internal/services/sync/usecase/sync/interfaces.go": [
+      "internal/outbound/iiko/api.go",
+      "internal/outbound/iiko/client_test.go",
+      "internal/outbound/iiko/client.go",
+      "internal/outbound/iiko/consts.go",
+      "internal/outbound/iiko/dto.go"
+    ],
+    "internal/services/sync/usecase/sync/sync.go": [
+      "internal/outbound/iiko/api.go",
+      "internal/outbound/iiko/client_test.go",
+      "internal/outbound/iiko/client.go",
+      "internal/outbound/iiko/consts.go",
+      "internal/outbound/iiko/dto.go"
+    ],
+    "internal/services/techcard/app/app.go": [
+      "internal/outbound/db/sqlc/auth.sql.go",
+      "internal/outbound/db/sqlc/db.go",
+      "internal/outbound/db/sqlc/departments.sql.go",
+      "internal/outbound/db/sqlc/iiko_snapshot.sql.go",
+      "internal/outbound/db/sqlc/models.go",
+      "internal/outbound/db/sqlc/monitor.sql.go",
+      "internal/outbound/db/sqlc/order_outbox.sql.go",
+      "internal/outbound/db/sqlc/orders.sql.go",
+      "internal/outbound/db/sqlc/products.sql.go",
+      "internal/outbound/db/sqlc/querier.go",
+      "internal/services/techcard/infra/repo/techcard_repo.go",
+      "internal/services/techcard/usecase/techcard/interfaces.go",
+      "internal/services/techcard/usecase/techcard/techcard.go"
+    ],
+    "internal/services/techcard/domain/model.go": [
+      "internal/outbound/iiko/api.go",
+      "internal/outbound/iiko/client_test.go",
+      "internal/outbound/iiko/client.go",
+      "internal/outbound/iiko/consts.go",
+      "internal/outbound/iiko/dto.go"
+    ],
+    "internal/services/techcard/infra/repo/techcard_repo.go": [
+      "internal/outbound/db/sqlc/auth.sql.go",
+      "internal/outbound/db/sqlc/db.go",
+      "internal/outbound/db/sqlc/departments.sql.go",
+      "internal/outbound/db/sqlc/iiko_snapshot.sql.go",
+      "internal/outbound/db/sqlc/models.go",
+      "internal/outbound/db/sqlc/monitor.sql.go",
+      "internal/outbound/db/sqlc/order_outbox.sql.go",
+      "internal/outbound/db/sqlc/orders.sql.go",
+      "internal/outbound/db/sqlc/products.sql.go",
+      "internal/outbound/db/sqlc/querier.go",
+      "internal/outbound/iiko/api.go",
+      "internal/outbound/iiko/client_test.go",
+      "internal/outbound/iiko/client.go",
+      "internal/outbound/iiko/consts.go",
+      "internal/outbound/iiko/dto.go",
+      "internal/services/techcard/domain/model.go",
+      "internal/services/techcard/usecase/techcard/interfaces.go",
+      "internal/services/techcard/usecase/techcard/techcard.go"
+    ],
+    "internal/services/techcard/usecase/techcard/interfaces.go": [
+      "internal/services/techcard/domain/model.go"
+    ],
+    "internal/services/techcard/usecase/techcard/techcard.go": [
+      "internal/services/techcard/domain/model.go"
+    ],
+    "Makefile": [],
+    "migrations/00001_init.sql": [],
+    "migrations/00002_departments.sql": [],
+    "migrations/00003_default_departments_order_locations.sql": [],
+    "migrations/00004_order_fulfillment_reserved_quantity.sql": [],
+    "migrations/00005_order_created_by_username.sql": [],
+    "migrations/00006_order_templates_and_updates.sql": [],
+    "migrations/00007_drop_order_template_theme.sql": [],
+    "migrations/00008_order_history.sql": [],
+    "migrations/00009_dish_catalog.sql": [],
+    "migrations/00010_drop_order_templates.sql": [],
+    "migrations/00011_dish_catalog_sort_order.sql": [],
+    "migrations/00012_timestamptz_and_per_shop_counter.sql": [],
+    "migrations/00013_unique_telegram_username.sql": [],
+    "migrations/00014_order_outbox.sql": [],
+    "migrations/00015_order_comments.sql": [],
+    "migrations/00016_order_favorite.sql": [],
+    "migrations/00017_orders_created_at_index.sql": [],
+    "pkg/logger/context.go": [],
+    "pkg/logger/log.go": [],
+    "pkg/logger/pretty.go": [],
+    "pkg/rabbitmq/client.go": [],
+    "pkg/rabbitmq/consumer/consumer.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go"
+    ],
+    "pkg/rabbitmq/publisher/publisher.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go"
+    ],
+    "prepared_dough_codes.txt": [],
+    "queries/auth.sql": [],
+    "queries/departments.sql": [],
+    "queries/iiko_snapshot.sql": [],
+    "queries/monitor.sql": [],
+    "queries/order_outbox.sql": [],
+    "queries/orders.sql": [],
+    "queries/products.sql": [],
+    "README.md": [],
+    "skills-lock.json": [],
+    "sqlc.yaml": [],
+    "templates/dishes.txt": [],
+    "TODO.md": []
+  }
+}

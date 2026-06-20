@@ -1,0 +1,19 @@
+{
+  "projectRoot": "/home/vnkjd/Projects/bakery",
+  "batchFiles": [
+    {"path": "internal/outbound/iiko/testdata/results/01_auth.json", "language": "json", "sizeLines": 3, "fileCategory": "config"},
+    {"path": "internal/outbound/iiko/testdata/results/02_list_products.json", "language": "json", "sizeLines": 78080, "fileCategory": "config"},
+    {"path": "internal/outbound/iiko/testdata/results/03_assembly_charts_get_all.json", "language": "json", "sizeLines": 161361, "fileCategory": "config"},
+    {"path": "internal/outbound/iiko/testdata/results/05_assembly_chart_by_id.json", "language": "json", "sizeLines": 7, "fileCategory": "config"},
+    {"path": "internal/outbound/iiko/testdata/results/07_assembly_charts_get_assembled.json", "language": "json", "sizeLines": 27, "fileCategory": "config"},
+    {"path": "internal/outbound/iiko/testdata/results/08_assembly_charts_get_prepared.json", "language": "json", "sizeLines": 20, "fileCategory": "config"}
+  ],
+  "batchImportData": {
+    "internal/outbound/iiko/testdata/results/01_auth.json": [],
+    "internal/outbound/iiko/testdata/results/02_list_products.json": [],
+    "internal/outbound/iiko/testdata/results/03_assembly_charts_get_all.json": [],
+    "internal/outbound/iiko/testdata/results/05_assembly_chart_by_id.json": [],
+    "internal/outbound/iiko/testdata/results/07_assembly_charts_get_assembled.json": [],
+    "internal/outbound/iiko/testdata/results/08_assembly_charts_get_prepared.json": []
+  }
+}

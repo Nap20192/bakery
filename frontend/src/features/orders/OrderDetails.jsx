@@ -12,25 +12,27 @@ export function OrderDetails({ order, canFavorite = false, onToggleFavorite }) {
     <>
       <div className="flex items-start justify-between gap-2">
         <PanelHeader title={order.number} count={order.items?.length || 0} />
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           {canFavorite ? (
             <Button
               variant={order.favorite ? 'primary' : 'default'}
               onClick={() => onToggleFavorite?.(order.number, !order.favorite)}
               title={order.favorite ? 'В избранном — не удаляется' : 'В избранное'}
+              aria-label={order.favorite ? 'В избранном' : 'В избранное'}
             >
               <Icon name="star" size={15} filled={Boolean(order.favorite)} />
-              {order.favorite ? 'В избранном' : 'В избранное'}
+              <span className="hidden sm:inline">{order.favorite ? 'В избранном' : 'В избранное'}</span>
             </Button>
           ) : (
             order.favorite && (
               <span className="inline-flex items-center gap-1 text-[12px] font-medium text-stone-500" title="Избранный заказ">
-                <Icon name="star" size={14} filled /> Избранное
+                <Icon name="star" size={14} filled />
+                <span className="hidden sm:inline">Избранное</span>
               </span>
             )
           )}
           {(order.items?.length || 0) > 0 && (
-            <CopyButton getText={() => orderItemsToText(order, false)} label="Копировать" />
+            <CopyButton getText={() => orderItemsToText(order, false)} label="Копировать" labelClassName="hidden sm:inline" />
           )}
         </div>
       </div>

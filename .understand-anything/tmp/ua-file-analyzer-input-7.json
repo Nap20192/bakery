@@ -1,0 +1,173 @@
+{
+  "projectRoot": "/home/vnkjd/Projects/bakery",
+  "batchFiles": [
+    {
+      "path": "cmd/bot/main.go",
+      "language": "go",
+      "sizeLines": 113,
+      "fileCategory": "code"
+    },
+    {
+      "path": "cmd/worker/main.go",
+      "language": "go",
+      "sizeLines": 133,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/config/config.go",
+      "language": "go",
+      "sizeLines": 200,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/config/dotenv.go",
+      "language": "go",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/handler_techcard.go",
+      "language": "go",
+      "sizeLines": 26,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/inbound/bot/routes.go",
+      "language": "go",
+      "sizeLines": 84,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/outbound/db/postgres.go",
+      "language": "go",
+      "sizeLines": 60,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/dbmigrate/migrate.go",
+      "language": "go",
+      "sizeLines": 194,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/dbmigrate/migrate_test.go",
+      "language": "go",
+      "sizeLines": 77,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/helpers/db.go",
+      "language": "go",
+      "sizeLines": 10,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/helpers/env.go",
+      "language": "go",
+      "sizeLines": 46,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/helpers/format.go",
+      "language": "go",
+      "sizeLines": 16,
+      "fileCategory": "code"
+    },
+    {
+      "path": "internal/pkg/helpers/time.go",
+      "language": "go",
+      "sizeLines": 22,
+      "fileCategory": "code"
+    },
+    {
+      "path": "pkg/logger/context.go",
+      "language": "go",
+      "sizeLines": 227,
+      "fileCategory": "code"
+    },
+    {
+      "path": "pkg/logger/log.go",
+      "language": "go",
+      "sizeLines": 98,
+      "fileCategory": "code"
+    },
+    {
+      "path": "pkg/logger/pretty.go",
+      "language": "go",
+      "sizeLines": 311,
+      "fileCategory": "code"
+    },
+    {
+      "path": "pkg/rabbitmq/client.go",
+      "language": "go",
+      "sizeLines": 38,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "cmd/bot/main.go": [
+      "internal/config/config.go",
+      "internal/config/dotenv.go",
+      "internal/deps/deps.go",
+      "internal/deps/infra.go",
+      "internal/outbound/db/postgres.go",
+      "internal/pkg/dbmigrate/migrate_test.go",
+      "internal/pkg/dbmigrate/migrate.go",
+      "internal/pkg/helpers/db.go",
+      "internal/pkg/helpers/env.go",
+      "internal/pkg/helpers/format.go",
+      "internal/pkg/helpers/time.go",
+      "pkg/logger/context.go",
+      "pkg/logger/log.go",
+      "pkg/logger/pretty.go",
+      "pkg/rabbitmq/client.go"
+    ],
+    "cmd/worker/main.go": [
+      "internal/config/config.go",
+      "internal/config/dotenv.go",
+      "internal/deps/deps.go",
+      "internal/deps/infra.go",
+      "internal/outbound/db/postgres.go",
+      "internal/pkg/dbmigrate/migrate_test.go",
+      "internal/pkg/dbmigrate/migrate.go",
+      "internal/pkg/helpers/db.go",
+      "internal/pkg/helpers/env.go",
+      "internal/pkg/helpers/format.go",
+      "internal/pkg/helpers/time.go",
+      "pkg/logger/context.go",
+      "pkg/logger/log.go",
+      "pkg/logger/pretty.go",
+      "pkg/rabbitmq/client.go"
+    ],
+    "internal/config/config.go": [
+      "internal/pkg/helpers/db.go",
+      "internal/pkg/helpers/env.go",
+      "internal/pkg/helpers/format.go",
+      "internal/pkg/helpers/time.go"
+    ],
+    "internal/config/dotenv.go": [],
+    "internal/inbound/bot/handler_techcard.go": [
+      "pkg/logger/context.go",
+      "pkg/logger/log.go",
+      "pkg/logger/pretty.go"
+    ],
+    "internal/inbound/bot/routes.go": [
+      "internal/pkg/enum/enum.go",
+      "internal/pkg/enum/rabbitmq.go",
+      "pkg/logger/context.go",
+      "pkg/logger/log.go",
+      "pkg/logger/pretty.go"
+    ],
+    "internal/outbound/db/postgres.go": [],
+    "internal/pkg/dbmigrate/migrate.go": [],
+    "internal/pkg/dbmigrate/migrate_test.go": [],
+    "internal/pkg/helpers/db.go": [],
+    "internal/pkg/helpers/env.go": [],
+    "internal/pkg/helpers/format.go": [],
+    "internal/pkg/helpers/time.go": [],
+    "pkg/logger/context.go": [],
+    "pkg/logger/log.go": [],
+    "pkg/logger/pretty.go": [],
+    "pkg/rabbitmq/client.go": []
+  }
+}

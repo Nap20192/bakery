@@ -1,0 +1,21 @@
+{
+  "projectRoot": "/home/vnkjd/Projects/bakery",
+  "batchFiles": [
+    {"path": "deploy/Dockerfile.bot", "language": "dockerfile", "sizeLines": 36, "fileCategory": "infra"},
+    {"path": "deploy/Dockerfile.worker", "language": "dockerfile", "sizeLines": 36, "fileCategory": "infra"},
+    {"path": "frontend/eslint.config.js", "language": "javascript", "sizeLines": 36, "fileCategory": "code"},
+    {"path": "frontend/server.js", "language": "javascript", "sizeLines": 218, "fileCategory": "code"},
+    {"path": "frontend/src/styles.css", "language": "css", "sizeLines": 80, "fileCategory": "markup"},
+    {"path": "frontend/vite.config.js", "language": "javascript", "sizeLines": 18, "fileCategory": "code"},
+    {"path": "templates/dishes.txt", "language": "txt", "sizeLines": 104, "fileCategory": "docs"}
+  ],
+  "batchImportData": {
+    "deploy/Dockerfile.bot": [],
+    "deploy/Dockerfile.worker": [],
+    "frontend/eslint.config.js": [],
+    "frontend/server.js": [],
+    "frontend/src/styles.css": [],
+    "frontend/vite.config.js": [],
+    "templates/dishes.txt": []
+  }
+}
