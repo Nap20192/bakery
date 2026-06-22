@@ -18,6 +18,7 @@ export function BakerOrdersView({
   selectionMode,
   canFavorite,
   onToggleFavorite,
+  onLoadOrder,
   onSelect,
   onToggleSelection,
   onToggleSelectionMode,
@@ -59,9 +60,19 @@ export function BakerOrdersView({
                 selectionMode={selectionMode}
                 onSelect={() => onSelect(order.number)}
                 onToggleSelection={() => onToggleSelection(order.number)}
-                onPreview={() => {
+                onPreview={async () => {
                   setPreviewOrder(order);
                   setPreviewOpen(true);
+                  // List rows carry no history; fetch the full order so the
+                  // preview shows change statuses and the audit trail.
+                  if (onLoadOrder) {
+                    try {
+                      const full = await onLoadOrder(order.number);
+                      setPreviewOrder((cur) => (cur && cur.number === full.number ? full : cur));
+                    } catch {
+                      // Keep the list order on failure.
+                    }
+                  }
                 }}
               />
             ))

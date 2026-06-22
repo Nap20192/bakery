@@ -83,8 +83,65 @@ func (Builder) OrderCopy(order orderdomain.Order) string {
 func (Builder) OrderUpdated(order orderdomain.Order, fromDepartment string, toDepartment string) string {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "<b>Заказ <code>%s</code> обновлен</b>\n\n", html.EscapeString(order.Number))
+	writeOrderChanges(&sb, order.History)
 	writeOrderDetails(&sb, order, fromDepartment, toDepartment)
 	return sb.String()
+}
+
+// writeOrderChanges renders the latest set of position changes (added /
+// updated / removed) so the workshop sees what changed in this update.
+func writeOrderChanges(sb *strings.Builder, history []orderdomain.OrderHistory) {
+	if len(history) == 0 || len(history[0].Items) == 0 {
+		return
+	}
+	sb.WriteString("<b>Изменения:</b>\n")
+	for _, item := range history[0].Items {
+		fmt.Fprintf(sb, "%s %s %s\n",
+			changeLabel(item.ChangeType),
+			html.EscapeString(item.ProductName),
+			changeQuantityText(item),
+		)
+	}
+	sb.WriteString("\n")
+}
+
+func changeLabel(changeType string) string {
+	switch changeType {
+	case "added":
+		return "[добавлено]"
+	case "updated":
+		return "[изменено]"
+	case "removed":
+		return "[удалено]"
+	default:
+		return "[обновлено]"
+	}
+}
+
+func changeQuantityText(item orderdomain.OrderHistoryItem) string {
+	switch item.ChangeType {
+	case "updated":
+		return historyQuantity(item.OldQuantity, item.OldReservedQuantity) + " → " + historyQuantity(item.NewQuantity, item.NewReservedQuantity)
+	case "removed":
+		return "было " + historyQuantity(item.OldQuantity, item.OldReservedQuantity)
+	default:
+		return historyQuantity(item.NewQuantity, item.NewReservedQuantity)
+	}
+}
+
+func historyQuantity(quantity, reserved *float64) string {
+	base := helpers.FormatQuantity(derefQuantity(quantity))
+	if r := derefQuantity(reserved); r > 0 {
+		return base + "+" + helpers.FormatQuantity(r)
+	}
+	return base
+}
+
+func derefQuantity(value *float64) float64 {
+	if value == nil {
+		return 0
+	}
+	return *value
 }
 
 func (Builder) OrderDraft(orderNumber string, items []orderdomain.OrderItem, fulfillmentDate time.Time, errors []orderdomain.BulkOrderValidationError) string {
