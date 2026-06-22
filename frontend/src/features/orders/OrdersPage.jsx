@@ -415,6 +415,7 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
           selectionMode={selectionMode}
           canFavorite={canFavorite}
           onToggleFavorite={toggleFavorite}
+          onLoadOrder={fetchOrder}
           onSelect={(number) => loadOrder(number, false)}
           onToggleSelection={toggleOrderSelection}
           onToggleSelectionMode={() => setSelectionMode((current) => !current)}
