@@ -331,7 +331,7 @@ func (f *fakeRepo) UpdateDishCatalogItem(_ context.Context, _ string, item DishC
 	return item, nil
 }
 
-func (f *fakeRepo) ListAvailableDishes(context.Context) ([]orderdomain.AvailableDish, error) {
+func (f *fakeRepo) SearchAvailableDishes(context.Context, string, int) ([]orderdomain.AvailableDish, error) {
 	return nil, nil
 }
 

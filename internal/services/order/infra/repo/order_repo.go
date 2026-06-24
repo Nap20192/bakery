@@ -319,10 +319,14 @@ func (r *OrderRepository) UpsertDishCatalogItem(ctx context.Context, item orderu
 	return err
 }
 
-func (r *OrderRepository) ListAvailableDishes(ctx context.Context) ([]orderdomain.AvailableDish, error) {
-	rows, err := r.queries.ListIikoDishes(ctx)
+func (r *OrderRepository) SearchAvailableDishes(ctx context.Context, query string, limit int) ([]orderdomain.AvailableDish, error) {
+	var q *string
+	if query != "" {
+		q = &query
+	}
+	rows, err := r.queries.SearchIikoDishes(ctx, sqlc.SearchIikoDishesParams{Query: q, Lim: int32(limit)})
 	if err != nil {
-		return nil, fmt.Errorf("list iiko dishes: %w", err)
+		return nil, fmt.Errorf("search iiko dishes: %w", err)
 	}
 	dishes := make([]orderdomain.AvailableDish, 0, len(rows))
 	for _, row := range rows {

@@ -87,9 +87,10 @@ type availableDishResponse struct {
 }
 
 func (h *Handler) handleListAvailableDishes(w http.ResponseWriter, r *http.Request) {
-	dishes, err := h.orderSvc.ListAvailableDishes(r.Context())
+	query := httpx.Trim(r.URL.Query().Get("q"))
+	dishes, err := h.orderSvc.SearchAvailableDishes(r.Context(), query, 20)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "admin list available dishes failed", "error", err)
+		slog.ErrorContext(r.Context(), "admin search available dishes failed", "error", err)
 		httpx.WriteError(w, http.StatusInternalServerError, "Не удалось получить блюда.")
 		return
 	}

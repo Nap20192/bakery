@@ -4,8 +4,8 @@ export function fetchDishes() {
   return apiRequest('/admin/dishes');
 }
 
-export function fetchAvailableDishes() {
-  return apiRequest('/admin/dishes/available');
+export function searchAvailableDishes(query) {
+  return apiRequest(`/admin/dishes/available?q=${encodeURIComponent(query || '')}`);
 }
 
 export function reorderDishes(codes) {

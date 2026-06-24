@@ -23,7 +23,7 @@ type UseCase interface {
 	SetOrderFavorite(ctx context.Context, number string, favorite bool) (orderdomain.Order, error)
 	ValidateBulkOrder(ctx context.Context, order string) orderdomain.BulkOrderValidationResult
 	ListDishCatalog(ctx context.Context) ([]orderdomain.DishCatalogItem, error)
-	ListAvailableDishes(ctx context.Context) ([]orderdomain.AvailableDish, error)
+	SearchAvailableDishes(ctx context.Context, query string, limit int) ([]orderdomain.AvailableDish, error)
 	AddDishCatalogItem(ctx context.Context, input orderdomain.DishCatalogItem) (orderdomain.DishCatalogItem, error)
 	UpdateDishCatalogItem(ctx context.Context, code string, input orderdomain.DishCatalogItem) (orderdomain.DishCatalogItem, error)
 	ReorderDishCatalog(ctx context.Context, codes []string) error
@@ -49,7 +49,7 @@ type Repository interface {
 	DishExistsByCode(ctx context.Context, code string) (bool, error)
 	ResolveDishCatalogItem(ctx context.Context, name string) (DishCatalogItem, error)
 	ListDishCatalog(ctx context.Context) ([]DishCatalogItem, error)
-	ListAvailableDishes(ctx context.Context) ([]orderdomain.AvailableDish, error)
+	SearchAvailableDishes(ctx context.Context, query string, limit int) ([]orderdomain.AvailableDish, error)
 	UpsertDishCatalogItem(ctx context.Context, item DishCatalogItem) error
 	UpdateDishCatalogItem(ctx context.Context, code string, item DishCatalogItem) (DishCatalogItem, error)
 	SetDishCatalogSortOrder(ctx context.Context, code string, sortOrder int64) error

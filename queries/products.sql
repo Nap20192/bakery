@@ -65,11 +65,14 @@ ON CONFLICT (code) DO UPDATE SET
     updated_at = excluded.updated_at
 RETURNING *;
 
--- name: ListIikoDishes :many
+-- name: SearchIikoDishes :many
 SELECT id, code, name, measure_unit
 FROM iiko_products
-WHERE type = 'DISH' AND trim(code) <> ''
-ORDER BY name, code;
+WHERE type = 'DISH'
+  AND trim(code) <> ''
+  AND (name ILIKE '%' || sqlc.arg(query) || '%' OR code ILIKE '%' || sqlc.arg(query) || '%')
+ORDER BY name, code
+LIMIT sqlc.arg(lim);
 
 -- name: SetDishCatalogSortOrder :exec
 UPDATE dish_catalog SET

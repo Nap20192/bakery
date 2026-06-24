@@ -227,29 +227,37 @@ func (q *Queries) ListDishCatalogItemsByName(ctx context.Context, name string) (
 	return items, nil
 }
 
-const listIikoDishes = `-- name: ListIikoDishes :many
+const searchIikoDishes = `-- name: SearchIikoDishes :many
 SELECT id, code, name, measure_unit
 FROM iiko_products
-WHERE type = 'DISH' AND trim(code) <> ''
+WHERE type = 'DISH'
+  AND trim(code) <> ''
+  AND (name ILIKE '%' || $1 || '%' OR code ILIKE '%' || $1 || '%')
 ORDER BY name, code
+LIMIT $2
 `
 
-type ListIikoDishesRow struct {
+type SearchIikoDishesParams struct {
+	Query *string `json:"query"`
+	Lim   int32   `json:"lim"`
+}
+
+type SearchIikoDishesRow struct {
 	ID          string `json:"id"`
 	Code        string `json:"code"`
 	Name        string `json:"name"`
 	MeasureUnit string `json:"measure_unit"`
 }
 
-func (q *Queries) ListIikoDishes(ctx context.Context) ([]ListIikoDishesRow, error) {
-	rows, err := q.db.Query(ctx, listIikoDishes)
+func (q *Queries) SearchIikoDishes(ctx context.Context, arg SearchIikoDishesParams) ([]SearchIikoDishesRow, error) {
+	rows, err := q.db.Query(ctx, searchIikoDishes, arg.Query, arg.Lim)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListIikoDishesRow
+	var items []SearchIikoDishesRow
 	for rows.Next() {
-		var i ListIikoDishesRow
+		var i SearchIikoDishesRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Code,
