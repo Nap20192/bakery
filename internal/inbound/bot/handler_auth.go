@@ -101,7 +101,6 @@ func (b *OrderBot) userInfoMessage(user accessdomain.AuthUser) string {
 	if user.TelegramUsername != nil && strings.TrimSpace(*user.TelegramUsername) != "" {
 		fmt.Fprintf(&sb, "Telegram: @%s\n", html.EscapeString(strings.TrimPrefix(strings.TrimSpace(*user.TelegramUsername), "@")))
 	}
-	sb.WriteString("\nПароль задаёт администратор и в целях безопасности не отображается. Если забыли — попросите сбросить.\n")
 
 	switch accessdomain.NormalizeRole(user.Role) {
 	case accessdomain.RoleShop:
