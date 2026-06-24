@@ -227,6 +227,48 @@ func (q *Queries) ListDishCatalogItemsByName(ctx context.Context, name string) (
 	return items, nil
 }
 
+const updateDishCatalogItem = `-- name: UpdateDishCatalogItem :one
+UPDATE dish_catalog SET
+    code = $1,
+    name = $2,
+    theme = $3,
+    sort_order = $4,
+    updated_at = $5
+WHERE code = $6
+RETURNING id, code, name, theme, created_at, updated_at, sort_order
+`
+
+type UpdateDishCatalogItemParams struct {
+	NewCode   string             `json:"new_code"`
+	Name      string             `json:"name"`
+	Theme     string             `json:"theme"`
+	SortOrder int64              `json:"sort_order"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	Code      string             `json:"code"`
+}
+
+func (q *Queries) UpdateDishCatalogItem(ctx context.Context, arg UpdateDishCatalogItemParams) (DishCatalog, error) {
+	row := q.db.QueryRow(ctx, updateDishCatalogItem,
+		arg.NewCode,
+		arg.Name,
+		arg.Theme,
+		arg.SortOrder,
+		arg.UpdatedAt,
+		arg.Code,
+	)
+	var i DishCatalog
+	err := row.Scan(
+		&i.ID,
+		&i.Code,
+		&i.Name,
+		&i.Theme,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.SortOrder,
+	)
+	return i, err
+}
+
 const upsertDishCatalogItem = `-- name: UpsertDishCatalogItem :one
 INSERT INTO dish_catalog (
     code,

@@ -327,6 +327,10 @@ func (f *fakeRepo) UpsertDishCatalogItem(context.Context, DishCatalogItem) error
 	return nil
 }
 
+func (f *fakeRepo) UpdateDishCatalogItem(_ context.Context, _ string, item DishCatalogItem) (DishCatalogItem, error) {
+	return item, nil
+}
+
 func (f *fakeRepo) DeleteDishCatalogItem(context.Context, string) error {
 	return nil
 }

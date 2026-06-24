@@ -12,6 +12,14 @@ export function createDish(dish) {
   });
 }
 
+export function updateDish(code, dish) {
+  return apiRequest(`/admin/dishes/${encodeURIComponent(code)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dish),
+  });
+}
+
 export function deleteDish(code) {
   return apiRequest(`/admin/dishes/${encodeURIComponent(code)}`, { method: 'DELETE' });
 }

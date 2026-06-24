@@ -319,6 +319,24 @@ func (r *OrderRepository) UpsertDishCatalogItem(ctx context.Context, item orderu
 	return err
 }
 
+func (r *OrderRepository) UpdateDishCatalogItem(ctx context.Context, code string, item orderuc.DishCatalogItem) (orderuc.DishCatalogItem, error) {
+	row, err := r.queries.UpdateDishCatalogItem(ctx, sqlc.UpdateDishCatalogItemParams{
+		Code:      code,
+		NewCode:   item.Code,
+		Name:      item.Name,
+		Theme:     item.Theme,
+		SortOrder: item.SortOrder,
+		UpdatedAt: helpers.TimestamptzNow(),
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return orderuc.DishCatalogItem{}, orderuc.ErrDishCatalogItemNotFound
+		}
+		return orderuc.DishCatalogItem{}, fmt.Errorf("update dish catalog item: %w", err)
+	}
+	return dishCatalogItem(row), nil
+}
+
 func (r *OrderRepository) DeleteDishCatalogItem(ctx context.Context, code string) error {
 	return r.queries.DeleteDishCatalogItem(ctx, code)
 }

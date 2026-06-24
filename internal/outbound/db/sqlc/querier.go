@@ -66,6 +66,7 @@ type Querier interface {
 	UpdateAuthUserPassword(ctx context.Context, arg UpdateAuthUserPasswordParams) (AuthUser, error)
 	UpdateAuthUserRole(ctx context.Context, arg UpdateAuthUserRoleParams) (AuthUser, error)
 	UpdateAuthUserUsername(ctx context.Context, arg UpdateAuthUserUsernameParams) (AuthUser, error)
+	UpdateDishCatalogItem(ctx context.Context, arg UpdateDishCatalogItemParams) (DishCatalog, error)
 	UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order, error)
 	UpsertDishCatalogItem(ctx context.Context, arg UpsertDishCatalogItemParams) (DishCatalog, error)
 	UpsertIikoAssemblyChart(ctx context.Context, arg UpsertIikoAssemblyChartParams) error
