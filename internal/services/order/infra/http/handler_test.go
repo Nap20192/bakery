@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"bakery/internal/inbound/api/httpx"
-	"bakery/internal/pkg/enum"
 	authdomain "bakery/internal/services/auth/domain"
 	orderdomain "bakery/internal/services/order/domain"
 )
@@ -76,25 +75,24 @@ func TestMiniAppOrderAuthor(t *testing.T) {
 func TestUserCanReadOrder(t *testing.T) {
 	shopID := int64(3)
 	otherShopID := int64(4)
-	tests := []struct {
-		name string
-		user httpx.MiniAppUser
-		from *int64
-		want bool
-	}{
-		{name: "shop reads own order", user: httpx.MiniAppUser{DepartmentID: shopID, DepartmentType: string(enum.DepartmentTypeShop)}, from: &shopID, want: true},
-		{name: "shop cannot read another order", user: httpx.MiniAppUser{DepartmentID: shopID, DepartmentType: string(enum.DepartmentTypeShop)}, from: &otherShopID, want: false},
-		{name: "workshop reads any order", user: httpx.MiniAppUser{DepartmentType: string(enum.DepartmentTypeWorkshop)}, from: &otherShopID, want: true},
-		{name: "unknown department denied", user: httpx.MiniAppUser{DepartmentType: "unknown"}, from: &shopID, want: false},
-	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctx := httpx.WithMiniAppUser(context.Background(), tt.user)
-			got := UserCanReadOrder(ctx, orderdomain.Order{FromDepartmentID: tt.from})
-			if got != tt.want {
-				t.Fatalf("UserCanReadOrder() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	// Users are no longer bound to a department: any authenticated app user
+	// may read any order. Only a missing viewer is denied.
+	t.Run("shop reads any order", func(t *testing.T) {
+		ctx := httpx.WithMiniAppUser(context.Background(), httpx.MiniAppUser{Auth: authdomain.AuthUser{Role: authdomain.RoleShop}})
+		if !UserCanReadOrder(ctx, orderdomain.Order{FromDepartmentID: &otherShopID}) {
+			t.Fatalf("UserCanReadOrder() = false, want true")
+		}
+	})
+	t.Run("baker reads any order", func(t *testing.T) {
+		ctx := httpx.WithMiniAppUser(context.Background(), httpx.MiniAppUser{Auth: authdomain.AuthUser{Role: authdomain.RoleBaker}})
+		if !UserCanReadOrder(ctx, orderdomain.Order{FromDepartmentID: &shopID}) {
+			t.Fatalf("UserCanReadOrder() = false, want true")
+		}
+	})
+	t.Run("no viewer denied", func(t *testing.T) {
+		if UserCanReadOrder(context.Background(), orderdomain.Order{FromDepartmentID: &shopID}) {
+			t.Fatalf("UserCanReadOrder() = true, want false")
+		}
+	})
 }

@@ -22,6 +22,12 @@ const defaultPage = {
   total_pages: 0,
 };
 
+// canCreateOrders: only the shop role creates/edits orders (and picks the shop
+// to send from). Users are no longer bound to a department.
+function canCreateOrders(viewer) {
+  return viewer?.role === 'shop';
+}
+
 export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) {
   const [orders, setOrders] = useState([]);
   const [shops, setShops] = useState([]);
@@ -119,12 +125,13 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
     return run(async () => {
       const current = await fetchMe();
       setViewer(current);
-      if (current.department_type === 'workshop') {
-        const result = await fetchDepartments('shop');
-        const items = Array.isArray(result) ? result : [];
-        setShops(items);
-        logInfo('shops.loaded', { count: items.length });
-      } else if (current.department_type === 'shop') {
+      // Users are no longer bound to a department; behaviour is role-driven.
+      // Every role needs the shop list (filtering + the create-order picker).
+      const result = await fetchDepartments('shop');
+      const shopItems = Array.isArray(result) ? result : [];
+      setShops(shopItems);
+      logInfo('shops.loaded', { count: shopItems.length });
+      if (canCreateOrders(current)) {
         const items = await fetchCatalog();
         setCatalog(Array.isArray(items) ? items : []);
         if (activeRoute.name === 'orderNew' || launchMode === 'create') {
@@ -342,7 +349,7 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
   }
 
   const canFavorite = viewer?.role === 'admin';
-  const canUseMonitor = viewer?.department_type === 'workshop' || viewer?.role === 'baker';
+  const canUseMonitor = viewer?.role === 'baker' || viewer?.role === 'admin';
   // Only honour the editor on its own routes; navigating away (e.g. nav "Заказы"
   // from create) must fall back to the list/details view even if editor state
   // lingers.

@@ -41,7 +41,6 @@ func (h *Handler) handleListOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, _ := httpx.MiniAppUserFromContext(r.Context())
 	limit := int32(10)
 	if raw := httpx.Trim(r.URL.Query().Get("limit")); raw != "" {
 		parsed, err := strconv.ParseInt(raw, 10, 32)
@@ -62,9 +61,7 @@ func (h *Handler) handleListOrders(w http.ResponseWriter, r *http.Request) {
 	}
 	offset := (page - 1) * limit
 	var fromDepartmentID *int64
-	if httpx.IsShopUser(user) {
-		fromDepartmentID = &user.DepartmentID
-	} else if raw := httpx.Trim(r.URL.Query().Get("from_department_id")); raw != "" {
+	if raw := httpx.Trim(r.URL.Query().Get("from_department_id")); raw != "" {
 		parsed, err := strconv.ParseInt(raw, 10, 64)
 		if err != nil || parsed <= 0 {
 			httpx.WriteError(w, http.StatusBadRequest, "Параметр from_department_id должен быть положительным числом.")
@@ -125,15 +122,10 @@ func (h *Handler) handleOrderByID(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, h.presenter.BuildOrderResponse(r.Context(), order))
 }
 
-// UserCanReadOrder reports whether the request's viewer may read the order:
-// workshops see everything, shops only their own orders.
+// UserCanReadOrder reports whether the request's viewer may read the order.
+// Users are no longer bound to a department, so any authenticated app user
+// (shop, baker, admin) may read any order.
 func UserCanReadOrder(ctx context.Context, order orderdomain.Order) bool {
-	user, ok := httpx.MiniAppUserFromContext(ctx)
-	if !ok {
-		return false
-	}
-	if !httpx.IsShopUser(user) {
-		return httpx.IsWorkshopUser(user)
-	}
-	return order.FromDepartmentID != nil && *order.FromDepartmentID == user.DepartmentID
+	_, ok := httpx.MiniAppUserFromContext(ctx)
+	return ok
 }
