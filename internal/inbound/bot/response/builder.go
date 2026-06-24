@@ -82,8 +82,8 @@ func (Builder) OrderCopy(order orderdomain.Order) string {
 func (Builder) OrderUpdated(order orderdomain.Order, fromDepartment string, toDepartment string) string {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "<b>Заказ <code>%s</code> обновлен</b>\n\n", html.EscapeString(order.Number))
-	writeOrderChanges(&sb, order.History)
 	writeOrderDetails(&sb, order, fromDepartment, toDepartment)
+	writeOrderChanges(&sb, order.History)
 	return sb.String()
 }
 
@@ -93,7 +93,7 @@ func writeOrderChanges(sb *strings.Builder, history []orderdomain.OrderHistory) 
 	if len(history) == 0 || len(history[0].Items) == 0 {
 		return
 	}
-	sb.WriteString("<b>Изменения:</b>\n")
+	sb.WriteString("\n<b>Изменения:</b>\n")
 	for _, item := range history[0].Items {
 		fmt.Fprintf(sb, "%s %s %s\n",
 			changeLabel(item.ChangeType),
