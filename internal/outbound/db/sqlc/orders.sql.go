@@ -580,27 +580,26 @@ SET
     from_department_id = $1,
     to_department_id = $2,
     fulfillment_date = $3,
-    created_by_username = $4,
-    comments = $5
-WHERE number = $6
+    comments = $4
+WHERE number = $5
 RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite
 `
 
 type UpdateOrderParams struct {
-	FromDepartmentID  *int64      `json:"from_department_id"`
-	ToDepartmentID    *int64      `json:"to_department_id"`
-	FulfillmentDate   pgtype.Date `json:"fulfillment_date"`
-	CreatedByUsername string      `json:"created_by_username"`
-	Comments          []byte      `json:"comments"`
-	Number            string      `json:"number"`
+	FromDepartmentID *int64      `json:"from_department_id"`
+	ToDepartmentID   *int64      `json:"to_department_id"`
+	FulfillmentDate  pgtype.Date `json:"fulfillment_date"`
+	Comments         []byte      `json:"comments"`
+	Number           string      `json:"number"`
 }
 
+// created_by_username is intentionally left untouched: editing an order keeps
+// its original author; who made each change is recorded in order_history.
 func (q *Queries) UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order, error) {
 	row := q.db.QueryRow(ctx, updateOrder,
 		arg.FromDepartmentID,
 		arg.ToDepartmentID,
 		arg.FulfillmentDate,
-		arg.CreatedByUsername,
 		arg.Comments,
 		arg.Number,
 	)

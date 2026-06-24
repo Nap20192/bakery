@@ -86,11 +86,13 @@ type CreateOrderRepositoryInput struct {
 // UpdateOrderRepositoryInput carries the resolved update plus the precomputed
 // history diff so the repository can persist them atomically.
 type UpdateOrderRepositoryInput struct {
-	Number            string
-	Items             []orderdomain.OrderItem
+	Number string
+	Items  []orderdomain.OrderItem
+	// ChangedByUsername is the editor who made this change. It is recorded only
+	// in order_history — the order's original author is never overwritten.
+	ChangedByUsername string
 	FromDepartmentID  *int64
 	ToDepartmentID    *int64
-	CreatedByUsername string
 	FulfillmentDate   time.Time
 	Comments          orderdomain.OrderComments
 	HistoryItems      []orderdomain.OrderHistoryItem

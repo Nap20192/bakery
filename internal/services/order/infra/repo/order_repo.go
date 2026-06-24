@@ -161,12 +161,11 @@ func (r *OrderRepository) updateOrderTx(ctx context.Context, input orderuc.Updat
 
 func (r *OrderRepository) updateOrderWithQueries(ctx context.Context, q sqlc.Querier, input orderuc.UpdateOrderRepositoryInput) (orderdomain.Order, error) {
 	row, err := q.UpdateOrder(ctx, sqlc.UpdateOrderParams{
-		FromDepartmentID:  input.FromDepartmentID,
-		ToDepartmentID:    input.ToDepartmentID,
-		FulfillmentDate:   helpers.DateOf(input.FulfillmentDate),
-		CreatedByUsername: input.CreatedByUsername,
-		Number:            input.Number,
-		Comments:          marshalComments(input.Comments),
+		FromDepartmentID: input.FromDepartmentID,
+		ToDepartmentID:   input.ToDepartmentID,
+		FulfillmentDate:  helpers.DateOf(input.FulfillmentDate),
+		Number:           input.Number,
+		Comments:         marshalComments(input.Comments),
 	})
 	if err != nil {
 		return orderdomain.Order{}, fmt.Errorf("update order: %w", err)
@@ -178,7 +177,7 @@ func (r *OrderRepository) updateOrderWithQueries(ctx context.Context, q sqlc.Que
 		return orderdomain.Order{}, err
 	}
 	if len(input.HistoryItems) > 0 {
-		if err := r.createOrderHistory(ctx, q, row.ID, input.CreatedByUsername, input.HistoryItems); err != nil {
+		if err := r.createOrderHistory(ctx, q, row.ID, input.ChangedByUsername, input.HistoryItems); err != nil {
 			return orderdomain.Order{}, err
 		}
 	}

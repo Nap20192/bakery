@@ -107,17 +107,12 @@ func (s *Service) UpdateOrder(ctx context.Context, input UpdateOrderInput) (orde
 	if err := validateFulfillmentDateNotPast(fulfillmentDate, time.Now().UTC()); err != nil {
 		return orderdomain.Order{}, err
 	}
-	createdBy := strings.TrimSpace(input.CreatedByUsername)
-	if createdBy == "" {
-		createdBy = existing.CreatedByUsername
-	}
-
 	order, err := s.repo.UpdateOrder(ctx, UpdateOrderRepositoryInput{
 		Number:            input.Number,
 		Items:             input.Items,
 		FromDepartmentID:  input.FromDepartmentID,
 		ToDepartmentID:    input.ToDepartmentID,
-		CreatedByUsername: createdBy,
+		ChangedByUsername: strings.TrimSpace(input.CreatedByUsername),
 		FulfillmentDate:   fulfillmentDate,
 		Comments:          input.Comments,
 		HistoryItems:      historyItems,

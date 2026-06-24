@@ -34,6 +34,18 @@ func TestDecodeOrderWriteRequest(t *testing.T) {
 			name: "trailing json rejected",
 			body: `{"items":[{"product_name":"Кокрок","quantity":1}]} {}`,
 		},
+		{
+			name: "single item all zero rejected",
+			body: `{"items":[{"product_name":"Кокрок","quantity":0,"reserved_quantity":0}]}`,
+		},
+		{
+			name: "all items zero rejected",
+			body: `{"items":[{"product_name":"Кокрок","quantity":0},{"product_name":"Сосиска","quantity":0,"reserved_quantity":0}]}`,
+		},
+		{
+			name: "empty items rejected",
+			body: `{"items":[]}`,
+		},
 	}
 
 	for _, tt := range tests {
