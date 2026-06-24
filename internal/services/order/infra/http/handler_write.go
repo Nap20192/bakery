@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"bakery/internal/pkg/enum"
+
 	"bakery/internal/inbound/api/httpx"
 	orderdomain "bakery/internal/services/order/domain"
 	orderuc "bakery/internal/services/order/usecase/order"
@@ -23,9 +25,10 @@ const (
 )
 
 type orderWriteRequest struct {
-	Items           []orderWriteItem   `json:"items"`
-	FulfillmentDate string             `json:"fulfillment_date"`
-	Comments        orderWriteComments `json:"comments"`
+	Items            []orderWriteItem   `json:"items"`
+	FulfillmentDate  string             `json:"fulfillment_date"`
+	FromDepartmentID *int64             `json:"from_department_id"`
+	Comments         orderWriteComments `json:"comments"`
 }
 
 type orderWriteItem struct {
@@ -81,7 +84,10 @@ func (h *Handler) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	fromDepartmentID := user.DepartmentID
+	fromDepartmentID, ok := h.resolveShopDepartmentID(w, r, input.fromDepartmentID)
+	if !ok {
+		return
+	}
 	order, err := h.orderSvc.CreateOrder(r.Context(), orderdomain.CreateOrderInput{
 		Items:             input.items,
 		FromDepartmentID:  &fromDepartmentID,
@@ -122,11 +128,18 @@ func (h *Handler) handleUpdateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fromDepartmentID := user.DepartmentID
+	fromDepartmentID := existing.FromDepartmentID
+	if input.fromDepartmentID != nil {
+		resolved, ok := h.resolveShopDepartmentID(w, r, input.fromDepartmentID)
+		if !ok {
+			return
+		}
+		fromDepartmentID = &resolved
+	}
 	order, err := h.orderSvc.UpdateOrder(r.Context(), orderuc.UpdateOrderInput{
 		Number:            number,
 		Items:             input.items,
-		FromDepartmentID:  &fromDepartmentID,
+		FromDepartmentID:  fromDepartmentID,
 		ToDepartmentID:    existing.ToDepartmentID,
 		CreatedByUsername: miniAppOrderAuthor(user),
 		FulfillmentDate:   input.fulfillmentDate,
@@ -141,9 +154,10 @@ func (h *Handler) handleUpdateOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 type validatedOrderWrite struct {
-	items           []orderdomain.OrderItem
-	fulfillmentDate time.Time
-	comments        orderdomain.OrderComments
+	items            []orderdomain.OrderItem
+	fulfillmentDate  time.Time
+	fromDepartmentID *int64
+	comments         orderdomain.OrderComments
 }
 
 func buildComments(req orderWriteComments) orderdomain.OrderComments {
@@ -206,7 +220,7 @@ func decodeOrderWriteRequest(w http.ResponseWriter, r *http.Request) (validatedO
 			ReservedQuantity: item.ReservedQuantity,
 		})
 	}
-	return validatedOrderWrite{items: items, fulfillmentDate: fulfillmentDate, comments: buildComments(request.Comments)}, true
+	return validatedOrderWrite{items: items, fulfillmentDate: fulfillmentDate, fromDepartmentID: request.FromDepartmentID, comments: buildComments(request.Comments)}, true
 }
 
 func validOrderQuantity(quantity float64) bool {
@@ -221,6 +235,25 @@ func (h *Handler) shopOrderWriter(w http.ResponseWriter, r *http.Request) (httpx
 		return httpx.MiniAppUser{}, false
 	}
 	return user, true
+}
+
+// resolveShopDepartmentID validates the shop the order is sent from: the caller
+// picks it at order time (users are no longer bound to a department).
+func (h *Handler) resolveShopDepartmentID(w http.ResponseWriter, r *http.Request, id *int64) (int64, bool) {
+	if id == nil || *id <= 0 {
+		httpx.WriteError(w, http.StatusBadRequest, "Выберите магазин, из которого отправляется заказ.")
+		return 0, false
+	}
+	department, err := h.departmentSvc.GetByID(r.Context(), *id)
+	if err != nil {
+		httpx.WriteError(w, http.StatusBadRequest, "Выбранный магазин не найден.")
+		return 0, false
+	}
+	if !strings.EqualFold(strings.TrimSpace(department.Type), string(enum.DepartmentTypeShop)) {
+		httpx.WriteError(w, http.StatusBadRequest, "Заказ можно отправить только из магазина.")
+		return 0, false
+	}
+	return department.ID, true
 }
 
 func (h *Handler) workshopDepartmentID(w http.ResponseWriter, r *http.Request) (int64, bool) {

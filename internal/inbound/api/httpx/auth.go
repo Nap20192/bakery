@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"bakery/internal/pkg/authtoken"
-	"bakery/internal/pkg/enum"
 	authdomain "bakery/internal/services/auth/domain"
 	authuc "bakery/internal/services/auth/usecase/auth"
 	departmentuc "bakery/internal/services/department/usecase/department"
@@ -169,16 +168,10 @@ func (a *Authenticator) lookupUser(ctx context.Context, load func() (authdomain.
 }
 
 func (a *Authenticator) buildDepartmentViewer(ctx context.Context, user authdomain.AuthUser) (MiniAppUser, *viewerError) {
-	if user.DepartmentID == nil {
-		return MiniAppUser{}, &viewerError{http.StatusForbidden, "Сначала выберите магазин или цех в боте через /start."}
-	}
-	department, err := a.departmentSvc.GetByID(ctx, *user.DepartmentID)
-	if err != nil {
-		slog.ErrorContext(ctx, "api department lookup failed", "error", err)
-		return MiniAppUser{}, &viewerError{http.StatusInternalServerError, "Не удалось определить локацию пользователя."}
-	}
-	if department.Type != string(enum.DepartmentTypeShop) && department.Type != string(enum.DepartmentTypeWorkshop) {
-		return MiniAppUser{}, &viewerError{http.StatusForbidden, "Выбранная локация не поддерживается в приложении."}
+	// Access is role-driven: users are no longer bound to a single department.
+	role := authdomain.NormalizeRole(user.Role)
+	if role != authdomain.RoleAdmin && role != authdomain.RoleShop && role != authdomain.RoleBaker {
+		return MiniAppUser{}, &viewerError{http.StatusForbidden, "Ваша роль не поддерживается в приложении."}
 	}
 	telegramID := int64(0)
 	if user.TelegramID != nil {
@@ -188,15 +181,23 @@ func (a *Authenticator) buildDepartmentViewer(ctx context.Context, user authdoma
 	if user.TelegramUsername != nil {
 		telegramUsername = strings.TrimSpace(*user.TelegramUsername)
 	}
-	return MiniAppUser{
-		Auth:           user,
-		TelegramID:     telegramID,
-		TelegramUser:   telegramUsername,
-		DepartmentID:   department.ID,
-		DepartmentCode: department.Code,
-		DepartmentName: department.Name,
-		DepartmentType: department.Type,
-	}, nil
+	viewer := MiniAppUser{
+		Auth:         user,
+		TelegramID:   telegramID,
+		TelegramUser: telegramUsername,
+	}
+	// A department binding is optional now; populate it for display when present.
+	if user.DepartmentID != nil {
+		if department, err := a.departmentSvc.GetByID(ctx, *user.DepartmentID); err != nil {
+			slog.WarnContext(ctx, "api department lookup failed", "error", err)
+		} else {
+			viewer.DepartmentID = department.ID
+			viewer.DepartmentCode = department.Code
+			viewer.DepartmentName = department.Name
+			viewer.DepartmentType = department.Type
+		}
+	}
+	return viewer, nil
 }
 
 // WithMiniAppUser attaches an authenticated viewer to the context. Used by the
@@ -212,14 +213,16 @@ func MiniAppUserFromContext(ctx context.Context) (MiniAppUser, bool) {
 	return user, ok
 }
 
-// IsShopUser reports whether the viewer belongs to a shop department.
+// IsShopUser reports whether the viewer may create/edit orders (shop or admin).
 func IsShopUser(user MiniAppUser) bool {
-	return strings.EqualFold(strings.TrimSpace(user.DepartmentType), string(enum.DepartmentTypeShop))
+	role := authdomain.NormalizeRole(user.Auth.Role)
+	return role == authdomain.RoleShop || role == authdomain.RoleAdmin
 }
 
-// IsWorkshopUser reports whether the viewer belongs to a workshop department.
+// IsWorkshopUser reports whether the viewer is on the workshop side (baker or admin).
 func IsWorkshopUser(user MiniAppUser) bool {
-	return strings.EqualFold(strings.TrimSpace(user.DepartmentType), string(enum.DepartmentTypeWorkshop))
+	role := authdomain.NormalizeRole(user.Auth.Role)
+	return role == authdomain.RoleBaker || role == authdomain.RoleAdmin
 }
 
 // TelegramUsernameOf returns the trimmed telegram username, or "".

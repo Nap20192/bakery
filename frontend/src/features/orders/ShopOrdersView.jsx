@@ -37,7 +37,7 @@ export function ShopOrdersView({
           page={page}
           shops={shops}
           viewer={viewer}
-          canFilterShops={viewer?.department_type === 'workshop'}
+          canFilterShops
           filters={filters}
           selectedNumber={selectedNumber}
           onSelect={onSelect}
@@ -55,6 +55,7 @@ export function ShopOrdersView({
                 key={`${editor.mode}-${editor.order?.number || 'new'}`}
                 catalog={catalog}
                 order={editor.order}
+                shops={shops}
                 loading={loading}
                 onCancel={onCancelEdit}
                 onSave={onSave}

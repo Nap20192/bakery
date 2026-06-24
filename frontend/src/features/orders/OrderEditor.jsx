@@ -48,7 +48,10 @@ function parsePasteLine(line) {
   return { name, quantity, reserved };
 }
 
-export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
+export function OrderEditor({ catalog, order, shops = [], loading, onCancel, onSave }) {
+  const [fromDepartmentID, setFromDepartmentID] = useState(
+    order?.from_department?.id ? String(order.from_department.id) : '',
+  );
   const [date, setDate] = useState(order?.fulfillment_date || '');
   const [quantities, setQuantities] = useState(() => initialQuantities(order));
   const [comments, setComments] = useState(() => initialItemComments(order));
@@ -168,12 +171,13 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
       .filter((entry) => entry.comment);
     onSave({
       fulfillment_date: date,
+      from_department_id: Number(fromDepartmentID),
       items,
       comments: { general: general.trim(), items: itemComments },
     });
   }
 
-  const canSubmit = !loading && summary.count > 0 && Boolean(date);
+  const canSubmit = !loading && summary.count > 0 && Boolean(date) && Boolean(fromDepartmentID);
 
   return (
     <form className="space-y-3" onSubmit={submit}>
@@ -210,6 +214,16 @@ export function OrderEditor({ catalog, order, loading, onCancel, onSave }) {
           )}
         </div>
       )}
+
+      <label className="block">
+        <span className="mb-1 block text-[12px] font-medium text-stone-500">Магазин (откуда заказ)</span>
+        <select className={controlClass} value={fromDepartmentID} onChange={(e) => setFromDepartmentID(e.target.value)} required>
+          <option value="" disabled>Выберите магазин…</option>
+          {shops.map((shop) => (
+            <option key={shop.id} value={String(shop.id)}>{shop.name}</option>
+          ))}
+        </select>
+      </label>
 
       <div className="grid gap-2 sm:grid-cols-2">
         <label className="block">

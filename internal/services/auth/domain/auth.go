@@ -9,6 +9,10 @@ import (
 const (
 	// RoleAdmin — полный доступ к заказам, калькуляции, iiko sync и управлению пользователями.
 	RoleAdmin = string(enum.RoleAdmin)
+	// RoleShop — магазин: создаёт и редактирует заказы.
+	RoleShop = string(enum.RoleShop)
+	// RoleBaker — цех: видит все заказы и считает мониторинг по тесту.
+	RoleBaker = string(enum.RoleBaker)
 )
 
 // AuthUser — доменная модель пользователя авторизации.
