@@ -30,21 +30,8 @@ func (h *Handler) handleListDepartments(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	departmentType := enum.DepartmentType(httpx.Trim(r.URL.Query().Get("type")))
-	user, _ := httpx.MiniAppUserFromContext(r.Context())
-	if httpx.IsShopUser(user) {
-		if departmentType != "" && departmentType != enum.DepartmentTypeShop {
-			httpx.WriteJSON(w, http.StatusOK, []httpx.DepartmentResponse{})
-			return
-		}
-		httpx.WriteJSON(w, http.StatusOK, []httpx.DepartmentResponse{{
-			ID:   user.DepartmentID,
-			Code: user.DepartmentCode,
-			Name: user.DepartmentName,
-			Type: user.DepartmentType,
-		}})
-		return
-	}
-
+	// Users are no longer bound to a department, so every authenticated viewer
+	// gets the full list (the shop is chosen at order time).
 	departments, err := h.departmentSvc.ListByType(r.Context(), departmentType)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "list departments failed", "error", err)
