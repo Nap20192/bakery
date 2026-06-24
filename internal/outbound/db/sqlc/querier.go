@@ -69,6 +69,8 @@ type Querier interface {
 	UpdateAuthUserRole(ctx context.Context, arg UpdateAuthUserRoleParams) (AuthUser, error)
 	UpdateAuthUserUsername(ctx context.Context, arg UpdateAuthUserUsernameParams) (AuthUser, error)
 	UpdateDishCatalogItem(ctx context.Context, arg UpdateDishCatalogItemParams) (DishCatalog, error)
+	// created_by_username is intentionally left untouched: editing an order keeps
+	// its original author; who made each change is recorded in order_history.
 	UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order, error)
 	UpsertDishCatalogItem(ctx context.Context, arg UpsertDishCatalogItemParams) (DishCatalog, error)
 	UpsertIikoAssemblyChart(ctx context.Context, arg UpsertIikoAssemblyChartParams) error

@@ -93,7 +93,11 @@ func writeOrderChanges(sb *strings.Builder, history []orderdomain.OrderHistory) 
 	if len(history) == 0 || len(history[0].Items) == 0 {
 		return
 	}
-	sb.WriteString("\n<b>Изменения:</b>\n")
+	if editor := strings.TrimPrefix(strings.TrimSpace(history[0].ChangedByUsername), "@"); editor != "" {
+		fmt.Fprintf(sb, "\n<b>Изменения</b> (@%s):\n", html.EscapeString(editor))
+	} else {
+		sb.WriteString("\n<b>Изменения:</b>\n")
+	}
 	for _, item := range history[0].Items {
 		fmt.Fprintf(sb, "%s %s %s\n",
 			changeLabel(item.ChangeType),

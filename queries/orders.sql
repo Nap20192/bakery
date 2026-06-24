@@ -131,12 +131,13 @@ WHERE history_id = sqlc.arg(history_id)
 ORDER BY id;
 
 -- name: UpdateOrder :one
+-- created_by_username is intentionally left untouched: editing an order keeps
+-- its original author; who made each change is recorded in order_history.
 UPDATE orders
 SET
     from_department_id = sqlc.narg(from_department_id),
     to_department_id = sqlc.narg(to_department_id),
     fulfillment_date = sqlc.arg(fulfillment_date),
-    created_by_username = sqlc.arg(created_by_username),
     comments = sqlc.narg(comments)
 WHERE number = sqlc.arg(number)
 RETURNING *;
