@@ -6,7 +6,7 @@ import { Icon } from '../../components/Icon';
 import { formatQuantity } from '../../lib/format';
 
 const controlClass =
-  'h-11 w-full rounded-lg border border-stone-200 bg-white px-3 text-base text-stone-900 outline-none transition focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10';
+  'block h-11 w-full min-w-0 max-w-full appearance-none rounded-lg border border-stone-200 bg-white px-3 text-base text-stone-900 outline-none transition focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10';
 const qtyClass =
   'h-10 w-full rounded-lg border border-stone-200 bg-stone-50 px-1 text-center text-base text-stone-900 outline-none transition focus:border-stone-900 focus:bg-white focus:ring-2 focus:ring-stone-900/10';
 
@@ -208,7 +208,12 @@ export function OrderEditor({ catalog, order, shops = [], loading, onCancel, onS
 
       <label className="block">
         <span className="mb-1 block text-[12px] font-medium text-stone-500">Магазин (откуда заказ)</span>
-        <select className={controlClass} value={fromDepartmentID} onChange={(e) => setFromDepartmentID(e.target.value)} required>
+        <select
+          className={`${controlClass} cursor-pointer bg-[length:1.1rem] bg-[right_0.6rem_center] bg-no-repeat pr-9 bg-[url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%2378716c'%20stroke-width='2'%3E%3Cpath%20d='M6%209l6%206%206-6'/%3E%3C/svg%3E")]`}
+          value={fromDepartmentID}
+          onChange={(e) => setFromDepartmentID(e.target.value)}
+          required
+        >
           <option value="" disabled>Выберите магазин…</option>
           {shops.map((shop) => (
             <option key={shop.id} value={String(shop.id)}>{shop.name}</option>
