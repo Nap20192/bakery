@@ -39,7 +39,9 @@ type dishWriteRequest struct {
 // RegisterAdminRoutes wires admin-only dish catalog management and order pins.
 func (h *Handler) RegisterAdminRoutes(mux *http.ServeMux, auth *httpx.Authenticator) {
 	mux.Handle("GET /admin/dishes", auth.RequireAdmin(http.HandlerFunc(h.handleListDishes)))
+	mux.Handle("GET /admin/dishes/available", auth.RequireAdmin(http.HandlerFunc(h.handleListAvailableDishes)))
 	mux.Handle("POST /admin/dishes", auth.RequireAdmin(http.HandlerFunc(h.handleCreateDish)))
+	mux.Handle("PUT /admin/dishes/reorder", auth.RequireAdmin(http.HandlerFunc(h.handleReorderDishes)))
 	mux.Handle("PUT /admin/dishes/{code}", auth.RequireAdmin(http.HandlerFunc(h.handleUpdateDish)))
 	mux.Handle("DELETE /admin/dishes/{code}", auth.RequireAdmin(http.HandlerFunc(h.handleDeleteDish)))
 	mux.Handle("PATCH /orders/{id}/favorite", auth.RequireAdmin(http.HandlerFunc(h.handleSetFavorite)))
@@ -76,6 +78,43 @@ func (h *Handler) handleListDishes(w http.ResponseWriter, r *http.Request) {
 		out = append(out, toDishResponse(item))
 	}
 	httpx.WriteJSON(w, http.StatusOK, out)
+}
+
+type availableDishResponse struct {
+	Code string `json:"code"`
+	Name string `json:"name"`
+	Unit string `json:"unit"`
+}
+
+func (h *Handler) handleListAvailableDishes(w http.ResponseWriter, r *http.Request) {
+	dishes, err := h.orderSvc.ListAvailableDishes(r.Context())
+	if err != nil {
+		slog.ErrorContext(r.Context(), "admin list available dishes failed", "error", err)
+		httpx.WriteError(w, http.StatusInternalServerError, "Не удалось получить блюда.")
+		return
+	}
+	out := make([]availableDishResponse, 0, len(dishes))
+	for _, dish := range dishes {
+		out = append(out, availableDishResponse{Code: dish.Code, Name: dish.Name, Unit: dish.Unit})
+	}
+	httpx.WriteJSON(w, http.StatusOK, out)
+}
+
+type reorderRequest struct {
+	Codes []string `json:"codes"`
+}
+
+func (h *Handler) handleReorderDishes(w http.ResponseWriter, r *http.Request) {
+	var req reorderRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.WriteError(w, http.StatusBadRequest, "Некорректные данные.")
+		return
+	}
+	if err := h.orderSvc.ReorderDishCatalog(r.Context(), req.Codes); err != nil {
+		httpx.WriteAppError(w, r, err, "Не удалось изменить порядок.")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *Handler) handleCreateDish(w http.ResponseWriter, r *http.Request) {

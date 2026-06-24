@@ -227,6 +227,63 @@ func (q *Queries) ListDishCatalogItemsByName(ctx context.Context, name string) (
 	return items, nil
 }
 
+const listIikoDishes = `-- name: ListIikoDishes :many
+SELECT id, code, name, measure_unit
+FROM iiko_products
+WHERE type = 'DISH' AND trim(code) <> ''
+ORDER BY name, code
+`
+
+type ListIikoDishesRow struct {
+	ID          string `json:"id"`
+	Code        string `json:"code"`
+	Name        string `json:"name"`
+	MeasureUnit string `json:"measure_unit"`
+}
+
+func (q *Queries) ListIikoDishes(ctx context.Context) ([]ListIikoDishesRow, error) {
+	rows, err := q.db.Query(ctx, listIikoDishes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListIikoDishesRow
+	for rows.Next() {
+		var i ListIikoDishesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Code,
+			&i.Name,
+			&i.MeasureUnit,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const setDishCatalogSortOrder = `-- name: SetDishCatalogSortOrder :exec
+UPDATE dish_catalog SET
+    sort_order = $1,
+    updated_at = $2
+WHERE code = $3
+`
+
+type SetDishCatalogSortOrderParams struct {
+	SortOrder int64              `json:"sort_order"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	Code      string             `json:"code"`
+}
+
+func (q *Queries) SetDishCatalogSortOrder(ctx context.Context, arg SetDishCatalogSortOrderParams) error {
+	_, err := q.db.Exec(ctx, setDishCatalogSortOrder, arg.SortOrder, arg.UpdatedAt, arg.Code)
+	return err
+}
+
 const updateDishCatalogItem = `-- name: UpdateDishCatalogItem :one
 UPDATE dish_catalog SET
     code = $1,
