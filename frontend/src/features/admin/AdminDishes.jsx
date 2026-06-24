@@ -3,9 +3,9 @@ import { Button } from '../../components/Button';
 import {
   createDish,
   deleteDish,
-  fetchAvailableDishes,
   fetchDishes,
   reorderDishes,
+  searchAvailableDishes,
   updateDish,
 } from '../../api/dishes';
 
@@ -14,16 +14,13 @@ const fieldClass =
 const cellInputClass =
   'h-9 w-full min-w-0 rounded-md border border-stone-300 bg-white px-2 text-sm outline-none focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10';
 
-const emptyForm = { code: '', theme: '' };
-
 // AdminDishes is the full dish-catalog editor. Admins add dishes only from the
-// iiko tech cards present in the database, edit name/group, reorder by drag and
-// drop, and delete entries. Shops pick from this catalog when ordering.
+// iiko tech cards in the database (looked up on demand, never loaded whole),
+// edit name/group, reorder by drag and drop, and delete entries.
 export function AdminDishes() {
   const [dishes, setDishes] = useState([]);
-  const [available, setAvailable] = useState([]);
-  const [form, setForm] = useState(emptyForm);
-  const [pickerQuery, setPickerQuery] = useState('');
+  const [group, setGroup] = useState('');
+  const [selected, setSelected] = useState(null);
   const [query, setQuery] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -35,21 +32,9 @@ export function AdminDishes() {
       .catch((err) => setError(err instanceof Error ? err.message : String(err)));
   }
 
-  useEffect(() => {
-    load();
-    fetchAvailableDishes()
-      .then((rows) => setAvailable(Array.isArray(rows) ? rows : []))
-      .catch((err) => setError(err instanceof Error ? err.message : String(err)));
-  }, []);
+  useEffect(load, []);
 
-  // Dishes already in the catalog can't be added again.
-  const addable = useMemo(() => {
-    const taken = new Set(dishes.map((d) => d.code));
-    const q = pickerQuery.trim().toLowerCase();
-    return available
-      .filter((d) => !taken.has(d.code))
-      .filter((d) => !q || [d.code, d.name].some((f) => String(f || '').toLowerCase().includes(q)));
-  }, [available, dishes, pickerQuery]);
+  const takenCodes = useMemo(() => new Set(dishes.map((d) => d.code)), [dishes]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -59,16 +44,14 @@ export function AdminDishes() {
 
   const canReorder = !query.trim();
 
-  async function onCreate(event) {
-    event.preventDefault();
-    const dish = available.find((d) => d.code === form.code);
-    if (!dish) return;
+  async function onAdd() {
+    if (!selected) return;
     setError('');
     setBusy(true);
     try {
-      await createDish({ code: dish.code, name: dish.name, theme: form.theme.trim(), sort_order: 0 });
-      setForm(emptyForm);
-      setPickerQuery('');
+      await createDish({ code: selected.code, name: selected.name, theme: group.trim(), sort_order: 0 });
+      setSelected(null);
+      setGroup('');
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -122,7 +105,7 @@ export function AdminDishes() {
           <input
             className="h-9 w-full rounded-md border border-stone-300 bg-white px-3 text-sm outline-none focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10 sm:w-64"
             type="search"
-            placeholder="Поиск: код, название, группа…"
+            placeholder="Поиск в каталоге…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -130,25 +113,12 @@ export function AdminDishes() {
 
         {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800">{error}</div>}
 
-        <form onSubmit={onCreate} className="mb-2 grid gap-2 rounded-xl border border-stone-200 bg-white p-4 shadow-sm sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,10rem)_auto]">
-          <input
-            className={fieldClass}
-            placeholder="Поиск блюда из техкарт…"
-            value={pickerQuery}
-            onChange={(e) => setPickerQuery(e.target.value)}
-          />
-          <select className={fieldClass} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })}>
-            <option value="">— выберите блюдо —</option>
-            {addable.slice(0, 200).map((d) => (
-              <option key={d.code} value={d.code}>{d.name} · {d.code}</option>
-            ))}
-          </select>
-          <input className={fieldClass} placeholder="Группа" value={form.theme} onChange={(e) => setForm({ ...form, theme: e.target.value })} />
-          <Button type="submit" variant="primary" disabled={busy || !form.code}>Добавить</Button>
-        </form>
-        <p className="mb-6 text-[12px] text-stone-500">
-          Добавлять можно только блюда с техкартой из базы ({available.length} доступно). Порядок меняется перетаскиванием строк.
-        </p>
+        <div className="mb-2 grid gap-2 rounded-xl border border-stone-200 bg-white p-4 shadow-sm sm:grid-cols-[minmax(0,1fr)_minmax(0,12rem)_auto]">
+          <DishPicker selected={selected} onSelect={setSelected} takenCodes={takenCodes} onError={setError} />
+          <input className={fieldClass} placeholder="Группа (необязательно)" value={group} onChange={(e) => setGroup(e.target.value)} />
+          <Button type="button" variant="primary" onClick={onAdd} disabled={busy || !selected}>Добавить</Button>
+        </div>
+        <p className="mb-6 text-[12px] text-stone-500">Начните вводить название или код — блюда подгружаются из техкарт по мере ввода. Порядок меняется перетаскиванием строк.</p>
 
         <div className="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm">
           <table className="w-full text-sm">
@@ -182,6 +152,84 @@ export function AdminDishes() {
         </div>
       </div>
     </main>
+  );
+}
+
+// DishPicker is a server-backed autocomplete over iiko tech cards: it queries
+// the API as the admin types (debounced) so the full product list is never
+// loaded. Already-added dishes are filtered out of the suggestions.
+function DishPicker({ selected, onSelect, takenCodes, onError }) {
+  const [text, setText] = useState('');
+  const [results, setResults] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (selected) return undefined;
+    const q = text.trim();
+    let alive = true;
+    const t = setTimeout(() => {
+      if (!alive) return;
+      if (q.length < 1) {
+        setResults([]);
+        return;
+      }
+      setLoading(true);
+      searchAvailableDishes(q)
+        .then((rows) => {
+          if (!alive) return;
+          setResults((Array.isArray(rows) ? rows : []).filter((d) => !takenCodes.has(d.code)));
+          setOpen(true);
+        })
+        .catch((err) => alive && onError(err instanceof Error ? err.message : String(err)))
+        .finally(() => alive && setLoading(false));
+    }, 250);
+    return () => { alive = false; clearTimeout(t); };
+  }, [text, selected, takenCodes, onError]);
+
+  function pick(dish) {
+    onSelect(dish);
+    setText(`${dish.name} · ${dish.code}`);
+    setResults([]);
+    setOpen(false);
+  }
+
+  function onChange(e) {
+    setText(e.target.value);
+    if (selected) onSelect(null);
+  }
+
+  return (
+    <div className="relative">
+      <input
+        className={fieldClass}
+        placeholder="Поиск блюда из техкарт…"
+        value={text}
+        onChange={onChange}
+        onFocus={() => results.length && setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+      />
+      {open && (results.length > 0 || !loading) && (
+        <ul className="absolute z-10 mt-1 max-h-72 w-full overflow-auto rounded-lg border border-stone-200 bg-white py-1 shadow-lg">
+          {results.map((d) => (
+            <li key={d.code}>
+              <button
+                type="button"
+                className="block w-full px-3 py-2 text-left text-sm hover:bg-stone-100"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => pick(d)}
+              >
+                <span className="text-stone-900">{d.name}</span>
+                <span className="ml-2 font-mono text-[12px] text-stone-400">{d.code}</span>
+              </button>
+            </li>
+          ))}
+          {results.length === 0 && !loading && (
+            <li className="px-3 py-2 text-sm text-stone-500">Ничего не найдено.</li>
+          )}
+        </ul>
+      )}
+    </div>
   );
 }
 

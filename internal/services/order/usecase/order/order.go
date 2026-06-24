@@ -221,12 +221,16 @@ func (s *Service) ListDishCatalog(ctx context.Context) ([]orderdomain.DishCatalo
 	return items, nil
 }
 
-// ListAvailableDishes returns the iiko DISH products an admin may add to the
-// catalog (the dishes that have tech cards in the database).
-func (s *Service) ListAvailableDishes(ctx context.Context) ([]orderdomain.AvailableDish, error) {
-	dishes, err := s.repo.ListAvailableDishes(ctx)
+// SearchAvailableDishes returns iiko DISH products matching the query (by name
+// or code) that an admin may add to the catalog. Results are capped so the UI
+// never loads the whole product list.
+func (s *Service) SearchAvailableDishes(ctx context.Context, query string, limit int) ([]orderdomain.AvailableDish, error) {
+	if limit <= 0 || limit > 50 {
+		limit = 20
+	}
+	dishes, err := s.repo.SearchAvailableDishes(ctx, strings.TrimSpace(query), limit)
 	if err != nil {
-		return nil, fmt.Errorf("list available dishes: %w", err)
+		return nil, fmt.Errorf("search available dishes: %w", err)
 	}
 	return dishes, nil
 }
