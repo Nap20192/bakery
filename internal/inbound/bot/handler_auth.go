@@ -117,9 +117,6 @@ func (b *OrderBot) userInfoMessage(user accessdomain.AuthUser) string {
 		sb.WriteString("Откройте приложение — заказы, пользователи и блюда.\n")
 	}
 
-	if url := strings.TrimSpace(b.miniAppURL); url != "" {
-		fmt.Fprintf(&sb, "\nПриложение: %s", html.EscapeString(url))
-	}
 	return sb.String()
 }
 

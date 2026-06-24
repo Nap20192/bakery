@@ -3,7 +3,6 @@ package response
 import (
 	"fmt"
 	"html"
-	"net/url"
 	"strings"
 	"time"
 
@@ -184,7 +183,6 @@ func writeOrderDetails(sb *strings.Builder, order orderdomain.Order, fromDepartm
 	sb.WriteString("\n<b>Состав:</b>\n")
 	writeOrderItemsCodeBlock(sb, order.Items)
 	writeOrderComments(sb, order.Comments)
-	fmt.Fprintf(sb, "\n%s", html.EscapeString(orderWebURL(order.Number)))
 }
 
 func writeOrderComments(sb *strings.Builder, comments orderdomain.OrderComments) {
@@ -205,17 +203,6 @@ func writeOrderItemsCodeBlock(sb *strings.Builder, items []orderdomain.OrderItem
 		fmt.Fprintf(sb, "%s %s\n", html.EscapeString(item.ProductName), html.EscapeString(formatOrderItemQuantity(item)))
 	}
 	sb.WriteString("</pre>\n")
-}
-
-func orderWebURL(orderNumber string) string {
-	base, err := url.Parse(ordersWebURL)
-	if err != nil {
-		return ordersWebURL
-	}
-	query := base.Query()
-	query.Set("order", strings.TrimSpace(orderNumber))
-	base.RawQuery = query.Encode()
-	return base.String()
 }
 
 func formatOrderItemQuantity(item orderdomain.OrderItem) string {

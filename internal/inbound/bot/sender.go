@@ -29,10 +29,11 @@ func sendText(c tele.Context, message string, markup ...*tele.ReplyMarkup) error
 	})
 }
 
-func (b *OrderBot) sendHTMLToChat(chatID int64, message string) error {
+func (b *OrderBot) sendHTMLToChat(chatID int64, message string, markup ...*tele.ReplyMarkup) error {
 	slog.Debug("bot send to chat: start", "component", "bot.sender", "chat_id", chatID, "bytes", len(message))
 	err := sendTelegramChunks(botSender(b.tele, chatID), message, messageOptions{
 		parseMode: tele.ModeHTML,
+		markup:    firstMarkup(markup),
 	})
 	if err != nil {
 		slog.Error("bot send to chat: failed", "component", "bot.sender", "chat_id", chatID, "error", err)
