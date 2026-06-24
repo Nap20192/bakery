@@ -23,7 +23,7 @@ func (b *OrderBot) handleStart(c tele.Context) error {
 	// Already authorized — do not ask for the password again, just re-send info.
 	if user, err := b.authSvc.GetUserByTelegramID(ctx, sender.ID); err == nil {
 		b.resetSession(sender.ID)
-		return sendHTML(c, b.userInfoMessage(user))
+		return b.sendUserInfo(c, user)
 	}
 
 	b.resetSession(sender.ID)
@@ -68,7 +68,27 @@ func (b *OrderBot) handleText(c tele.Context) error {
 		user = bound
 	}
 	b.resetSession(sender.ID)
+	return b.sendUserInfo(c, user)
+}
+
+// sendUserInfo sends the account info with an inline button that opens the mini
+// app inside Telegram (WebApp button, so the app receives Telegram initData).
+func (b *OrderBot) sendUserInfo(c tele.Context, user accessdomain.AuthUser) error {
+	if markup := b.openAppMarkup(); markup != nil {
+		return sendHTML(c, b.userInfoMessage(user), markup)
+	}
 	return sendHTML(c, b.userInfoMessage(user))
+}
+
+func (b *OrderBot) openAppMarkup() *tele.ReplyMarkup {
+	url := strings.TrimSpace(b.miniAppURL)
+	if url == "" {
+		return nil
+	}
+	markup := &tele.ReplyMarkup{}
+	btn := markup.WebApp("🥐 Открыть приложение", &tele.WebApp{URL: url})
+	markup.Inline(markup.Row(btn))
+	return markup
 }
 
 // userInfoMessage renders the authorized user's account info plus a short guide
