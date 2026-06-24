@@ -6,11 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"strings"
 
 	"bakery/internal/pkg/enum"
 	authuc "bakery/internal/services/auth/usecase/auth"
 	orderdomain "bakery/internal/services/order/domain"
+
+	tele "gopkg.in/telebot.v3"
 )
 
 // ConsumeOrderEvents runs the RabbitMQ consumer that delivers order events to
@@ -105,15 +108,57 @@ func (b *OrderBot) notifyOrder(ctx context.Context, order orderdomain.Order, mes
 		}
 	}
 
+	// DMs are private chats — a WebApp button opens the order inside Telegram.
+	dmMarkup := b.orderWebAppMarkup(order.Number)
 	for telegramID := range recipients {
-		if err := b.sendHTMLToChat(telegramID, message); err != nil {
+		if err := b.sendHTMLToChat(telegramID, message, dmMarkup); err != nil {
 			slog.WarnContext(ctx, "send order notification failed", "telegram_id", telegramID, "error", err)
 		}
 	}
 
+	// Telegram forbids WebApp buttons in groups, so the workshop chat gets a
+	// plain URL button instead.
 	if b.workshopChatID != 0 {
-		if err := b.sendHTMLToChat(b.workshopChatID, message); err != nil {
+		if err := b.sendHTMLToChat(b.workshopChatID, message, b.orderURLMarkup(order.Number)); err != nil {
 			slog.WarnContext(ctx, "send order notification to group failed", "chat_id", b.workshopChatID, "error", err)
 		}
 	}
+}
+
+// orderAppURL builds the mini app URL pointing at a specific order.
+func (b *OrderBot) orderAppURL(orderNumber string) string {
+	base := strings.TrimSpace(b.miniAppURL)
+	if base == "" {
+		return ""
+	}
+	link, err := url.Parse(base)
+	if err != nil {
+		return ""
+	}
+	query := link.Query()
+	query.Set("order", strings.TrimSpace(orderNumber))
+	link.RawQuery = query.Encode()
+	return link.String()
+}
+
+// orderWebAppMarkup is an inline WebApp button (private chats only).
+func (b *OrderBot) orderWebAppMarkup(orderNumber string) *tele.ReplyMarkup {
+	link := b.orderAppURL(orderNumber)
+	if link == "" {
+		return nil
+	}
+	markup := &tele.ReplyMarkup{}
+	markup.Inline(markup.Row(markup.WebApp("🥐 Открыть заказ", &tele.WebApp{URL: link})))
+	return markup
+}
+
+// orderURLMarkup is an inline URL button (works in group chats).
+func (b *OrderBot) orderURLMarkup(orderNumber string) *tele.ReplyMarkup {
+	link := b.orderAppURL(orderNumber)
+	if link == "" {
+		return nil
+	}
+	markup := &tele.ReplyMarkup{}
+	markup.Inline(markup.Row(markup.URL("🥐 Открыть заказ", link)))
+	return markup
 }
