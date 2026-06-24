@@ -14,13 +14,8 @@ import (
 
 type baseBot struct {
 	tele           *tele.Bot
-	orderSvc       OrderBackend
 	authSvc        AuthBackend
-	rbacSvc        Authorizer
 	departmentSvc  DepartmentBackend
-	monitorSvc     MonitorBackend
-	syncSvc        SyncBackend
-	techCardSvc    TechCardBackend
 	eventConsumer  *consumer.Consumer
 	miniAppURL     string
 	workshopChatID int64
@@ -34,13 +29,8 @@ type OrderBot struct {
 
 func NewOrderBot(
 	token string,
-	orderSvc OrderBackend,
 	authSvc AuthBackend,
-	rbacSvc Authorizer,
 	departmentSvc DepartmentBackend,
-	monitorSvc MonitorBackend,
-	syncSvc SyncBackend,
-	techCardSvc TechCardBackend,
 	eventConsumer *consumer.Consumer,
 	miniAppURL string,
 	workshopChatID int64,
@@ -61,13 +51,8 @@ func NewOrderBot(
 	bot := &OrderBot{
 		baseBot: &baseBot{
 			tele:           b,
-			orderSvc:       orderSvc,
 			authSvc:        authSvc,
-			rbacSvc:        rbacSvc,
 			departmentSvc:  departmentSvc,
-			monitorSvc:     monitorSvc,
-			syncSvc:        syncSvc,
-			techCardSvc:    techCardSvc,
 			eventConsumer:  eventConsumer,
 			miniAppURL:     miniAppURL,
 			workshopChatID: workshopChatID,

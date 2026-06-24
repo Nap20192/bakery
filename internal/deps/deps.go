@@ -150,13 +150,8 @@ func WithOrderBot(infra *InfraDeps) appOption {
 		}
 		orderBot, err := bot.NewOrderBot(
 			infra.config.Telegram.BotToken,
-			deps.OrderService,
 			deps.AuthService,
-			deps.RbacService,
 			deps.DepartmentService,
-			deps.MonitorService,
-			deps.SyncService,
-			deps.TechCardService,
 			infra.eventConsumer,
 			infra.config.Telegram.MiniAppURL,
 			infra.config.Telegram.WorkshopChatID,

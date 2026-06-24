@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"time"
 
-	"bakery/internal/pkg/enum"
 	applog "bakery/pkg/logger"
 
 	tele "gopkg.in/telebot.v3"
@@ -13,29 +12,14 @@ import (
 
 const requestContextKey = "request_context"
 
+// register wires the only two updates the bot handles: /start (begin the
+// password gate) and free text (the password itself). Everything else lives in
+// the mini app now.
 func (b *OrderBot) register() {
 	bt := b.tele
 	bt.Use(b.privateChatOnly, b.logMiddleware)
 
 	bt.Handle("/start", b.handleStart)
-	bt.Handle("/help", b.handleHelp)
-	bt.Handle("/order", b.handleOrder)
-	bt.Handle("/orders", b.handleOrders)
-	bt.Handle("/templates", b.handleTemplates)
-	bt.Handle("/monitor", b.handleMonitor)
-	bt.Handle("/sync", b.handleSync, b.requirePermissions(enum.PermissionSync))
-	bt.Handle("/techcard", b.handleTechCard, b.requirePermissions(enum.PermissionTechCard))
-	bt.Handle("/cancel", b.handleCancel)
-
-	bt.Handle("\fedit_order", b.handleEditOrder)
-	bt.Handle("\fopen_order", b.handleOpenOrderCallback)
-	bt.Handle("\fcopy_order", b.handleCopyOrderCallback)
-	bt.Handle("\fmonitor_order", b.handleMonitorOrderCallback)
-	bt.Handle("\fmonitor_filtered_orders", b.handleMonitorFilteredOrdersCallback)
-	bt.Handle("\ftemplate_use", b.handleTemplateUse)
-	bt.Handle("\ftemplate_all", b.handleTemplateAll)
-	bt.Handle("\fopen_templates", b.handleTemplates)
-
 	bt.Handle(tele.OnText, b.handleText)
 }
 
