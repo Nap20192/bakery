@@ -221,19 +221,36 @@ func (s *Service) ListDishCatalog(ctx context.Context) ([]orderdomain.DishCatalo
 	return items, nil
 }
 
-// AddDishCatalogItem inserts (or updates) a dish in the catalog. The code is
-// derived from the name so admin-added dishes resolve by name like the rest.
-func (s *Service) AddDishCatalogItem(ctx context.Context, name, theme string) (orderdomain.DishCatalogItem, error) {
-	name = strings.TrimSpace(name)
-	if name == "" {
-		return orderdomain.DishCatalogItem{}, apperr.Invalid("order.dish_name_required", "Укажите название блюда.")
+// AddDishCatalogItem inserts (or updates) a dish in the catalog. An explicit
+// code may be supplied; when empty it is derived from the name so admin-added
+// dishes resolve by name like the rest.
+func (s *Service) AddDishCatalogItem(ctx context.Context, input orderdomain.DishCatalogItem) (orderdomain.DishCatalogItem, error) {
+	item, err := sanitizeDishCatalogInput(input)
+	if err != nil {
+		return orderdomain.DishCatalogItem{}, err
 	}
-	theme = strings.TrimSpace(theme)
-	code := "custom:" + strings.ToLower(strings.Join(strings.Fields(name), " "))
-	if err := s.repo.UpsertDishCatalogItem(ctx, DishCatalogItem{Code: code, Name: name, Theme: theme}); err != nil {
+	if err := s.repo.UpsertDishCatalogItem(ctx, item); err != nil {
 		return orderdomain.DishCatalogItem{}, fmt.Errorf("add dish catalog item: %w", err)
 	}
-	return orderdomain.DishCatalogItem{Code: code, Name: name, Theme: theme}, nil
+	return toDomainDishCatalogItem(item), nil
+}
+
+// UpdateDishCatalogItem edits the dish identified by code. The code itself can
+// be changed (the new code must stay unique).
+func (s *Service) UpdateDishCatalogItem(ctx context.Context, code string, input orderdomain.DishCatalogItem) (orderdomain.DishCatalogItem, error) {
+	code = strings.TrimSpace(code)
+	if code == "" {
+		return orderdomain.DishCatalogItem{}, apperr.Invalid("order.dish_code_required", "Укажите блюдо.")
+	}
+	item, err := sanitizeDishCatalogInput(input)
+	if err != nil {
+		return orderdomain.DishCatalogItem{}, err
+	}
+	updated, err := s.repo.UpdateDishCatalogItem(ctx, code, item)
+	if err != nil {
+		return orderdomain.DishCatalogItem{}, err
+	}
+	return toDomainDishCatalogItem(updated), nil
 }
 
 // DeleteDishCatalogItem removes a dish from the catalog by code.
@@ -243,6 +260,34 @@ func (s *Service) DeleteDishCatalogItem(ctx context.Context, code string) error 
 		return apperr.Invalid("order.dish_code_required", "Укажите блюдо.")
 	}
 	return s.repo.DeleteDishCatalogItem(ctx, code)
+}
+
+// sanitizeDishCatalogInput validates and normalizes admin-supplied dish fields,
+// deriving a code from the name when none is given.
+func sanitizeDishCatalogInput(input orderdomain.DishCatalogItem) (DishCatalogItem, error) {
+	name := strings.TrimSpace(input.Name)
+	if name == "" {
+		return DishCatalogItem{}, apperr.Invalid("order.dish_name_required", "Укажите название блюда.")
+	}
+	code := strings.TrimSpace(input.Code)
+	if code == "" {
+		code = "custom:" + strings.ToLower(strings.Join(strings.Fields(name), " "))
+	}
+	return DishCatalogItem{
+		Code:      code,
+		Name:      name,
+		Theme:     strings.TrimSpace(input.Theme),
+		SortOrder: max(input.SortOrder, 0),
+	}, nil
+}
+
+func toDomainDishCatalogItem(item DishCatalogItem) orderdomain.DishCatalogItem {
+	return orderdomain.DishCatalogItem{
+		Code:      item.Code,
+		Name:      item.Name,
+		Theme:     item.Theme,
+		SortOrder: item.SortOrder,
+	}
 }
 
 func (s *Service) ListOrderTemplates(ctx context.Context) ([]orderdomain.OrderTemplate, error) {
