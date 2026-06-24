@@ -3,7 +3,7 @@ import { Button } from '../../components/Button';
 import { createUser, deleteUser, fetchUsers, updateUser } from '../../api/users';
 import { logWarn } from '../../lib/logger';
 
-const ROLES = ['admin', 'shop', 'baker', 'user'];
+const ROLES = ['admin', 'shop', 'baker'];
 
 const emptyForm = { username: '', password: '', telegram_username: '', role: 'shop' };
 const fieldClass = 'min-h-9 rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10';
