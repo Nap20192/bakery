@@ -1,27 +1,36 @@
 package bot
 
 import (
+	"fmt"
+	"html"
 	"log/slog"
 	"strings"
+
+	accessdomain "bakery/internal/services/auth/domain"
 
 	tele "gopkg.in/telebot.v3"
 )
 
-// handleStart begins the password gate. The user is identified by their
-// Telegram username; once found, the bot waits for the password.
+// handleStart is the only entry point. If the user is already authorized it
+// just re-sends their info; otherwise it begins the password gate.
 func (b *OrderBot) handleStart(c tele.Context) error {
 	sender := c.Sender()
 	if sender == nil {
 		return sendText(c, "Не удалось определить пользователя.")
 	}
-	b.resetSession(sender.ID)
+	ctx := requestContext(c)
 
+	// Already authorized — do not ask for the password again, just re-send info.
+	if user, err := b.authSvc.GetUserByTelegramID(ctx, sender.ID); err == nil {
+		b.resetSession(sender.ID)
+		return sendHTML(c, b.userInfoMessage(user))
+	}
+
+	b.resetSession(sender.ID)
 	username := strings.TrimSpace(sender.Username)
 	if username == "" {
 		return sendText(c, "Добавьте username в настройках Telegram и нажмите /start.")
 	}
-
-	ctx := requestContext(c)
 	user, err := b.authSvc.GetUserByTelegramUsername(ctx, username)
 	if err != nil {
 		return sendText(c, "Вы не зарегистрированы. Обратитесь к администратору.")
@@ -34,8 +43,7 @@ func (b *OrderBot) handleStart(c tele.Context) error {
 	return sendText(c, "Введите пароль:")
 }
 
-// handleText treats free text as the password when the user is in the password
-// gate. On success the Telegram account is bound (the user is authorized).
+// handleText treats free text as the password when the user is in the gate.
 func (b *OrderBot) handleText(c tele.Context) error {
 	sender := c.Sender()
 	if sender == nil {
@@ -48,29 +56,63 @@ func (b *OrderBot) handleText(c tele.Context) error {
 
 	ctx := requestContext(c)
 	password := strings.TrimSpace(c.Text())
-	if _, err := b.authSvc.VerifyPassword(ctx, sess.username, password); err != nil {
+	user, err := b.authSvc.VerifyPassword(ctx, sess.username, password)
+	if err != nil {
 		return sendText(c, "Неверный пароль. Попробуйте ещё раз или нажмите /start.")
 	}
 
 	// Bind the Telegram account to the user record — this is the authorization.
-	if _, err := b.authSvc.AuthenticateTelegram(ctx, sender.ID, sender.Username); err != nil {
+	if bound, err := b.authSvc.AuthenticateTelegram(ctx, sender.ID, sender.Username); err != nil {
 		slog.WarnContext(ctx, "bind telegram after password failed", "error", err)
+	} else {
+		user = bound
 	}
 	b.resetSession(sender.ID)
-
-	if markup := b.openAppMarkup(); markup != nil {
-		return sendHTML(c, "Вы авторизованы ✅", markup)
-	}
-	return sendHTML(c, "Вы авторизованы ✅")
+	return sendHTML(c, b.userInfoMessage(user))
 }
 
-// openAppMarkup builds an inline keyboard with the mini app button, or nil when
-// no mini app URL is configured.
-func (b *OrderBot) openAppMarkup() *tele.ReplyMarkup {
-	markup := &tele.ReplyMarkup{}
-	if btn, ok := b.miniAppButton(markup, "Открыть приложение", "", "", nil); ok {
-		markup.Inline(markup.Row(btn))
-		return markup
+// userInfoMessage renders the authorized user's account info plus a short guide
+// on what to do next (no password — it is stored as an irreversible hash).
+func (b *OrderBot) userInfoMessage(user accessdomain.AuthUser) string {
+	var sb strings.Builder
+	sb.WriteString("<b>Вы авторизованы ✅</b>\n\n")
+	fmt.Fprintf(&sb, "Логин: <code>%s</code>\n", html.EscapeString(user.Username))
+	fmt.Fprintf(&sb, "Роль: %s\n", html.EscapeString(roleTitle(user.Role)))
+	if user.TelegramUsername != nil && strings.TrimSpace(*user.TelegramUsername) != "" {
+		fmt.Fprintf(&sb, "Telegram: @%s\n", html.EscapeString(strings.TrimPrefix(strings.TrimSpace(*user.TelegramUsername), "@")))
 	}
-	return nil
+	sb.WriteString("\nПароль задаёт администратор и в целях безопасности не отображается. Если забыли — попросите сбросить.\n")
+
+	switch accessdomain.NormalizeRole(user.Role) {
+	case accessdomain.RoleShop:
+		sb.WriteString("\n<b>Как создавать заказы:</b>\n")
+		sb.WriteString("1. Откройте приложение (ссылка ниже).\n")
+		sb.WriteString("2. Выберите магазин, из которого отправляете заказ, и дату.\n")
+		sb.WriteString("3. Укажите количество у нужных блюд (можно «Вставить списком»).\n")
+		sb.WriteString("4. Нажмите «Создать заказ» — он уйдёт в цех, уведомление придёт сюда.\n")
+	case accessdomain.RoleBaker:
+		sb.WriteString("\n<b>Что делать дальше:</b>\n")
+		sb.WriteString("Откройте приложение — там все заказы и расчёт теста.\n")
+	default:
+		sb.WriteString("\n<b>Что делать дальше:</b>\n")
+		sb.WriteString("Откройте приложение — заказы, пользователи и блюда.\n")
+	}
+
+	if url := strings.TrimSpace(b.miniAppURL); url != "" {
+		fmt.Fprintf(&sb, "\nПриложение: %s", html.EscapeString(url))
+	}
+	return sb.String()
+}
+
+func roleTitle(role string) string {
+	switch accessdomain.NormalizeRole(role) {
+	case accessdomain.RoleAdmin:
+		return "Администратор"
+	case accessdomain.RoleShop:
+		return "Магазин"
+	case accessdomain.RoleBaker:
+		return "Цех"
+	default:
+		return role
+	}
 }
