@@ -319,6 +319,26 @@ func (r *OrderRepository) UpsertDishCatalogItem(ctx context.Context, item orderu
 	return err
 }
 
+func (r *OrderRepository) ListAvailableDishes(ctx context.Context) ([]orderdomain.AvailableDish, error) {
+	rows, err := r.queries.ListIikoDishes(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list iiko dishes: %w", err)
+	}
+	dishes := make([]orderdomain.AvailableDish, 0, len(rows))
+	for _, row := range rows {
+		dishes = append(dishes, orderdomain.AvailableDish{Code: row.Code, Name: row.Name, Unit: row.MeasureUnit})
+	}
+	return dishes, nil
+}
+
+func (r *OrderRepository) SetDishCatalogSortOrder(ctx context.Context, code string, sortOrder int64) error {
+	return r.queries.SetDishCatalogSortOrder(ctx, sqlc.SetDishCatalogSortOrderParams{
+		Code:      code,
+		SortOrder: sortOrder,
+		UpdatedAt: helpers.TimestamptzNow(),
+	})
+}
+
 func (r *OrderRepository) UpdateDishCatalogItem(ctx context.Context, code string, item orderuc.DishCatalogItem) (orderuc.DishCatalogItem, error) {
 	row, err := r.queries.UpdateDishCatalogItem(ctx, sqlc.UpdateDishCatalogItemParams{
 		Code:      code,

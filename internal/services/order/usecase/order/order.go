@@ -221,18 +221,57 @@ func (s *Service) ListDishCatalog(ctx context.Context) ([]orderdomain.DishCatalo
 	return items, nil
 }
 
-// AddDishCatalogItem inserts (or updates) a dish in the catalog. An explicit
-// code may be supplied; when empty it is derived from the name so admin-added
-// dishes resolve by name like the rest.
+// ListAvailableDishes returns the iiko DISH products an admin may add to the
+// catalog (the dishes that have tech cards in the database).
+func (s *Service) ListAvailableDishes(ctx context.Context) ([]orderdomain.AvailableDish, error) {
+	dishes, err := s.repo.ListAvailableDishes(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list available dishes: %w", err)
+	}
+	return dishes, nil
+}
+
+// AddDishCatalogItem inserts a dish into the catalog. The code must reference an
+// existing iiko DISH product — admins pick only from dishes with tech cards.
 func (s *Service) AddDishCatalogItem(ctx context.Context, input orderdomain.DishCatalogItem) (orderdomain.DishCatalogItem, error) {
 	item, err := sanitizeDishCatalogInput(input)
 	if err != nil {
+		return orderdomain.DishCatalogItem{}, err
+	}
+	if err := s.requireExistingDish(ctx, item.Code); err != nil {
 		return orderdomain.DishCatalogItem{}, err
 	}
 	if err := s.repo.UpsertDishCatalogItem(ctx, item); err != nil {
 		return orderdomain.DishCatalogItem{}, fmt.Errorf("add dish catalog item: %w", err)
 	}
 	return toDomainDishCatalogItem(item), nil
+}
+
+// ReorderDishCatalog assigns sequential sort_order values (1..N) to the given
+// codes, persisting a new drag-and-drop ordering.
+func (s *Service) ReorderDishCatalog(ctx context.Context, codes []string) error {
+	for i, code := range codes {
+		code = strings.TrimSpace(code)
+		if code == "" {
+			continue
+		}
+		if err := s.repo.SetDishCatalogSortOrder(ctx, code, int64(i+1)); err != nil {
+			return fmt.Errorf("reorder dish catalog: %w", err)
+		}
+	}
+	return nil
+}
+
+// requireExistingDish rejects codes that are not present as an iiko DISH.
+func (s *Service) requireExistingDish(ctx context.Context, code string) error {
+	exists, err := s.repo.DishExistsByCode(ctx, code)
+	if err != nil {
+		return fmt.Errorf("check dish exists: %w", err)
+	}
+	if !exists {
+		return apperr.Invalid("order.dish_not_in_iiko", "Можно добавлять только блюда с техкартой из базы.")
+	}
+	return nil
 }
 
 // UpdateDishCatalogItem edits the dish identified by code. The code itself can

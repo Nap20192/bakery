@@ -55,6 +55,7 @@ type Querier interface {
 	ListDepartments(ctx context.Context, type_ *string) ([]Department, error)
 	ListDishCatalogItems(ctx context.Context) ([]DishCatalog, error)
 	ListDishCatalogItemsByName(ctx context.Context, name string) ([]DishCatalog, error)
+	ListIikoDishes(ctx context.Context) ([]ListIikoDishesRow, error)
 	ListOrderHistoryByOrderID(ctx context.Context, orderID int64) ([]OrderHistory, error)
 	ListOrderHistoryItemsByHistoryID(ctx context.Context, historyID int64) ([]OrderHistoryItem, error)
 	ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order, error)
@@ -62,6 +63,7 @@ type Querier interface {
 	ListUnpublishedOrderOutboxEvents(ctx context.Context, maxEvents int32) ([]ListUnpublishedOrderOutboxEventsRow, error)
 	MarkOrderOutboxEventPublished(ctx context.Context, id int64) error
 	NextOrderCounter(ctx context.Context, arg NextOrderCounterParams) (int64, error)
+	SetDishCatalogSortOrder(ctx context.Context, arg SetDishCatalogSortOrderParams) error
 	SetOrderFavorite(ctx context.Context, arg SetOrderFavoriteParams) (Order, error)
 	UpdateAuthUserPassword(ctx context.Context, arg UpdateAuthUserPasswordParams) (AuthUser, error)
 	UpdateAuthUserRole(ctx context.Context, arg UpdateAuthUserRoleParams) (AuthUser, error)

@@ -4,6 +4,18 @@ export function fetchDishes() {
   return apiRequest('/admin/dishes');
 }
 
+export function fetchAvailableDishes() {
+  return apiRequest('/admin/dishes/available');
+}
+
+export function reorderDishes(codes) {
+  return apiRequest('/admin/dishes/reorder', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ codes }),
+  });
+}
+
 export function createDish(dish) {
   return apiRequest('/admin/dishes', {
     method: 'POST',

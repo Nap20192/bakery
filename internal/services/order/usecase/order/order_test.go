@@ -331,6 +331,14 @@ func (f *fakeRepo) UpdateDishCatalogItem(_ context.Context, _ string, item DishC
 	return item, nil
 }
 
+func (f *fakeRepo) ListAvailableDishes(context.Context) ([]orderdomain.AvailableDish, error) {
+	return nil, nil
+}
+
+func (f *fakeRepo) SetDishCatalogSortOrder(context.Context, string, int64) error {
+	return nil
+}
+
 func (f *fakeRepo) DeleteDishCatalogItem(context.Context, string) error {
 	return nil
 }

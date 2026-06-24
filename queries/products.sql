@@ -65,6 +65,18 @@ ON CONFLICT (code) DO UPDATE SET
     updated_at = excluded.updated_at
 RETURNING *;
 
+-- name: ListIikoDishes :many
+SELECT id, code, name, measure_unit
+FROM iiko_products
+WHERE type = 'DISH' AND trim(code) <> ''
+ORDER BY name, code;
+
+-- name: SetDishCatalogSortOrder :exec
+UPDATE dish_catalog SET
+    sort_order = sqlc.arg(sort_order),
+    updated_at = sqlc.arg(updated_at)
+WHERE code = sqlc.arg(code);
+
 -- name: UpdateDishCatalogItem :one
 UPDATE dish_catalog SET
     code = sqlc.arg(new_code),

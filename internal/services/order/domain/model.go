@@ -71,6 +71,13 @@ type DishCatalogItem struct {
 	SortOrder int64  `json:"sort_order"`
 }
 
+// AvailableDish is an iiko DISH product the admin can add to the catalog.
+type AvailableDish struct {
+	Code string `json:"code"`
+	Name string `json:"name"`
+	Unit string `json:"unit"`
+}
+
 // CreateOrderInput — входная модель для создания нового заказа.
 // Date может быть пустой: тогда сервис подставляет текущее время.
 type CreateOrderInput struct {
