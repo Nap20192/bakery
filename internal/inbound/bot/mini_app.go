@@ -7,14 +7,6 @@ import (
 	tele "gopkg.in/telebot.v3"
 )
 
-const (
-	miniAppModeOrders  = "orders"
-	miniAppModeCreate  = "create"
-	miniAppModeView    = "view"
-	miniAppModeEdit    = "edit"
-	miniAppModeMonitor = "monitor"
-)
-
 func (b *OrderBot) miniAppLink(mode, orderNumber string, orderNumbers []string) string {
 	if b == nil || b.baseBot == nil || strings.TrimSpace(b.miniAppURL) == "" {
 		return ""

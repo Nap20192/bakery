@@ -2,28 +2,22 @@ package bot
 
 import (
 	"log/slog"
-	"strings"
 	"time"
-
-	orderdomain "bakery/internal/services/order/domain"
 )
 
 const (
-	sessionTTL      = 12 * time.Hour // незавершённая заявка живёт 12 часов
-	cleanupInterval = time.Hour      // проверяем каждый час
+	sessionTTL      = 1 * time.Hour // ожидание ввода пароля живёт час
+	cleanupInterval = time.Hour     // проверяем каждый час
 )
 
+// session tracks the /start password gate: when awaitingPassword is set the
+// next text message from the user is treated as the password for `username`.
 type session struct {
-	items            []orderdomain.OrderItem
-	fromDepartmentID *int64
-	toDepartmentID   *int64
-	orderFilter      orderFilter
-	fulfillmentDate  time.Time
-	editOrderNumber  string
+	awaitingPassword bool
+	username         string
 	updatedAt        time.Time
 }
 
-// updateSession атомарно изменяет сессию пользователя под мьютексом.
 func (b *OrderBot) updateSession(uid int64, fn func(*session)) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -36,64 +30,19 @@ func (b *OrderBot) updateSession(uid int64, fn func(*session)) {
 	s.updatedAt = time.Now()
 }
 
-func (b *OrderBot) clearSession(uid int64) {
-	b.updateSession(uid, func(s *session) {
-		s.items = nil
-		s.fulfillmentDate = time.Time{}
-		s.editOrderNumber = ""
-	})
+func (b *OrderBot) getSession(uid int64) session {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if s, ok := b.sessions[uid]; ok {
+		return *s
+	}
+	return session{}
 }
 
 func (b *OrderBot) resetSession(uid int64) {
-	b.updateSession(uid, func(s *session) {
-		s.items = nil
-		s.fromDepartmentID = nil
-		s.toDepartmentID = nil
-		s.orderFilter = orderFilter{}
-		s.fulfillmentDate = time.Time{}
-		s.editOrderNumber = ""
-	})
-}
-
-type orderFilter struct {
-	FromDepartmentID *int64
-	FulfillmentDate  time.Time
-}
-
-func mergeSessionItems(existing []orderdomain.OrderItem, incoming []orderdomain.OrderItem) []orderdomain.OrderItem {
-	merged := make([]orderdomain.OrderItem, 0, len(existing)+len(incoming))
-	index := make(map[string]int, len(existing)+len(incoming))
-	for _, item := range existing {
-		if item.ProductionQuantity() <= 0 {
-			continue
-		}
-		index[item.Code] = len(merged)
-		merged = append(merged, item)
-	}
-	for _, item := range incoming {
-		if item.ProductionQuantity() <= 0 {
-			if idx, ok := index[item.Code]; ok {
-				merged = append(merged[:idx], merged[idx+1:]...)
-				index = make(map[string]int, len(merged))
-				for i, existingItem := range merged {
-					index[existingItem.Code] = i
-				}
-			}
-			continue
-		}
-		if idx, ok := index[item.Code]; ok {
-			merged[idx].ProductName = item.ProductName
-			merged[idx].Quantity = item.Quantity
-			merged[idx].ReservedQuantity = item.ReservedQuantity
-			if strings.TrimSpace(item.Comment) != "" {
-				merged[idx].Comment = item.Comment
-			}
-			continue
-		}
-		index[item.Code] = len(merged)
-		merged = append(merged, item)
-	}
-	return merged
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	delete(b.sessions, uid)
 }
 
 // cleanupLoop удаляет сессии, которые не обновлялись дольше sessionTTL.

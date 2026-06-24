@@ -57,7 +57,6 @@ export function OrderEditor({ catalog, order, shops = [], loading, onCancel, onS
   const [comments, setComments] = useState(() => initialItemComments(order));
   const [openComments, setOpenComments] = useState({});
   const [general, setGeneral] = useState(order?.comments?.general || '');
-  const [search, setSearch] = useState('');
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteText, setPasteText] = useState('');
   const [pasteResult, setPasteResult] = useState(null);
@@ -82,14 +81,6 @@ export function OrderEditor({ catalog, order, shops = [], loading, onCancel, onS
     for (const item of catalog) map.set(item.name.toLowerCase(), item.name);
     return map;
   }, [catalog]);
-
-  const query = search.trim().toLowerCase();
-  const visibleGroups = useMemo(() => {
-    if (!query) return groups;
-    return groups
-      .map((group) => ({ ...group, items: group.items.filter((item) => item.name.toLowerCase().includes(query)) }))
-      .filter((group) => group.items.length);
-  }, [groups, query]);
 
   const summary = useMemo(() => {
     let count = 0;
@@ -225,20 +216,14 @@ export function OrderEditor({ catalog, order, shops = [], loading, onCancel, onS
         </select>
       </label>
 
-      <div className="grid gap-2 sm:grid-cols-2">
-        <label className="block">
-          <span className="mb-1 block text-[12px] font-medium text-stone-500">Дата выполнения</span>
-          <input className={controlClass} type="date" value={date} min={todayValue()} onChange={(e) => setDate(e.target.value)} required />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-[12px] font-medium text-stone-500">Поиск блюда</span>
-          <input className={controlClass} type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="название…" />
-        </label>
-      </div>
+      <label className="block">
+        <span className="mb-1 block text-[12px] font-medium text-stone-500">Дата выполнения</span>
+        <input className={controlClass} type="date" value={date} min={todayValue()} onChange={(e) => setDate(e.target.value)} required />
+      </label>
 
       <div className="space-y-3">
-        {visibleGroups.length ? (
-          visibleGroups.map((group) => (
+        {groups.length ? (
+          groups.map((group) => (
             <section key={group.theme}>
               <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem_2rem] items-center gap-2 px-1 pb-1">
                 <h4 className="m-0 truncate text-[12px] font-semibold uppercase tracking-wide text-stone-400">{group.theme}</h4>
@@ -314,7 +299,7 @@ export function OrderEditor({ catalog, order, shops = [], loading, onCancel, onS
             </section>
           ))
         ) : (
-          <EmptyState compact>{query ? 'Ничего не найдено.' : 'Блюда не найдены.'}</EmptyState>
+          <EmptyState compact>Блюда не найдены.</EmptyState>
         )}
       </div>
 
