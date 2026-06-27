@@ -122,16 +122,18 @@ type IikoSyncRun struct {
 }
 
 type Order struct {
-	ID                int64              `json:"id"`
-	Number            string             `json:"number"`
-	Location          string             `json:"location"`
-	CreatedAt         pgtype.Timestamptz `json:"created_at"`
-	FromDepartmentID  *int64             `json:"from_department_id"`
-	ToDepartmentID    *int64             `json:"to_department_id"`
-	FulfillmentDate   pgtype.Date        `json:"fulfillment_date"`
-	CreatedByUsername string             `json:"created_by_username"`
-	Comments          []byte             `json:"comments"`
-	IsFavorite        bool               `json:"is_favorite"`
+	ID                  int64              `json:"id"`
+	Number              string             `json:"number"`
+	Location            string             `json:"location"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	FromDepartmentID    *int64             `json:"from_department_id"`
+	ToDepartmentID      *int64             `json:"to_department_id"`
+	FulfillmentDate     pgtype.Date        `json:"fulfillment_date"`
+	CreatedByUsername   string             `json:"created_by_username"`
+	Comments            []byte             `json:"comments"`
+	IsFavorite          bool               `json:"is_favorite"`
+	CancelledAt         pgtype.Timestamptz `json:"cancelled_at"`
+	CancelledByUsername string             `json:"cancelled_by_username"`
 }
 
 type OrderCounter struct {

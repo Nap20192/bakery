@@ -19,7 +19,10 @@ export function ShopOrdersView({
   error,
   showCreateOrderPage,
   canFavorite,
+  canManage,
   onToggleFavorite,
+  onCancelOrder,
+  onRestoreOrder,
   onSelect,
   onPageChange,
   onFiltersChange,
@@ -63,8 +66,19 @@ export function ShopOrdersView({
             </section>
           ) : selectedOrder ? (
             <section className={panelClass}>
-              <div className="mb-3 flex justify-end">
-                <Button onClick={onEdit} disabled={loading}>
+              <div className="mb-3 flex flex-wrap justify-end gap-2">
+                {canManage && (
+                  selectedOrder.cancelled ? (
+                    <Button onClick={() => onRestoreOrder?.(selectedOrder.number)} disabled={loading}>
+                      Восстановить
+                    </Button>
+                  ) : (
+                    <Button variant="danger" onClick={() => onCancelOrder?.(selectedOrder.number)} disabled={loading}>
+                      Отменить
+                    </Button>
+                  )
+                )}
+                <Button onClick={onEdit} disabled={loading || selectedOrder.cancelled}>
                   Изменить
                 </Button>
               </div>

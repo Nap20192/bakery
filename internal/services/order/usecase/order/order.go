@@ -18,6 +18,7 @@ var (
 	ErrDishCatalogItemNotFound  = apperr.NotFound("order.dish_not_found", "Блюдо не найдено в каталоге.")
 	ErrDishCatalogItemAmbiguous = apperr.Conflict("order.dish_ambiguous", "Найдено несколько блюд с таким названием.")
 	ErrFulfillmentDateInPast    = apperr.Invalid("order.fulfillment_date_in_past", "Дата выполнения не может быть в прошлом.")
+	ErrOrderCancelled           = apperr.Conflict("order.cancelled", "Отменённый заказ нельзя изменить. Сначала восстановите его.")
 )
 
 // Service is the order use-case implementation. It depends only on the
@@ -96,6 +97,9 @@ func (s *Service) UpdateOrder(ctx context.Context, input UpdateOrderInput) (orde
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
+	if existing.Cancelled {
+		return orderdomain.Order{}, ErrOrderCancelled
+	}
 	historyItems := diffOrderItems(existing.Items, input.Items)
 	if input.FromDepartmentID == nil {
 		input.FromDepartmentID = existing.FromDepartmentID
@@ -165,6 +169,40 @@ func (s *Service) SetOrderFavorite(ctx context.Context, number string, favorite 
 		return orderdomain.Order{}, apperr.Invalid("order.number_required", "Укажите номер заказа.")
 	}
 	return s.repo.SetOrderFavorite(ctx, number, favorite)
+}
+
+// CancelOrder soft-cancels an order. Already-cancelled orders are returned
+// unchanged (idempotent), so a double click is harmless.
+func (s *Service) CancelOrder(ctx context.Context, number, byUsername string) (orderdomain.Order, error) {
+	number = strings.TrimSpace(number)
+	if number == "" {
+		return orderdomain.Order{}, apperr.Invalid("order.number_required", "Укажите номер заказа.")
+	}
+	existing, err := s.repo.GetOrderByNumber(ctx, number)
+	if err != nil {
+		return orderdomain.Order{}, err
+	}
+	if existing.Cancelled {
+		return existing, nil
+	}
+	return s.repo.CancelOrder(ctx, number, strings.TrimSpace(byUsername))
+}
+
+// RestoreOrder clears an order's cancelled state. Active orders are returned
+// unchanged (idempotent).
+func (s *Service) RestoreOrder(ctx context.Context, number, byUsername string) (orderdomain.Order, error) {
+	number = strings.TrimSpace(number)
+	if number == "" {
+		return orderdomain.Order{}, apperr.Invalid("order.number_required", "Укажите номер заказа.")
+	}
+	existing, err := s.repo.GetOrderByNumber(ctx, number)
+	if err != nil {
+		return orderdomain.Order{}, err
+	}
+	if !existing.Cancelled {
+		return existing, nil
+	}
+	return s.repo.RestoreOrder(ctx, number)
 }
 
 func (s *Service) ValidateBulkOrder(ctx context.Context, order string) orderdomain.BulkOrderValidationResult {

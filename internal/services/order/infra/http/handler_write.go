@@ -153,6 +153,51 @@ func (h *Handler) handleUpdateOrder(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, h.presenter.BuildOrderResponse(r.Context(), order))
 }
 
+func (h *Handler) handleCancelOrder(w http.ResponseWriter, r *http.Request) {
+	h.changeOrderCancellation(w, r, true)
+}
+
+func (h *Handler) handleRestoreOrder(w http.ResponseWriter, r *http.Request) {
+	h.changeOrderCancellation(w, r, false)
+}
+
+// changeOrderCancellation cancels or restores an order. Both are shop/admin
+// actions guarded by shopOrderWriter; the actor is recorded on cancel.
+func (h *Handler) changeOrderCancellation(w http.ResponseWriter, r *http.Request, cancel bool) {
+	if h.orderSvc == nil {
+		httpx.WriteError(w, http.StatusServiceUnavailable, "Сервис заказов временно недоступен.")
+		return
+	}
+	user, ok := h.shopOrderWriter(w, r)
+	if !ok {
+		return
+	}
+	number := httpx.Trim(r.PathValue("id"))
+	if number == "" {
+		httpx.WriteError(w, http.StatusBadRequest, "Укажите номер заказа.")
+		return
+	}
+	existing, err := h.orderSvc.GetOrderByNumber(r.Context(), number)
+	if err != nil || !UserCanReadOrder(r.Context(), existing) {
+		httpx.WriteError(w, http.StatusNotFound, fmt.Sprintf("Заказ %s не найден.", number))
+		return
+	}
+
+	actor := miniAppOrderAuthor(user)
+	var order orderdomain.Order
+	if cancel {
+		order, err = h.orderSvc.CancelOrder(r.Context(), number, actor)
+	} else {
+		order, err = h.orderSvc.RestoreOrder(r.Context(), number, actor)
+	}
+	if err != nil {
+		slog.WarnContext(r.Context(), "mini app cancel/restore order failed", "error", err, "cancel", cancel, "telegram_id", user.TelegramID)
+		httpx.WriteAppError(w, r, err, "Не удалось обновить статус заказа.")
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, h.presenter.BuildOrderResponse(r.Context(), order))
+}
+
 type validatedOrderWrite struct {
 	items            []orderdomain.OrderItem
 	fulfillmentDate  time.Time

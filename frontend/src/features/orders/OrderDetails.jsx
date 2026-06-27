@@ -11,7 +11,14 @@ export function OrderDetails({ order, canFavorite = false, onToggleFavorite }) {
   return (
     <>
       <div className="flex items-start justify-between gap-2">
-        <PanelHeader title={order.number} count={order.items?.length || 0} />
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <PanelHeader title={order.number} count={order.items?.length || 0} />
+          {order.cancelled && (
+            <span className="inline-flex items-center rounded-full border border-red-300 bg-red-50 px-2 py-0.5 text-[12px] font-semibold text-red-700">
+              Отменён
+            </span>
+          )}
+        </div>
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           {canFavorite ? (
             <Button

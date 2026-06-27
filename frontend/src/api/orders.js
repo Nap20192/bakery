@@ -57,6 +57,18 @@ export function setOrderFavorite(number, favorite) {
   });
 }
 
+export function cancelOrder(number) {
+  return apiRequest(`/orders/${encodeURIComponent(number)}/cancel`, {
+    method: 'POST',
+  });
+}
+
+export function restoreOrder(number) {
+  return apiRequest(`/orders/${encodeURIComponent(number)}/restore`, {
+    method: 'POST',
+  });
+}
+
 export function fetchOrderMonitor(number) {
   return apiRequest(`/monitor/${encodeURIComponent(number)}`);
 }

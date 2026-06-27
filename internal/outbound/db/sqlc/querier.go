@@ -13,6 +13,7 @@ import (
 type Querier interface {
 	AssignUserDepartment(ctx context.Context, arg AssignUserDepartmentParams) (AuthUser, error)
 	BindTelegramID(ctx context.Context, arg BindTelegramIDParams) (AuthUser, error)
+	CancelOrder(ctx context.Context, arg CancelOrderParams) (Order, error)
 	CountOrders(ctx context.Context, arg CountOrdersParams) (int64, error)
 	CreateDepartment(ctx context.Context, arg CreateDepartmentParams) (Department, error)
 	CreateIikoSyncRun(ctx context.Context, arg CreateIikoSyncRunParams) (IikoSyncRun, error)
@@ -62,6 +63,7 @@ type Querier interface {
 	ListUnpublishedOrderOutboxEvents(ctx context.Context, maxEvents int32) ([]ListUnpublishedOrderOutboxEventsRow, error)
 	MarkOrderOutboxEventPublished(ctx context.Context, id int64) error
 	NextOrderCounter(ctx context.Context, arg NextOrderCounterParams) (int64, error)
+	RestoreOrder(ctx context.Context, number string) (Order, error)
 	SearchIikoDishes(ctx context.Context, arg SearchIikoDishesParams) ([]SearchIikoDishesRow, error)
 	SetDishCatalogSortOrder(ctx context.Context, arg SetDishCatalogSortOrderParams) error
 	SetOrderFavorite(ctx context.Context, arg SetOrderFavoriteParams) (Order, error)

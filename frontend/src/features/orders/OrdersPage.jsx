@@ -5,7 +5,7 @@ import { AdminUsers } from '../admin/AdminUsers';
 import { AdminDishes } from '../admin/AdminDishes';
 import { apiBase, buildMode, frontendLogsEnabled } from '../../config/env';
 import { ApiError } from '../../api/client';
-import { createOrder, fetchBatchOrderMonitor, fetchCatalog, fetchDepartments, fetchMe, fetchOrder, fetchOrderMonitor, fetchOrders, setOrderFavorite, updateOrder } from '../../api/orders';
+import { cancelOrder, createOrder, fetchBatchOrderMonitor, fetchCatalog, fetchDepartments, fetchMe, fetchOrder, fetchOrderMonitor, fetchOrders, restoreOrder, setOrderFavorite, updateOrder } from '../../api/orders';
 import { clearToken, getToken, isWebMode } from '../../lib/auth';
 import { logInfo, logWarn } from '../../lib/logger';
 import { miniAppModeFromLocation, orderNumberFromLocation, orderNumbersFromLocation, trimString } from '../../lib/url';
@@ -348,7 +348,16 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
     });
   }
 
+  function changeCancellation(number, cancel) {
+    return run(async () => {
+      const saved = cancel ? await cancelOrder(number) : await restoreOrder(number);
+      setSelectedOrder((current) => (current && current.number === number ? saved : current));
+      setOrders((current) => current.map((o) => (o.number === number ? { ...o, cancelled: saved.cancelled } : o)));
+    });
+  }
+
   const canFavorite = viewer?.role === 'admin';
+  const canManageOrders = canCreateOrders(viewer);
   const canUseMonitor = viewer?.role === 'baker' || viewer?.role === 'admin';
   // Only honour the editor on its own routes; navigating away (e.g. nav "Заказы"
   // from create) must fall back to the list/details view even if editor state
@@ -446,7 +455,10 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
           error={error}
           showCreateOrderPage={showCreateOrderPage}
           canFavorite={canFavorite}
+          canManage={canManageOrders}
           onToggleFavorite={toggleFavorite}
+          onCancelOrder={(number) => changeCancellation(number, true)}
+          onRestoreOrder={(number) => changeCancellation(number, false)}
           onSelect={(number) => loadOrder(number)}
           onPageChange={loadOrders}
           onFiltersChange={updateFilters}

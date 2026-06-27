@@ -32,6 +32,8 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, auth *httpx.Authenticator) 
 	mux.Handle("POST /orders", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleCreateOrder)))
 	mux.Handle("GET /orders/{id}", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleOrderByID)))
 	mux.Handle("PUT /orders/{id}", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleUpdateOrder)))
+	mux.Handle("POST /orders/{id}/cancel", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleCancelOrder)))
+	mux.Handle("POST /orders/{id}/restore", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleRestoreOrder)))
 	h.RegisterAdminRoutes(mux, auth)
 }
 
