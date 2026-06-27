@@ -21,6 +21,8 @@ type UseCase interface {
 	GetOrderByNumber(ctx context.Context, number string) (orderdomain.Order, error)
 	ListOrders(ctx context.Context, input ListOrdersInput) (ListOrdersResult, error)
 	SetOrderFavorite(ctx context.Context, number string, favorite bool) (orderdomain.Order, error)
+	CancelOrder(ctx context.Context, number, byUsername string) (orderdomain.Order, error)
+	RestoreOrder(ctx context.Context, number, byUsername string) (orderdomain.Order, error)
 	ValidateBulkOrder(ctx context.Context, order string) orderdomain.BulkOrderValidationResult
 	ListDishCatalog(ctx context.Context) ([]orderdomain.DishCatalogItem, error)
 	SearchAvailableDishes(ctx context.Context, query string, limit int) ([]orderdomain.AvailableDish, error)
@@ -45,6 +47,8 @@ type Repository interface {
 	GetOrderByNumber(ctx context.Context, number string) (orderdomain.Order, error)
 	ListOrders(ctx context.Context, input ListOrdersInput) (ListOrdersResult, error)
 	SetOrderFavorite(ctx context.Context, number string, favorite bool) (orderdomain.Order, error)
+	CancelOrder(ctx context.Context, number, by string) (orderdomain.Order, error)
+	RestoreOrder(ctx context.Context, number string) (orderdomain.Order, error)
 	GetDepartmentByID(ctx context.Context, id int64) (Department, error)
 	DishExistsByCode(ctx context.Context, code string) (bool, error)
 	ResolveDishCatalogItem(ctx context.Context, name string) (DishCatalogItem, error)

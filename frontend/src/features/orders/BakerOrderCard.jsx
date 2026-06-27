@@ -25,6 +25,11 @@ export function BakerOrderCard({ order, selected, checked, selectionMode, onSele
       >
         <div className="flex items-center gap-2">
           <strong className="min-w-0 flex-1 truncate text-[15px] font-semibold leading-6 text-stone-950">{order.number}</strong>
+          {order.cancelled && (
+            <span className="shrink-0 rounded-full border border-red-300 bg-red-50 px-1.5 py-0 text-[10px] font-semibold uppercase leading-4 text-red-700">
+              Отменён
+            </span>
+          )}
           <span className="shrink-0 rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium tabular-nums text-stone-600">
             {order.items?.length || 0}
           </span>

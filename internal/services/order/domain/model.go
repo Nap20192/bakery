@@ -23,7 +23,11 @@ type Order struct {
 	FulfillmentDate   time.Time     `json:"fulfillment_date"`
 	Comments          OrderComments `json:"comments"`
 	Favorite          bool          `json:"favorite"`
-	History           []OrderHistory
+	// Cancelled marks a soft-cancelled order. Cancelled orders cannot be edited
+	// until restored.
+	Cancelled           bool   `json:"cancelled"`
+	CancelledByUsername string `json:"cancelled_by_username,omitempty"`
+	History             []OrderHistory
 }
 
 // OrderComments holds an order's free-form notes: per-item comments (keyed by

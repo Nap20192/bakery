@@ -457,18 +457,20 @@ func (r *OrderRepository) listOrderHistory(ctx context.Context, q sqlc.Querier, 
 
 func orderFromRow(row sqlc.Order, items []orderdomain.OrderItem, history []orderdomain.OrderHistory) orderdomain.Order {
 	return orderdomain.Order{
-		ID:                fmt.Sprintf("%d", row.ID),
-		Number:            row.Number,
-		Location:          row.Location,
-		FromDepartmentID:  row.FromDepartmentID,
-		ToDepartmentID:    row.ToDepartmentID,
-		CreatedByUsername: row.CreatedByUsername,
-		Items:             items,
-		CreatedAt:         row.CreatedAt.Time,
-		FulfillmentDate:   row.FulfillmentDate.Time,
-		Comments:          parseComments(row.Comments),
-		Favorite:          row.IsFavorite,
-		History:           history,
+		ID:                  fmt.Sprintf("%d", row.ID),
+		Number:              row.Number,
+		Location:            row.Location,
+		FromDepartmentID:    row.FromDepartmentID,
+		ToDepartmentID:      row.ToDepartmentID,
+		CreatedByUsername:   row.CreatedByUsername,
+		Items:               items,
+		CreatedAt:           row.CreatedAt.Time,
+		FulfillmentDate:     row.FulfillmentDate.Time,
+		Comments:            parseComments(row.Comments),
+		Favorite:            row.IsFavorite,
+		Cancelled:           row.CancelledAt.Valid,
+		CancelledByUsername: row.CancelledByUsername,
+		History:             history,
 	}
 }
 
@@ -485,6 +487,96 @@ func (r *OrderRepository) SetOrderFavorite(ctx context.Context, number string, f
 		return orderdomain.Order{}, err
 	}
 	history, err := r.listOrderHistory(ctx, r.queries, row.ID)
+	if err != nil {
+		return orderdomain.Order{}, err
+	}
+	return orderFromRow(row, mapOrderItems(items), history), nil
+}
+
+// CancelOrder soft-cancels the order, recording who cancelled it, and emits an
+// order-cancelled event to the outbox in the same transaction.
+func (r *OrderRepository) CancelOrder(ctx context.Context, number, by string) (orderdomain.Order, error) {
+	return r.withOrderTx(ctx, func(q sqlc.Querier) (orderdomain.Order, error) {
+		row, err := q.CancelOrder(ctx, sqlc.CancelOrderParams{
+			Number:              number,
+			CancelledAt:         helpers.TimestamptzNow(),
+			CancelledByUsername: strings.TrimSpace(by),
+		})
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return orderdomain.Order{}, apperr.NotFound("order.not_found", "Заказ не найден.")
+			}
+			return orderdomain.Order{}, fmt.Errorf("cancel order: %w", err)
+		}
+		order, err := r.hydrateOrder(ctx, q, row)
+		if err != nil {
+			return orderdomain.Order{}, err
+		}
+		order.RecordCancelled()
+		if err := r.persistOutbox(ctx, q, order.Number, order.PullDomainEvents()); err != nil {
+			return orderdomain.Order{}, err
+		}
+		return order, nil
+	})
+}
+
+// RestoreOrder clears an order's cancelled state and emits an order-restored
+// event to the outbox in the same transaction.
+func (r *OrderRepository) RestoreOrder(ctx context.Context, number string) (orderdomain.Order, error) {
+	return r.withOrderTx(ctx, func(q sqlc.Querier) (orderdomain.Order, error) {
+		row, err := q.RestoreOrder(ctx, number)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return orderdomain.Order{}, apperr.NotFound("order.not_found", "Заказ не найден.")
+			}
+			return orderdomain.Order{}, fmt.Errorf("restore order: %w", err)
+		}
+		order, err := r.hydrateOrder(ctx, q, row)
+		if err != nil {
+			return orderdomain.Order{}, err
+		}
+		order.RecordRestored()
+		if err := r.persistOutbox(ctx, q, order.Number, order.PullDomainEvents()); err != nil {
+			return orderdomain.Order{}, err
+		}
+		return order, nil
+	})
+}
+
+// withOrderTx runs fn inside a transaction (or directly when no pool is set, as
+// in tests), committing on success.
+func (r *OrderRepository) withOrderTx(ctx context.Context, fn func(q sqlc.Querier) (orderdomain.Order, error)) (orderdomain.Order, error) {
+	if r.db == nil {
+		return fn(r.queries)
+	}
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return orderdomain.Order{}, fmt.Errorf("begin order tx: %w", err)
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback(ctx)
+		}
+	}()
+	order, err := fn(r.queries.WithTx(tx))
+	if err != nil {
+		return orderdomain.Order{}, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return orderdomain.Order{}, fmt.Errorf("commit order tx: %w", err)
+	}
+	committed = true
+	return order, nil
+}
+
+// hydrateOrder loads an order's items and history for the given row.
+func (r *OrderRepository) hydrateOrder(ctx context.Context, q sqlc.Querier, row sqlc.Order) (orderdomain.Order, error) {
+	items, err := q.GetOrderItemsByOrderID(ctx, row.ID)
+	if err != nil {
+		return orderdomain.Order{}, err
+	}
+	history, err := r.listOrderHistory(ctx, q, row.ID)
 	if err != nil {
 		return orderdomain.Order{}, err
 	}

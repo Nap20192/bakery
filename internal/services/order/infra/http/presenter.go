@@ -51,19 +51,21 @@ type orderHistoryResponse struct {
 // OrderResponse is the API projection of an order. Exported so other adapters
 // (monitor) can embed it.
 type OrderResponse struct {
-	ID                string                    `json:"id"`
-	Number            string                    `json:"number"`
-	Location          string                    `json:"location"`
-	CreatedByUsername string                    `json:"created_by_username"`
-	FromDepartment    *httpx.DepartmentResponse `json:"from_department,omitempty"`
-	ToDepartment      *httpx.DepartmentResponse `json:"to_department,omitempty"`
-	Items             []orderItemResponse       `json:"items"`
-	CreatedAt         string                    `json:"created_at"`
-	FulfillmentDate   string                    `json:"fulfillment_date"`
-	MonitorCommand    string                    `json:"monitor_command"`
-	Comments          commentsResponse          `json:"comments"`
-	Favorite          bool                      `json:"favorite"`
-	History           []orderHistoryResponse    `json:"history,omitempty"`
+	ID                  string                    `json:"id"`
+	Number              string                    `json:"number"`
+	Location            string                    `json:"location"`
+	CreatedByUsername   string                    `json:"created_by_username"`
+	FromDepartment      *httpx.DepartmentResponse `json:"from_department,omitempty"`
+	ToDepartment        *httpx.DepartmentResponse `json:"to_department,omitempty"`
+	Items               []orderItemResponse       `json:"items"`
+	CreatedAt           string                    `json:"created_at"`
+	FulfillmentDate     string                    `json:"fulfillment_date"`
+	MonitorCommand      string                    `json:"monitor_command"`
+	Comments            commentsResponse          `json:"comments"`
+	Favorite            bool                      `json:"favorite"`
+	Cancelled           bool                      `json:"cancelled"`
+	CancelledByUsername string                    `json:"cancelled_by_username,omitempty"`
+	History             []orderHistoryResponse    `json:"history,omitempty"`
 }
 
 type commentsResponse struct {
@@ -123,19 +125,21 @@ func (p *OrderPresenter) BuildOrderResponse(ctx context.Context, order orderdoma
 	}
 
 	return OrderResponse{
-		ID:                order.ID,
-		Number:            order.Number,
-		Location:          order.Location,
-		CreatedByUsername: order.CreatedByUsername,
-		FromDepartment:    p.departmentResponse(ctx, order.FromDepartmentID),
-		ToDepartment:      p.departmentResponse(ctx, order.ToDepartmentID),
-		Items:             items,
-		CreatedAt:         createdAt,
-		FulfillmentDate:   fulfillmentDate,
-		MonitorCommand:    fmt.Sprintf("/monitor %s", order.Number),
-		Comments:          buildCommentsResponse(order.Comments),
-		Favorite:          order.Favorite,
-		History:           buildOrderHistoryResponse(order.History),
+		ID:                  order.ID,
+		Number:              order.Number,
+		Location:            order.Location,
+		CreatedByUsername:   order.CreatedByUsername,
+		FromDepartment:      p.departmentResponse(ctx, order.FromDepartmentID),
+		ToDepartment:        p.departmentResponse(ctx, order.ToDepartmentID),
+		Items:               items,
+		CreatedAt:           createdAt,
+		FulfillmentDate:     fulfillmentDate,
+		MonitorCommand:      fmt.Sprintf("/monitor %s", order.Number),
+		Comments:            buildCommentsResponse(order.Comments),
+		Favorite:            order.Favorite,
+		Cancelled:           order.Cancelled,
+		CancelledByUsername: order.CancelledByUsername,
+		History:             buildOrderHistoryResponse(order.History),
 	}
 }
 

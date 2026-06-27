@@ -87,6 +87,23 @@ func (Builder) OrderUpdated(order orderdomain.Order, fromDepartment string, toDe
 	return sb.String()
 }
 
+func (Builder) OrderCancelled(order orderdomain.Order, fromDepartment string, toDepartment string) string {
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "<b>❌ Заказ <code>%s</code> отменён</b>\n\n", html.EscapeString(order.Number))
+	writeOrderDetails(&sb, order, fromDepartment, toDepartment)
+	if actor := strings.TrimPrefix(strings.TrimSpace(order.CancelledByUsername), "@"); actor != "" {
+		fmt.Fprintf(&sb, "\nОтменил: @%s\n", html.EscapeString(actor))
+	}
+	return sb.String()
+}
+
+func (Builder) OrderRestored(order orderdomain.Order, fromDepartment string, toDepartment string) string {
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "<b>♻️ Заказ <code>%s</code> восстановлен</b>\n\n", html.EscapeString(order.Number))
+	writeOrderDetails(&sb, order, fromDepartment, toDepartment)
+	return sb.String()
+}
+
 // writeOrderChanges renders the latest set of position changes (added /
 // updated / removed) so the workshop sees what changed in this update.
 func writeOrderChanges(sb *strings.Builder, history []orderdomain.OrderHistory) {

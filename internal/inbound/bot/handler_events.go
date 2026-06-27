@@ -60,6 +60,10 @@ func (b *OrderBot) handleOrderEvent(ctx context.Context, body []byte) error {
 		message = responses.OrderSummary(order, fromName, toName)
 	case orderdomain.EventOrderUpdated:
 		message = responses.OrderUpdated(order, fromName, toName)
+	case orderdomain.EventOrderCancelled:
+		message = responses.OrderCancelled(order, fromName, toName)
+	case orderdomain.EventOrderRestored:
+		message = responses.OrderRestored(order, fromName, toName)
 	default:
 		slog.WarnContext(ctx, "unknown order event type", "type", env.Type)
 		return nil

@@ -165,6 +165,20 @@ SET is_favorite = sqlc.arg(is_favorite)
 WHERE number = sqlc.arg(number)
 RETURNING *;
 
+-- name: CancelOrder :one
+UPDATE orders
+SET cancelled_at = sqlc.arg(cancelled_at),
+    cancelled_by_username = sqlc.arg(cancelled_by_username)
+WHERE number = sqlc.arg(number)
+RETURNING *;
+
+-- name: RestoreOrder :one
+UPDATE orders
+SET cancelled_at = NULL,
+    cancelled_by_username = ''
+WHERE number = sqlc.arg(number)
+RETURNING *;
+
 -- name: DeleteOrdersCreatedBefore :one
 WITH deleted AS (
     DELETE FROM orders

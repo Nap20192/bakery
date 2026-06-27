@@ -346,3 +346,11 @@ func (f *fakeRepo) DeleteDishCatalogItem(context.Context, string) error {
 func (f *fakeRepo) SetOrderFavorite(context.Context, string, bool) (orderdomain.Order, error) {
 	return orderdomain.Order{}, nil
 }
+
+func (f *fakeRepo) CancelOrder(context.Context, string, string) (orderdomain.Order, error) {
+	return orderdomain.Order{}, nil
+}
+
+func (f *fakeRepo) RestoreOrder(context.Context, string) (orderdomain.Order, error) {
+	return orderdomain.Order{}, nil
+}
