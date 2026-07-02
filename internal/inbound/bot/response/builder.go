@@ -116,7 +116,8 @@ func writeOrderChanges(sb *strings.Builder, history []orderdomain.OrderHistory) 
 		sb.WriteString("\n<b>Изменения:</b>\n")
 	}
 	for _, item := range history[0].Items {
-		fmt.Fprintf(sb, "%s %s %s\n",
+		fmt.Fprintf(
+			sb, "%s %s %s\n",
 			changeLabel(item.ChangeType),
 			html.EscapeString(item.ProductName),
 			changeQuantityText(item),
@@ -219,11 +220,9 @@ func writeOrderComments(sb *strings.Builder, comments orderdomain.OrderComments)
 }
 
 func writeOrderItemsCodeBlock(sb *strings.Builder, items []orderdomain.OrderItem) {
-	sb.WriteString("<pre>")
 	for _, item := range items {
 		fmt.Fprintf(sb, "%s %s\n", html.EscapeString(item.ProductName), html.EscapeString(formatOrderItemQuantity(item)))
 	}
-	sb.WriteString("</pre>\n")
 }
 
 func formatOrderItemQuantity(item orderdomain.OrderItem) string {
