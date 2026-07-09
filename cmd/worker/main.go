@@ -90,7 +90,8 @@ func main() {
 	}
 	log.Info("admin user ready", "username", admin.Username, "role", admin.Role, "created", created)
 
-	templateSeed, err := appDeps.OrderService.EnsureDefaultOrderTemplates(ctx, "templates/dishes.txt")
+	// Сидит каталог из templates/: dishes.txt → «Булочки», bread.txt → «Хлеб».
+	templateSeed, err := appDeps.OrderService.EnsureDefaultOrderTemplates(ctx)
 	if err != nil {
 		log.Error("ensure default templates failed", "error", err)
 		os.Exit(1)
