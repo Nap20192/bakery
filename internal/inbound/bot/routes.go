@@ -43,7 +43,7 @@ func (b *baseBot) logMiddleware(next tele.HandlerFunc) tele.HandlerFunc {
 		err := next(c)
 
 		if err != nil {
-			slog.ErrorContext(applog.ErrorContext(ctx, err), "telegram update failed",
+			slog.ErrorContext(ctx, "telegram update failed",
 				"error", err,
 				"duration", time.Since(start).Round(time.Millisecond).String(),
 			)

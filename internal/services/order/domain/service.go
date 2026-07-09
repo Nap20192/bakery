@@ -68,8 +68,15 @@ func (s *OrderService) OrderCounterDay(t time.Time) string {
 	return s.NormalizeCreatedAt(t).Format("02012006")
 }
 
-func (s *OrderService) BuildOrderNumber(shopCode string, shopName string, createdAt time.Time, counter int64) string {
-	return fmt.Sprintf("%s.%s.%03d", shopOrderPrefix(shopCode, shopName), s.NormalizeCreatedAt(createdAt).Format("02.01.06"), counter)
+// BuildOrderNumber composes the human-facing order number:
+// <буква магазина>.<буква категории>.<дата>.<счётчик>, e.g. «Г.Х.08.07.26.001».
+// An empty category letter keeps the legacy format without the extra segment.
+func (s *OrderService) BuildOrderNumber(shopCode string, shopName string, categoryLetter string, createdAt time.Time, counter int64) string {
+	prefix := shopOrderPrefix(shopCode, shopName)
+	if letter := strings.TrimSpace(categoryLetter); letter != "" {
+		prefix += "." + letter
+	}
+	return fmt.Sprintf("%s.%s.%03d", prefix, s.NormalizeCreatedAt(createdAt).Format("02.01.06"), counter)
 }
 
 func shopOrderPrefix(shopCode string, shopName string) string {

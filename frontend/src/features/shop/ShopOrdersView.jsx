@@ -1,7 +1,8 @@
-import { Button } from '../../components/Button';
-import { EmptyState } from '../../components/EmptyState';
-import { panelClass } from '../../components/Panel';
-import { OrderDetails } from './OrderDetails';
+import { Button } from '../../ui/Button';
+import { ErrorBanner } from '../../ui/ErrorBanner';
+import { EmptyState } from '../../ui/EmptyState';
+import { panelClass } from '../../ui/Panel';
+import { OrderDetails } from '../orders/OrderDetails';
 import { OrderEditor } from './OrderEditor';
 import { OrderList } from './OrderList';
 
@@ -10,6 +11,7 @@ export function ShopOrdersView({
   orders,
   page,
   shops,
+  categories,
   viewer,
   filters,
   selectedNumber,
@@ -51,12 +53,13 @@ export function ShopOrdersView({
       )}
       <section className="min-w-0 p-3 pt-0 sm:p-5 lg:p-6">
         <div className={`mx-auto ${showCreateOrderPage ? 'max-w-5xl' : 'max-w-[1180px]'}`}>
-          {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800">{error}</div>}
+          <ErrorBanner error={error} className="mb-4" />
           {editor ? (
             <section className={panelClass}>
               <OrderEditor
                 key={`${editor.mode}-${editor.order?.number || 'new'}`}
                 catalog={catalog}
+                categories={categories}
                 order={editor.order}
                 shops={shops}
                 loading={loading}
@@ -82,7 +85,7 @@ export function ShopOrdersView({
                   Изменить
                 </Button>
               </div>
-              <OrderDetails order={selectedOrder} canFavorite={canFavorite} onToggleFavorite={onToggleFavorite} />
+              <OrderDetails order={selectedOrder} catalog={catalog} canFavorite={canFavorite} onToggleFavorite={onToggleFavorite} />
             </section>
           ) : (
             <EmptyState>Заказы не загружены.</EmptyState>

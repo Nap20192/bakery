@@ -1,5 +1,5 @@
 import { isWebMode } from '../../lib/auth';
-import { Button } from '../../components/Button';
+import { Button } from '../../ui/Button';
 
 function Row({ label, value }) {
   return (
@@ -16,7 +16,7 @@ function Row({ label, value }) {
 export function MePanel({ viewer, onLogout }) {
   const v = viewer || {};
   return (
-    <main className="bg-[#f7f3ea] p-4 text-stone-900 sm:p-6">
+    <main className="bg-flour p-4 text-stone-900 sm:p-6">
       <div className="mx-auto max-w-md">
         <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
           <h1 className="mb-4 text-lg font-semibold text-stone-950">Профиль</h1>

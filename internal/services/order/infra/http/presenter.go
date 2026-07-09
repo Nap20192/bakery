@@ -24,11 +24,13 @@ func NewPresenter(departmentSvc departmentuc.UseCase) *OrderPresenter {
 }
 
 type orderItemResponse struct {
-	Code               string  `json:"code"`
-	ProductName        string  `json:"product_name"`
-	Quantity           float64 `json:"quantity"`
-	ReservedQuantity   float64 `json:"reserved_quantity"`
-	ProductionQuantity float64 `json:"production_quantity"`
+	Code               string   `json:"code"`
+	ProductName        string   `json:"product_name"`
+	Quantity           float64  `json:"quantity"`
+	ReservedQuantity   float64  `json:"reserved_quantity"`
+	ProductionQuantity float64  `json:"production_quantity"`
+	ProducedQuantity   *float64 `json:"produced_quantity,omitempty"`
+	ProducedReason     string   `json:"produced_reason,omitempty"`
 }
 
 type orderHistoryItemResponse struct {
@@ -48,6 +50,17 @@ type orderHistoryResponse struct {
 	Items             []orderHistoryItemResponse `json:"items"`
 }
 
+// CategoryResponse is the API projection of an order category (тип заявки).
+type CategoryResponse struct {
+	ID           int64    `json:"id"`
+	Code         string   `json:"code"`
+	Letter       string   `json:"letter"`
+	Name         string   `json:"name"`
+	Color        string   `json:"color"`
+	SortOrder    int64    `json:"sort_order"`
+	MonitorCodes []string `json:"monitor_codes"`
+}
+
 // OrderResponse is the API projection of an order. Exported so other adapters
 // (monitor) can embed it.
 type OrderResponse struct {
@@ -57,6 +70,7 @@ type OrderResponse struct {
 	CreatedByUsername   string                    `json:"created_by_username"`
 	FromDepartment      *httpx.DepartmentResponse `json:"from_department,omitempty"`
 	ToDepartment        *httpx.DepartmentResponse `json:"to_department,omitempty"`
+	Category            *CategoryResponse         `json:"category,omitempty"`
 	Items               []orderItemResponse       `json:"items"`
 	CreatedAt           string                    `json:"created_at"`
 	FulfillmentDate     string                    `json:"fulfillment_date"`
@@ -65,6 +79,7 @@ type OrderResponse struct {
 	Favorite            bool                      `json:"favorite"`
 	Cancelled           bool                      `json:"cancelled"`
 	CancelledByUsername string                    `json:"cancelled_by_username,omitempty"`
+	ProductionSheetID   *int64                    `json:"production_sheet_id,omitempty"`
 	History             []orderHistoryResponse    `json:"history,omitempty"`
 }
 
@@ -112,6 +127,8 @@ func (p *OrderPresenter) BuildOrderResponse(ctx context.Context, order orderdoma
 			Quantity:           item.Quantity,
 			ReservedQuantity:   item.ReservedQuantity,
 			ProductionQuantity: item.ProductionQuantity(),
+			ProducedQuantity:   item.ProducedQuantity,
+			ProducedReason:     item.ProducedReason,
 		})
 	}
 
@@ -131,6 +148,7 @@ func (p *OrderPresenter) BuildOrderResponse(ctx context.Context, order orderdoma
 		CreatedByUsername:   order.CreatedByUsername,
 		FromDepartment:      p.departmentResponse(ctx, order.FromDepartmentID),
 		ToDepartment:        p.departmentResponse(ctx, order.ToDepartmentID),
+		Category:            buildCategoryResponse(order.Category),
 		Items:               items,
 		CreatedAt:           createdAt,
 		FulfillmentDate:     fulfillmentDate,
@@ -139,6 +157,7 @@ func (p *OrderPresenter) BuildOrderResponse(ctx context.Context, order orderdoma
 		Favorite:            order.Favorite,
 		Cancelled:           order.Cancelled,
 		CancelledByUsername: order.CancelledByUsername,
+		ProductionSheetID:   order.ProductionSheetID,
 		History:             buildOrderHistoryResponse(order.History),
 	}
 }
@@ -170,6 +189,21 @@ func buildOrderHistoryResponse(history []orderdomain.OrderHistory) []orderHistor
 		})
 	}
 	return result
+}
+
+func buildCategoryResponse(category *orderdomain.OrderCategory) *CategoryResponse {
+	if category == nil {
+		return nil
+	}
+	return &CategoryResponse{
+		ID:           category.ID,
+		Code:         category.Code,
+		Letter:       category.Letter,
+		Name:         category.Name,
+		Color:        category.Color,
+		SortOrder:    category.SortOrder,
+		MonitorCodes: category.MonitorCodes,
+	}
 }
 
 func (p *OrderPresenter) departmentResponse(ctx context.Context, id *int64) *httpx.DepartmentResponse {

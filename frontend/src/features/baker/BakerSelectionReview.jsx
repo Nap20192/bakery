@@ -1,18 +1,24 @@
-import { Button } from '../../components/Button';
-import { EmptyState } from '../../components/EmptyState';
-import { Icon } from '../../components/Icon';
-import { panelClass, PanelHeader } from '../../components/Panel';
+import { Button } from '../../ui/Button';
+import { ErrorBanner } from '../../ui/ErrorBanner';
+import { EmptyState } from '../../ui/EmptyState';
+import { Icon } from '../../ui/Icon';
+import { panelClass, PanelHeader } from '../../ui/Panel';
 import { MonitorReports } from './MonitorReports';
-import { OrderDetails } from './OrderDetails';
+import { OrderDetails } from '../orders/OrderDetails';
+import { ProductionSheet } from '../production/ProductionSheet';
 
 export function BakerSelectionReview({
   loading,
   selectedOrders,
+  catalog = [],
   monitor,
   error,
   onBack,
   onRemove,
   onCalculate,
+  onSaveProduction,
+  onOpenJournal,
+  onOpenProduction,
 }) {
   return (
     <section className="px-3 py-3 pb-20 sm:px-5 sm:pb-3 lg:px-6">
@@ -30,7 +36,7 @@ export function BakerSelectionReview({
           </div>
         </section>
 
-        {error && <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800">{error}</div>}
+        <ErrorBanner error={error} />
 
         {selectedOrders.length ? (
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.9fr)]">
@@ -43,14 +49,28 @@ export function BakerSelectionReview({
                       Убрать
                     </Button>
                   </div>
-                  <OrderDetails order={order} />
+                  <OrderDetails order={order} catalog={catalog} onOpenProduction={onOpenProduction} />
                 </section>
               ))}
             </div>
-            <section className={panelClass}>
-              <PanelHeader title="Расчёт теста" />
-              <MonitorReports monitor={monitor} onCalculate={onCalculate} loading={loading} canCalculate={selectedOrders.length > 0} />
-            </section>
+            <div className="space-y-4">
+              <section className={panelClass}>
+                <PanelHeader title="Отработка" />
+                <p className="m-0 mb-2 text-[12px] leading-5 text-stone-500">
+                  Сколько реально испечено. Заявки не изменяются; расхождения разносятся по заказам.
+                </p>
+                <ProductionSheet
+                  orders={selectedOrders}
+                  loading={loading}
+                  onSave={onSaveProduction}
+                  onOpenJournal={onOpenJournal}
+                />
+              </section>
+              <section className={panelClass}>
+                <PanelHeader title="Расчёт теста" />
+                <MonitorReports monitor={monitor} onCalculate={onCalculate} loading={loading} canCalculate={selectedOrders.length > 0} />
+              </section>
+            </div>
           </div>
         ) : (
           <EmptyState>Выбор пустой.</EmptyState>

@@ -11,24 +11,34 @@ import (
 )
 
 type Querier interface {
+	// Проецирует журнал на заказ: для каждой позиции берётся значение из самого
+	// свежего листа (по id листа), позиции без записей в журнале сбрасываются.
+	ApplyOrderProduction(ctx context.Context, orderID int64) error
 	AssignUserDepartment(ctx context.Context, arg AssignUserDepartmentParams) (AuthUser, error)
 	BindTelegramID(ctx context.Context, arg BindTelegramIDParams) (AuthUser, error)
 	CancelOrder(ctx context.Context, arg CancelOrderParams) (Order, error)
+	ClearUncoveredOrderProduction(ctx context.Context, orderID int64) error
+	CountDishesByCategoryID(ctx context.Context, categoryID *int64) (int64, error)
 	CountOrders(ctx context.Context, arg CountOrdersParams) (int64, error)
 	CreateDepartment(ctx context.Context, arg CreateDepartmentParams) (Department, error)
 	CreateIikoSyncRun(ctx context.Context, arg CreateIikoSyncRunParams) (IikoSyncRun, error)
 	CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error)
+	CreateOrderCategory(ctx context.Context, arg CreateOrderCategoryParams) (OrderCategory, error)
 	CreateOrderCounterDay(ctx context.Context, arg CreateOrderCounterDayParams) error
 	CreateOrderHistory(ctx context.Context, arg CreateOrderHistoryParams) (OrderHistory, error)
 	CreateOrderHistoryItem(ctx context.Context, arg CreateOrderHistoryItemParams) (OrderHistoryItem, error)
 	CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) (OrderItem, error)
 	CreatePasswordAuthUser(ctx context.Context, arg CreatePasswordAuthUserParams) (AuthUser, error)
+	CreateProductionSheet(ctx context.Context, createdByUsername string) (ProductionSheet, error)
 	DeleteAuthUser(ctx context.Context, id int64) error
 	DeleteDishCatalogItem(ctx context.Context, code string) error
 	DeleteIikoAssemblyChartItemsByChartID(ctx context.Context, chartID string) error
 	DeleteIikoPreparedChartItemsByChartID(ctx context.Context, preparedChartID string) error
+	DeleteOrderCategory(ctx context.Context, id int64) error
 	DeleteOrderItemsByOrderID(ctx context.Context, orderID int64) error
 	DeleteOrdersCreatedBefore(ctx context.Context, createdAtBefore pgtype.Timestamptz) (int64, error)
+	DeleteProductionSheet(ctx context.Context, id int64) error
+	DeleteProductionSheetItems(ctx context.Context, sheetID int64) error
 	DishExistsByCode(ctx context.Context, code string) (int64, error)
 	FinishIikoSyncRun(ctx context.Context, arg FinishIikoSyncRunParams) (IikoSyncRun, error)
 	GetActiveAssemblyChartByProductID(ctx context.Context, arg GetActiveAssemblyChartByProductIDParams) (GetActiveAssemblyChartByProductIDRow, error)
@@ -43,12 +53,19 @@ type Querier interface {
 	GetIikoProductByCode(ctx context.Context, code string) (GetIikoProductByCodeRow, error)
 	GetIikoProductByID(ctx context.Context, id string) (GetIikoProductByIDRow, error)
 	GetIikoProductsByName(ctx context.Context, name string) ([]GetIikoProductsByNameRow, error)
+	GetOrderByID(ctx context.Context, id int64) (Order, error)
 	GetOrderByNumber(ctx context.Context, number string) (Order, error)
+	GetOrderCategoryByID(ctx context.Context, id int64) (OrderCategory, error)
 	GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]GetOrderItemsByOrderIDRow, error)
 	GetOrderItemsByOrderIDs(ctx context.Context, orderIds []int64) ([]GetOrderItemsByOrderIDsRow, error)
+	// Заказ принадлежит максимум одному листу отработки (1:N от листа к
+	// заказам); на случай исторических пересечений берётся самый свежий лист.
+	GetOrderProductionSheetID(ctx context.Context, orderID int64) (int64, error)
+	GetProductionSheet(ctx context.Context, id int64) (ProductionSheet, error)
 	InsertIikoAssemblyChartItem(ctx context.Context, arg InsertIikoAssemblyChartItemParams) error
 	InsertIikoPreparedChartItem(ctx context.Context, arg InsertIikoPreparedChartItemParams) error
 	InsertOrderOutboxEvent(ctx context.Context, arg InsertOrderOutboxEventParams) (int64, error)
+	InsertProductionSheetItem(ctx context.Context, arg InsertProductionSheetItemParams) error
 	ListAssemblyChartItemsByChartID(ctx context.Context, chartID string) ([]ListAssemblyChartItemsByChartIDRow, error)
 	ListAuthUsers(ctx context.Context) ([]AuthUser, error)
 	ListAuthUsersByDepartmentID(ctx context.Context, departmentID *int64) ([]AuthUser, error)
@@ -56,10 +73,14 @@ type Querier interface {
 	ListDepartments(ctx context.Context, type_ *string) ([]Department, error)
 	ListDishCatalogItems(ctx context.Context) ([]DishCatalog, error)
 	ListDishCatalogItemsByName(ctx context.Context, name string) ([]DishCatalog, error)
+	ListOrderCategories(ctx context.Context) ([]OrderCategory, error)
 	ListOrderHistoryByOrderID(ctx context.Context, orderID int64) ([]OrderHistory, error)
 	ListOrderHistoryItemsByHistoryID(ctx context.Context, historyID int64) ([]OrderHistoryItem, error)
 	ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order, error)
 	ListPreparedChartItemsByChartID(ctx context.Context, preparedChartID string) ([]ListPreparedChartItemsByChartIDRow, error)
+	ListProductionSheetItems(ctx context.Context, sheetID int64) ([]ListProductionSheetItemsRow, error)
+	ListProductionSheetOrderIDs(ctx context.Context, sheetID int64) ([]int64, error)
+	ListProductionSheets(ctx context.Context) ([]ListProductionSheetsRow, error)
 	ListUnpublishedOrderOutboxEvents(ctx context.Context, maxEvents int32) ([]ListUnpublishedOrderOutboxEventsRow, error)
 	MarkOrderOutboxEventPublished(ctx context.Context, id int64) error
 	NextOrderCounter(ctx context.Context, arg NextOrderCounterParams) (int64, error)
@@ -67,6 +88,7 @@ type Querier interface {
 	SearchIikoDishes(ctx context.Context, arg SearchIikoDishesParams) ([]SearchIikoDishesRow, error)
 	SetDishCatalogSortOrder(ctx context.Context, arg SetDishCatalogSortOrderParams) error
 	SetOrderFavorite(ctx context.Context, arg SetOrderFavoriteParams) (Order, error)
+	TouchProductionSheet(ctx context.Context, id int64) error
 	UpdateAuthUserPassword(ctx context.Context, arg UpdateAuthUserPasswordParams) (AuthUser, error)
 	UpdateAuthUserRole(ctx context.Context, arg UpdateAuthUserRoleParams) (AuthUser, error)
 	UpdateAuthUserUsername(ctx context.Context, arg UpdateAuthUserUsernameParams) (AuthUser, error)
@@ -74,6 +96,9 @@ type Querier interface {
 	// created_by_username is intentionally left untouched: editing an order keeps
 	// its original author; who made each change is recorded in order_history.
 	UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order, error)
+	UpdateOrderCategory(ctx context.Context, arg UpdateOrderCategoryParams) (OrderCategory, error)
+	// category_id keeps an already-assigned category on conflict, so re-seeding
+	// from templates/dishes.txt never clobbers the admin's assignment.
 	UpsertDishCatalogItem(ctx context.Context, arg UpsertDishCatalogItemParams) (DishCatalog, error)
 	UpsertIikoAssemblyChart(ctx context.Context, arg UpsertIikoAssemblyChartParams) error
 	UpsertIikoPreparedChart(ctx context.Context, arg UpsertIikoPreparedChartParams) error

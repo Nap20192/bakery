@@ -1,11 +1,12 @@
-import { Button } from '../../components/Button';
-import { EmptyState } from '../../components/EmptyState';
-import { Icon } from '../../components/Icon';
-import { panelClass, PanelHeader } from '../../components/Panel';
+import { Button } from '../../ui/Button';
+import { ErrorBanner } from '../../ui/ErrorBanner';
+import { EmptyState } from '../../ui/EmptyState';
+import { Icon } from '../../ui/Icon';
+import { panelClass, PanelHeader } from '../../ui/Panel';
 import { MonitorReports } from './MonitorReports';
-import { OrderDetails } from './OrderDetails';
+import { OrderDetails } from '../orders/OrderDetails';
 
-export function BakerOrderReview({ loading, order, monitor, error, canFavorite, onToggleFavorite, onBack, onCalculate }) {
+export function BakerOrderReview({ loading, order, catalog = [], monitor, error, canFavorite, onToggleFavorite, onBack, onCalculate, onOpenProduction }) {
   return (
     <section className="px-3 py-3 pb-20 sm:px-5 sm:pb-3 lg:px-6">
       <div className="mx-auto max-w-[1440px] space-y-4">
@@ -22,12 +23,12 @@ export function BakerOrderReview({ loading, order, monitor, error, canFavorite, 
           </div>
         </section>
 
-        {error && <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800">{error}</div>}
+        <ErrorBanner error={error} />
 
         {order ? (
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.9fr)]">
             <section className={panelClass}>
-              <OrderDetails order={order} canFavorite={canFavorite} onToggleFavorite={onToggleFavorite} />
+              <OrderDetails order={order} catalog={catalog} canFavorite={canFavorite} onToggleFavorite={onToggleFavorite} onOpenProduction={onOpenProduction} />
             </section>
             <section className={panelClass}>
               <PanelHeader title="Расчёт теста" />

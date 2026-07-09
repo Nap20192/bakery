@@ -28,12 +28,18 @@ func New(orderSvc orderuc.UseCase, departmentSvc departmentuc.UseCase, presenter
 // RegisterRoutes wires the order endpoints behind Mini App authentication.
 func (h *Handler) RegisterRoutes(mux *http.ServeMux, auth *httpx.Authenticator) {
 	mux.Handle("GET /catalog", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleCatalog)))
+	mux.Handle("GET /categories", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleListCategories)))
 	mux.Handle("GET /orders", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleListOrders)))
 	mux.Handle("POST /orders", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleCreateOrder)))
 	mux.Handle("GET /orders/{id}", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleOrderByID)))
 	mux.Handle("PUT /orders/{id}", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleUpdateOrder)))
 	mux.Handle("POST /orders/{id}/cancel", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleCancelOrder)))
 	mux.Handle("POST /orders/{id}/restore", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleRestoreOrder)))
+	mux.Handle("POST /production", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleCreateProductionSheet)))
+	mux.Handle("GET /production", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleListProductionSheets)))
+	mux.Handle("GET /production/{id}", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleGetProductionSheet)))
+	mux.Handle("PUT /production/{id}", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleUpdateProductionSheet)))
+	mux.Handle("DELETE /production/{id}", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleDeleteProductionSheet)))
 	h.RegisterAdminRoutes(mux, auth)
 }
 
@@ -71,9 +77,28 @@ func (h *Handler) handleListOrders(w http.ResponseWriter, r *http.Request) {
 		}
 		fromDepartmentID = &parsed
 	}
+	var categoryID *int64
+	if raw := httpx.Trim(r.URL.Query().Get("category_id")); raw != "" {
+		parsed, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || parsed <= 0 {
+			httpx.WriteError(w, http.StatusBadRequest, "Параметр category_id должен быть положительным числом.")
+			return
+		}
+		categoryID = &parsed
+	}
 	fulfillmentDate, err := httpx.ParseRequestDate(r.URL.Query().Get("fulfillment_date"))
 	if err != nil {
 		httpx.WriteError(w, http.StatusBadRequest, "Дата выполнения должна быть в формате YYYY-MM-DD.")
+		return
+	}
+	fulfillmentFrom, err := httpx.ParseRequestDate(r.URL.Query().Get("fulfillment_from"))
+	if err != nil {
+		httpx.WriteError(w, http.StatusBadRequest, "Дата fulfillment_from должна быть в формате YYYY-MM-DD.")
+		return
+	}
+	fulfillmentTo, err := httpx.ParseRequestDate(r.URL.Query().Get("fulfillment_to"))
+	if err != nil {
+		httpx.WriteError(w, http.StatusBadRequest, "Дата fulfillment_to должна быть в формате YYYY-MM-DD.")
 		return
 	}
 
@@ -81,7 +106,10 @@ func (h *Handler) handleListOrders(w http.ResponseWriter, r *http.Request) {
 		Limit:            limit,
 		Offset:           offset,
 		FromDepartmentID: fromDepartmentID,
+		CategoryID:       categoryID,
 		FulfillmentDate:  fulfillmentDate,
+		FulfillmentFrom:  fulfillmentFrom,
+		FulfillmentTo:    fulfillmentTo,
 	})
 	if err != nil {
 		slog.ErrorContext(r.Context(), "list orders failed", "error", err)
@@ -97,6 +125,25 @@ func (h *Handler) handleListOrders(w http.ResponseWriter, r *http.Request) {
 		Total:      result.Total,
 		TotalPages: int32(math.Ceil(float64(result.Total) / float64(result.Limit))),
 	})
+}
+
+// handleListCategories returns the типы заявок for pickers, filters and cards.
+func (h *Handler) handleListCategories(w http.ResponseWriter, r *http.Request) {
+	if h.orderSvc == nil {
+		httpx.WriteError(w, http.StatusServiceUnavailable, "Сервис заказов временно недоступен.")
+		return
+	}
+	categories, err := h.orderSvc.ListOrderCategories(r.Context())
+	if err != nil {
+		slog.ErrorContext(r.Context(), "list order categories failed", "error", err)
+		httpx.WriteError(w, http.StatusInternalServerError, "Не удалось загрузить типы заявок.")
+		return
+	}
+	responses := make([]CategoryResponse, 0, len(categories))
+	for _, category := range categories {
+		responses = append(responses, *buildCategoryResponse(&category))
+	}
+	httpx.WriteJSON(w, http.StatusOK, responses)
 }
 
 func (h *Handler) handleOrderByID(w http.ResponseWriter, r *http.Request) {

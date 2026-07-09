@@ -99,18 +99,19 @@ func TestOrderServiceOrderNumberRules(t *testing.T) {
 		t.Fatalf("OrderCounterDay = %s, want 08052026", got)
 	}
 	tests := []struct {
-		code string
-		name string
-		want string
+		code   string
+		name   string
+		letter string
+		want   string
 	}{
-		{code: "gagarina", name: "Магазин Гагарина", want: "Г.08.05.26.012"},
-		{code: "sholokhova", name: "Магазин Шолохова", want: "Ш.08.05.26.012"},
-		{code: "saryarka", name: "Магазин Сарыарка", want: "С.08.05.26.012"},
-		{code: "", name: "Магазин Гагарина", want: "Г.08.05.26.012"},
+		{code: "gagarina", name: "Магазин Гагарина", letter: "Х", want: "Г.Х.08.05.26.012"},
+		{code: "sholokhova", name: "Магазин Шолохова", letter: "Б", want: "Ш.Б.08.05.26.012"},
+		{code: "saryarka", name: "Магазин Сарыарка", letter: "", want: "С.08.05.26.012"},
+		{code: "", name: "Магазин Гагарина", letter: " ", want: "Г.08.05.26.012"},
 	}
 	for _, tt := range tests {
-		if got := svc.BuildOrderNumber(tt.code, tt.name, createdAt, 12); got != tt.want {
-			t.Fatalf("BuildOrderNumber(%q, %q) = %s, want %s", tt.code, tt.name, got, tt.want)
+		if got := svc.BuildOrderNumber(tt.code, tt.name, tt.letter, createdAt, 12); got != tt.want {
+			t.Fatalf("BuildOrderNumber(%q, %q, %q) = %s, want %s", tt.code, tt.name, tt.letter, got, tt.want)
 		}
 	}
 	if got := svc.NormalizeCreatedAt(createdAt); got.Location() != time.UTC {

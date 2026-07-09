@@ -8,6 +8,10 @@ export function fetchCatalog() {
   return apiRequest('/catalog');
 }
 
+export function fetchCategories() {
+  return apiRequest('/categories');
+}
+
 export function fetchDepartments(type = '') {
   const params = new URLSearchParams();
   if (type) params.set('type', type);
@@ -25,6 +29,15 @@ export function fetchOrders(page, limit, filters = {}) {
   }
   if (filters.fulfillmentDate) {
     params.set('fulfillment_date', filters.fulfillmentDate);
+  }
+  if (filters.fulfillmentFrom) {
+    params.set('fulfillment_from', filters.fulfillmentFrom);
+  }
+  if (filters.fulfillmentTo) {
+    params.set('fulfillment_to', filters.fulfillmentTo);
+  }
+  if (filters.categoryID) {
+    params.set('category_id', String(filters.categoryID));
   }
   return apiRequest(`/orders?${params.toString()}`);
 }
@@ -67,6 +80,36 @@ export function restoreOrder(number) {
   return apiRequest(`/orders/${encodeURIComponent(number)}/restore`, {
     method: 'POST',
   });
+}
+
+// Журнал отработок: каждая отработка — отдельный документ, который можно
+// открыть, изменить и удалить. Факт в заказах пересчитывается автоматически.
+export function createProductionSheet(orders) {
+  return apiRequest('/production', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orders }),
+  });
+}
+
+export function fetchProductionSheets() {
+  return apiRequest('/production');
+}
+
+export function fetchProductionSheet(id) {
+  return apiRequest(`/production/${id}`);
+}
+
+export function updateProductionSheet(id, orders) {
+  return apiRequest(`/production/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orders }),
+  });
+}
+
+export function deleteProductionSheet(id) {
+  return apiRequest(`/production/${id}`, { method: 'DELETE' });
 }
 
 export function fetchOrderMonitor(number) {

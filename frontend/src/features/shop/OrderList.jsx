@@ -1,6 +1,7 @@
-import { Button } from '../../components/Button';
-import { InputField, SelectField } from '../../components/Field';
-import { EmptyState } from '../../components/EmptyState';
+import { Button } from '../../ui/Button';
+import { CategoryBadge } from '../../ui/CategoryBadge';
+import { InputField, SelectField } from '../../ui/Field';
+import { EmptyState } from '../../ui/EmptyState';
 import { formatFulfillmentDate } from '../../lib/format';
 import { orderSource } from '../../lib/orders';
 
@@ -91,6 +92,7 @@ export function OrderList({
                     <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5">
                       <strong className="flex flex-wrap items-center gap-1.5 break-words text-[13px] font-semibold leading-5 text-stone-900">
                         {order.number}
+                        <CategoryBadge category={order.category} />
                         {order.cancelled && (
                           <span className="inline-flex items-center rounded-full border border-red-300 bg-red-50 px-1.5 py-0 text-[10px] font-semibold uppercase leading-4 text-red-700">
                             Отменён

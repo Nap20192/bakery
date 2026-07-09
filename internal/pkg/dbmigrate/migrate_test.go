@@ -6,8 +6,19 @@ import (
 	"testing"
 )
 
+// tempDir returns t.TempDir() with symlinks resolved, so paths compare equal
+// to those derived from os.Getwd() (macOS symlinks /var to /private/var).
+func tempDir(t *testing.T) string {
+	t.Helper()
+	root, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatalf("eval symlinks: %v", err)
+	}
+	return root
+}
+
 func TestResolveMigrationDirFindsParentDirectory(t *testing.T) {
-	root := t.TempDir()
+	root := tempDir(t)
 	migrationsDir := filepath.Join(root, "migrations")
 	if err := os.MkdirAll(migrationsDir, 0o750); err != nil {
 		t.Fatalf("mkdir migrations: %v", err)
@@ -36,7 +47,7 @@ func TestResolveMigrationDirFindsParentDirectory(t *testing.T) {
 }
 
 func TestMigrationFilesUsesResolvedDirectory(t *testing.T) {
-	root := t.TempDir()
+	root := tempDir(t)
 	migrationsDir := filepath.Join(root, "migrations")
 	if err := os.MkdirAll(migrationsDir, 0o750); err != nil {
 		t.Fatalf("mkdir migrations: %v", err)

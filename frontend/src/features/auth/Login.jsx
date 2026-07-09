@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { login } from '../api/auth';
-import { setToken } from '../lib/auth';
-import { logWarn } from '../lib/logger';
-import { Button } from './Button';
+import { login } from '../../api/auth';
+import { setToken } from '../../lib/auth';
+import { logWarn } from '../../lib/logger';
+import { Button } from '../../ui/Button';
 
 const fieldClass =
   'w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10';
@@ -36,7 +36,7 @@ export function Login({ onAuthenticated }) {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#f7f3ea] p-4 text-stone-900">
+    <main className="flex min-h-screen items-center justify-center bg-flour p-4 text-stone-900">
       <form onSubmit={onSubmit} className="w-full max-w-sm rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
         <h1 className="mb-1 text-center text-lg font-semibold text-stone-950">Заказы пекарни</h1>
         <p className="mb-5 text-center text-[13px] leading-5 text-stone-600">Войдите, чтобы продолжить.</p>

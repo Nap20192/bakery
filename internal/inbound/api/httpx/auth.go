@@ -219,12 +219,6 @@ func IsShopUser(user MiniAppUser) bool {
 	return role == authdomain.RoleShop || role == authdomain.RoleAdmin
 }
 
-// IsWorkshopUser reports whether the viewer is on the workshop side (baker or admin).
-func IsWorkshopUser(user MiniAppUser) bool {
-	role := authdomain.NormalizeRole(user.Auth.Role)
-	return role == authdomain.RoleBaker || role == authdomain.RoleAdmin
-}
-
 // TelegramUsernameOf returns the trimmed telegram username, or "".
 func TelegramUsernameOf(u authdomain.AuthUser) string {
 	if u.TelegramUsername != nil {

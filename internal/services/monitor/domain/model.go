@@ -21,11 +21,21 @@ type IngredientDishBreakdown struct {
 	IngredientQuantity float64 `json:"ingredient_quantity"`
 }
 
+// IngredientComponent — компонент техкарты ингредиента (например, мука в
+// тесте), отмасштабированный на общий расход по заказу.
+type IngredientComponent struct {
+	ProductCode string  `json:"product_code"`
+	ProductName string  `json:"product_name"`
+	Unit        string  `json:"unit"`
+	Quantity    float64 `json:"quantity"`
+}
+
 // IngredientReport — итог мониторинга по ингредиенту:
-// общий расход + детализация по блюдам.
+// общий расход + детализация по блюдам + состав по техкарте.
 type IngredientReport struct {
 	Ingredient IngredientUsage           `json:"ingredient"`
 	Breakdown  []IngredientDishBreakdown `json:"breakdown"`
+	Components []IngredientComponent     `json:"components,omitempty"`
 }
 
 // OrderMonitoringReport хранит расчёт по одному заказу внутри batch-расчёта.

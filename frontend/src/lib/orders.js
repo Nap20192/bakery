@@ -15,11 +15,16 @@ export function orderCreator(order) {
 }
 
 function reportLines(reports) {
-  return (reports || []).map(({ report }) => {
-    const ing = report?.ingredient;
-    if (!ing) return '';
-    return `${ing.product_name}: ${formatQuantity(ing.quantity)} ${ing.unit}`.trim();
-  }).filter(Boolean);
+  return (reports || [])
+    .filter(({ report }) => report?.ingredient?.quantity > 0)
+    .flatMap(({ report }) => {
+      const ing = report.ingredient;
+      const lines = [`${ing.product_name}: ${formatQuantity(ing.quantity)} ${ing.unit}`.trim()];
+      for (const component of report.components || []) {
+        lines.push(`— ${component.product_name}: ${formatQuantity(component.quantity)} ${component.unit}`.trim());
+      }
+      return lines;
+    });
 }
 
 // monitorToText renders a dough calculation as plain text for sharing.

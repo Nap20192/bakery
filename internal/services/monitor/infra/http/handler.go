@@ -76,8 +76,12 @@ func (h *Handler) handleMonitorDefault(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	reports := make([]monitorReportResponse, 0, len(monitoringdomain.DefaultMonitorCodes))
-	for _, code := range monitoringdomain.DefaultMonitorCodes {
+	codes, ok := h.monitorCodesFor(w, order)
+	if !ok {
+		return
+	}
+	reports := make([]monitorReportResponse, 0, len(codes))
+	for _, code := range codes {
 		report, err := h.monitorSvc.GetIngredientsByCode(r.Context(), code, order)
 		if err != nil {
 			slog.WarnContext(r.Context(), "default monitor calculation failed", "order_number", orderID, "code", code, "error", err)
@@ -88,6 +92,21 @@ func (h *Handler) handleMonitorDefault(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpx.WriteJSON(w, http.StatusOK, h.buildMonitorResponse(r.Context(), order, reports))
+}
+
+// monitorCodesFor picks the dough codes for an order: its category's list, or
+// the legacy default set for orders without a category. A category with no
+// codes configured is a setup problem the admin must fix.
+func (h *Handler) monitorCodesFor(w http.ResponseWriter, order orderdomain.Order) ([]string, bool) {
+	if order.Category == nil {
+		return monitoringdomain.DefaultMonitorCodes, true
+	}
+	if len(order.Category.MonitorCodes) == 0 {
+		httpx.WriteError(w, http.StatusBadRequest,
+			fmt.Sprintf("Для типа заявки «%s» не настроены коды теста. Добавьте их в админке.", order.Category.Name))
+		return nil, false
+	}
+	return order.Category.MonitorCodes, true
 }
 
 func (h *Handler) handleMonitorByProduct(w http.ResponseWriter, r *http.Request) {
@@ -155,14 +174,33 @@ func (h *Handler) handleMonitorBatch(w http.ResponseWriter, r *http.Request) {
 		orders = append(orders, order)
 	}
 
-	report, err := h.monitorSvc.GetBatchIngredientsByCodes(r.Context(), monitoringdomain.DefaultMonitorCodes, orders)
+	// Тесто разных типов заявок не суммируется — batch считает один тип.
+	for _, order := range orders[1:] {
+		if categoryIDOf(order) != categoryIDOf(orders[0]) {
+			httpx.WriteError(w, http.StatusBadRequest, "Выберите заявки одного типа: у разных типов свои коды теста.")
+			return
+		}
+	}
+	codes, ok := h.monitorCodesFor(w, orders[0])
+	if !ok {
+		return
+	}
+
+	report, err := h.monitorSvc.GetBatchIngredientsByCodes(r.Context(), codes, orders)
 	if err != nil {
 		slog.WarnContext(r.Context(), "batch monitor calculation failed", "orders", orderNumbers, "error", err)
 		httpx.WriteError(w, http.StatusBadRequest, "Не удалось посчитать калькуляцию по выбранным заказам. Проверьте заказы и техкарты.")
 		return
 	}
 
-	httpx.WriteJSON(w, http.StatusOK, h.buildBatchMonitorResponse(r.Context(), orders, report))
+	httpx.WriteJSON(w, http.StatusOK, h.buildBatchMonitorResponse(r.Context(), orders, codes, report))
+}
+
+func categoryIDOf(order orderdomain.Order) int64 {
+	if order.CategoryID == nil {
+		return 0
+	}
+	return *order.CategoryID
 }
 
 func (h *Handler) buildMonitorResponse(ctx context.Context, order orderdomain.Order, reports []monitorReportResponse) monitorResponse {
@@ -175,6 +213,7 @@ func (h *Handler) buildMonitorResponse(ctx context.Context, order orderdomain.Or
 func (h *Handler) buildBatchMonitorResponse(
 	ctx context.Context,
 	orders []orderdomain.Order,
+	codes []string,
 	report monitoringdomain.BatchMonitoringReport,
 ) batchMonitorResponse {
 	orderByNumber := make(map[string]orderdomain.Order, len(orders))
@@ -182,17 +221,20 @@ func (h *Handler) buildBatchMonitorResponse(
 		orderByNumber[order.Number] = order
 	}
 
+	codeAt := func(i int) string {
+		if i < len(codes) {
+			return codes[i]
+		}
+		return ""
+	}
+
 	response := batchMonitorResponse{
 		Orders:       make([]batchMonitorOrderResponse, 0, len(report.Orders)),
 		TotalReports: make([]monitorReportResponse, 0, len(report.TotalReports)),
 	}
 	for i, total := range report.TotalReports {
-		code := ""
-		if i < len(monitoringdomain.DefaultMonitorCodes) {
-			code = monitoringdomain.DefaultMonitorCodes[i]
-		}
 		response.TotalReports = append(response.TotalReports, monitorReportResponse{
-			Code:   code,
+			Code:   codeAt(i),
 			Report: total,
 		})
 	}
@@ -200,12 +242,8 @@ func (h *Handler) buildBatchMonitorResponse(
 		order := orderByNumber[orderReport.OrderNumber]
 		reports := make([]monitorReportResponse, 0, len(orderReport.Reports))
 		for i, item := range orderReport.Reports {
-			code := ""
-			if i < len(monitoringdomain.DefaultMonitorCodes) {
-				code = monitoringdomain.DefaultMonitorCodes[i]
-			}
 			reports = append(reports, monitorReportResponse{
-				Code:   code,
+				Code:   codeAt(i),
 				Report: item,
 			})
 		}
