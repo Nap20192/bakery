@@ -43,7 +43,7 @@ type UseCase interface {
 	CombinedOrderTemplate(ctx context.Context) (string, error)
 	GetOrderTemplate(ctx context.Context, theme string) (orderdomain.OrderTemplate, error)
 	GetTemplate(ctx context.Context) (string, error)
-	EnsureDefaultOrderTemplates(ctx context.Context, path string) (EnsureDefaultTemplatesResult, error)
+	EnsureDefaultOrderTemplates(ctx context.Context, seeds ...CatalogSeed) (EnsureDefaultTemplatesResult, error)
 	RunCleanupTicker(ctx context.Context, interval, retention time.Duration) error
 	DeleteOrdersOlderThan(ctx context.Context, now time.Time, retention time.Duration) (int64, error)
 }
@@ -154,6 +154,14 @@ type UpdateOrderInput struct {
 
 type EnsureDefaultTemplatesResult struct {
 	CatalogItems int
+}
+
+// CatalogSeed — файл-шаблон каталога и тип заявки, к которому относятся его
+// блюда. Без аргументов сервис сидит дефолтные пары: dishes.txt → buns,
+// bread.txt → bread.
+type CatalogSeed struct {
+	Path         string
+	CategoryCode string
 }
 
 // RecordProductionInput — отработка (факт выпечки) по нескольким заказам

@@ -672,24 +672,57 @@ func (s *Service) GetTemplate(ctx context.Context) (string, error) {
 	return s.CombinedOrderTemplate(ctx)
 }
 
-func (s *Service) EnsureDefaultOrderTemplates(ctx context.Context, path string) (EnsureDefaultTemplatesResult, error) {
+// EnsureDefaultOrderTemplates сидит каталог блюд из файлов-шаблонов, привязывая
+// блюда к типам заявок. Upsert не затирает категорию, назначенную админом
+// вручную; отсутствующий файл — не ошибка (шаблон опционален).
+func (s *Service) EnsureDefaultOrderTemplates(ctx context.Context, seeds ...CatalogSeed) (EnsureDefaultTemplatesResult, error) {
 	var result EnsureDefaultTemplatesResult
-	if strings.TrimSpace(path) == "" {
-		path = "templates/dishes.txt"
-	}
-	data, err := os.ReadFile(path) //nolint:gosec // path is a configured local template file.
-	if err != nil {
-		if os.IsNotExist(err) {
-			return result, nil
+	if len(seeds) == 0 {
+		seeds = []CatalogSeed{
+			{Path: "templates/dishes.txt", CategoryCode: "buns"},
+			{Path: "templates/bread.txt", CategoryCode: "bread"},
 		}
-		return result, fmt.Errorf("read default templates: %w", err)
 	}
 
-	for _, item := range parseDefaultDishCatalogItems(string(data)) {
-		if err := s.repo.UpsertDishCatalogItem(ctx, item); err != nil {
-			return result, fmt.Errorf("upsert dish catalog item %s: %w", item.Code, err)
+	categoryByCode := make(map[string]int64)
+	if categories, err := s.repo.ListOrderCategories(ctx); err == nil {
+		for _, category := range categories {
+			categoryByCode[category.Code] = category.ID
 		}
-		result.CatalogItems++
+	} else {
+		slog.WarnContext(ctx, "list categories for catalog seed failed", "error", err)
+	}
+
+	// Сквозная нумерация sort_order по всем файлам, чтобы группы не
+	// перемешивались между типами.
+	sortOffset := int64(0)
+	for _, seed := range seeds {
+		data, err := os.ReadFile(seed.Path) //nolint:gosec // path is a configured local template file.
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return result, fmt.Errorf("read default templates %s: %w", seed.Path, err)
+		}
+
+		var categoryID *int64
+		if id, ok := categoryByCode[strings.TrimSpace(seed.CategoryCode)]; ok {
+			categoryID = &id
+		} else if seed.CategoryCode != "" {
+			slog.WarnContext(ctx, "catalog seed category not found, seeding without category",
+				"path", seed.Path, "category_code", seed.CategoryCode)
+		}
+
+		items := parseDefaultDishCatalogItems(string(data))
+		for _, item := range items {
+			item.CategoryID = categoryID
+			item.SortOrder += sortOffset
+			if err := s.repo.UpsertDishCatalogItem(ctx, item); err != nil {
+				return result, fmt.Errorf("upsert dish catalog item %s: %w", item.Code, err)
+			}
+			result.CatalogItems++
+		}
+		sortOffset += int64(len(items))
 	}
 	return result, nil
 }
