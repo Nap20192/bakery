@@ -1,42 +1,23 @@
 
 GOCMD = go
-GOBUILD = $(GOCMD) build
-GOMOD = $(GOCMD) mod
-GOTEST = $(GOCMD) test
-BINARY_NAME = goadmin
-CLI = adm
 
-all: serve
-
-init:
-	$(GOMOD) init $(module)
-
-install:
-	$(GOMOD) tidy
-
-serve:
-	$(GOCMD) run .
+.PHONY: build test lint vet sqlc test-orders
 
 build:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -o ./build/$(BINARY_NAME) -v ./
+	$(GOCMD) build ./...
 
-generate:
-	$(CLI) generate -c adm.ini
+vet:
+	$(GOCMD) vet ./...
 
-test: black-box-test user-acceptance-test
+test:
+	$(GOCMD) test ./...
 
-black-box-test: ready-for-data
-	$(GOTEST) -v -test.run=TestMainBlackBox
-	make clean
+lint:
+	golangci-lint run ./...
 
-user-acceptance-test: ready-for-data
-	$(GOTEST) -v -test.run=TestMainUserAcceptance
-	make clean
+sqlc:
+	sqlc generate
 
-ready-for-data:
-	cp admin.db admin_test.db
-
-clean:
-	rm admin_test.db
-
-.PHONY: all serve build generate test black-box-test user-acceptance-test ready-for-data clean
+# Удаляет ВСЕ заказы и создаёт свежие тестовые (dev-инструмент).
+test-orders:
+	$(GOCMD) run ./cmd/testingorders -yes

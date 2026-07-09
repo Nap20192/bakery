@@ -35,3 +35,23 @@ export function updateDish(code, dish) {
 export function deleteDish(code) {
   return apiRequest(`/admin/dishes/${encodeURIComponent(code)}`, { method: 'DELETE' });
 }
+
+export function createCategory(category) {
+  return apiRequest('/admin/categories', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(category),
+  });
+}
+
+export function updateCategory(id, category) {
+  return apiRequest(`/admin/categories/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(category),
+  });
+}
+
+export function deleteCategory(id) {
+  return apiRequest(`/admin/categories/${id}`, { method: 'DELETE' });
+}

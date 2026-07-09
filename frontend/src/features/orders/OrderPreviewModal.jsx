@@ -1,37 +1,24 @@
-import { useEffect } from 'react';
-import { Button } from '../../components/Button';
-import { Icon } from '../../components/Icon';
+import { Button } from '../../ui/Button';
+import { Icon } from '../../ui/Icon';
+import { Modal } from '../../ui/Modal';
 import { OrderDetails } from './OrderDetails';
 
-export function OrderPreviewModal({ order, onClose, canFavorite, onToggleFavorite }) {
-  useEffect(() => {
-    const onKey = (event) => {
-      if (event.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
+export function OrderPreviewModal({ order, catalog = [], onClose, onOpenOrder, onOpenProduction, canFavorite, onToggleFavorite }) {
   return (
-    <div
-      className="fade-in fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/40 p-2 backdrop-blur-sm sm:p-4"
-      onClick={onClose}
-      role="presentation"
-    >
-      <div
-        className="pop-in my-auto w-full max-w-3xl rounded-xl border border-stone-200 bg-white p-4 shadow-xl"
-        onClick={(event) => event.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-      >
-        <div className="mb-3 flex justify-end">
-          <Button onClick={onClose}>
-            <Icon name="close" size={16} />
-            Закрыть
+    <Modal onClose={onClose}>
+      <div className="mb-3 flex justify-end gap-2">
+        {onOpenOrder && (
+          <Button variant="primary" onClick={() => onOpenOrder(order.number)}>
+            <Icon name="calculator" size={16} />
+            Расчёт теста
           </Button>
-        </div>
-        <OrderDetails order={order} canFavorite={canFavorite} onToggleFavorite={onToggleFavorite} />
+        )}
+        <Button onClick={onClose}>
+          <Icon name="close" size={16} />
+          Закрыть
+        </Button>
       </div>
-    </div>
+      <OrderDetails order={order} catalog={catalog} canFavorite={canFavorite} onToggleFavorite={onToggleFavorite} onOpenProduction={onOpenProduction} />
+    </Modal>
   );
 }

@@ -34,13 +34,14 @@ type Department struct {
 }
 
 type DishCatalog struct {
-	ID        int64              `json:"id"`
-	Code      string             `json:"code"`
-	Name      string             `json:"name"`
-	Theme     string             `json:"theme"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	SortOrder int64              `json:"sort_order"`
+	ID         int64              `json:"id"`
+	Code       string             `json:"code"`
+	Name       string             `json:"name"`
+	Theme      string             `json:"theme"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	SortOrder  int64              `json:"sort_order"`
+	CategoryID *int64             `json:"category_id"`
 }
 
 type IikoAssemblyChart struct {
@@ -134,12 +135,26 @@ type Order struct {
 	IsFavorite          bool               `json:"is_favorite"`
 	CancelledAt         pgtype.Timestamptz `json:"cancelled_at"`
 	CancelledByUsername string             `json:"cancelled_by_username"`
+	CategoryID          *int64             `json:"category_id"`
+}
+
+type OrderCategory struct {
+	ID           int64              `json:"id"`
+	Code         string             `json:"code"`
+	Letter       string             `json:"letter"`
+	Name         string             `json:"name"`
+	Color        string             `json:"color"`
+	SortOrder    int64              `json:"sort_order"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	MonitorCodes []string           `json:"monitor_codes"`
 }
 
 type OrderCounter struct {
 	Day          string `json:"day"`
 	Counter      int64  `json:"counter"`
 	DepartmentID int64  `json:"department_id"`
+	CategoryID   int64  `json:"category_id"`
 }
 
 type OrderHistory struct {
@@ -162,12 +177,14 @@ type OrderHistoryItem struct {
 }
 
 type OrderItem struct {
-	ID               int64   `json:"id"`
-	OrderID          int64   `json:"order_id"`
-	IikoProductID    *string `json:"iiko_product_id"`
-	ProductName      string  `json:"product_name"`
-	Quantity         float64 `json:"quantity"`
-	ReservedQuantity float64 `json:"reserved_quantity"`
+	ID               int64    `json:"id"`
+	OrderID          int64    `json:"order_id"`
+	IikoProductID    *string  `json:"iiko_product_id"`
+	ProductName      string   `json:"product_name"`
+	Quantity         float64  `json:"quantity"`
+	ReservedQuantity float64  `json:"reserved_quantity"`
+	ProducedQuantity *float64 `json:"produced_quantity"`
+	ProducedReason   *string  `json:"produced_reason"`
 }
 
 type OrderOutbox struct {
@@ -178,4 +195,20 @@ type OrderOutbox struct {
 	CorrelationID string             `json:"correlation_id"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	PublishedAt   pgtype.Timestamptz `json:"published_at"`
+}
+
+type ProductionSheet struct {
+	ID                int64              `json:"id"`
+	CreatedByUsername string             `json:"created_by_username"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+}
+
+type ProductionSheetItem struct {
+	ID               int64   `json:"id"`
+	SheetID          int64   `json:"sheet_id"`
+	OrderID          int64   `json:"order_id"`
+	ProductName      string  `json:"product_name"`
+	ProducedQuantity float64 `json:"produced_quantity"`
+	Reason           string  `json:"reason"`
 }

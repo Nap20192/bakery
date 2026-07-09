@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"bakery/internal/inbound/api"
-	"bakery/internal/inbound/bot"
 	adminapp "bakery/internal/services/admin/app"
 	adminuc "bakery/internal/services/admin/usecase/admin"
 	authapp "bakery/internal/services/auth/app"
@@ -33,7 +32,6 @@ type AppDeps struct {
 	SyncService       syncuc.UseCase
 	TechCardService   techcarduc.UseCase
 	APIServer         *api.Server
-	OrderBot          *bot.OrderBot
 }
 
 type appOption func(*AppDeps) error
@@ -131,35 +129,6 @@ func WithSyncService(infra *InfraDeps) appOption {
 			return fmt.Errorf("missing dependencies for SyncService")
 		}
 		deps.SyncService = syncapp.New(infra.iikoClient, infra.DB, infra.queries, infra.config.Sync.Interval)
-		return nil
-	}
-}
-
-func WithOrderBot(infra *InfraDeps) appOption {
-	return func(deps *AppDeps) error {
-		if infra == nil || infra.config == nil || deps.OrderService == nil || deps.AuthService == nil || deps.RbacService == nil || deps.DepartmentService == nil || deps.MonitorService == nil || deps.SyncService == nil || deps.TechCardService == nil {
-			return fmt.Errorf("missing dependencies for OrderBot")
-		}
-		if infra.config.Telegram.BotToken == "" {
-			switch infra.config.Telegram.BotEnv {
-			case "prod", "production":
-				return fmt.Errorf("PROD_BOT_TOKEN не задан")
-			default:
-				return fmt.Errorf("TEST_BOT_TOKEN не задан")
-			}
-		}
-		orderBot, err := bot.NewOrderBot(
-			infra.config.Telegram.BotToken,
-			deps.AuthService,
-			deps.DepartmentService,
-			infra.eventConsumer,
-			infra.config.Telegram.MiniAppURL,
-			infra.config.Telegram.WorkshopChatID,
-		)
-		if err != nil {
-			return err
-		}
-		deps.OrderBot = orderBot
 		return nil
 	}
 }

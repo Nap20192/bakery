@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Button } from '../../components/Button';
+import { Button } from '../../ui/Button';
+import { ErrorBanner } from '../../ui/ErrorBanner';
 import { createUser, deleteUser, fetchUsers, updateUser } from '../../api/users';
 import { logWarn } from '../../lib/logger';
 
@@ -80,7 +81,7 @@ export function AdminUsers() {
   }
 
   return (
-    <main className="bg-[#f7f3ea] p-4 text-stone-900 sm:p-6">
+    <main className="bg-flour p-4 text-stone-900 sm:p-6">
       <div className="mx-auto max-w-6xl">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h1 className="flex items-center gap-2 text-lg font-semibold">
@@ -96,7 +97,7 @@ export function AdminUsers() {
           />
         </div>
 
-        {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800">{error}</div>}
+        <ErrorBanner error={error} className="mb-4" />
 
         <form onSubmit={onCreate} className="mb-6 grid gap-2 rounded-lg border border-stone-300 bg-white p-4 shadow-sm md:grid-cols-5">
           <input className={fieldClass} placeholder="логин" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />

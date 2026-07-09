@@ -105,7 +105,13 @@ func (r *MonitorRepository) loadGraph(ctx context.Context, graph monitoringdomai
 		}
 		recipeItems := make([]monitoringdomain.RecipeItem, 0, len(items))
 		for _, item := range items {
-			recipeItems = append(recipeItems, monitoringdomain.RecipeItem{ProductID: item.ProductID, Amount: item.AmountIn})
+			recipeItems = append(recipeItems, monitoringdomain.RecipeItem{
+				ProductID: item.ProductID,
+				Amount:    item.AmountIn,
+				Code:      item.ProductCode,
+				Name:      item.ProductName,
+				Unit:      item.MeasureUnit,
+			})
 		}
 		graph[productID] = monitoringdomain.ProductRecipe{
 			Assembly: &monitoringdomain.AssemblyRecipe{AssembledAmount: assembly.AssembledAmount, Items: recipeItems},
@@ -141,7 +147,13 @@ func (r *MonitorRepository) loadGraph(ctx context.Context, graph monitoringdomai
 	}
 	recipeItems := make([]monitoringdomain.RecipeItem, 0, len(items))
 	for _, item := range items {
-		recipeItems = append(recipeItems, monitoringdomain.RecipeItem{ProductID: item.ProductID, Amount: item.Amount})
+		recipeItems = append(recipeItems, monitoringdomain.RecipeItem{
+			ProductID: item.ProductID,
+			Amount:    item.Amount,
+			Code:      item.ProductCode,
+			Name:      item.ProductName,
+			Unit:      item.MeasureUnit,
+		})
 	}
 	graph[productID] = monitoringdomain.ProductRecipe{Prepared: &monitoringdomain.PreparedRecipe{Items: recipeItems}}
 	path[productID] = true

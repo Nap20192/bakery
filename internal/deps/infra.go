@@ -23,6 +23,12 @@ type InfraDeps struct {
 	eventConsumer  *consumer.Consumer
 }
 
+// EventConsumer exposes the RabbitMQ consumer for wiring done outside this
+// package (the bot binary builds its own transport).
+func (d *InfraDeps) EventConsumer() *consumer.Consumer {
+	return d.eventConsumer
+}
+
 type infraOption func(*InfraDeps) error
 
 func NewInfraDeps(opts ...infraOption) (*InfraDeps, error) {

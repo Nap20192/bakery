@@ -1,19 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
-import { Login } from '../../components/Login';
+import { Login } from '../auth/Login';
 import { MePanel } from '../account/Me';
 import { AdminUsers } from '../admin/AdminUsers';
 import { AdminDishes } from '../admin/AdminDishes';
 import { apiBase, buildMode, frontendLogsEnabled } from '../../config/env';
 import { ApiError } from '../../api/client';
-import { cancelOrder, createOrder, fetchBatchOrderMonitor, fetchCatalog, fetchDepartments, fetchMe, fetchOrder, fetchOrderMonitor, fetchOrders, restoreOrder, setOrderFavorite, updateOrder } from '../../api/orders';
+import { cancelOrder, createOrder, createProductionSheet, fetchBatchOrderMonitor, fetchCatalog, fetchCategories, fetchDepartments, fetchMe, fetchOrder, fetchOrderMonitor, fetchOrders, restoreOrder, setOrderFavorite, updateOrder } from '../../api/orders';
 import { clearToken, getToken, isWebMode } from '../../lib/auth';
 import { logInfo, logWarn } from '../../lib/logger';
 import { miniAppModeFromLocation, orderNumberFromLocation, orderNumbersFromLocation, trimString } from '../../lib/url';
 import { OrdersLayout } from './OrdersLayout';
-import { BakerOrdersView } from './BakerOrdersView';
-import { BakerSelectionReview } from './BakerSelectionReview';
-import { BakerOrderReview } from './BakerOrderReview';
-import { ShopOrdersView } from './ShopOrdersView';
+import { ProductionJournal } from '../production/ProductionJournal';
+import { BakerOrdersView } from '../baker/BakerOrdersView';
+import { BakerSelectionReview } from '../baker/BakerSelectionReview';
+import { BakerOrderReview } from '../baker/BakerOrderReview';
+import { ShopOrdersView } from '../shop/ShopOrdersView';
 
 const defaultPage = {
   page: 1,
@@ -21,6 +22,30 @@ const defaultPage = {
   total: 0,
   total_pages: 0,
 };
+
+// Page size for the baker matrix: the whole date window for every shop must
+// fit on one page, otherwise the shops×dates grid renders half-empty.
+const MATRIX_PAGE_LIMIT = 200;
+
+// The matrix loads orders in windows of 5 fulfillment days, starting from
+// yesterday (вчера, сегодня, завтра, +2, +3).
+const MATRIX_WINDOW_DAYS = 5;
+const MATRIX_WINDOW_START_OFFSET = -1;
+
+function dateValue(offset = 0) {
+  const date = new Date();
+  date.setDate(date.getDate() + offset);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function matrixWindow(startOffset) {
+  return {
+    fulfillmentFrom: dateValue(startOffset),
+    fulfillmentTo: dateValue(startOffset + MATRIX_WINDOW_DAYS - 1),
+  };
+}
 
 // canCreateOrders: only the shop role creates/edits orders (and picks the shop
 // to send from). Users are no longer bound to a department.
@@ -32,6 +57,7 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
   const [orders, setOrders] = useState([]);
   const [shops, setShops] = useState([]);
   const [catalog, setCatalog] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [viewer, setViewer] = useState(null);
   const [editor, setEditor] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -46,10 +72,24 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
   const [filters, setFilters] = useState({
     fromDepartmentID: '',
     fulfillmentDate: '',
+    categoryID: '',
   });
   const filtersRef = useRef(filters);
+  const windowStartRef = useRef(MATRIX_WINDOW_START_OFFSET);
 
   const selectedNumber = selectedOrder?.number || '';
+
+  // shiftMatrixWindow moves the baker's 5-day window earlier/later and reloads.
+  function shiftMatrixWindow(deltaDays) {
+    windowStartRef.current += deltaDays;
+    const windowFilters = { ...filtersRef.current, ...matrixWindow(windowStartRef.current) };
+    filtersRef.current = windowFilters;
+    setFilters(windowFilters);
+    setSelectedOrderNumbers([]);
+    setSelectedOrders([]);
+    setMonitor(null);
+    return loadOrders(1, '', windowFilters, MATRIX_PAGE_LIMIT);
+  }
 
   function bootstrap(activeRoute = route) {
     const launchMode = miniAppModeFromLocation();
@@ -125,15 +165,32 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
     return run(async () => {
       const current = await fetchMe();
       setViewer(current);
+      // Матрица пекаря «магазины × даты» грузится окнами по 5 дней выполнения
+      // (вместо постраничной ленты), одной крупной страницей на окно.
+      if ((current?.role === 'baker' || current?.role === 'admin') && !filtersRef.current.fulfillmentFrom) {
+        const windowFilters = { ...filtersRef.current, ...matrixWindow(windowStartRef.current) };
+        filtersRef.current = windowFilters;
+        setFilters(windowFilters);
+        setOrdersPage((page) => ({ ...page, limit: MATRIX_PAGE_LIMIT }));
+        // Номер из URL передаётся дальше, иначе перезагрузка окна перебьёт
+        // открытый по прямой ссылке заказ первым заказом списка.
+        loadOrders(1, activeRoute.number || linkedOrderNumber, windowFilters, MATRIX_PAGE_LIMIT);
+      }
       // Users are no longer bound to a department; behaviour is role-driven.
       // Every role needs the shop list (filtering + the create-order picker).
       const result = await fetchDepartments('shop');
       const shopItems = Array.isArray(result) ? result : [];
       setShops(shopItems);
       logInfo('shops.loaded', { count: shopItems.length });
+      // Типы заявок нужны всем ролям: магазину — выбор при создании,
+      // пекарю — фильтр и бейджи, админу — управление.
+      const categoryItems = await fetchCategories();
+      setCategories(Array.isArray(categoryItems) ? categoryItems : []);
+      // Каталог тоже нужен всем: магазин собирает по нему заказ, пекарь
+      // группирует позиции заказа по группам каталога.
+      const items = await fetchCatalog();
+      setCatalog(Array.isArray(items) ? items : []);
       if (canCreateOrders(current)) {
-        const items = await fetchCatalog();
-        setCatalog(Array.isArray(items) ? items : []);
         if (activeRoute.name === 'orderNew' || launchMode === 'create') {
           setEditor({ mode: 'create', order: null });
         } else if (activeRoute.name === 'orderEdit' || (launchMode === 'edit' && linkedOrderNumber)) {
@@ -145,9 +202,9 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
     });
   }
 
-  function loadOrders(page = ordersPage.page, linkedOrderNumber = '', activeFilters = filtersRef.current) {
+  function loadOrders(page = ordersPage.page, linkedOrderNumber = '', activeFilters = filtersRef.current, limit = ordersPage.limit) {
     return run(async () => {
-      const result = await fetchOrders(page, ordersPage.limit, activeFilters);
+      const result = await fetchOrders(page, limit, activeFilters);
       const items = Array.isArray(result.items) ? result.items : [];
       logInfo('orders.loaded', {
         page: result.page || page,
@@ -198,6 +255,7 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
     const reset = {
       fromDepartmentID: '',
       fulfillmentDate: '',
+      categoryID: '',
     };
     filtersRef.current = reset;
     setFilters(reset);
@@ -249,6 +307,14 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
         setSelectedOrders((orders) => orders.filter((order) => order.number !== number));
         return current.filter((item) => item !== number);
       }
+      // Тесто разных типов заявок не суммируется — выбор ограничен одним типом.
+      const picked = orders.find((order) => order.number === number);
+      const first = orders.find((order) => current.includes(order.number));
+      if (picked && first && (picked.category?.id || null) !== (first.category?.id || null)) {
+        setError('Выбирайте заявки одного типа. Сбросьте выбор, чтобы сменить тип.');
+        return current;
+      }
+      setError('');
       return [...current, number];
     });
   }
@@ -285,6 +351,17 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
       return;
     }
     return run(async () => {
+      const loaded = await Promise.all(selectedOrderNumbers.map((number) => fetchOrder(number)));
+      setSelectedOrders(loaded);
+    });
+  }
+
+  // saveProduction создаёт документ отработки в журнале и перечитывает
+  // выбранные заказы, чтобы лист сразу показал сохранённый факт.
+  function saveProduction(ordersPayload) {
+    return run(async () => {
+      const sheet = await createProductionSheet(ordersPayload);
+      logInfo('production.saved', { sheet: sheet.id, orders: ordersPayload.length });
       const loaded = await Promise.all(selectedOrderNumbers.map((number) => fetchOrder(number)));
       setSelectedOrders(loaded);
     });
@@ -378,6 +455,18 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
     );
   }
 
+  if (canUseMonitor && route.name === 'production') {
+    return (
+      <OrdersLayout viewer={viewer} active={route.name} onNavigate={navigate} onLogout={handleLogout}>
+        <ProductionJournal
+          key={route.sheetId || 'list'}
+          initialSheetId={route.sheetId}
+          onOpenOrder={(number) => navigate({ name: 'orderView', number })}
+        />
+      </OrdersLayout>
+    );
+  }
+
   if (viewer?.role === 'admin' && route.name === 'adminUsers') {
     return (
       <OrdersLayout viewer={viewer} active={route.name} onNavigate={navigate} onLogout={handleLogout}>
@@ -400,29 +489,36 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
         <BakerSelectionReview
           loading={loading}
           selectedOrders={selectedOrders}
+          catalog={catalog}
           monitor={monitor}
           error={error}
           onBack={() => navigate({ name: 'orders' })}
           onRemove={removeSelectedOrder}
           onCalculate={calculateSelectedOrders}
+          onSaveProduction={saveProduction}
+          onOpenJournal={() => navigate({ name: 'production' })}
+          onOpenProduction={(sheetId) => navigate({ name: 'production', sheetId })}
         />
       ) : canUseMonitor && (route.name === 'orderView' || route.name === 'orderMonitor') ? (
         <BakerOrderReview
           loading={loading}
           order={selectedOrder}
+          catalog={catalog}
           monitor={monitor}
           error={error}
           canFavorite={canFavorite}
           onToggleFavorite={toggleFavorite}
           onBack={() => navigate({ name: 'orders' })}
           onCalculate={calculateCurrentOrder}
+          onOpenProduction={(sheetId) => navigate({ name: 'production', sheetId })}
         />
       ) : canUseMonitor ? (
         <BakerOrdersView
           loading={loading}
           orders={orders}
-          page={ordersPage}
           shops={shops}
+          categories={categories}
+          catalog={catalog}
           filters={filters}
           selectedNumber={selectedNumber}
           selectedOrder={selectedOrder}
@@ -436,9 +532,9 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
           onToggleSelection={toggleOrderSelection}
           onToggleSelectionMode={() => setSelectionMode((current) => !current)}
           onOpenSelection={openSelectionReview}
-          onPageChange={loadOrders}
+          onShiftWindow={shiftMatrixWindow}
           onFiltersChange={updateFilters}
-          onResetFilters={resetFilters}
+          onOpenProduction={(sheetId) => navigate({ name: 'production', sheetId })}
         />
       ) : (
         <ShopOrdersView
@@ -446,6 +542,7 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
           orders={orders}
           page={ordersPage}
           shops={shops}
+          categories={categories}
           viewer={viewer}
           filters={filters}
           selectedNumber={selectedNumber}

@@ -53,6 +53,7 @@ func (s *Service) GetBatchIngredientsByCodes(ctx context.Context, codes []string
 
 	totalByCode := make(map[string]monitoringdomain.IngredientReport, len(ingredients))
 	breakdownByCode := make(map[string]map[string]monitoringdomain.IngredientDishBreakdown, len(ingredients))
+	componentsByCode := make(map[string]*componentAccumulator, len(ingredients))
 
 	for _, order := range orders {
 		orderGraph, err := s.repo.LoadOrderGraph(ctx, order)
@@ -94,6 +95,11 @@ func (s *Service) GetBatchIngredientsByCodes(ctx context.Context, codes []string
 				existing.IngredientQuantity += breakdown.IngredientQuantity
 				breakdownByCode[ingredient.Code][key] = existing
 			}
+
+			if _, ok := componentsByCode[ingredient.Code]; !ok {
+				componentsByCode[ingredient.Code] = newComponentAccumulator()
+			}
+			componentsByCode[ingredient.Code].add(report.Components)
 		}
 		result.Orders = append(result.Orders, orderReport)
 	}
@@ -111,10 +117,49 @@ func (s *Service) GetBatchIngredientsByCodes(ctx context.Context, codes []string
 		sort.Slice(total.Breakdown, func(i, j int) bool {
 			return total.Breakdown[i].IngredientQuantity > total.Breakdown[j].IngredientQuantity
 		})
+		if acc := componentsByCode[ingredient.Code]; acc != nil {
+			total.Components = acc.components()
+		}
 		result.TotalReports = append(result.TotalReports, total)
 	}
 
 	return result, nil
+}
+
+// componentAccumulator суммирует компоненты техкарты по нескольким заказам,
+// сохраняя порядок рецепта (порядок первого появления).
+type componentAccumulator struct {
+	order []string
+	byKey map[string]monitoringdomain.IngredientComponent
+}
+
+func newComponentAccumulator() *componentAccumulator {
+	return &componentAccumulator{byKey: make(map[string]monitoringdomain.IngredientComponent)}
+}
+
+func (a *componentAccumulator) add(components []monitoringdomain.IngredientComponent) {
+	for _, component := range components {
+		key := component.ProductCode + "\x00" + component.ProductName
+		existing, ok := a.byKey[key]
+		if !ok {
+			a.order = append(a.order, key)
+			existing = component
+			existing.Quantity = 0
+		}
+		existing.Quantity += component.Quantity
+		a.byKey[key] = existing
+	}
+}
+
+func (a *componentAccumulator) components() []monitoringdomain.IngredientComponent {
+	if len(a.order) == 0 {
+		return nil
+	}
+	components := make([]monitoringdomain.IngredientComponent, 0, len(a.order))
+	for _, key := range a.order {
+		components = append(components, a.byKey[key])
+	}
+	return components
 }
 
 func (s *Service) calculateIngredientReport(ingredient Ingredient, orderGraph OrderGraph) (monitoringdomain.IngredientReport, error) {
@@ -139,6 +184,9 @@ func (s *Service) calculateIngredientReport(ingredient Ingredient, orderGraph Or
 	sort.Slice(report.Breakdown, func(i, j int) bool {
 		return report.Breakdown[i].IngredientQuantity > report.Breakdown[j].IngredientQuantity
 	})
+	if report.Ingredient.Quantity > 0 {
+		report.Components = s.domain.ComposeRecipe(orderGraph.Graph, ingredient.ProductID, report.Ingredient.Quantity)
+	}
 	return report, nil
 }
 
@@ -148,7 +196,9 @@ func (s *Service) calculateOrderItemIngredientUsage(
 	ingredientID string,
 ) (monitoringdomain.IngredientDishBreakdown, error) {
 	orderItem := graphItem.Item
-	productionQuantity := orderItem.ProductionQuantity()
+	// Расчёт идёт по эффективному количеству: факт отработки приоритетнее
+	// заявки — тесто считается на то, что реально печётся.
+	productionQuantity := orderItem.EffectiveQuantity()
 	breakdown := monitoringdomain.IngredientDishBreakdown{
 		OrderItemCode:     orderItem.Code,
 		OrderItemName:     orderItem.ProductName,

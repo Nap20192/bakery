@@ -1,0 +1,136 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Commands
+
+```bash
+# Backend
+make build      # go build ./...
+make vet        # go vet ./...
+make test       # go test ./...
+make lint       # golangci-lint run ./...
+make sqlc       # sqlc generate  — run after editing queries/
+
+# Run a single test
+go test ./internal/services/order/... -run TestFoo
+
+# Frontend (cd frontend first)
+npm run lint
+npm run build
+npm run dev
+```
+
+After editing any `.sql` file in `queries/`, run `make sqlc` before building.
+
+## Architecture
+
+**Modular monolith** with clean architecture and dependency inversion. Two binaries share one codebase:
+
+- `cmd/worker` — HTTP API + iiko sync + order cleanup; applies DB migrations on startup, creates admin user
+- `cmd/bot` — Telegram bot + RabbitMQ order-event consumer
+
+**Dependency direction is strictly inward:**
+
+```
+delivery (infra/http, inbound/bot)  ─┐
+infra/repo (adapters)               ─┤──►  usecase (ports + service)  ──►  domain
+composition (app/, deps)            ─┘
+```
+
+## Service layout
+
+Every service lives under `internal/services/<svc>/` with this structure:
+
+```
+domain/          pure business logic, entities, domain events (no infra imports)
+usecase/<svc>/   interfaces.go (UseCase + Repository ports + DTOs) + service impl
+infra/repo/      Repository adapter over sqlc
+infra/http/      HTTP handler + RegisterRoutes (only if it has HTTP endpoints)
+app/app.go       New(...) wires usecase + repo
+```
+
+Not every service has every folder: `admin` has no domain/repo; `sync` has no domain/http; `techcard` has no http.
+
+**Package naming convention:**
+- `usecase/<svc>` → `package <svc>uc` (import alias `<svc>uc`)
+- `domain/` → `package <svc>` (import alias `<svc>domain`)
+- `infra/repo/` → `package <svc>repo`
+- `infra/http/` → `package <svc>http`
+- `app/` → `package <svc>app`
+
+## Composition root
+
+Two-phase wiring in `internal/deps`:
+
+1. `InfraDeps` — db, sqlc `*Queries`, RabbitMQ publisher/consumer, iiko client
+2. `AppDeps` — services + transport, each `WithXService(infra)` delegates to `<svc>app.New(...)`
+
+The two binaries select different option sets. Dependency order matters: declare a service after its dependencies (e.g. `admin` needs `auth` + `department`).
+
+## Critical rules
+
+**Never leak sqlc past `infra/repo`.** Repos map sqlc rows to domain/DTO types. Usecase signatures use domain types only.
+
+**Ports live with the consumer.** `usecase/<svc>/interfaces.go` declares `UseCase`, `Repository`, `EventPublisher`, etc. that the service needs. Delivery talks to `UseCase`; the service talks to `Repository`.
+
+**Domain is pure.** No DB, pgx, sqlc, HTTP, telebot, or other service imports in `domain/`.
+
+**Use `internal/pkg/enum`** for roles, department types, iiko product types, rabbitmq names. Never hardcode their string values.
+
+**Never expose raw DB/iiko errors to users.** Log the technical cause; return a safe message.
+
+## Authentication
+
+Every request authenticates via `Authorization` header:
+
+- `tma <initData>` — Telegram Mini App: HMAC-validated initData, resolved by `telegram_username`
+- `Bearer <token>` — Web: HMAC session token from `POST /login`, resolved by `user_id`
+
+Three middlewares in `internal/inbound/api/httpx/`:
+- `RequireMiniAppAuth` — authenticated + attached to shop/workshop department
+- `RequireAuth` — any logged-in user
+- `RequireAdmin` — admin role only
+
+## Events (RabbitMQ)
+
+Order service records domain events (`order.created`, `order.updated`) on the aggregate via `sharedkernel.AggregateRoot`, then the usecase publishes them through its `EventPublisher` port. Fanout exchange `bakery.order-events` → bot queue `bakery.bot.order-events`. Bot notifies: order creator, all bakers, workshop group chat.
+
+## Database
+
+- `queries/*.sql` → run `sqlc generate` → `internal/outbound/db/sqlc/`
+- Migrations in `migrations/NNNNN_name.sql` (goose-style); applied automatically by worker on startup
+- `DATABASE_URL` takes priority over individual `POSTGRES_*` vars
+- Seed data for dish catalog: `templates/dishes.txt`
+
+## Domain rules (do not regress)
+
+**Departments:** `shop` and `workshop` types. Orders flow shop → workshop. Shop users see/edit only their own orders; workshop sees all but cannot create.
+
+**Order categories (типы заявок):** dynamic `order_categories` dictionary (letter + color slug from `orderdomain.CategoryColors`). Every order requires a category; its letter is part of the order number (`Г.Х.08.07.26.001`), counters are per shop+category+day, category never changes on edit. Dish catalog entries carry `category_id`.
+
+**RBAC roles:** `admin`, `shop`, `baker` (+ `sync` capability). No self-registration; admin panel is the only way to create users. Passwords are pbkdf2-hashed — admin resets, never reveals.
+
+**Отработка (production fact):** журнал документов (`production_sheets` + `production_sheet_items`). Связь: **у отработки много заказов, у заказа — максимум одна отработка** (пересечение с чужим листом — конфликт `order.production_exists`). Хранятся только отклонения от заявки (`produced_quantity` позиции = проекция журнала; nil = «испечено по заявке»); отработка без изменений отклоняется. Заявка магазина никогда не изменяется. CRUD `/production` — только baker/admin; каждый пересчёт пишет историю `change_type='produced'` и события `order.produced`/`order.production_cleared` в outbox. Заказ несёт `production_sheet_id` — UI связывает заказ↔отработку в обе стороны.
+
+**Monitor (ingredient calculation):** Business math lives in `monitor/domain`; the usecase loads the tech-card graph and calls it. Two formulas:
+- Assembly chart: `scale = ordered_qty / assembled_amount`, `child = item.amount_in × scale`
+- Prepared chart: `child = item.amount × ordered_qty`
+
+Keep cycle protection and recursion-depth limits.
+
+## Frontend
+
+React/Vite Telegram Mini App in `frontend/`. Deployed on Railway as a Node proxy server (`frontend/server.js`) that proxies `/api/*` to the backend over the private network.
+
+Role-based UI: `shop` creates/edits orders; `baker`/`workshop` views orders and runs ingredient calculations; `admin` manages users. See `frontend/FRONTEND_BEHAVIOR.md` for full route and behavior spec.
+
+Frontend validation (past-date guard) is a UX hint only — backend enforces all rules.
+
+## How to extend
+
+**Add an endpoint:** Add method to `UseCase` interface → implement in service + repo if needed → add handler method + route in `infra/http/handler.go`.
+
+**Add a service:** domain → usecase (interfaces + impl) → infra/repo → infra/http → app/app.go → wire in `internal/deps` → add handler to `api.NewServer` if it has HTTP routes.
+
+**Add a domain event:** Define in `<svc>/domain` embedding `sharedkernel.Event`; record on aggregate; publish from usecase via `EventPublisher` port; add exchange/queue names to `internal/pkg/enum/rabbitmq.go`; handle in `internal/inbound/bot`.

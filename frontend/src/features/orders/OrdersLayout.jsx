@@ -1,12 +1,13 @@
 import { isWebMode } from '../../lib/auth';
-import { Icon } from '../../components/Icon';
-import { Button } from '../../components/Button';
+import { Icon } from '../../ui/Icon';
+import { Button } from '../../ui/Button';
 
-const mobileColsClass = { 1: 'grid-cols-1', 2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4' };
+const mobileColsClass = { 1: 'grid-cols-1', 2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4', 5: 'grid-cols-5' };
 
 const navItems = [
   { route: { name: 'orders' }, label: 'Заказы', icon: 'orders', roles: ['shop', 'baker', 'admin'] },
   { route: { name: 'orderNew' }, label: 'Новый', icon: 'plus', roles: ['shop'] },
+  { route: { name: 'production' }, label: 'Отработки', icon: 'calculator', roles: ['baker', 'admin'] },
   { route: { name: 'adminUsers' }, label: 'Люди', icon: 'users', roles: ['admin'] },
   { route: { name: 'adminDishes' }, label: 'Блюда', icon: 'orders', roles: ['admin'] },
   { route: { name: 'me' }, label: 'Профиль', icon: 'user', roles: ['shop', 'baker', 'admin'] },
@@ -20,15 +21,15 @@ export function OrdersLayout({ viewer, active, onNavigate, onLogout, children })
   const hideBottomNav = active === 'orderNew' || active === 'orderEdit';
 
   return (
-    <main className={`min-h-screen bg-[#f7f3ea] text-stone-900 ${hideBottomNav ? '' : 'pb-16 sm:pb-0'}`}>
+    <main className={`min-h-screen bg-flour text-stone-900 ${hideBottomNav ? '' : 'pb-16 sm:pb-0'}`}>
       <header className="sticky top-0 z-20 border-b border-stone-300 bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
         <div className="mx-auto flex max-w-[1440px] items-center gap-2">
           <button
             type="button"
             onClick={() => onNavigate({ name: 'orders' })}
-            className="shrink-0 rounded-md px-1 text-left text-[17px] font-semibold leading-6 text-stone-950 focus:outline-none focus:ring-2 focus:ring-stone-900/20"
+            className="shrink-0 rounded-md px-1 text-left text-[17px] font-bold leading-6 tracking-tight text-stone-950 focus:outline-none focus:ring-2 focus:ring-stone-900/20"
           >
-            Bakery
+            Пекарня<span className="text-amber-500">.</span>
           </button>
           <nav className="hidden min-w-0 flex-1 gap-1 overflow-x-auto px-1 sm:flex">
             {items.map((item) => (

@@ -23,6 +23,11 @@ type PreparedRecipe struct {
 type RecipeItem struct {
 	ProductID string
 	Amount    float64
+	// Code/Name/Unit описывают продукт компонента для отображения состава;
+	// на расчёт расхода они не влияют.
+	Code string
+	Name string
+	Unit string
 }
 
 type Service struct {
@@ -38,6 +43,45 @@ func (s *Service) CalculateIngredientUsage(graph ProductGraph, productID string,
 		s = NewService()
 	}
 	return s.calculateIngredientUsage(graph, productID, ingredientID, amount, make(map[string]bool, s.maxDepth))
+}
+
+// ComposeRecipe раскладывает продукт на компоненты его техкарты (один уровень),
+// масштабируя количества на amount. Формулы те же, что и в расчёте расхода:
+// сборочная карта — item.Amount * (amount / AssembledAmount),
+// карта полуфабриката — item.Amount * amount.
+func (s *Service) ComposeRecipe(graph ProductGraph, productID string, amount float64) []IngredientComponent {
+	if productID == "" || amount == 0 {
+		return nil
+	}
+	recipe, ok := graph[productID]
+	if !ok {
+		return nil
+	}
+
+	var items []RecipeItem
+	scale := amount
+	switch {
+	case recipe.Assembly != nil:
+		if recipe.Assembly.AssembledAmount > 0 {
+			scale = amount / recipe.Assembly.AssembledAmount
+		}
+		items = recipe.Assembly.Items
+	case recipe.Prepared != nil:
+		items = recipe.Prepared.Items
+	default:
+		return nil
+	}
+
+	components := make([]IngredientComponent, 0, len(items))
+	for _, item := range items {
+		components = append(components, IngredientComponent{
+			ProductCode: item.Code,
+			ProductName: item.Name,
+			Unit:        item.Unit,
+			Quantity:    item.Amount * scale,
+		})
+	}
+	return components
 }
 
 func (s *Service) calculateIngredientUsage(

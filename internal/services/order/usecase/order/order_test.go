@@ -194,6 +194,9 @@ func TestServiceCreateOrderAllowsTodayFulfillmentDate(t *testing.T) {
 		departmentByID: map[int64]Department{
 			10: {ID: 10, Code: "gagarina", Name: "Магазин Гагарина", Type: "shop"},
 		},
+		categoryByID: map[int64]orderdomain.OrderCategory{
+			1: {ID: 1, Code: "buns", Letter: "Б", Name: "Булочки", Color: "sky"},
+		},
 	}
 	svc := NewService(repo)
 	shopID := int64(10)
@@ -203,6 +206,7 @@ func TestServiceCreateOrderAllowsTodayFulfillmentDate(t *testing.T) {
 		Date:              now,
 		FulfillmentDate:   now,
 		FromDepartmentID:  &shopID,
+		CategoryID:        1,
 		CreatedByUsername: "shop",
 		Items: []orderdomain.OrderItem{{
 			Code:        "15635",
@@ -240,6 +244,132 @@ broken line
 	}
 }
 
+func TestServiceCreateProductionSheetNormalizesItems(t *testing.T) {
+	repo := &fakeRepo{
+		ordersByNumber: map[string]orderdomain.Order{
+			"Г.Х.09.07.26.001": {
+				Number: "Г.Х.09.07.26.001",
+				Items: []orderdomain.OrderItem{
+					{Code: "15702", ProductName: "Хлеб Бородино", Quantity: 8},
+				},
+			},
+		},
+	}
+	svc := NewService(repo)
+
+	sheet, err := svc.CreateProductionSheet(context.Background(), RecordProductionInput{
+		ProducedByUsername: "baker",
+		Orders: []OrderProductionInput{{
+			Number: " Г.Х.09.07.26.001 ",
+			Items: []ProducedItemInput{
+				{ProductName: "хлеб бородино", ProducedQuantity: 7}, // имя матчится без регистра
+			},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("CreateProductionSheet returned error: %v", err)
+	}
+	if sheet.ID == 0 || len(repo.productionInputs) != 1 {
+		t.Fatalf("sheet = %#v, inputs = %d", sheet, len(repo.productionInputs))
+	}
+	input := repo.productionInputs[0]
+	if input.SheetID != 0 || input.ProducedByUsername != "baker" {
+		t.Fatalf("input = %#v", input)
+	}
+	if len(input.Orders) != 1 || input.Orders[0].Number != "Г.Х.09.07.26.001" ||
+		input.Orders[0].Items[0].ProductName != "Хлеб Бородино" || input.Orders[0].Items[0].ProducedQuantity != 7 {
+		t.Fatalf("orders = %#v", input.Orders)
+	}
+}
+
+func TestServiceCreateProductionSheetRejectsUnknownItemAndCancelled(t *testing.T) {
+	repo := &fakeRepo{
+		ordersByNumber: map[string]orderdomain.Order{
+			"A": {Number: "A", Items: []orderdomain.OrderItem{{ProductName: "Хлеб", Quantity: 1}}},
+			"C": {Number: "C", Cancelled: true, Items: []orderdomain.OrderItem{{ProductName: "Хлеб", Quantity: 1}}},
+		},
+	}
+	svc := NewService(repo)
+
+	_, err := svc.CreateProductionSheet(context.Background(), RecordProductionInput{
+		Orders: []OrderProductionInput{{Number: "A", Items: []ProducedItemInput{{ProductName: "Неизвестное", ProducedQuantity: 1}}}},
+	})
+	if err == nil {
+		t.Fatal("CreateProductionSheet must reject unknown item")
+	}
+
+	_, err = svc.CreateProductionSheet(context.Background(), RecordProductionInput{
+		Orders: []OrderProductionInput{{Number: "C", Items: []ProducedItemInput{{ProductName: "Хлеб", ProducedQuantity: 1}}}},
+	})
+	if err == nil {
+		t.Fatal("CreateProductionSheet must reject cancelled order")
+	}
+	if len(repo.productionInputs) != 0 {
+		t.Fatal("nothing must be persisted on validation errors")
+	}
+}
+
+func TestServiceUpdateAndDeleteProductionSheetRequireExistingSheet(t *testing.T) {
+	repo := &fakeRepo{
+		sheetsByID: map[int64]struct{}{5: {}},
+		ordersByNumber: map[string]orderdomain.Order{
+			"A": {Number: "A", Items: []orderdomain.OrderItem{{ProductName: "Хлеб", Quantity: 1}}},
+		},
+	}
+	svc := NewService(repo)
+
+	input := RecordProductionInput{
+		Orders: []OrderProductionInput{{Number: "A", Items: []ProducedItemInput{{ProductName: "Хлеб", ProducedQuantity: 2}}}},
+	}
+	if _, err := svc.UpdateProductionSheet(context.Background(), 99, input); !errors.Is(err, ErrProductionSheetNotFound) {
+		t.Fatalf("UpdateProductionSheet(99) error = %v, want ErrProductionSheetNotFound", err)
+	}
+	if _, err := svc.UpdateProductionSheet(context.Background(), 5, input); err != nil {
+		t.Fatalf("UpdateProductionSheet(5) error: %v", err)
+	}
+	if len(repo.productionInputs) != 1 || repo.productionInputs[0].SheetID != 5 {
+		t.Fatalf("inputs = %#v", repo.productionInputs)
+	}
+
+	if err := svc.DeleteProductionSheet(context.Background(), 99, "baker"); !errors.Is(err, ErrProductionSheetNotFound) {
+		t.Fatalf("DeleteProductionSheet(99) error = %v", err)
+	}
+	if err := svc.DeleteProductionSheet(context.Background(), 5, "baker"); err != nil {
+		t.Fatalf("DeleteProductionSheet(5) error: %v", err)
+	}
+	if len(repo.productionDeleted) != 1 || repo.productionDeleted[0] != 5 {
+		t.Fatalf("deleted = %#v", repo.productionDeleted)
+	}
+}
+
+func TestServiceUpdateProductionSheetDeletesWhenAllValuesMatchOrder(t *testing.T) {
+	repo := &fakeRepo{
+		sheetsByID: map[int64]struct{}{5: {}},
+		ordersByNumber: map[string]orderdomain.Order{
+			"A": {Number: "A", Items: []orderdomain.OrderItem{{ProductName: "Хлеб", Quantity: 10}}},
+		},
+	}
+	svc := NewService(repo)
+
+	// Факт вернули к заявке — отклонений не осталось, документ удаляется.
+	sheet, err := svc.UpdateProductionSheet(context.Background(), 5, RecordProductionInput{
+		ProducedByUsername: "baker",
+		Orders:             []OrderProductionInput{{Number: "A", Items: []ProducedItemInput{{ProductName: "Хлеб", ProducedQuantity: 10}}}},
+	})
+	if err != nil {
+		t.Fatalf("UpdateProductionSheet returned error: %v", err)
+	}
+	if sheet.ID != 0 {
+		t.Fatalf("sheet.ID = %d, want 0 (deleted)", sheet.ID)
+	}
+	if len(repo.productionDeleted) != 1 || repo.productionDeleted[0] != 5 {
+		t.Fatalf("deleted = %#v, want [5]", repo.productionDeleted)
+	}
+	if len(repo.productionInputs) != 0 {
+		t.Fatalf("save must not be called, inputs = %#v", repo.productionInputs)
+	}
+}
+
 func validationMessages(errs []orderdomain.BulkOrderValidationError) string {
 	messages := make([]string, 0, len(errs))
 	for _, item := range errs {
@@ -257,15 +387,20 @@ func assertContains(t *testing.T, value, needle string) {
 
 // fakeRepo is an in-memory Repository test double.
 type fakeRepo struct {
-	dishExistsByCode map[string]bool
-	dishErrorsByCode map[string]error
-	resolveByName    map[string]DishCatalogItem
-	resolveErrByName map[string]error
-	dishCatalog      []DishCatalogItem
-	deleteResult     int64
-	deleteCutoff     time.Time
-	departmentByID   map[int64]Department
-	createCalled     bool
+	dishExistsByCode  map[string]bool
+	dishErrorsByCode  map[string]error
+	resolveByName     map[string]DishCatalogItem
+	resolveErrByName  map[string]error
+	dishCatalog       []DishCatalogItem
+	deleteResult      int64
+	deleteCutoff      time.Time
+	departmentByID    map[int64]Department
+	categoryByID      map[int64]orderdomain.OrderCategory
+	createCalled      bool
+	ordersByNumber    map[string]orderdomain.Order
+	sheetsByID        map[int64]struct{}
+	productionInputs  []SaveProductionSheetInput
+	productionDeleted []int64
 }
 
 var _ Repository = (*fakeRepo)(nil)
@@ -308,7 +443,13 @@ func (f *fakeRepo) UpdateOrder(context.Context, UpdateOrderRepositoryInput) (ord
 	return orderdomain.Order{}, nil
 }
 
-func (f *fakeRepo) GetOrderByNumber(context.Context, string) (orderdomain.Order, error) {
+func (f *fakeRepo) GetOrderByNumber(_ context.Context, number string) (orderdomain.Order, error) {
+	if order, ok := f.ordersByNumber[number]; ok {
+		return order, nil
+	}
+	if f.ordersByNumber != nil {
+		return orderdomain.Order{}, ErrProductionOrderNotFound
+	}
 	return orderdomain.Order{}, nil
 }
 
@@ -321,6 +462,58 @@ func (f *fakeRepo) GetDepartmentByID(_ context.Context, id int64) (Department, e
 		return department, nil
 	}
 	return Department{}, nil
+}
+
+func (f *fakeRepo) SaveProductionSheet(_ context.Context, input SaveProductionSheetInput) (orderdomain.ProductionSheet, error) {
+	f.productionInputs = append(f.productionInputs, input)
+	return orderdomain.ProductionSheet{ID: max(input.SheetID, 1)}, nil
+}
+
+func (f *fakeRepo) ListProductionSheets(context.Context) ([]orderdomain.ProductionSheet, error) {
+	return nil, nil
+}
+
+func (f *fakeRepo) GetProductionSheet(_ context.Context, id int64) (orderdomain.ProductionSheet, error) {
+	if _, ok := f.sheetsByID[id]; ok {
+		return orderdomain.ProductionSheet{ID: id}, nil
+	}
+	return orderdomain.ProductionSheet{}, ErrProductionSheetNotFound
+}
+
+func (f *fakeRepo) DeleteProductionSheet(_ context.Context, id int64, _ string) error {
+	f.productionDeleted = append(f.productionDeleted, id)
+	return nil
+}
+
+func (f *fakeRepo) ListOrderCategories(context.Context) ([]orderdomain.OrderCategory, error) {
+	out := make([]orderdomain.OrderCategory, 0, len(f.categoryByID))
+	for _, category := range f.categoryByID {
+		out = append(out, category)
+	}
+	return out, nil
+}
+
+func (f *fakeRepo) GetOrderCategoryByID(_ context.Context, id int64) (orderdomain.OrderCategory, error) {
+	if category, ok := f.categoryByID[id]; ok {
+		return category, nil
+	}
+	return orderdomain.OrderCategory{}, ErrCategoryNotFound
+}
+
+func (f *fakeRepo) CreateOrderCategory(_ context.Context, input orderdomain.OrderCategory) (orderdomain.OrderCategory, error) {
+	return input, nil
+}
+
+func (f *fakeRepo) UpdateOrderCategory(_ context.Context, _ int64, input orderdomain.OrderCategory) (orderdomain.OrderCategory, error) {
+	return input, nil
+}
+
+func (f *fakeRepo) DeleteOrderCategory(context.Context, int64) error {
+	return nil
+}
+
+func (f *fakeRepo) CountDishesByCategoryID(context.Context, int64) (int64, error) {
+	return 0, nil
 }
 
 func (f *fakeRepo) UpsertDishCatalogItem(context.Context, DishCatalogItem) error {

@@ -11,6 +11,17 @@ export class ApiError extends Error {
   }
 }
 
+// statusMessage returns a human-readable fallback when the backend response
+// carries no error text (proxy errors, unexpected failures).
+function statusMessage(status) {
+  if (status === 401) return 'Требуется вход в систему.';
+  if (status === 403) return 'Недостаточно прав для этого действия.';
+  if (status === 404) return 'Данные не найдены.';
+  if (status === 409) return 'Данные изменились. Обновите страницу и попробуйте снова.';
+  if (status >= 500) return 'Ошибка на сервере. Попробуйте позже.';
+  return 'Не удалось выполнить запрос. Попробуйте ещё раз.';
+}
+
 export async function apiRequest(path, options = {}) {
   const url = apiURL(apiBase, path);
   const started = performance.now();
@@ -38,7 +49,7 @@ export async function apiRequest(path, options = {}) {
       duration_ms: Math.round(performance.now() - started),
       error: err instanceof Error ? err.message : String(err),
     });
-    throw err;
+    throw new ApiError('Нет соединения с сервером. Проверьте подключение к интернету.', 0);
   }
 
   const contentType = response.headers.get('content-type') || '';
@@ -53,7 +64,7 @@ export async function apiRequest(path, options = {}) {
       duration_ms: Math.round(performance.now() - started),
       error: payload.error || `HTTP ${response.status}`,
     });
-    throw new ApiError(payload.error || `HTTP ${response.status}`, response.status);
+    throw new ApiError(payload.error || statusMessage(response.status), response.status);
   }
   if (response.status === 204 || contentType === '') {
     return {};
@@ -67,7 +78,7 @@ export async function apiRequest(path, options = {}) {
       content_type: contentType,
       duration_ms: Math.round(performance.now() - started),
     });
-    throw new Error('API returned non-JSON response. Check Vite proxy or VITE_API_BASE_URL.');
+    throw new ApiError('Сервер вернул некорректный ответ. Попробуйте позже.', response.status);
   }
 
   logInfo('api.response', {

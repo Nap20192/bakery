@@ -1,10 +1,36 @@
-@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
+/* Пекарня — дизайн-токены.
+   Гамма «мука и корка»: тёплая taupe-рампа, выведенная из цвета хлебной
+   корки, подменяет холодную stone-шкалу Tailwind — весь интерфейс теплеет,
+   не переписывая компоненты. Функциональные цвета (сегодня/завтра, типы
+   заявок, отмена) остаются семантикой данных и не тонируются. */
+@import "@fontsource-variable/golos-text";
 @import "tailwindcss";
 
+@theme {
+  /* Golos Text — кириллический гротеск, собран локально (без CDN). */
+  --font-sans: "Golos Text Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+
+  /* Мука и корка: stone → тёплый taupe. */
+  --color-stone-50: #faf6ee;
+  --color-stone-100: #f2ecdd;
+  --color-stone-200: #e7dcc8;
+  --color-stone-300: #d3c3a9;
+  --color-stone-400: #a8947a;
+  --color-stone-500: #837059;
+  --color-stone-600: #665441;
+  --color-stone-700: #503f30;
+  --color-stone-800: #3c2f23;
+  --color-stone-900: #2d2318;
+  --color-stone-950: #211911;
+
+  /* Фон приложения — мука. */
+  --color-flour: #f7f3ea;
+}
+
 :root {
-  color: #191919;
-  background: #f7f3ea;
-  font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  color: var(--color-stone-950);
+  background: var(--color-flour);
+  font-family: var(--font-sans);
   font-synthesis: none;
   font-size: 14px;
   line-height: 1.5;
@@ -21,8 +47,15 @@
 body {
   margin: 0;
   min-width: 320px;
-  color: #191919;
-  background: #f7f3ea;
+  color: var(--color-stone-950);
+  background: var(--color-flour);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  letter-spacing: -0.02em;
 }
 
 button,

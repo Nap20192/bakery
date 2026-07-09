@@ -32,7 +32,8 @@ type orderEventEnvelope struct {
 }
 
 type orderEventPayload struct {
-	Order orderdomain.Order `json:"order"`
+	Order              orderdomain.Order `json:"order"`
+	ProducedByUsername string            `json:"produced_by_username"`
 }
 
 func (b *OrderBot) handleOrderEvent(ctx context.Context, body []byte) error {
@@ -64,6 +65,10 @@ func (b *OrderBot) handleOrderEvent(ctx context.Context, body []byte) error {
 		message = responses.OrderCancelled(order, fromName, toName)
 	case orderdomain.EventOrderRestored:
 		message = responses.OrderRestored(order, fromName, toName)
+	case orderdomain.EventOrderProduced:
+		message = responses.OrderProduced(order, payload.ProducedByUsername)
+	case orderdomain.EventOrderProductionCleared:
+		message = responses.OrderProductionCleared(order, payload.ProducedByUsername)
 	default:
 		slog.WarnContext(ctx, "unknown order event type", "type", env.Type)
 		return nil

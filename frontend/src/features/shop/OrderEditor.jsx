@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Button } from '../../components/Button';
-import { EmptyState } from '../../components/EmptyState';
-import { PanelHeader } from '../../components/Panel';
-import { Icon } from '../../components/Icon';
+import { Button } from '../../ui/Button';
+import { CategoryBadge } from '../../ui/CategoryBadge';
+import { EmptyState } from '../../ui/EmptyState';
+import { PanelHeader } from '../../ui/Panel';
+import { Icon } from '../../ui/Icon';
+import { categoryStyle } from '../../lib/categories';
 import { formatQuantity } from '../../lib/format';
 
 const controlClass =
@@ -48,10 +50,13 @@ function parsePasteLine(line) {
   return { name, quantity, reserved };
 }
 
-export function OrderEditor({ catalog, order, shops = [], loading, onCancel, onSave }) {
+export function OrderEditor({ catalog, categories = [], order, shops = [], loading, onCancel, onSave }) {
   const [fromDepartmentID, setFromDepartmentID] = useState(
     order?.from_department?.id ? String(order.from_department.id) : '',
   );
+  // Тип заявки выбирается первым шагом при создании; при редактировании он
+  // зафиксирован (тип участвует в номере заказа и не меняется).
+  const [categoryID, setCategoryID] = useState(order?.category?.id ? String(order.category.id) : '');
   const [date, setDate] = useState(order?.fulfillment_date || '');
   const [quantities, setQuantities] = useState(() => initialQuantities(order));
   const [comments, setComments] = useState(() => initialItemComments(order));
@@ -61,10 +66,17 @@ export function OrderEditor({ catalog, order, shops = [], loading, onCancel, onS
   const [pasteText, setPasteText] = useState('');
   const [pasteResult, setPasteResult] = useState(null);
 
+  // Каталог сужен до блюд выбранного типа заявки; блюда без типа видны везде,
+  // чтобы новое блюдо не пропало из формы, пока админ не назначил ему тип.
+  const categoryCatalog = useMemo(() => {
+    if (!categoryID) return catalog;
+    return catalog.filter((item) => !item.category_id || String(item.category_id) === String(categoryID));
+  }, [catalog, categoryID]);
+
   const groups = useMemo(() => {
     const result = [];
     const byTheme = new Map();
-    for (const item of catalog) {
+    for (const item of categoryCatalog) {
       if (!byTheme.has(item.theme)) {
         const group = { theme: item.theme || 'Без группы', items: [] };
         byTheme.set(item.theme, group);
@@ -73,14 +85,14 @@ export function OrderEditor({ catalog, order, shops = [], loading, onCancel, onS
       byTheme.get(item.theme).items.push(item);
     }
     return result;
-  }, [catalog]);
+  }, [categoryCatalog]);
 
   // Index catalog names (lower-cased) for paste matching.
   const nameIndex = useMemo(() => {
     const map = new Map();
-    for (const item of catalog) map.set(item.name.toLowerCase(), item.name);
+    for (const item of categoryCatalog) map.set(item.name.toLowerCase(), item.name);
     return map;
-  }, [catalog]);
+  }, [categoryCatalog]);
 
   const summary = useMemo(() => {
     let count = 0;
@@ -146,7 +158,7 @@ export function OrderEditor({ catalog, order, shops = [], loading, onCancel, onS
 
   function submit(event) {
     event.preventDefault();
-    const items = catalog
+    const items = categoryCatalog
       .map((item) => {
         const values = quantities[item.name] || {};
         return {
@@ -163,17 +175,60 @@ export function OrderEditor({ catalog, order, shops = [], loading, onCancel, onS
     onSave({
       fulfillment_date: date,
       from_department_id: Number(fromDepartmentID),
+      category_id: Number(categoryID),
       items,
       comments: { general: general.trim(), items: itemComments },
     });
   }
 
-  const canSubmit = !loading && summary.count > 0 && Boolean(date) && Boolean(fromDepartmentID);
+  const canSubmit = !loading && summary.count > 0 && Boolean(date) && Boolean(fromDepartmentID) && Boolean(categoryID);
+  const selectedCategory = categories.find((category) => String(category.id) === String(categoryID)) || order?.category || null;
+
+  // Шаг 1 при создании: выбор типа заявки. Форма с блюдами появляется после.
+  if (!order && !categoryID) {
+    return (
+      <div className="space-y-3">
+        <PanelHeader title="Новый заказ" />
+        <p className="m-0 text-[13px] leading-5 text-stone-500">Выберите тип заявки — от него зависит список блюд.</p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {categories.map((category) => {
+            const style = categoryStyle(category);
+            return (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => setCategoryID(String(category.id))}
+                className={`flex min-h-16 items-center gap-3 rounded-xl border px-4 text-left transition focus:outline-none focus:ring-2 focus:ring-stone-900/20 ${style.pick}`}
+              >
+                <span className={`h-3 w-3 shrink-0 rounded-full ${style.dot}`} aria-hidden="true" />
+                <span className="min-w-0">
+                  <span className="block text-[15px] font-semibold leading-6 text-stone-950">{category.name}</span>
+                  <span className="block text-[12px] leading-5 text-stone-500">Заявка «{category.letter}» в номере</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        {categories.length === 0 && <EmptyState compact>Типы заявок не настроены. Обратитесь к администратору.</EmptyState>}
+        <div className="flex justify-end">
+          <Button type="button" onClick={onCancel}>Отмена</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form className="space-y-3" onSubmit={submit}>
       <div className="flex items-center justify-between gap-2">
-        <PanelHeader title={order ? `Изменить ${order.number}` : 'Новый заказ'} />
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <PanelHeader title={order ? `Изменить ${order.number}` : 'Новый заказ'} />
+          <CategoryBadge category={selectedCategory} />
+          {!order && (
+            <Button type="button" variant="ghost" className="!min-h-7 !px-2 text-[12px]" onClick={() => setCategoryID('')}>
+              Сменить тип
+            </Button>
+          )}
+        </div>
         <Button type="button" variant="ghost" className="shrink-0" onClick={() => setPasteOpen((v) => !v)}>
           <Icon name="orders" size={15} />
           Вставить списком

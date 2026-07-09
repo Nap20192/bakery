@@ -1,13 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Button } from '../../components/Button';
+import { Button } from '../../ui/Button';
+import { CategoryBadge } from '../../ui/CategoryBadge';
+import { ErrorBanner } from '../../ui/ErrorBanner';
 import {
+  createCategory,
   createDish,
+  deleteCategory,
   deleteDish,
   fetchDishes,
   reorderDishes,
   searchAvailableDishes,
+  updateCategory,
   updateDish,
 } from '../../api/dishes';
+import { fetchCategories } from '../../api/orders';
+import { CATEGORY_COLOR_SLUGS, CATEGORY_COLORS } from '../../lib/categories';
 
 const fieldClass =
   'h-11 w-full min-w-0 rounded-lg border border-stone-200 bg-white px-3 text-base text-stone-900 outline-none transition focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10';
@@ -19,7 +26,9 @@ const cellInputClass =
 // edit name/group, reorder by drag and drop, and delete entries.
 export function AdminDishes() {
   const [dishes, setDishes] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [group, setGroup] = useState('');
+  const [categoryID, setCategoryID] = useState('');
   const [selected, setSelected] = useState(null);
   const [query, setQuery] = useState('');
   const [error, setError] = useState('');
@@ -30,9 +39,18 @@ export function AdminDishes() {
     fetchDishes()
       .then((rows) => setDishes(Array.isArray(rows) ? rows : []))
       .catch((err) => setError(err instanceof Error ? err.message : String(err)));
+    fetchCategories()
+      .then((rows) => setCategories(Array.isArray(rows) ? rows : []))
+      .catch((err) => setError(err instanceof Error ? err.message : String(err)));
   }
 
   useEffect(load, []);
+
+  const categoryByID = useMemo(() => {
+    const map = new Map();
+    for (const category of categories) map.set(String(category.id), category);
+    return map;
+  }, [categories]);
 
   const takenCodes = useMemo(() => new Set(dishes.map((d) => d.code)), [dishes]);
 
@@ -49,7 +67,13 @@ export function AdminDishes() {
     setError('');
     setBusy(true);
     try {
-      await createDish({ code: selected.code, name: selected.name, theme: group.trim(), sort_order: 0 });
+      await createDish({
+        code: selected.code,
+        name: selected.name,
+        theme: group.trim(),
+        category_id: categoryID ? Number(categoryID) : null,
+        sort_order: 0,
+      });
       setSelected(null);
       setGroup('');
       load();
@@ -95,7 +119,7 @@ export function AdminDishes() {
   }
 
   return (
-    <main className="bg-[#f7f3ea] p-4 text-stone-900 sm:p-6">
+    <main className="bg-flour p-4 text-stone-900 sm:p-6">
       <div className="mx-auto max-w-5xl">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h1 className="flex items-center gap-2 text-lg font-semibold">
@@ -111,10 +135,18 @@ export function AdminDishes() {
           />
         </div>
 
-        {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800">{error}</div>}
+        <ErrorBanner error={error} className="mb-4" />
 
-        <div className="mb-2 grid gap-2 rounded-xl border border-stone-200 bg-white p-4 shadow-sm sm:grid-cols-[minmax(0,1fr)_minmax(0,12rem)_auto]">
+        <CategoryManager categories={categories} onChanged={load} onError={setError} />
+
+        <div className="mb-2 grid gap-2 rounded-xl border border-stone-200 bg-white p-4 shadow-sm sm:grid-cols-[minmax(0,1fr)_minmax(0,10rem)_minmax(0,10rem)_auto]">
           <DishPicker selected={selected} onSelect={setSelected} takenCodes={takenCodes} onError={setError} />
+          <select className={fieldClass} value={categoryID} onChange={(e) => setCategoryID(e.target.value)}>
+            <option value="">Тип заявки…</option>
+            {categories.map((category) => (
+              <option key={category.id} value={String(category.id)}>{category.name}</option>
+            ))}
+          </select>
           <input className={fieldClass} placeholder="Группа (необязательно)" value={group} onChange={(e) => setGroup(e.target.value)} />
           <Button type="button" variant="primary" onClick={onAdd} disabled={busy || !selected}>Добавить</Button>
         </div>
@@ -127,6 +159,7 @@ export function AdminDishes() {
                 <th className="w-8 px-2 py-2"></th>
                 <th className="px-3 py-2">Код</th>
                 <th className="px-3 py-2">Название</th>
+                <th className="px-3 py-2">Тип</th>
                 <th className="px-3 py-2">Группа</th>
                 <th className="px-3 py-2"></th>
               </tr>
@@ -136,6 +169,8 @@ export function AdminDishes() {
                 <DishRow
                   key={dish.code}
                   dish={dish}
+                  categories={categories}
+                  categoryByID={categoryByID}
                   canReorder={canReorder}
                   onSave={onSave}
                   onDelete={onDelete}
@@ -145,13 +180,193 @@ export function AdminDishes() {
                 />
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={5} className="px-3 py-6 text-center text-[13px] text-stone-500">{query ? 'Ничего не найдено.' : 'Блюд нет.'}</td></tr>
+                <tr><td colSpan={6} className="px-3 py-6 text-center text-[13px] text-stone-500">{query ? 'Ничего не найдено.' : 'Блюд нет.'}</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
     </main>
+  );
+}
+
+// CategoryManager edits типы заявок: name, letter (goes into order numbers)
+// and the highlight color. Deleting a category that still owns dishes is
+// rejected by the backend.
+function CategoryManager({ categories, onChanged, onError }) {
+  const [draft, setDraft] = useState({ name: '', letter: '', color: CATEGORY_COLOR_SLUGS[0] });
+  const [busy, setBusy] = useState(false);
+
+  async function onCreate() {
+    setBusy(true);
+    onError('');
+    try {
+      await createCategory({ ...draft, sort_order: categories.length + 1 });
+      setDraft({ name: '', letter: '', color: CATEGORY_COLOR_SLUGS[0] });
+      onChanged();
+    } catch (err) {
+      onError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onUpdate(category, patch) {
+    onError('');
+    try {
+      await updateCategory(category.id, { ...category, ...patch });
+      onChanged();
+    } catch (err) {
+      onError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  async function onRemove(category) {
+    if (!window.confirm(`Удалить тип «${category.name}»?`)) return;
+    onError('');
+    try {
+      await deleteCategory(category.id);
+      onChanged();
+    } catch (err) {
+      onError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  return (
+    <section className="mb-6 rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
+      <h2 className="m-0 mb-1 text-[15px] font-semibold text-stone-950">Типы заявок</h2>
+      <p className="m-0 mb-3 text-[12px] leading-5 text-stone-500">
+        Тип выбирается магазином при создании заявки. Буква попадает в номер заказа, цвет выделяет заявки у пекаря.
+      </p>
+      <div className="space-y-2">
+        {categories.map((category) => (
+          <CategoryRow key={category.id} category={category} onUpdate={onUpdate} onRemove={onRemove} />
+        ))}
+        <div className="grid gap-2 border-t border-stone-100 pt-3 sm:grid-cols-[minmax(0,1fr)_5rem_auto_auto]">
+          <input
+            className={cellInputClass}
+            placeholder="Название нового типа…"
+            value={draft.name}
+            onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+          />
+          <input
+            className={`${cellInputClass} text-center uppercase`}
+            placeholder="Буква"
+            maxLength={1}
+            value={draft.letter}
+            onChange={(e) => setDraft({ ...draft, letter: e.target.value.toUpperCase() })}
+          />
+          <ColorSwatches value={draft.color} onChange={(color) => setDraft({ ...draft, color })} />
+          <Button variant="primary" onClick={onCreate} disabled={busy || !draft.name.trim() || !draft.letter.trim()}>
+            Добавить тип
+          </Button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// parseMonitorCodes splits an admin-typed dough-code list ("17642, 17644 …")
+// into clean codes.
+function parseMonitorCodes(text) {
+  return String(text || '')
+    .split(/[\s,;]+/)
+    .map((code) => code.trim())
+    .filter(Boolean);
+}
+
+function CategoryRow({ category, onUpdate, onRemove }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(category);
+  const [codesText, setCodesText] = useState('');
+
+  if (!editing) {
+    return (
+      <div className="grid items-center gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <CategoryBadge category={category} />
+          <span className="min-w-0 truncate text-[12px] text-stone-500">
+            Тесто: {category.monitor_codes?.length ? category.monitor_codes.join(', ') : <strong className="text-red-700">коды не настроены</strong>}
+          </span>
+        </div>
+        <span className="text-[12px] text-stone-500">Буква в номере: <strong className="text-stone-800">{category.letter || '—'}</strong></span>
+        <div className="flex justify-end gap-2">
+          <Button
+            onClick={() => {
+              setDraft(category);
+              setCodesText((category.monitor_codes || []).join(', '));
+              setEditing(true);
+            }}
+          >
+            Изменить
+          </Button>
+          <Button variant="danger" onClick={() => onRemove(category)}>Удалить</Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2 rounded-lg bg-stone-50/60 p-2">
+      <div className="grid items-center gap-2 sm:grid-cols-[minmax(0,1fr)_5rem_auto]">
+        <input className={cellInputClass} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+        <input
+          className={`${cellInputClass} text-center uppercase`}
+          maxLength={1}
+          value={draft.letter}
+          onChange={(e) => setDraft({ ...draft, letter: e.target.value.toUpperCase() })}
+        />
+        <ColorSwatches value={draft.color} onChange={(color) => setDraft({ ...draft, color })} />
+      </div>
+      <label className="block">
+        <span className="mb-1 block text-[12px] font-medium text-stone-500">Коды теста для расчёта (через запятую)</span>
+        <input
+          className={cellInputClass}
+          placeholder="Например: 17642, 17644, 17650"
+          value={codesText}
+          onChange={(e) => setCodesText(e.target.value)}
+        />
+      </label>
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="primary"
+          disabled={!draft.name.trim() || !draft.letter.trim()}
+          onClick={async () => {
+            await onUpdate(category, {
+              name: draft.name,
+              letter: draft.letter,
+              color: draft.color,
+              monitor_codes: parseMonitorCodes(codesText),
+            });
+            setEditing(false);
+          }}
+        >
+          Сохранить
+        </Button>
+        <Button onClick={() => setEditing(false)}>Отмена</Button>
+      </div>
+    </div>
+  );
+}
+
+// ColorSwatches is the fixed-palette color picker for тип заявки.
+function ColorSwatches({ value, onChange }) {
+  return (
+    <div className="flex items-center gap-1.5" role="radiogroup" aria-label="Цвет типа">
+      {CATEGORY_COLOR_SLUGS.map((slug) => (
+        <button
+          key={slug}
+          type="button"
+          role="radio"
+          aria-checked={value === slug}
+          title={slug}
+          onClick={() => onChange(slug)}
+          className={`h-7 w-7 rounded-full border-2 transition ${CATEGORY_COLORS[slug].dot} ${
+            value === slug ? 'border-stone-900 ring-2 ring-stone-900/20' : 'border-white shadow-sm hover:border-stone-300'
+          }`}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -234,9 +449,9 @@ function DishPicker({ selected, onSelect, takenCodes, onError }) {
 }
 
 // DishRow renders one catalog entry. The whole row is draggable for reordering;
-// editing reveals inline inputs for name and group (the code is fixed — it ties
-// the entry to its iiko tech card).
-function DishRow({ dish, canReorder, onSave, onDelete, setError, onDragStart, onDrop }) {
+// editing reveals inline inputs for name, тип заявки and group (the code is
+// fixed — it ties the entry to its iiko tech card).
+function DishRow({ dish, categories, categoryByID, canReorder, onSave, onDelete, setError, onDragStart, onDrop }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(dish);
   const [busy, setBusy] = useState(false);
@@ -253,6 +468,7 @@ function DishRow({ dish, canReorder, onSave, onDelete, setError, onDragStart, on
         code: dish.code,
         name: String(draft.name || '').trim(),
         theme: String(draft.theme || '').trim(),
+        category_id: draft.category_id ? Number(draft.category_id) : null,
         sort_order: Number(dish.sort_order) || 0,
       });
       setEditing(false);
@@ -278,6 +494,10 @@ function DishRow({ dish, canReorder, onSave, onDelete, setError, onDragStart, on
         <td className={`px-2 py-2 text-center text-stone-300 ${canReorder ? 'cursor-grab' : ''}`} title={canReorder ? 'Перетащите для сортировки' : 'Сбросьте поиск, чтобы менять порядок'}>⠿</td>
         <td className="px-3 py-2 font-mono text-[12px] text-stone-500">{dish.code}</td>
         <td className="px-3 py-2 text-stone-900">{dish.name}</td>
+        <td className="px-3 py-2">
+          <CategoryBadge category={categoryByID.get(String(dish.category_id || ''))} />
+          {!dish.category_id && <span className="text-stone-400">—</span>}
+        </td>
         <td className="px-3 py-2 text-stone-500">{dish.theme || '—'}</td>
         <td className="px-3 py-2">
           <div className="flex justify-end gap-2">
@@ -294,6 +514,18 @@ function DishRow({ dish, canReorder, onSave, onDelete, setError, onDragStart, on
       <td className="px-2 py-2"></td>
       <td className="px-3 py-2 font-mono text-[12px] text-stone-400">{dish.code}</td>
       <td className="px-3 py-2"><input className={cellInputClass} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></td>
+      <td className="px-3 py-2">
+        <select
+          className={cellInputClass}
+          value={draft.category_id ? String(draft.category_id) : ''}
+          onChange={(e) => setDraft({ ...draft, category_id: e.target.value ? Number(e.target.value) : null })}
+        >
+          <option value="">Без типа</option>
+          {categories.map((category) => (
+            <option key={category.id} value={String(category.id)}>{category.name}</option>
+          ))}
+        </select>
+      </td>
       <td className="px-3 py-2"><input className={cellInputClass} value={draft.theme} onChange={(e) => setDraft({ ...draft, theme: e.target.value })} /></td>
       <td className="px-3 py-2">
         <div className="flex justify-end gap-2">

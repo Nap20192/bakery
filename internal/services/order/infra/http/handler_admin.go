@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"bakery/internal/inbound/api/httpx"
 	orderdomain "bakery/internal/services/order/domain"
@@ -11,32 +12,56 @@ import (
 
 func (req dishWriteRequest) toDomain() orderdomain.DishCatalogItem {
 	return orderdomain.DishCatalogItem{
-		Code:      req.Code,
-		Name:      req.Name,
-		Theme:     req.Theme,
-		SortOrder: req.SortOrder,
+		Code:       req.Code,
+		Name:       req.Name,
+		Theme:      req.Theme,
+		CategoryID: req.CategoryID,
+		SortOrder:  req.SortOrder,
 	}
 }
 
 func toDishResponse(item orderdomain.DishCatalogItem) dishResponse {
-	return dishResponse{Code: item.Code, Name: item.Name, Theme: item.Theme, SortOrder: item.SortOrder}
+	return dishResponse{Code: item.Code, Name: item.Name, Theme: item.Theme, CategoryID: item.CategoryID, SortOrder: item.SortOrder}
 }
 
 type dishResponse struct {
-	Code      string `json:"code"`
-	Name      string `json:"name"`
-	Theme     string `json:"theme"`
-	SortOrder int64  `json:"sort_order"`
+	Code       string `json:"code"`
+	Name       string `json:"name"`
+	Theme      string `json:"theme"`
+	CategoryID *int64 `json:"category_id"`
+	SortOrder  int64  `json:"sort_order"`
 }
 
 type dishWriteRequest struct {
-	Code      string `json:"code"`
-	Name      string `json:"name"`
-	Theme     string `json:"theme"`
-	SortOrder int64  `json:"sort_order"`
+	Code       string `json:"code"`
+	Name       string `json:"name"`
+	Theme      string `json:"theme"`
+	CategoryID *int64 `json:"category_id"`
+	SortOrder  int64  `json:"sort_order"`
 }
 
-// RegisterAdminRoutes wires admin-only dish catalog management and order pins.
+type categoryWriteRequest struct {
+	Code         string   `json:"code"`
+	Letter       string   `json:"letter"`
+	Name         string   `json:"name"`
+	Color        string   `json:"color"`
+	SortOrder    int64    `json:"sort_order"`
+	MonitorCodes []string `json:"monitor_codes"`
+}
+
+func (req categoryWriteRequest) toDomain() orderdomain.OrderCategory {
+	return orderdomain.OrderCategory{
+		Code:         req.Code,
+		Letter:       req.Letter,
+		Name:         req.Name,
+		Color:        req.Color,
+		SortOrder:    req.SortOrder,
+		MonitorCodes: req.MonitorCodes,
+	}
+}
+
+// RegisterAdminRoutes wires admin-only dish catalog management, тип заявки
+// management and order pins.
 func (h *Handler) RegisterAdminRoutes(mux *http.ServeMux, auth *httpx.Authenticator) {
 	mux.Handle("GET /admin/dishes", auth.RequireAdmin(http.HandlerFunc(h.handleListDishes)))
 	mux.Handle("GET /admin/dishes/available", auth.RequireAdmin(http.HandlerFunc(h.handleListAvailableDishes)))
@@ -44,7 +69,56 @@ func (h *Handler) RegisterAdminRoutes(mux *http.ServeMux, auth *httpx.Authentica
 	mux.Handle("PUT /admin/dishes/reorder", auth.RequireAdmin(http.HandlerFunc(h.handleReorderDishes)))
 	mux.Handle("PUT /admin/dishes/{code}", auth.RequireAdmin(http.HandlerFunc(h.handleUpdateDish)))
 	mux.Handle("DELETE /admin/dishes/{code}", auth.RequireAdmin(http.HandlerFunc(h.handleDeleteDish)))
+	mux.Handle("POST /admin/categories", auth.RequireAdmin(http.HandlerFunc(h.handleCreateCategory)))
+	mux.Handle("PUT /admin/categories/{id}", auth.RequireAdmin(http.HandlerFunc(h.handleUpdateCategory)))
+	mux.Handle("DELETE /admin/categories/{id}", auth.RequireAdmin(http.HandlerFunc(h.handleDeleteCategory)))
 	mux.Handle("PATCH /orders/{id}/favorite", auth.RequireAdmin(http.HandlerFunc(h.handleSetFavorite)))
+}
+
+func (h *Handler) handleCreateCategory(w http.ResponseWriter, r *http.Request) {
+	var req categoryWriteRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.WriteError(w, http.StatusBadRequest, "Некорректные данные.")
+		return
+	}
+	category, err := h.orderSvc.CreateOrderCategory(r.Context(), req.toDomain())
+	if err != nil {
+		httpx.WriteAppError(w, r, err, "Не удалось создать тип заявки.")
+		return
+	}
+	httpx.WriteJSON(w, http.StatusCreated, buildCategoryResponse(&category))
+}
+
+func (h *Handler) handleUpdateCategory(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(httpx.Trim(r.PathValue("id")), 10, 64)
+	if err != nil || id <= 0 {
+		httpx.WriteError(w, http.StatusBadRequest, "Укажите тип заявки.")
+		return
+	}
+	var req categoryWriteRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.WriteError(w, http.StatusBadRequest, "Некорректные данные.")
+		return
+	}
+	category, err := h.orderSvc.UpdateOrderCategory(r.Context(), id, req.toDomain())
+	if err != nil {
+		httpx.WriteAppError(w, r, err, "Не удалось обновить тип заявки.")
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, buildCategoryResponse(&category))
+}
+
+func (h *Handler) handleDeleteCategory(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(httpx.Trim(r.PathValue("id")), 10, 64)
+	if err != nil || id <= 0 {
+		httpx.WriteError(w, http.StatusBadRequest, "Укажите тип заявки.")
+		return
+	}
+	if err := h.orderSvc.DeleteOrderCategory(r.Context(), id); err != nil {
+		httpx.WriteAppError(w, r, err, "Не удалось удалить тип заявки.")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 type favoriteRequest struct {

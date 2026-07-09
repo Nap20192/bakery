@@ -159,7 +159,7 @@ func (q *Queries) GetIikoProductsByName(ctx context.Context, name string) ([]Get
 }
 
 const listDishCatalogItems = `-- name: ListDishCatalogItems :many
-SELECT id, code, name, theme, created_at, updated_at, sort_order
+SELECT id, code, name, theme, created_at, updated_at, sort_order, category_id
 FROM dish_catalog
 ORDER BY CASE WHEN sort_order = 0 THEN 1 ELSE 0 END, sort_order, id, theme, name, code
 `
@@ -181,6 +181,7 @@ func (q *Queries) ListDishCatalogItems(ctx context.Context) ([]DishCatalog, erro
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.SortOrder,
+			&i.CategoryID,
 		); err != nil {
 			return nil, err
 		}
@@ -193,7 +194,7 @@ func (q *Queries) ListDishCatalogItems(ctx context.Context) ([]DishCatalog, erro
 }
 
 const listDishCatalogItemsByName = `-- name: ListDishCatalogItemsByName :many
-SELECT id, code, name, theme, created_at, updated_at, sort_order
+SELECT id, code, name, theme, created_at, updated_at, sort_order, category_id
 FROM dish_catalog
 WHERE lower(trim(name)) = lower(trim($1))
 ORDER BY CASE WHEN sort_order = 0 THEN 1 ELSE 0 END, sort_order, id, theme, name, code
@@ -216,6 +217,7 @@ func (q *Queries) ListDishCatalogItemsByName(ctx context.Context, name string) (
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.SortOrder,
+			&i.CategoryID,
 		); err != nil {
 			return nil, err
 		}
@@ -297,19 +299,21 @@ UPDATE dish_catalog SET
     code = $1,
     name = $2,
     theme = $3,
-    sort_order = $4,
-    updated_at = $5
-WHERE code = $6
-RETURNING id, code, name, theme, created_at, updated_at, sort_order
+    category_id = $4,
+    sort_order = $5,
+    updated_at = $6
+WHERE code = $7
+RETURNING id, code, name, theme, created_at, updated_at, sort_order, category_id
 `
 
 type UpdateDishCatalogItemParams struct {
-	NewCode   string             `json:"new_code"`
-	Name      string             `json:"name"`
-	Theme     string             `json:"theme"`
-	SortOrder int64              `json:"sort_order"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	Code      string             `json:"code"`
+	NewCode    string             `json:"new_code"`
+	Name       string             `json:"name"`
+	Theme      string             `json:"theme"`
+	CategoryID *int64             `json:"category_id"`
+	SortOrder  int64              `json:"sort_order"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	Code       string             `json:"code"`
 }
 
 func (q *Queries) UpdateDishCatalogItem(ctx context.Context, arg UpdateDishCatalogItemParams) (DishCatalog, error) {
@@ -317,6 +321,7 @@ func (q *Queries) UpdateDishCatalogItem(ctx context.Context, arg UpdateDishCatal
 		arg.NewCode,
 		arg.Name,
 		arg.Theme,
+		arg.CategoryID,
 		arg.SortOrder,
 		arg.UpdatedAt,
 		arg.Code,
@@ -330,6 +335,7 @@ func (q *Queries) UpdateDishCatalogItem(ctx context.Context, arg UpdateDishCatal
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SortOrder,
+		&i.CategoryID,
 	)
 	return i, err
 }
@@ -339,6 +345,7 @@ INSERT INTO dish_catalog (
     code,
     name,
     theme,
+    category_id,
     sort_order,
     created_at,
     updated_at
@@ -348,30 +355,36 @@ INSERT INTO dish_catalog (
     $3,
     $4,
     $5,
-    $6
+    $6,
+    $7
 )
 ON CONFLICT (code) DO UPDATE SET
     name = excluded.name,
     theme = excluded.theme,
+    category_id = COALESCE(dish_catalog.category_id, excluded.category_id),
     sort_order = excluded.sort_order,
     updated_at = excluded.updated_at
-RETURNING id, code, name, theme, created_at, updated_at, sort_order
+RETURNING id, code, name, theme, created_at, updated_at, sort_order, category_id
 `
 
 type UpsertDishCatalogItemParams struct {
-	Code      string             `json:"code"`
-	Name      string             `json:"name"`
-	Theme     string             `json:"theme"`
-	SortOrder int64              `json:"sort_order"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	Code       string             `json:"code"`
+	Name       string             `json:"name"`
+	Theme      string             `json:"theme"`
+	CategoryID *int64             `json:"category_id"`
+	SortOrder  int64              `json:"sort_order"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
 }
 
+// category_id keeps an already-assigned category on conflict, so re-seeding
+// from templates/dishes.txt never clobbers the admin's assignment.
 func (q *Queries) UpsertDishCatalogItem(ctx context.Context, arg UpsertDishCatalogItemParams) (DishCatalog, error) {
 	row := q.db.QueryRow(ctx, upsertDishCatalogItem,
 		arg.Code,
 		arg.Name,
 		arg.Theme,
+		arg.CategoryID,
 		arg.SortOrder,
 		arg.CreatedAt,
 		arg.UpdatedAt,
@@ -385,6 +398,7 @@ func (q *Queries) UpsertDishCatalogItem(ctx context.Context, arg UpsertDishCatal
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SortOrder,
+		&i.CategoryID,
 	)
 	return i, err
 }

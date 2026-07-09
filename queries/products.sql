@@ -43,10 +43,13 @@ FROM iiko_products
 WHERE trim(name) = trim(sqlc.arg(name));
 
 -- name: UpsertDishCatalogItem :one
+-- category_id keeps an already-assigned category on conflict, so re-seeding
+-- from templates/dishes.txt never clobbers the admin's assignment.
 INSERT INTO dish_catalog (
     code,
     name,
     theme,
+    category_id,
     sort_order,
     created_at,
     updated_at
@@ -54,6 +57,7 @@ INSERT INTO dish_catalog (
     sqlc.arg(code),
     sqlc.arg(name),
     sqlc.arg(theme),
+    sqlc.narg(category_id),
     sqlc.arg(sort_order),
     sqlc.arg(created_at),
     sqlc.arg(updated_at)
@@ -61,6 +65,7 @@ INSERT INTO dish_catalog (
 ON CONFLICT (code) DO UPDATE SET
     name = excluded.name,
     theme = excluded.theme,
+    category_id = COALESCE(dish_catalog.category_id, excluded.category_id),
     sort_order = excluded.sort_order,
     updated_at = excluded.updated_at
 RETURNING *;
@@ -85,6 +90,7 @@ UPDATE dish_catalog SET
     code = sqlc.arg(new_code),
     name = sqlc.arg(name),
     theme = sqlc.arg(theme),
+    category_id = sqlc.narg(category_id),
     sort_order = sqlc.arg(sort_order),
     updated_at = sqlc.arg(updated_at)
 WHERE code = sqlc.arg(code)

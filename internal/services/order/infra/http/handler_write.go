@@ -28,6 +28,7 @@ type orderWriteRequest struct {
 	Items            []orderWriteItem   `json:"items"`
 	FulfillmentDate  string             `json:"fulfillment_date"`
 	FromDepartmentID *int64             `json:"from_department_id"`
+	CategoryID       int64              `json:"category_id"`
 	Comments         orderWriteComments `json:"comments"`
 }
 
@@ -47,14 +48,11 @@ type orderWriteComment struct {
 	Comment     string `json:"comment"`
 }
 
+// handleCatalog returns the dish catalog. Shops build orders from it; bakers
+// use it to group order positions by catalog theme in the order views.
 func (h *Handler) handleCatalog(w http.ResponseWriter, r *http.Request) {
 	if h.orderSvc == nil {
 		httpx.WriteError(w, http.StatusServiceUnavailable, "Сервис заказов временно недоступен.")
-		return
-	}
-	user, _ := httpx.MiniAppUserFromContext(r.Context())
-	if !httpx.IsShopUser(user) {
-		httpx.WriteError(w, http.StatusForbidden, "Каталог нужен только магазину для создания заказа.")
 		return
 	}
 	items, err := h.orderSvc.ListDishCatalog(r.Context())
@@ -92,6 +90,7 @@ func (h *Handler) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		Items:             input.items,
 		FromDepartmentID:  &fromDepartmentID,
 		ToDepartmentID:    &toDepartmentID,
+		CategoryID:        input.categoryID,
 		CreatedByUsername: miniAppOrderAuthor(user),
 		FulfillmentDate:   input.fulfillmentDate,
 		Comments:          input.comments,
@@ -202,6 +201,7 @@ type validatedOrderWrite struct {
 	items            []orderdomain.OrderItem
 	fulfillmentDate  time.Time
 	fromDepartmentID *int64
+	categoryID       int64
 	comments         orderdomain.OrderComments
 }
 
@@ -265,7 +265,13 @@ func decodeOrderWriteRequest(w http.ResponseWriter, r *http.Request) (validatedO
 			ReservedQuantity: item.ReservedQuantity,
 		})
 	}
-	return validatedOrderWrite{items: items, fulfillmentDate: fulfillmentDate, fromDepartmentID: request.FromDepartmentID, comments: buildComments(request.Comments)}, true
+	return validatedOrderWrite{
+		items:            items,
+		fulfillmentDate:  fulfillmentDate,
+		fromDepartmentID: request.FromDepartmentID,
+		categoryID:       request.CategoryID,
+		comments:         buildComments(request.Comments),
+	}, true
 }
 
 func validOrderQuantity(quantity float64) bool {

@@ -46,6 +46,8 @@ services.
 cmd/
   worker/main.go        HTTP API + sync + order cleanup; applies migrations; ensures admin
   bot/main.go           Telegram bot + RabbitMQ order-event consumer
+  testingorders/        dev-утилита: сносит все заказы и сеет тестовые
+                        (make test-orders); пишет в БД напрямую, без outbox
 
 internal/
   config/               env config + dotenv loader
@@ -68,6 +70,14 @@ internal/
 pkg/
   logger/               structured slog logger
   rabbitmq/             connection + publisher + consumer (worker-pool, ack/nack)
+
+frontend/src/
+  ui/                   дизайн-система: Button, Field, Panel, Modal, Badge, Icon, …
+  features/             по зонам: auth, orders (оркестратор+shared), baker,
+                        shop, production, admin, account
+  api/ lib/ app/        клиенты API, утилиты, роутинг
+  styles.css            токены (@theme): тёплая taupe-рампа поверх stone,
+                        шрифт Golos Text (бандлится локально)
 
 queries/                sqlc SQL source (.sql)
 migrations/             goose-style migrations (NNNNN_name.sql)
@@ -149,8 +159,11 @@ declared after its dependencies.
 
 The two binaries select different option sets:
 
-- **worker**: all services + `WithAPIServerConfig` (no bot).
-- **bot**: services the bot uses + `WithOrderBot` (no API server, no admin).
+- **worker**: all services + `WithAPIServerConfig` (no bot — the worker binary
+  does not even link the bot package or telebot).
+- **bot**: only `WithAuthService` + `WithDepartmentService`; `cmd/bot/main.go`
+  builds the `bot.OrderBot` itself (token check, `bot.NewOrderBot(...)`,
+  consumer via `infra.EventConsumer()`). No API server, no admin, no iiko.
 
 ---
 
@@ -166,7 +179,7 @@ Shared plumbing in `internal/inbound/api`:
 - `httpx/` — `WriteJSON`/`WriteError`, `ErrorResponse`, `DepartmentResponse`,
   `Trim`, `ParseRequestDate`, `UniqueQueryValues`, the `MiniAppUser` viewer +
   context accessors (`WithMiniAppUser`, `MiniAppUserFromContext`,
-  `IsShopUser`, `IsWorkshopUser`), and the `Authenticator` with the three auth
+  `IsShopUser`), and the `Authenticator` with the three auth
   middlewares + Telegram initData validation.
 
 Per-service handlers in `internal/services/<svc>/infra/http`:
@@ -251,6 +264,61 @@ Event-driven flow from the order service to the bot:
   `Магазин Шолохова`, `Цех Пекари`.
 - Orders go shop → workshop: `from_department_id` = the shop that created it,
   `to_department_id` = `Цех Пекари` (code `pekari`).
+
+### Order categories (типы заявок)
+
+- Dynamic dictionary `order_categories` (seeded: «Хлеб» Х/amber, «Булочки»
+  Б/sky). Admin CRUD at `/admin/categories`; a category with dishes cannot be
+  deleted. Colors come from the fixed palette in `orderdomain.CategoryColors`
+  (mirrored in `frontend/src/lib/categories.js`) — no arbitrary hex.
+- Every new order requires `category_id`; the category letter goes into the
+  order number: `<магазин>.<буква типа>.<дата>.<счётчик>` («Г.Х.08.07.26.001»).
+  Counters are per shop **per category** per day. Category never changes on
+  edit. Legacy orders keep numbers without the letter.
+- Dish catalog entries carry `category_id`; the shop picks the category first
+  and sees only its dishes (uncategorized dishes stay visible everywhere).
+  Re-seeding from `templates/dishes.txt` must not clobber assigned categories.
+- Baker UI: grid grouped by category, color stripe + badge on cards, category
+  filter chips; multi-select is limited to one category (dough of different
+  типы is never summed).
+- Dough codes for the monitor calculation live on the category
+  (`monitor_codes`), edited in the admin panel. The monitor uses the order's
+  category codes; batch rejects mixed categories; a category without codes is
+  a 400 telling the admin to configure them. Orders without a category fall
+  back to `monitoringdomain.DefaultMonitorCodes`.
+
+### Отработка (production fact)
+
+- Журнал отработок: каждая отработка — **отдельный документ**
+  (`production_sheets` + `production_sheet_items`), который можно открыть,
+  изменить и удалить. Связь: **у отработки много заказов, у заказа —
+  максимум одна отработка** — попытка покрыть заказ вторым листом даёт
+  конфликт `order.production_exists` («…измените её в журнале»).
+  `order_items.produced_quantity` — денормализованная проекция журнала:
+  пересчитывается при любом изменении листа, позиции без записей в журнале
+  сбрасываются в NULL. Заказ несёт `production_sheet_id` (ответ API), UI
+  связывает заказ↔отработку в обе стороны: кнопка «Отработка №N» в деталях
+  заказа → `/production/{id}`, номера заказов в журнале кликабельны.
+  Заявка (`quantity`/`reserved_quantity`) при отработке **не изменяется**.
+- Хранятся **только отклонения**: позиция с фактом, равным заявке, в документ
+  не пишется (nil = «испечено по заявке»); отработка целиком без изменений
+  отклоняется (`order.production_no_changes`).
+- У строки отклонения есть необязательное **обоснование** (`reason`, до 200
+  символов; UI даёт пресеты «Подгорело»/«Упало»/… + свободный текст).
+  Причина проецируется в `order_items.produced_reason`, показывается в
+  деталях заказа и в уведомлении бота («Багет: 10 → 8 ⚠️ — подгорело»).
+- Мониторинг теста считает по `OrderItem.EffectiveQuantity()` — факт
+  отработки приоритетнее заявки.
+- CRUD `/production` (`POST`, `GET`, `GET/{id}`, `PUT/{id}`, `DELETE/{id}`) —
+  только baker/admin. Каждый пересчёт пишет диф в `order_history_items`
+  (`change_type='produced'`, old/new = прежний/новый факт) и кладёт событие
+  `order.produced` / `order.production_cleared` в outbox; бот уведомляет.
+- UI: лист отработки на странице выбранных заказов — факт по продуктам,
+  расхождения разносятся по заявкам (пропорционально, метод крупных
+  остатков, с ручной правкой; суммы обязаны сойтись); сохранение создаёт
+  документ. Страница «Отработки» (`/production`) — список документов,
+  правка значений, удаление. Детали заказа показывают колонку «Испечено»
+  (недовоз красным, излишек зелёным), карточка матрицы — метку ✓/±.
 - A shop user only sees/edits its own orders; a workshop user sees all but
   cannot create shop orders. Enforced in `orderhttp.UserCanReadOrder` and the
   write handlers.
@@ -275,6 +343,8 @@ Event-driven flow from the order service to the bot:
   - Assembly chart: `scale = ordered_quantity / assembled_amount`,
     `child_amount = item.amount_in * scale` (uses `amount_in`).
   - Prepared chart: `child_amount = item.amount * ordered_quantity`.
+- Reports also carry `components` — the ingredient's own tech card expanded
+  one level (`ComposeRecipe`), scaled to the total usage; same formulas.
 - Keep cycle protection and recursion-depth limits. Do not add caching unless
   asked.
 

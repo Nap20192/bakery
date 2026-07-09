@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -69,20 +70,21 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, input orderuc.CreateO
 }
 
 func (r *OrderRepository) createOrderWithQueries(ctx context.Context, q sqlc.Querier, input orderuc.CreateOrderRepositoryInput) (orderdomain.Order, error) {
-	if err := q.CreateOrderCounterDay(ctx, sqlc.CreateOrderCounterDayParams{Day: input.CounterDay, DepartmentID: input.Shop.ID}); err != nil {
+	if err := q.CreateOrderCounterDay(ctx, sqlc.CreateOrderCounterDayParams{Day: input.CounterDay, DepartmentID: input.Shop.ID, CategoryID: input.Category.ID}); err != nil {
 		return orderdomain.Order{}, fmt.Errorf("init order counter: %w", err)
 	}
-	counter, err := q.NextOrderCounter(ctx, sqlc.NextOrderCounterParams{Day: input.CounterDay, DepartmentID: input.Shop.ID})
+	counter, err := q.NextOrderCounter(ctx, sqlc.NextOrderCounterParams{Day: input.CounterDay, DepartmentID: input.Shop.ID, CategoryID: input.Category.ID})
 	if err != nil {
 		return orderdomain.Order{}, fmt.Errorf("increment order counter: %w", err)
 	}
 
-	number := r.domain.BuildOrderNumber(input.Shop.Code, input.Shop.Name, input.CreatedAt, counter)
+	number := r.domain.BuildOrderNumber(input.Shop.Code, input.Shop.Name, input.Category.Letter, input.CreatedAt, counter)
 	row, err := q.CreateOrder(ctx, sqlc.CreateOrderParams{
 		Number:            number,
 		Location:          input.Input.Location,
 		FromDepartmentID:  input.Input.FromDepartmentID,
 		ToDepartmentID:    input.Input.ToDepartmentID,
+		CategoryID:        &input.Category.ID,
 		CreatedAt:         helpers.Timestamptz(input.CreatedAt),
 		FulfillmentDate:   helpers.DateOf(input.FulfillmentDate),
 		CreatedByUsername: strings.TrimSpace(input.Input.CreatedByUsername),
@@ -97,6 +99,8 @@ func (r *OrderRepository) createOrderWithQueries(ctx context.Context, q sqlc.Que
 	}
 
 	order := orderFromRow(row, input.Input.Items, nil)
+	category := input.Category
+	order.Category = &category
 	order.RecordCreated()
 	if err := r.persistOutbox(ctx, q, order.Number, order.PullDomainEvents()); err != nil {
 		return orderdomain.Order{}, err
@@ -186,6 +190,9 @@ func (r *OrderRepository) updateOrderWithQueries(ctx context.Context, q sqlc.Que
 		return orderdomain.Order{}, err
 	}
 	order := orderFromRow(row, input.Items, history)
+	if err := r.attachCategory(ctx, &order); err != nil {
+		return orderdomain.Order{}, err
+	}
 	order.RecordUpdated()
 	if err := r.persistOutbox(ctx, q, order.Number, order.PullDomainEvents()); err != nil {
 		return orderdomain.Order{}, err
@@ -206,17 +213,33 @@ func (r *OrderRepository) GetOrderByNumber(ctx context.Context, number string) (
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
-	return orderFromRow(order, mapOrderItems(items), history), nil
+	result := orderFromRow(order, mapOrderItems(items), history)
+	if err := r.attachCategory(ctx, &result); err != nil {
+		return orderdomain.Order{}, err
+	}
+	if err := attachProductionSheet(ctx, r.queries, order.ID, &result); err != nil {
+		return orderdomain.Order{}, err
+	}
+	return result, nil
 }
 
 func (r *OrderRepository) ListOrders(ctx context.Context, input orderuc.ListOrdersInput) (orderuc.ListOrdersResult, error) {
-	var fulfillmentDate pgtype.Date
+	var fulfillmentDate, fulfillmentFrom, fulfillmentTo pgtype.Date
 	if !input.FulfillmentDate.IsZero() {
 		fulfillmentDate = helpers.DateOf(input.FulfillmentDate)
+	}
+	if !input.FulfillmentFrom.IsZero() {
+		fulfillmentFrom = helpers.DateOf(input.FulfillmentFrom)
+	}
+	if !input.FulfillmentTo.IsZero() {
+		fulfillmentTo = helpers.DateOf(input.FulfillmentTo)
 	}
 	total, err := r.queries.CountOrders(ctx, sqlc.CountOrdersParams{
 		FromDepartmentID: input.FromDepartmentID,
 		FulfillmentDate:  fulfillmentDate,
+		FulfillmentFrom:  fulfillmentFrom,
+		FulfillmentTo:    fulfillmentTo,
+		CategoryID:       input.CategoryID,
 	})
 	if err != nil {
 		return orderuc.ListOrdersResult{}, err
@@ -224,6 +247,9 @@ func (r *OrderRepository) ListOrders(ctx context.Context, input orderuc.ListOrde
 	rows, err := r.queries.ListOrders(ctx, sqlc.ListOrdersParams{
 		FromDepartmentID: input.FromDepartmentID,
 		FulfillmentDate:  fulfillmentDate,
+		FulfillmentFrom:  fulfillmentFrom,
+		FulfillmentTo:    fulfillmentTo,
+		CategoryID:       input.CategoryID,
 		OrderLimit:       input.Limit,
 		OrderOffset:      input.Offset,
 	})
@@ -241,6 +267,9 @@ func (r *OrderRepository) ListOrders(ctx context.Context, input orderuc.ListOrde
 	result := make([]orderdomain.Order, 0, len(rows))
 	for _, row := range rows {
 		result = append(result, orderFromRow(row, itemsByOrder[row.ID], nil))
+	}
+	if err := r.attachCategories(ctx, result); err != nil {
+		return orderuc.ListOrdersResult{}, err
 	}
 	return orderuc.ListOrdersResult{
 		Orders: result,
@@ -308,12 +337,13 @@ func (r *OrderRepository) ListDishCatalog(ctx context.Context) ([]orderuc.DishCa
 func (r *OrderRepository) UpsertDishCatalogItem(ctx context.Context, item orderuc.DishCatalogItem) error {
 	now := helpers.TimestamptzNow()
 	_, err := r.queries.UpsertDishCatalogItem(ctx, sqlc.UpsertDishCatalogItemParams{
-		Code:      item.Code,
-		Name:      item.Name,
-		Theme:     item.Theme,
-		SortOrder: item.SortOrder,
-		CreatedAt: now,
-		UpdatedAt: now,
+		Code:       item.Code,
+		Name:       item.Name,
+		Theme:      item.Theme,
+		CategoryID: item.CategoryID,
+		SortOrder:  item.SortOrder,
+		CreatedAt:  now,
+		UpdatedAt:  now,
 	})
 	return err
 }
@@ -322,6 +352,9 @@ func (r *OrderRepository) SearchAvailableDishes(ctx context.Context, query strin
 	var q *string
 	if query != "" {
 		q = &query
+	}
+	if limit < 0 || limit > math.MaxInt32 {
+		limit = math.MaxInt32
 	}
 	rows, err := r.queries.SearchIikoDishes(ctx, sqlc.SearchIikoDishesParams{Query: q, Lim: int32(limit)})
 	if err != nil {
@@ -344,12 +377,13 @@ func (r *OrderRepository) SetDishCatalogSortOrder(ctx context.Context, code stri
 
 func (r *OrderRepository) UpdateDishCatalogItem(ctx context.Context, code string, item orderuc.DishCatalogItem) (orderuc.DishCatalogItem, error) {
 	row, err := r.queries.UpdateDishCatalogItem(ctx, sqlc.UpdateDishCatalogItemParams{
-		Code:      code,
-		NewCode:   item.Code,
-		Name:      item.Name,
-		Theme:     item.Theme,
-		SortOrder: item.SortOrder,
-		UpdatedAt: helpers.TimestamptzNow(),
+		Code:       code,
+		NewCode:    item.Code,
+		Name:       item.Name,
+		Theme:      item.Theme,
+		CategoryID: item.CategoryID,
+		SortOrder:  item.SortOrder,
+		UpdatedAt:  helpers.TimestamptzNow(),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -462,6 +496,7 @@ func orderFromRow(row sqlc.Order, items []orderdomain.OrderItem, history []order
 		Location:            row.Location,
 		FromDepartmentID:    row.FromDepartmentID,
 		ToDepartmentID:      row.ToDepartmentID,
+		CategoryID:          row.CategoryID,
 		CreatedByUsername:   row.CreatedByUsername,
 		Items:               items,
 		CreatedAt:           row.CreatedAt.Time,
@@ -490,7 +525,11 @@ func (r *OrderRepository) SetOrderFavorite(ctx context.Context, number string, f
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
-	return orderFromRow(row, mapOrderItems(items), history), nil
+	order := orderFromRow(row, mapOrderItems(items), history)
+	if err := r.attachCategory(ctx, &order); err != nil {
+		return orderdomain.Order{}, err
+	}
+	return order, nil
 }
 
 // CancelOrder soft-cancels the order, recording who cancelled it, and emits an
@@ -580,7 +619,137 @@ func (r *OrderRepository) hydrateOrder(ctx context.Context, q sqlc.Querier, row 
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
-	return orderFromRow(row, mapOrderItems(items), history), nil
+	order := orderFromRow(row, mapOrderItems(items), history)
+	if err := r.attachCategory(ctx, &order); err != nil {
+		return orderdomain.Order{}, err
+	}
+	if err := attachProductionSheet(ctx, q, row.ID, &order); err != nil {
+		return orderdomain.Order{}, err
+	}
+	return order, nil
+}
+
+// attachProductionSheet resolves the отработка document covering the order,
+// so delivery can link заказ → отработка.
+func attachProductionSheet(ctx context.Context, q sqlc.Querier, orderID int64, order *orderdomain.Order) error {
+	sheetID, err := q.GetOrderProductionSheetID(ctx, orderID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("get order production sheet: %w", err)
+	}
+	order.ProductionSheetID = &sheetID
+	return nil
+}
+
+func categoryFromRow(row sqlc.OrderCategory) orderdomain.OrderCategory {
+	return orderdomain.OrderCategory{
+		ID:           row.ID,
+		Code:         row.Code,
+		Letter:       row.Letter,
+		Name:         row.Name,
+		Color:        row.Color,
+		SortOrder:    row.SortOrder,
+		MonitorCodes: row.MonitorCodes,
+	}
+}
+
+// attachCategories resolves Category for the given orders in one lookup, so
+// list responses and event snapshots carry the category name/color/letter.
+func (r *OrderRepository) attachCategories(ctx context.Context, orders []orderdomain.Order) error {
+	rows, err := r.queries.ListOrderCategories(ctx)
+	if err != nil {
+		return fmt.Errorf("list order categories: %w", err)
+	}
+	byID := make(map[int64]orderdomain.OrderCategory, len(rows))
+	for _, row := range rows {
+		byID[row.ID] = categoryFromRow(row)
+	}
+	for i := range orders {
+		if orders[i].CategoryID == nil {
+			continue
+		}
+		if category, ok := byID[*orders[i].CategoryID]; ok {
+			orders[i].Category = &category
+		}
+	}
+	return nil
+}
+
+func (r *OrderRepository) attachCategory(ctx context.Context, order *orderdomain.Order) error {
+	if order.CategoryID == nil {
+		return nil
+	}
+	row, err := r.queries.GetOrderCategoryByID(ctx, *order.CategoryID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		// Категория могла быть удалена — заказ остаётся валидным без неё.
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("get order category %d: %w", *order.CategoryID, err)
+	}
+	category := categoryFromRow(row)
+	order.Category = &category
+	return nil
+}
+
+func (r *OrderRepository) ListOrderCategories(ctx context.Context) ([]orderdomain.OrderCategory, error) {
+	rows, err := r.queries.ListOrderCategories(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list order categories: %w", err)
+	}
+	categories := make([]orderdomain.OrderCategory, 0, len(rows))
+	for _, row := range rows {
+		categories = append(categories, categoryFromRow(row))
+	}
+	return categories, nil
+}
+
+func (r *OrderRepository) GetOrderCategoryByID(ctx context.Context, id int64) (orderdomain.OrderCategory, error) {
+	row, err := r.queries.GetOrderCategoryByID(ctx, id)
+	if err != nil {
+		return orderdomain.OrderCategory{}, fmt.Errorf("get order category %d: %w", id, err)
+	}
+	return categoryFromRow(row), nil
+}
+
+func (r *OrderRepository) CreateOrderCategory(ctx context.Context, input orderdomain.OrderCategory) (orderdomain.OrderCategory, error) {
+	row, err := r.queries.CreateOrderCategory(ctx, sqlc.CreateOrderCategoryParams{
+		Code:         input.Code,
+		Letter:       input.Letter,
+		Name:         input.Name,
+		Color:        input.Color,
+		SortOrder:    input.SortOrder,
+		MonitorCodes: input.MonitorCodes,
+	})
+	if err != nil {
+		return orderdomain.OrderCategory{}, fmt.Errorf("create order category: %w", err)
+	}
+	return categoryFromRow(row), nil
+}
+
+func (r *OrderRepository) UpdateOrderCategory(ctx context.Context, id int64, input orderdomain.OrderCategory) (orderdomain.OrderCategory, error) {
+	row, err := r.queries.UpdateOrderCategory(ctx, sqlc.UpdateOrderCategoryParams{
+		ID:           id,
+		Letter:       input.Letter,
+		Name:         input.Name,
+		Color:        input.Color,
+		SortOrder:    input.SortOrder,
+		MonitorCodes: input.MonitorCodes,
+	})
+	if err != nil {
+		return orderdomain.OrderCategory{}, fmt.Errorf("update order category %d: %w", id, err)
+	}
+	return categoryFromRow(row), nil
+}
+
+func (r *OrderRepository) DeleteOrderCategory(ctx context.Context, id int64) error {
+	return r.queries.DeleteOrderCategory(ctx, id)
+}
+
+func (r *OrderRepository) CountDishesByCategoryID(ctx context.Context, id int64) (int64, error) {
+	return r.queries.CountDishesByCategoryID(ctx, &id)
 }
 
 // marshalComments serializes order comments to JSON, returning nil (SQL NULL)
@@ -624,6 +793,8 @@ func (r *OrderRepository) orderItemsByOrderIDs(ctx context.Context, orderIDs []i
 			ProductName:      item.ProductName,
 			Quantity:         item.Quantity,
 			ReservedQuantity: item.ReservedQuantity,
+			ProducedQuantity: item.ProducedQuantity,
+			ProducedReason:   derefString(item.ProducedReason),
 		})
 	}
 	return grouped, nil
@@ -637,6 +808,8 @@ func mapOrderItems(items []sqlc.GetOrderItemsByOrderIDRow) []orderdomain.OrderIt
 			ProductName:      item.ProductName,
 			Quantity:         item.Quantity,
 			ReservedQuantity: item.ReservedQuantity,
+			ProducedQuantity: item.ProducedQuantity,
+			ProducedReason:   derefString(item.ProducedReason),
 		})
 	}
 	return result
@@ -644,9 +817,17 @@ func mapOrderItems(items []sqlc.GetOrderItemsByOrderIDRow) []orderdomain.OrderIt
 
 func dishCatalogItem(row sqlc.DishCatalog) orderuc.DishCatalogItem {
 	return orderuc.DishCatalogItem{
-		Code:      row.Code,
-		Name:      row.Name,
-		Theme:     row.Theme,
-		SortOrder: row.SortOrder,
+		Code:       row.Code,
+		Name:       row.Name,
+		Theme:      row.Theme,
+		CategoryID: row.CategoryID,
+		SortOrder:  row.SortOrder,
 	}
+}
+
+func derefString(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }
