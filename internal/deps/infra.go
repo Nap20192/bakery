@@ -1,15 +1,18 @@
 package deps
 
 import (
+	stdsql "database/sql"
 	"fmt"
 	"strconv"
 
 	"bakery/internal/config"
 	"bakery/internal/outbound/db/sqlc"
 	"bakery/internal/outbound/iiko"
+	"bakery/internal/services/order/eventsourced"
 	"bakery/pkg/rabbitmq/consumer"
 	"bakery/pkg/rabbitmq/publisher"
 
+	essql "github.com/hallgren/eventsourcing/eventstore/sql"
 	"github.com/jackc/pgx/v5/pgxpool"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -21,6 +24,8 @@ type InfraDeps struct {
 	queries        *sqlc.Queries
 	eventPublisher *publisher.Publisher
 	eventConsumer  *consumer.Consumer
+	eventStore     *essql.Postgres
+	eventStoreDB   *stdsql.DB
 }
 
 // EventConsumer exposes the RabbitMQ consumer for wiring done outside this
@@ -71,6 +76,36 @@ func WithRepositories() infraOption {
 		}
 		deps.queries = sqlc.New(deps.DB)
 		return nil
+	}
+}
+
+// WithEventStore открывает event store заказов (таблица events, миграция
+// 00025) и регистрирует агрегаты. Подключается только в worker — бот читает
+// заказы из read model и в командную сторону не ходит.
+func WithEventStore() infraOption {
+	return func(deps *InfraDeps) error {
+		if deps.config == nil {
+			return fmt.Errorf("missing dependencies for event store")
+		}
+		eventsourced.RegisterAggregates()
+		store, db, err := eventsourced.NewPostgresStore(deps.config.Database.URL)
+		if err != nil {
+			return err
+		}
+		deps.eventStore = store
+		deps.eventStoreDB = db
+		return nil
+	}
+}
+
+// CloseEventStore закрывает соединение event store (no-op, если store не
+// подключался). Вызывается при останове бинаря.
+func (d *InfraDeps) CloseEventStore() {
+	if d.eventStore != nil {
+		d.eventStore.Close()
+	}
+	if d.eventStoreDB != nil {
+		_ = d.eventStoreDB.Close()
 	}
 }
 

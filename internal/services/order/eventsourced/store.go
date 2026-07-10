@@ -3,17 +3,22 @@ package eventsourced
 import (
 	stdsql "database/sql"
 	"fmt"
+	"sync"
 
 	"github.com/hallgren/eventsourcing/aggregate"
 	essql "github.com/hallgren/eventsourcing/eventstore/sql"
 	_ "github.com/jackc/pgx/v5/stdlib" // database/sql driver "pgx" для event store
 )
 
+var registerOnce sync.Once
+
 // RegisterAggregates регистрирует event-sourced агрегаты в глобальном
-// реестре библиотеки. Вызывается один раз на старте бинаря (composition
-// root) до первого Save/Load.
+// реестре библиотеки до первого Save/Load. Повторные вызовы безопасны —
+// регистрация выполняется один раз на процесс.
 func RegisterAggregates() {
-	aggregate.Register(&Order{})
+	registerOnce.Do(func() {
+		aggregate.Register(&Order{})
+	})
 }
 
 // NewPostgresStore открывает event store поверх Postgres. Библиотека ходит

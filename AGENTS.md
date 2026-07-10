@@ -292,10 +292,15 @@ Event-driven flow from the order service to the bot:
    изменений не пишут ни событий, ни проекции. При падении проекции события
    уже в store (источник истины) — read model догоняется фоновым прогоном
    `NewReadModelProjection` (writer обязан быть идемпотентным).
-3. Реализация `ReadModelWriter` поверх sqlc (infra/repo) и переключение
-   write-пути usecase на `Commands` (генерация номера/счётчик и проверки
-   каталога остаются в usecase, фиксируются в Created); совместимость бота —
-   writer кладёт события в старый outbox до этапа 4.
+3. ✅ Реализация `ReadModelWriter` поверх sqlc (`infra/repo/es_writer.go`) и
+   переключение write-пути usecase на `Commands` (генерация номера — порт
+   `Repository.NextOrderNumber`, проверки каталога остаются в usecase,
+   фиксируются в Created); совместимость бота — writer кладёт события в
+   старый outbox до этапа 4. Wiring: `orderapp.WithEventStore` +
+   `deps.WithEventStore()` — только worker; bot и юнит-тесты работают по
+   legacy-пути (commands == nil).
+3b. Отработка (production sheets) через `Commands.RecordProduction` /
+   `ClearProduction` — сейчас документы журнала пишутся legacy-путём.
 4. RabbitMQ-события бота публикуются из потока ES (замена текущего outbox),
    `order_history` становится проекцией потока; sharedkernel-события
    `domain/events.go` удаляются.

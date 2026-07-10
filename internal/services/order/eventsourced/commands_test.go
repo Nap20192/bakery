@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"testing"
+
+	"github.com/hallgren/eventsourcing"
 )
 
 func TestCommandsLifecycleProjectsSynchronously(t *testing.T) {
@@ -90,8 +92,8 @@ func TestCommandsProjectionFailureSurfacesError(t *testing.T) {
 	}
 }
 
-type failingWriter struct{ recordingWriter }
+type failingWriter struct{}
 
-func (w *failingWriter) ApplyCreated(string, Created) error {
+func (w *failingWriter) Apply(context.Context, eventsourcing.Event) error {
 	return errors.New("read model unavailable")
 }

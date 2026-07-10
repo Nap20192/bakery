@@ -13,6 +13,7 @@ import (
 	"bakery/internal/pkg/apperr"
 	"bakery/internal/pkg/enum"
 	orderdomain "bakery/internal/services/order/domain"
+	"bakery/internal/services/order/eventsourced"
 )
 
 var (
@@ -30,21 +31,37 @@ var (
 
 // Service is the order use-case implementation. It depends only on the
 // Repository port and the pure domain service — never on infrastructure.
-// Domain events are persisted to the transactional outbox by the repository
-// (atomically with the write) and published by a separate relay.
+//
+// Запись жизненного цикла заказа (create/update/cancel/restore) идёт через
+// event sourcing (eventsourced.Commands), когда команды подключены: usecase
+// делает проверки каталога/дат/категории и генерирует номер, агрегат держит
+// инварианты, синхронная проекция обновляет read model (те же таблицы).
+// Без команд (bot-бинарь, тесты) остаётся legacy-путь через Repository.
 type Service struct {
-	repo   Repository
-	domain *orderdomain.OrderService
+	repo     Repository
+	domain   *orderdomain.OrderService
+	commands *eventsourced.Commands
 }
 
 // Compile-time assurance that Service satisfies the boundary contract.
 var _ UseCase = (*Service)(nil)
 
-func NewService(repo Repository) *Service {
-	return &Service{
+func NewService(repo Repository, opts ...ServiceOption) *Service {
+	s := &Service{
 		repo:   repo,
 		domain: orderdomain.NewOrderService(),
 	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
+}
+
+type ServiceOption func(*Service)
+
+// WithESCommands включает event-sourced путь записи жизненного цикла заказа.
+func WithESCommands(commands *eventsourced.Commands) ServiceOption {
+	return func(s *Service) { s.commands = commands }
 }
 
 func (s *Service) CreateOrder(ctx context.Context, input orderdomain.CreateOrderInput) (orderdomain.Order, error) {
@@ -75,6 +92,32 @@ func (s *Service) CreateOrder(ctx context.Context, input orderdomain.CreateOrder
 	category, err := s.repo.GetOrderCategoryByID(ctx, input.CategoryID)
 	if err != nil {
 		return orderdomain.Order{}, ErrCategoryNotFound
+	}
+
+	if s.commands != nil {
+		number, err := s.repo.NextOrderNumber(ctx, NextOrderNumberInput{
+			Shop:       shop,
+			Category:   category,
+			CounterDay: s.domain.OrderCounterDay(createdAt),
+			CreatedAt:  createdAt,
+		})
+		if err != nil {
+			return orderdomain.Order{}, err
+		}
+		if _, err := s.commands.CreateOrder(ctx, eventsourced.Created{
+			Number:            number,
+			FromDepartmentID:  input.FromDepartmentID,
+			ToDepartmentID:    input.ToDepartmentID,
+			CategoryID:        &category.ID,
+			CreatedByUsername: strings.TrimSpace(input.CreatedByUsername),
+			FulfillmentDate:   fulfillmentDate,
+			Items:             domainItemsToES(input.Items),
+			Comments:          domainCommentsToES(input.Comments),
+		}); err != nil {
+			return orderdomain.Order{}, err
+		}
+		// Проекция синхронна — read model уже содержит заказ.
+		return s.repo.GetOrderByNumber(ctx, number)
 	}
 
 	order, err := s.repo.CreateOrder(ctx, CreateOrderRepositoryInput{
@@ -115,7 +158,7 @@ func (s *Service) UpdateOrder(ctx context.Context, input UpdateOrderInput) (orde
 	if existing.Cancelled {
 		return orderdomain.Order{}, ErrOrderCancelled
 	}
-	historyItems := diffOrderItems(existing.Items, input.Items)
+	historyItems := DiffOrderItems(existing.Items, input.Items)
 	if input.FromDepartmentID == nil {
 		input.FromDepartmentID = existing.FromDepartmentID
 	}
@@ -126,6 +169,19 @@ func (s *Service) UpdateOrder(ctx context.Context, input UpdateOrderInput) (orde
 	if err := validateFulfillmentDateNotPast(fulfillmentDate, time.Now().UTC()); err != nil {
 		return orderdomain.Order{}, err
 	}
+
+	if s.commands != nil {
+		if _, err := s.commands.UpdateOrder(ctx, input.Number, eventsourced.ItemsUpdated{
+			Items:             domainItemsToES(input.Items),
+			FulfillmentDate:   fulfillmentDate,
+			Comments:          domainCommentsToES(input.Comments),
+			ChangedByUsername: strings.TrimSpace(input.CreatedByUsername),
+		}); err != nil {
+			return orderdomain.Order{}, err
+		}
+		return s.repo.GetOrderByNumber(ctx, input.Number)
+	}
+
 	order, err := s.repo.UpdateOrder(ctx, UpdateOrderRepositoryInput{
 		Number:            input.Number,
 		Items:             input.Items,
@@ -199,6 +255,12 @@ func (s *Service) CancelOrder(ctx context.Context, number, byUsername string) (o
 	}
 	if existing.Cancelled {
 		return existing, nil
+	}
+	if s.commands != nil {
+		if _, err := s.commands.CancelOrder(ctx, number, strings.TrimSpace(byUsername)); err != nil {
+			return orderdomain.Order{}, err
+		}
+		return s.repo.GetOrderByNumber(ctx, number)
 	}
 	return s.repo.CancelOrder(ctx, number, strings.TrimSpace(byUsername))
 }
@@ -354,6 +416,12 @@ func (s *Service) RestoreOrder(ctx context.Context, number, byUsername string) (
 	}
 	if !existing.Cancelled {
 		return existing, nil
+	}
+	if s.commands != nil {
+		if _, err := s.commands.RestoreOrder(ctx, number, strings.TrimSpace(byUsername)); err != nil {
+			return orderdomain.Order{}, err
+		}
+		return s.repo.GetOrderByNumber(ctx, number)
 	}
 	return s.repo.RestoreOrder(ctx, number)
 }
@@ -860,7 +928,30 @@ func positiveOrderItems(items []orderdomain.OrderItem) []orderdomain.OrderItem {
 	return result
 }
 
-func diffOrderItems(oldItems, newItems []orderdomain.OrderItem) []orderdomain.OrderHistoryItem {
+// domainItemsToES / domainCommentsToES переводят провалидированные usecase'ом
+// данные в самодостаточные контракты событий (без domain-типов внутри store).
+func domainItemsToES(items []orderdomain.OrderItem) []eventsourced.Item {
+	result := make([]eventsourced.Item, 0, len(items))
+	for _, item := range items {
+		result = append(result, eventsourced.Item{
+			Code:             item.Code,
+			ProductName:      item.ProductName,
+			Quantity:         item.Quantity,
+			ReservedQuantity: item.ReservedQuantity,
+		})
+	}
+	return result
+}
+
+func domainCommentsToES(comments orderdomain.OrderComments) eventsourced.Comments {
+	result := eventsourced.Comments{General: comments.General}
+	for _, item := range comments.Items {
+		result.Items = append(result.Items, eventsourced.ItemComment{ProductName: item.ProductName, Comment: item.Comment})
+	}
+	return result
+}
+
+func DiffOrderItems(oldItems, newItems []orderdomain.OrderItem) []orderdomain.OrderHistoryItem {
 	oldByCode := make(map[string]orderdomain.OrderItem, len(oldItems))
 	newByCode := make(map[string]orderdomain.OrderItem, len(newItems))
 	for _, item := range oldItems {

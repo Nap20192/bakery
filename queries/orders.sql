@@ -91,6 +91,58 @@ SELECT *
 FROM orders
 WHERE id = sqlc.arg(id);
 
+-- name: InsertOrderProjection :one
+-- Проекция события Created (event sourcing): вставка идемпотентна — при
+-- повторном применении события конфликт по номеру возвращает ErrNoRows,
+-- что читается как «уже применено».
+INSERT INTO orders (
+    number,
+    location,
+    from_department_id,
+    to_department_id,
+    category_id,
+    created_at,
+    fulfillment_date,
+    created_by_username,
+    comments
+) VALUES (
+    sqlc.arg(number),
+    sqlc.arg(location),
+    sqlc.narg(from_department_id),
+    sqlc.narg(to_department_id),
+    sqlc.narg(category_id),
+    sqlc.arg(created_at),
+    sqlc.arg(fulfillment_date),
+    sqlc.arg(created_by_username),
+    sqlc.narg(comments)
+)
+ON CONFLICT (number) DO NOTHING
+RETURNING *;
+
+-- name: UpdateOrderProjection :one
+-- Проекция события ItemsUpdated: заменяет дату и комментарии, состав
+-- заменяется отдельно (delete + insert). Департаменты события не меняют.
+UPDATE orders
+SET fulfillment_date = sqlc.arg(fulfillment_date),
+    comments = sqlc.narg(comments)
+WHERE number = sqlc.arg(number)
+RETURNING *;
+
+-- name: SetOrderItemProducedProjection :exec
+-- Проекция ProductionRecorded: факт+причина на позицию.
+UPDATE order_items
+SET produced_quantity = sqlc.narg(produced_quantity),
+    produced_reason = sqlc.narg(produced_reason)
+WHERE order_id = sqlc.arg(order_id)
+  AND lower(trim(product_name)) = lower(trim(sqlc.arg(product_name)));
+
+-- name: ClearOrderProductionProjection :exec
+-- Проекция ProductionCleared / сброс перед повторным применением.
+UPDATE order_items
+SET produced_quantity = NULL,
+    produced_reason = NULL
+WHERE order_id = sqlc.arg(order_id);
+
 -- name: DeleteOrderItemsByOrderID :exec
 DELETE FROM order_items
 WHERE order_id = sqlc.arg(order_id);

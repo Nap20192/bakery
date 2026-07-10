@@ -56,11 +56,13 @@ func main() {
 		deps.WithRepositories(),
 		deps.WithRabbitMQ(rabbitConn),
 		deps.WithIikoClient(),
+		deps.WithEventStore(),
 	)
 	if err != nil {
 		log.Error("build infra deps failed", "error", err)
 		os.Exit(1)
 	}
+	defer infra.CloseEventStore()
 
 	appDeps, err := deps.NewAppDeps(
 		deps.WithAuthService(infra),

@@ -46,6 +46,19 @@ func (q *Queries) CancelOrder(ctx context.Context, arg CancelOrderParams) (Order
 	return i, err
 }
 
+const clearOrderProductionProjection = `-- name: ClearOrderProductionProjection :exec
+UPDATE order_items
+SET produced_quantity = NULL,
+    produced_reason = NULL
+WHERE order_id = $1
+`
+
+// Проекция ProductionCleared / сброс перед повторным применением.
+func (q *Queries) ClearOrderProductionProjection(ctx context.Context, orderID int64) error {
+	_, err := q.db.Exec(ctx, clearOrderProductionProjection, orderID)
+	return err
+}
+
 const countOrders = `-- name: CountOrders :one
 SELECT COUNT(*)
 FROM orders
@@ -501,6 +514,78 @@ func (q *Queries) GetOrderItemsByOrderIDs(ctx context.Context, orderIds []int64)
 	return items, nil
 }
 
+const insertOrderProjection = `-- name: InsertOrderProjection :one
+INSERT INTO orders (
+    number,
+    location,
+    from_department_id,
+    to_department_id,
+    category_id,
+    created_at,
+    fulfillment_date,
+    created_by_username,
+    comments
+) VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8,
+    $9
+)
+ON CONFLICT (number) DO NOTHING
+RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id
+`
+
+type InsertOrderProjectionParams struct {
+	Number            string             `json:"number"`
+	Location          string             `json:"location"`
+	FromDepartmentID  *int64             `json:"from_department_id"`
+	ToDepartmentID    *int64             `json:"to_department_id"`
+	CategoryID        *int64             `json:"category_id"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	FulfillmentDate   pgtype.Date        `json:"fulfillment_date"`
+	CreatedByUsername string             `json:"created_by_username"`
+	Comments          []byte             `json:"comments"`
+}
+
+// Проекция события Created (event sourcing): вставка идемпотентна — при
+// повторном применении события конфликт по номеру возвращает ErrNoRows,
+// что читается как «уже применено».
+func (q *Queries) InsertOrderProjection(ctx context.Context, arg InsertOrderProjectionParams) (Order, error) {
+	row := q.db.QueryRow(ctx, insertOrderProjection,
+		arg.Number,
+		arg.Location,
+		arg.FromDepartmentID,
+		arg.ToDepartmentID,
+		arg.CategoryID,
+		arg.CreatedAt,
+		arg.FulfillmentDate,
+		arg.CreatedByUsername,
+		arg.Comments,
+	)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.Number,
+		&i.Location,
+		&i.CreatedAt,
+		&i.FromDepartmentID,
+		&i.ToDepartmentID,
+		&i.FulfillmentDate,
+		&i.CreatedByUsername,
+		&i.Comments,
+		&i.IsFavorite,
+		&i.CancelledAt,
+		&i.CancelledByUsername,
+		&i.CategoryID,
+	)
+	return i, err
+}
+
 const listOrderHistoryByOrderID = `-- name: ListOrderHistoryByOrderID :many
 SELECT id, order_id, changed_by_username, changed_at
 FROM order_history
@@ -718,6 +803,32 @@ func (q *Queries) SetOrderFavorite(ctx context.Context, arg SetOrderFavoritePara
 	return i, err
 }
 
+const setOrderItemProducedProjection = `-- name: SetOrderItemProducedProjection :exec
+UPDATE order_items
+SET produced_quantity = $1,
+    produced_reason = $2
+WHERE order_id = $3
+  AND lower(trim(product_name)) = lower(trim($4))
+`
+
+type SetOrderItemProducedProjectionParams struct {
+	ProducedQuantity *float64 `json:"produced_quantity"`
+	ProducedReason   *string  `json:"produced_reason"`
+	OrderID          int64    `json:"order_id"`
+	ProductName      string   `json:"product_name"`
+}
+
+// Проекция ProductionRecorded: факт+причина на позицию.
+func (q *Queries) SetOrderItemProducedProjection(ctx context.Context, arg SetOrderItemProducedProjectionParams) error {
+	_, err := q.db.Exec(ctx, setOrderItemProducedProjection,
+		arg.ProducedQuantity,
+		arg.ProducedReason,
+		arg.OrderID,
+		arg.ProductName,
+	)
+	return err
+}
+
 const updateOrder = `-- name: UpdateOrder :one
 UPDATE orders
 SET
@@ -747,6 +858,43 @@ func (q *Queries) UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order
 		arg.Comments,
 		arg.Number,
 	)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.Number,
+		&i.Location,
+		&i.CreatedAt,
+		&i.FromDepartmentID,
+		&i.ToDepartmentID,
+		&i.FulfillmentDate,
+		&i.CreatedByUsername,
+		&i.Comments,
+		&i.IsFavorite,
+		&i.CancelledAt,
+		&i.CancelledByUsername,
+		&i.CategoryID,
+	)
+	return i, err
+}
+
+const updateOrderProjection = `-- name: UpdateOrderProjection :one
+UPDATE orders
+SET fulfillment_date = $1,
+    comments = $2
+WHERE number = $3
+RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id
+`
+
+type UpdateOrderProjectionParams struct {
+	FulfillmentDate pgtype.Date `json:"fulfillment_date"`
+	Comments        []byte      `json:"comments"`
+	Number          string      `json:"number"`
+}
+
+// Проекция события ItemsUpdated: заменяет дату и комментарии, состав
+// заменяется отдельно (delete + insert). Департаменты события не меняют.
+func (q *Queries) UpdateOrderProjection(ctx context.Context, arg UpdateOrderProjectionParams) (Order, error) {
+	row := q.db.QueryRow(ctx, updateOrderProjection, arg.FulfillmentDate, arg.Comments, arg.Number)
 	var i Order
 	err := row.Scan(
 		&i.ID,

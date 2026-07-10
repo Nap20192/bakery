@@ -118,7 +118,7 @@ func (c *Commands) load(ctx context.Context, number string) (*Order, error) {
 
 // commit сохраняет несохранённые события агрегата и синхронно применяет их к
 // read model. Идемпотентные команды без изменений (len(pending)==0) — no-op.
-func (c *Commands) commit(_ context.Context, order *Order) error {
+func (c *Commands) commit(ctx context.Context, order *Order) error {
 	pending := order.Events()
 	if len(pending) == 0 {
 		return nil
@@ -127,7 +127,7 @@ func (c *Commands) commit(_ context.Context, order *Order) error {
 		return fmt.Errorf("save order events: %w", err)
 	}
 	for _, event := range pending {
-		if err := applyEvent(c.writer, event); err != nil {
+		if err := c.writer.Apply(ctx, event); err != nil {
 			// События уже в store (источник истины). Read model догонит их
 			// фоновым прогоном проекции; наружу отдаём ошибку, чтобы вызов
 			// не выглядел успешным при отставшем чтении.

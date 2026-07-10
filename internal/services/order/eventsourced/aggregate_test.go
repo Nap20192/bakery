@@ -3,17 +3,15 @@ package eventsourced
 import (
 	"context"
 	"errors"
-	"sync"
 	"testing"
 
+	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/aggregate"
 	"github.com/hallgren/eventsourcing/eventstore/memory"
 )
 
-var registerOnce sync.Once
-
 func newTestStore() *memory.Memory {
-	registerOnce.Do(RegisterAggregates)
+	RegisterAggregates()
 	return memory.Create()
 }
 
@@ -138,7 +136,7 @@ func TestReadModelProjectionDispatch(t *testing.T) {
 	}
 
 	writer := &recordingWriter{}
-	projection := NewReadModelProjection(store.All(0, 10), writer)
+	projection := NewReadModelProjection(context.Background(), store.All(0, 10), writer)
 	projection.RunOnce()
 
 	if len(writer.calls) != 2 || writer.calls[0] != "created:B" || writer.calls[1] != "cancelled:B" {
@@ -150,27 +148,21 @@ type recordingWriter struct {
 	calls []string
 }
 
-func (w *recordingWriter) ApplyCreated(number string, _ Created) error {
-	w.calls = append(w.calls, "created:"+number)
-	return nil
-}
-func (w *recordingWriter) ApplyItemsUpdated(number string, _ ItemsUpdated) error {
-	w.calls = append(w.calls, "updated:"+number)
-	return nil
-}
-func (w *recordingWriter) ApplyCancelled(number string, _ Cancelled) error {
-	w.calls = append(w.calls, "cancelled:"+number)
-	return nil
-}
-func (w *recordingWriter) ApplyRestored(number string, _ Restored) error {
-	w.calls = append(w.calls, "restored:"+number)
-	return nil
-}
-func (w *recordingWriter) ApplyProductionRecorded(number string, _ ProductionRecorded) error {
-	w.calls = append(w.calls, "produced:"+number)
-	return nil
-}
-func (w *recordingWriter) ApplyProductionCleared(number string, _ ProductionCleared) error {
-	w.calls = append(w.calls, "production_cleared:"+number)
+func (w *recordingWriter) Apply(_ context.Context, event eventsourcing.Event) error {
+	number := event.AggregateID()
+	switch event.Data().(type) {
+	case *Created:
+		w.calls = append(w.calls, "created:"+number)
+	case *ItemsUpdated:
+		w.calls = append(w.calls, "updated:"+number)
+	case *Cancelled:
+		w.calls = append(w.calls, "cancelled:"+number)
+	case *Restored:
+		w.calls = append(w.calls, "restored:"+number)
+	case *ProductionRecorded:
+		w.calls = append(w.calls, "produced:"+number)
+	case *ProductionCleared:
+		w.calls = append(w.calls, "production_cleared:"+number)
+	}
 	return nil
 }

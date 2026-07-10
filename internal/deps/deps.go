@@ -78,7 +78,11 @@ func WithOrderService(infra *InfraDeps) appOption {
 		if infra == nil || infra.queries == nil || infra.DB == nil {
 			return fmt.Errorf("missing dependencies for OrderService")
 		}
-		deps.OrderService = orderapp.New(infra.queries, infra.DB)
+		var opts []orderapp.Option
+		if infra.eventStore != nil {
+			opts = append(opts, orderapp.WithEventStore(infra.eventStore))
+		}
+		deps.OrderService = orderapp.New(infra.queries, infra.DB, opts...)
 		return nil
 	}
 }

@@ -490,6 +490,10 @@ func (f *fakeRepo) UpdateOrder(context.Context, UpdateOrderRepositoryInput) (ord
 	return orderdomain.Order{}, nil
 }
 
+func (f *fakeRepo) NextOrderNumber(_ context.Context, input NextOrderNumberInput) (string, error) {
+	return "TEST." + input.Category.Letter + ".001", nil
+}
+
 func (f *fakeRepo) GetOrderByNumber(_ context.Context, number string) (orderdomain.Order, error) {
 	if order, ok := f.ordersByNumber[number]; ok {
 		return order, nil

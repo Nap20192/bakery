@@ -44,6 +44,17 @@ type DishCatalog struct {
 	CategoryID *int64             `json:"category_id"`
 }
 
+type Event struct {
+	Seq       int32   `json:"seq"`
+	ID        string  `json:"id"`
+	Version   *int32  `json:"version"`
+	Reason    *string `json:"reason"`
+	Type      *string `json:"type"`
+	Timestamp *string `json:"timestamp"`
+	Data      []byte  `json:"data"`
+	Metadata  []byte  `json:"metadata"`
+}
+
 type IikoAssemblyChart struct {
 	ID                                   string             `json:"id"`
 	AssembledProductID                   string             `json:"assembled_product_id"`

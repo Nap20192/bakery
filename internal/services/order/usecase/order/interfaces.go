@@ -58,6 +58,9 @@ type Repository interface {
 	SetOrderFavorite(ctx context.Context, number string, favorite bool) (orderdomain.Order, error)
 	CancelOrder(ctx context.Context, number, by string) (orderdomain.Order, error)
 	RestoreOrder(ctx context.Context, number string) (orderdomain.Order, error)
+	// NextOrderNumber — командная сторона event sourcing: инкремент счётчика
+	// и построение номера до записи события Created.
+	NextOrderNumber(ctx context.Context, input NextOrderNumberInput) (string, error)
 	SaveProductionSheet(ctx context.Context, input SaveProductionSheetInput) (orderdomain.ProductionSheet, error)
 	ListProductionSheets(ctx context.Context) ([]orderdomain.ProductionSheet, error)
 	GetProductionSheet(ctx context.Context, id int64) (orderdomain.ProductionSheet, error)
@@ -95,6 +98,15 @@ type DishCatalogItem struct {
 	Theme      string
 	CategoryID *int64
 	SortOrder  int64
+}
+
+// NextOrderNumberInput — данные для генерации номера заказа (счётчик на
+// день+магазин+тип живёт в БД, формат номера — в домене).
+type NextOrderNumberInput struct {
+	Shop       Department
+	Category   orderdomain.OrderCategory
+	CounterDay string
+	CreatedAt  time.Time
 }
 
 // CreateOrderRepositoryInput carries everything the repository needs to persist

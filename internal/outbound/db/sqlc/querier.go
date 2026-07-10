@@ -17,6 +17,8 @@ type Querier interface {
 	AssignUserDepartment(ctx context.Context, arg AssignUserDepartmentParams) (AuthUser, error)
 	BindTelegramID(ctx context.Context, arg BindTelegramIDParams) (AuthUser, error)
 	CancelOrder(ctx context.Context, arg CancelOrderParams) (Order, error)
+	// Проекция ProductionCleared / сброс перед повторным применением.
+	ClearOrderProductionProjection(ctx context.Context, orderID int64) error
 	ClearUncoveredOrderProduction(ctx context.Context, orderID int64) error
 	CountDishesByCategoryID(ctx context.Context, categoryID *int64) (int64, error)
 	CountOrders(ctx context.Context, arg CountOrdersParams) (int64, error)
@@ -65,6 +67,10 @@ type Querier interface {
 	InsertIikoAssemblyChartItem(ctx context.Context, arg InsertIikoAssemblyChartItemParams) error
 	InsertIikoPreparedChartItem(ctx context.Context, arg InsertIikoPreparedChartItemParams) error
 	InsertOrderOutboxEvent(ctx context.Context, arg InsertOrderOutboxEventParams) (int64, error)
+	// Проекция события Created (event sourcing): вставка идемпотентна — при
+	// повторном применении события конфликт по номеру возвращает ErrNoRows,
+	// что читается как «уже применено».
+	InsertOrderProjection(ctx context.Context, arg InsertOrderProjectionParams) (Order, error)
 	InsertProductionSheetItem(ctx context.Context, arg InsertProductionSheetItemParams) error
 	ListAssemblyChartItemsByChartID(ctx context.Context, chartID string) ([]ListAssemblyChartItemsByChartIDRow, error)
 	ListAuthUsers(ctx context.Context) ([]AuthUser, error)
@@ -88,6 +94,8 @@ type Querier interface {
 	SearchIikoDishes(ctx context.Context, arg SearchIikoDishesParams) ([]SearchIikoDishesRow, error)
 	SetDishCatalogSortOrder(ctx context.Context, arg SetDishCatalogSortOrderParams) error
 	SetOrderFavorite(ctx context.Context, arg SetOrderFavoriteParams) (Order, error)
+	// Проекция ProductionRecorded: факт+причина на позицию.
+	SetOrderItemProducedProjection(ctx context.Context, arg SetOrderItemProducedProjectionParams) error
 	TouchProductionSheet(ctx context.Context, id int64) error
 	UpdateAuthUserPassword(ctx context.Context, arg UpdateAuthUserPasswordParams) (AuthUser, error)
 	UpdateAuthUserRole(ctx context.Context, arg UpdateAuthUserRoleParams) (AuthUser, error)
@@ -97,6 +105,9 @@ type Querier interface {
 	// its original author; who made each change is recorded in order_history.
 	UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order, error)
 	UpdateOrderCategory(ctx context.Context, arg UpdateOrderCategoryParams) (OrderCategory, error)
+	// Проекция события ItemsUpdated: заменяет дату и комментарии, состав
+	// заменяется отдельно (delete + insert). Департаменты события не меняют.
+	UpdateOrderProjection(ctx context.Context, arg UpdateOrderProjectionParams) (Order, error)
 	// category_id keeps an already-assigned category on conflict, so re-seeding
 	// from templates/dishes.txt never clobbers the admin's assignment.
 	UpsertDishCatalogItem(ctx context.Context, arg UpsertDishCatalogItemParams) (DishCatalog, error)
