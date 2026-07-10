@@ -3,6 +3,8 @@ package orderuc
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -370,6 +372,50 @@ func TestServiceUpdateProductionSheetDeletesWhenAllValuesMatchOrder(t *testing.T
 	}
 }
 
+func TestServiceEnsureDefaultOrderTemplatesSeedsCategories(t *testing.T) {
+	dir := t.TempDir()
+	buns := filepath.Join(dir, "dishes.txt")
+	bread := filepath.Join(dir, "bread.txt")
+	if err := os.WriteFile(buns, []byte("БУЛОЧКИ\n15664 Булочка Улитка 0\n15667 Плюшка московская 0\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(bread, []byte("ХЛЕБ\n15702 Хлеб Бородино 0\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	repo := &fakeRepo{
+		categoryByID: map[int64]orderdomain.OrderCategory{
+			1: {ID: 1, Code: "bread", Letter: "Х", Name: "Хлеб"},
+			2: {ID: 2, Code: "buns", Letter: "Б", Name: "Булочки"},
+		},
+	}
+	svc := NewService(repo)
+
+	result, err := svc.EnsureDefaultOrderTemplates(context.Background(),
+		CatalogSeed{Path: buns, CategoryCode: "buns"},
+		CatalogSeed{Path: bread, CategoryCode: "bread"},
+		CatalogSeed{Path: filepath.Join(dir, "missing.txt"), CategoryCode: "buns"}, // не ошибка
+	)
+	if err != nil {
+		t.Fatalf("EnsureDefaultOrderTemplates returned error: %v", err)
+	}
+	if result.CatalogItems != 3 || len(repo.upserted) != 3 {
+		t.Fatalf("catalog items = %d, upserted = %d, want 3/3", result.CatalogItems, len(repo.upserted))
+	}
+
+	byCode := map[string]DishCatalogItem{}
+	for _, item := range repo.upserted {
+		byCode[item.Code] = item
+	}
+	if item := byCode["15664"]; item.CategoryID == nil || *item.CategoryID != 2 || item.SortOrder != 1 {
+		t.Fatalf("булочка = %#v, want category 2 sort 1", item)
+	}
+	// Сквозная нумерация: хлебный файл продолжает счёт после булочек.
+	if item := byCode["15702"]; item.CategoryID == nil || *item.CategoryID != 1 || item.SortOrder != 3 {
+		t.Fatalf("хлеб = %#v, want category 1 sort 3", item)
+	}
+}
+
 func validationMessages(errs []orderdomain.BulkOrderValidationError) string {
 	messages := make([]string, 0, len(errs))
 	for _, item := range errs {
@@ -401,6 +447,7 @@ type fakeRepo struct {
 	sheetsByID        map[int64]struct{}
 	productionInputs  []SaveProductionSheetInput
 	productionDeleted []int64
+	upserted          []DishCatalogItem
 }
 
 var _ Repository = (*fakeRepo)(nil)
@@ -516,7 +563,8 @@ func (f *fakeRepo) CountDishesByCategoryID(context.Context, int64) (int64, error
 	return 0, nil
 }
 
-func (f *fakeRepo) UpsertDishCatalogItem(context.Context, DishCatalogItem) error {
+func (f *fakeRepo) UpsertDishCatalogItem(_ context.Context, item DishCatalogItem) error {
+	f.upserted = append(f.upserted, item)
 	return nil
 }
 
