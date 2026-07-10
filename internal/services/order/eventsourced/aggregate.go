@@ -30,12 +30,11 @@ type Order struct {
 	aggregate.Root
 
 	Number            string
-	Location          string
 	FromDepartmentID  *int64
 	ToDepartmentID    *int64
 	CategoryID        *int64
 	CreatedByUsername string
-	CreatedAt         time.Time
+	CreatedAt         time.Time // из timestamp события Created
 	FulfillmentDate   time.Time
 	Items             []Item
 	Comments          Comments
@@ -57,12 +56,11 @@ func (o *Order) Transition(event eventsourcing.Event) {
 	switch data := event.Data().(type) {
 	case *Created:
 		o.Number = data.Number
-		o.Location = data.Location
 		o.FromDepartmentID = data.FromDepartmentID
 		o.ToDepartmentID = data.ToDepartmentID
 		o.CategoryID = data.CategoryID
 		o.CreatedByUsername = data.CreatedByUsername
-		o.CreatedAt = data.CreatedAt
+		o.CreatedAt = event.Timestamp()
 		o.FulfillmentDate = data.FulfillmentDate
 		o.Items = data.Items
 		o.Comments = data.Comments
@@ -180,20 +178,6 @@ func (o *Order) ClearProduction(byUsername string) {
 		return
 	}
 	aggregate.TrackChange(o, &ProductionCleared{ByUsername: strings.TrimSpace(byUsername)})
-}
-
-// EffectiveQuantity — количество для расчётов (мониторинг): факт отработки
-// приоритетнее заявки.
-func (o *Order) EffectiveQuantity(productName string) float64 {
-	if produced, ok := o.Produced[itemKey(productName)]; ok {
-		return produced.Quantity
-	}
-	for _, item := range o.Items {
-		if itemKey(item.ProductName) == itemKey(productName) {
-			return item.Quantity + item.ReservedQuantity
-		}
-	}
-	return 0
 }
 
 func validateItems(items []Item) error {

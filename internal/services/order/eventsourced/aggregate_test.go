@@ -105,11 +105,8 @@ func TestOrderProductionDeviationsOnly(t *testing.T) {
 	if len(order.Produced) != 1 || order.Produced["багет особый"].Reason != "Подгорело" {
 		t.Fatalf("produced = %#v", order.Produced)
 	}
-	if got := order.EffectiveQuantity("Багет Особый"); got != 8 {
-		t.Fatalf("effective багет = %v, want 8 (факт)", got)
-	}
-	if got := order.EffectiveQuantity("Чиабатта"); got != 7 {
-		t.Fatalf("effective чиабатта = %v, want 7 (заявка)", got)
+	if order.Produced["багет особый"].Quantity != 8 {
+		t.Fatalf("produced багет = %v, want 8", order.Produced["багет особый"].Quantity)
 	}
 
 	// Неизвестная позиция — отказ.

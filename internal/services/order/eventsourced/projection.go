@@ -18,25 +18,31 @@ type ReadModelWriter interface {
 }
 
 // NewReadModelProjection строит проекцию потока событий заказа в read model.
-// Запуск: RunOnce() на старте (догнать хвост) + Run(ctx, pace) фоном, либо
-// синхронный прогон после Save на командной стороне.
+// Запуск: RunOnce() на старте (догнать хвост после падений синхронной
+// проекции) + Run(ctx, pace) фоном.
 func NewReadModelProjection(fetcher core.Fetcher, writer ReadModelWriter) *eventsourcing.Projection {
 	return eventsourcing.NewProjection(fetcher, func(event eventsourcing.Event) error {
-		number := event.AggregateID()
-		switch data := event.Data().(type) {
-		case *Created:
-			return writer.ApplyCreated(number, *data)
-		case *ItemsUpdated:
-			return writer.ApplyItemsUpdated(number, *data)
-		case *Cancelled:
-			return writer.ApplyCancelled(number, *data)
-		case *Restored:
-			return writer.ApplyRestored(number, *data)
-		case *ProductionRecorded:
-			return writer.ApplyProductionRecorded(number, *data)
-		case *ProductionCleared:
-			return writer.ApplyProductionCleared(number, *data)
-		}
-		return nil
+		return applyEvent(writer, event)
 	})
+}
+
+// applyEvent — общий диспетчер «событие → read model»: используется и
+// синхронной проекцией командной стороны, и фоновым прогоном.
+func applyEvent(writer ReadModelWriter, event eventsourcing.Event) error {
+	number := event.AggregateID()
+	switch data := event.Data().(type) {
+	case *Created:
+		return writer.ApplyCreated(number, *data)
+	case *ItemsUpdated:
+		return writer.ApplyItemsUpdated(number, *data)
+	case *Cancelled:
+		return writer.ApplyCancelled(number, *data)
+	case *Restored:
+		return writer.ApplyRestored(number, *data)
+	case *ProductionRecorded:
+		return writer.ApplyProductionRecorded(number, *data)
+	case *ProductionCleared:
+		return writer.ApplyProductionCleared(number, *data)
+	}
+	return nil
 }

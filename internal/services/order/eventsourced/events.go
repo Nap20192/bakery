@@ -31,15 +31,15 @@ type Comments struct {
 }
 
 // Created — заказ создан магазином. Номер генерируется на командной стороне
-// (счётчик — вне агрегата) и фиксируется в событии.
+// (счётчик — вне агрегата) и фиксируется в событии. Время создания — это
+// timestamp самого события; имя магазина выводится из FromDepartmentID —
+// ни то, ни другое в payload не дублируется.
 type Created struct {
 	Number            string    `json:"number"`
-	Location          string    `json:"location"`
 	FromDepartmentID  *int64    `json:"from_department_id"`
 	ToDepartmentID    *int64    `json:"to_department_id"`
 	CategoryID        *int64    `json:"category_id"`
 	CreatedByUsername string    `json:"created_by_username"`
-	CreatedAt         time.Time `json:"created_at"`
 	FulfillmentDate   time.Time `json:"fulfillment_date"`
 	Items             []Item    `json:"items"`
 	Comments          Comments  `json:"comments"`
