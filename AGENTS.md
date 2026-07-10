@@ -255,6 +255,49 @@ Event-driven flow from the order service to the bot:
 
 ---
 
+## 7b. Event sourcing + CQRS для заказа (ветка arch/event-sourcing)
+
+Библиотека: **github.com/hallgren/eventsourcing**
+(https://github.com/hallgren/eventsourcing, v0.9.1 + eventstore/sql).
+
+Целевая архитектура: поток событий заказа — источник истины, существующие
+таблицы `orders`/`order_items` — read model (CQRS), наполняемая проекцией.
+
+```
+команда → Order aggregate (инварианты) → события → event store (Postgres, таблица events)
+                                                     │
+                                   проекция (ReadModelWriter) → orders/order_items (read)
+```
+
+Код: `internal/services/order/eventsourced/`
+- `events.go` — события-контракты (Created, ItemsUpdated, Cancelled,
+  Restored, ProductionRecorded, ProductionCleared). Событие нельзя менять
+  задним числом — только добавлять новое (V2).
+- `aggregate.go` — агрегат `Order` (embed `aggregate.Root`): состояние
+  строится ТОЛЬКО в `Transition`, команды (NewOrder, UpdateItems, Cancel,
+  Restore, RecordProduction, ClearProduction) проверяют инварианты и
+  добавляют события через `aggregate.TrackChange`. ID агрегата = номер
+  заказа. Идемпотентные команды (повторная отмена и т.п.) — no-op без
+  события.
+- `store.go` — `RegisterAggregates()` (один раз в composition root) и
+  `NewPostgresStore(dsn)` — event store через database/sql (pgx-stdlib);
+  схему таблицы `events` создаёт миграция 00025.
+- `projection.go` — порт `ReadModelWriter` + `NewReadModelProjection`.
+
+План перевода (поэтапно):
+1. ✅ Агрегат + события + инварианты + тесты (memory store), Postgres
+   store, миграция, каркас проекции.
+2. Командный сервис: usecase-запись через агрегат (генерация номера/счётчик
+   остаются на командной стороне, фиксируются в событии Created);
+   синхронная проекция в read model в той же транзакции запроса.
+3. Реализация `ReadModelWriter` поверх sqlc (infra/repo), отработка и
+   журнал через события ProductionRecorded/Cleared.
+4. RabbitMQ-события бота публикуются из потока ES (замена текущего outbox),
+   `order_history` становится проекцией потока.
+
+Инварианты агрегата дублируют тексты ошибок старого usecase — поведение API
+при переводе не меняется.
+
 ## 8. Domain rules (do not regress)
 
 ### Departments
