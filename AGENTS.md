@@ -277,7 +277,9 @@ Event-driven flow from the order service to the bot:
   edit. Legacy orders keep numbers without the letter.
 - Dish catalog entries carry `category_id`; the shop picks the category first
   and sees only its dishes (uncategorized dishes stay visible everywhere).
-  Re-seeding from `templates/dishes.txt` must not clobber assigned categories.
+  Worker seeds the catalog on startup from `templates/dishes.txt` → «buns» and
+  `templates/bread.txt` → «bread» (`EnsureDefaultOrderTemplates`); re-seeding
+  must not clobber categories assigned by the admin, missing files are skipped.
 - Baker UI: grid grouped by category, color stripe + badge on cards, category
   filter chips; multi-select is limited to one category (dough of different
   типы is never summed).

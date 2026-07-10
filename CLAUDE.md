@@ -101,7 +101,7 @@ Order service records domain events (`order.created`, `order.updated`) on the ag
 - `queries/*.sql` → run `sqlc generate` → `internal/outbound/db/sqlc/`
 - Migrations in `migrations/NNNNN_name.sql` (goose-style); applied automatically by worker on startup
 - `DATABASE_URL` takes priority over individual `POSTGRES_*` vars
-- Seed data for dish catalog: `templates/dishes.txt`
+- Seed data for dish catalog: `templates/dishes.txt` → «Булочки», `templates/bread.txt` → «Хлеб» (worker сидит оба на старте; категория, назначенная админом, не затирается)
 
 ## Domain rules (do not regress)
 
