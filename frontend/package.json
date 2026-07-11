@@ -7,14 +7,21 @@
     "dev": "vite --host 0.0.0.0",
     "lint": "eslint .",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "api-gen": "openapi-typescript ../docs/api/openapi.yaml -o src/api/schema.d.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@fontsource-variable/golos-text": "^5.2.8",
     "@tailwindcss/vite": "^4.3.0",
     "@vitejs/plugin-react": "latest",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "openapi-fetch": "^0.17.0",
+    "radix-ui": "^1.6.2",
     "react": "latest",
     "react-dom": "latest",
+    "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.0",
     "vite": "latest"
   },
@@ -23,6 +30,8 @@
     "eslint": "^10.4.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
-    "globals": "^17.6.0"
+    "globals": "^17.6.0",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^5.9.3"
   }
 }

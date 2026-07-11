@@ -11,48 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const applyOrderProduction = `-- name: ApplyOrderProduction :exec
-UPDATE order_items oi
-SET produced_quantity = latest.produced,
-    produced_reason = NULLIF(latest.reason, '')
-FROM (
-    SELECT DISTINCT ON (lower(trim(psi.product_name)))
-        lower(trim(psi.product_name)) AS pname,
-        psi.produced_quantity AS produced,
-        psi.reason AS reason
-    FROM production_sheet_items psi
-    WHERE psi.order_id = $1
-    ORDER BY lower(trim(psi.product_name)), psi.sheet_id DESC
-) latest
-WHERE oi.order_id = $1
-  AND lower(trim(oi.product_name)) = latest.pname
-`
-
-// Проецирует журнал на заказ: для каждой позиции берётся значение из самого
-// свежего листа (по id листа), позиции без записей в журнале сбрасываются.
-func (q *Queries) ApplyOrderProduction(ctx context.Context, orderID int64) error {
-	_, err := q.db.Exec(ctx, applyOrderProduction, orderID)
-	return err
-}
-
-const clearUncoveredOrderProduction = `-- name: ClearUncoveredOrderProduction :exec
-UPDATE order_items oi
-SET produced_quantity = NULL,
-    produced_reason = NULL
-WHERE oi.order_id = $1
-  AND NOT EXISTS (
-      SELECT 1
-      FROM production_sheet_items psi
-      WHERE psi.order_id = oi.order_id
-        AND lower(trim(psi.product_name)) = lower(trim(oi.product_name))
-  )
-`
-
-func (q *Queries) ClearUncoveredOrderProduction(ctx context.Context, orderID int64) error {
-	_, err := q.db.Exec(ctx, clearUncoveredOrderProduction, orderID)
-	return err
-}
-
 const createProductionSheet = `-- name: CreateProductionSheet :one
 INSERT INTO production_sheets (created_by_username)
 VALUES ($1)
@@ -91,9 +49,64 @@ func (q *Queries) DeleteProductionSheetItems(ctx context.Context, sheetID int64)
 	return err
 }
 
+const deleteProductionSheetOrders = `-- name: DeleteProductionSheetOrders :exec
+DELETE FROM production_sheet_orders
+WHERE sheet_id = $1
+`
+
+func (q *Queries) DeleteProductionSheetOrders(ctx context.Context, sheetID int64) error {
+	_, err := q.db.Exec(ctx, deleteProductionSheetOrders, sheetID)
+	return err
+}
+
+const getOrderProductionFacts = `-- name: GetOrderProductionFacts :many
+SELECT DISTINCT ON (psi.order_id, lower(trim(psi.product_name)))
+    psi.order_id,
+    lower(trim(psi.product_name)) AS product_key,
+    psi.produced_quantity,
+    psi.reason
+FROM production_sheet_items psi
+WHERE psi.order_id = ANY($1::BIGINT[])
+ORDER BY psi.order_id, lower(trim(psi.product_name)), psi.sheet_id DESC
+`
+
+type GetOrderProductionFactsRow struct {
+	OrderID          int64   `json:"order_id"`
+	ProductKey       string  `json:"product_key"`
+	ProducedQuantity float64 `json:"produced_quantity"`
+	Reason           string  `json:"reason"`
+}
+
+// Read-time декоратор: факт выпечки для позиций заказов из журнала (по
+// каждой позиции побеждает самый свежий лист). Ключ — нормализованное имя.
+func (q *Queries) GetOrderProductionFacts(ctx context.Context, orderIds []int64) ([]GetOrderProductionFactsRow, error) {
+	rows, err := q.db.Query(ctx, getOrderProductionFacts, orderIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetOrderProductionFactsRow
+	for rows.Next() {
+		var i GetOrderProductionFactsRow
+		if err := rows.Scan(
+			&i.OrderID,
+			&i.ProductKey,
+			&i.ProducedQuantity,
+			&i.Reason,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getOrderProductionSheetID = `-- name: GetOrderProductionSheetID :one
 SELECT sheet_id
-FROM production_sheet_items
+FROM production_sheet_orders
 WHERE order_id = $1
 ORDER BY sheet_id DESC
 LIMIT 1
@@ -101,6 +114,7 @@ LIMIT 1
 
 // Заказ принадлежит максимум одному листу отработки (1:N от листа к
 // заказам); на случай исторических пересечений берётся самый свежий лист.
+// Принадлежность определяется сохранённым выбором, не отклонениями.
 func (q *Queries) GetOrderProductionSheetID(ctx context.Context, orderID int64) (int64, error) {
 	row := q.db.QueryRow(ctx, getOrderProductionSheetID, orderID)
 	var sheet_id int64
@@ -148,6 +162,58 @@ func (q *Queries) InsertProductionSheetItem(ctx context.Context, arg InsertProdu
 		arg.Reason,
 	)
 	return err
+}
+
+const insertProductionSheetOrder = `-- name: InsertProductionSheetOrder :exec
+INSERT INTO production_sheet_orders (sheet_id, order_id)
+VALUES ($1, $2)
+ON CONFLICT DO NOTHING
+`
+
+type InsertProductionSheetOrderParams struct {
+	SheetID int64 `json:"sheet_id"`
+	OrderID int64 `json:"order_id"`
+}
+
+func (q *Queries) InsertProductionSheetOrder(ctx context.Context, arg InsertProductionSheetOrderParams) error {
+	_, err := q.db.Exec(ctx, insertProductionSheetOrder, arg.SheetID, arg.OrderID)
+	return err
+}
+
+const listOrderProductionSheetIDs = `-- name: ListOrderProductionSheetIDs :many
+SELECT DISTINCT ON (order_id)
+    order_id,
+    sheet_id
+FROM production_sheet_orders
+WHERE order_id = ANY($1::BIGINT[])
+ORDER BY order_id, sheet_id DESC
+`
+
+type ListOrderProductionSheetIDsRow struct {
+	OrderID int64 `json:"order_id"`
+	SheetID int64 `json:"sheet_id"`
+}
+
+// Пакетная версия для списка заказов: матрица должна видеть принадлежность
+// к отработке без отдельного запроса на каждую карточку.
+func (q *Queries) ListOrderProductionSheetIDs(ctx context.Context, orderIds []int64) ([]ListOrderProductionSheetIDsRow, error) {
+	rows, err := q.db.Query(ctx, listOrderProductionSheetIDs, orderIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListOrderProductionSheetIDsRow
+	for rows.Next() {
+		var i ListOrderProductionSheetIDsRow
+		if err := rows.Scan(&i.OrderID, &i.SheetID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listProductionSheetItems = `-- name: ListProductionSheetItems :many
@@ -201,8 +267,8 @@ func (q *Queries) ListProductionSheetItems(ctx context.Context, sheetID int64) (
 }
 
 const listProductionSheetOrderIDs = `-- name: ListProductionSheetOrderIDs :many
-SELECT DISTINCT order_id
-FROM production_sheet_items
+SELECT order_id
+FROM production_sheet_orders
 WHERE sheet_id = $1
 `
 
@@ -226,18 +292,52 @@ func (q *Queries) ListProductionSheetOrderIDs(ctx context.Context, sheetID int64
 	return items, nil
 }
 
+const listProductionSheetOrderNumbers = `-- name: ListProductionSheetOrderNumbers :many
+SELECT o.number
+FROM production_sheet_orders pso
+JOIN orders o ON o.id = pso.order_id
+WHERE pso.sheet_id = $1
+ORDER BY o.number
+`
+
+func (q *Queries) ListProductionSheetOrderNumbers(ctx context.Context, sheetID int64) ([]string, error) {
+	rows, err := q.db.Query(ctx, listProductionSheetOrderNumbers, sheetID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var number string
+		if err := rows.Scan(&number); err != nil {
+			return nil, err
+		}
+		items = append(items, number)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listProductionSheets = `-- name: ListProductionSheets :many
 SELECT
     ps.id,
     ps.created_by_username,
     ps.created_at,
     ps.updated_at,
-    COUNT(psi.id)::BIGINT AS item_count,
-    COALESCE(ARRAY_AGG(DISTINCT o.number) FILTER (WHERE o.number IS NOT NULL), '{}')::TEXT[] AS order_numbers
+    (
+        SELECT COUNT(*)
+        FROM production_sheet_items psi
+        WHERE psi.sheet_id = ps.id
+    )::BIGINT AS item_count,
+    COALESCE((
+        SELECT ARRAY_AGG(o.number ORDER BY o.number)
+        FROM production_sheet_orders pso
+        JOIN orders o ON o.id = pso.order_id
+        WHERE pso.sheet_id = ps.id
+    ), '{}')::TEXT[] AS order_numbers
 FROM production_sheets ps
-LEFT JOIN production_sheet_items psi ON psi.sheet_id = ps.id
-LEFT JOIN orders o ON o.id = psi.order_id
-GROUP BY ps.id
 ORDER BY ps.id DESC
 `
 
@@ -250,6 +350,8 @@ type ListProductionSheetsRow struct {
 	OrderNumbers      []string           `json:"order_numbers"`
 }
 
+// order_numbers — сохранённый выбор партии (production_sheet_orders), а не
+// заказы с отклонениями: лист покрывает партию целиком.
 func (q *Queries) ListProductionSheets(ctx context.Context) ([]ListProductionSheetsRow, error) {
 	rows, err := q.db.Query(ctx, listProductionSheets)
 	if err != nil {

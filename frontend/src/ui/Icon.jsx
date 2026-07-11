@@ -11,6 +11,7 @@ const paths = {
   chevronRight: 'm9 18 6-6-6-6',
   close: 'M6 6l12 12M18 6 6 18',
   star: 'M12 3.5l2.6 5.27 5.82.85-4.21 4.1.99 5.79L12 16.77 6.8 19.5l.99-5.79-4.21-4.1 5.82-.85z',
+  table: 'M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5v-11ZM4 9.5h16M4 14.5h16M9.5 9.5V20',
 };
 
 export function Icon({ name, size = 18, className = '', strokeWidth = 2, filled = false }) {

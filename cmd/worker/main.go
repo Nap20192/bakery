@@ -64,7 +64,6 @@ func main() {
 
 	appDeps, err := deps.NewAppDeps(
 		deps.WithAuthService(infra),
-		deps.WithRbacService(),
 		deps.WithOrderService(infra),
 		deps.WithOrderOutboxRelay(infra),
 		deps.WithDepartmentService(infra),

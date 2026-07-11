@@ -1,57 +1,54 @@
-import { apiRequest } from './client';
+// @ts-check
+import { api, unwrap } from './client';
+
+/** @typedef {import('./schema').components['schemas']} Schemas */
 
 export function fetchDishes() {
-  return apiRequest('/admin/dishes');
+  return unwrap(api.GET('/admin/dishes'));
 }
 
+/** @param {string} [query] */
 export function searchAvailableDishes(query) {
-  return apiRequest(`/admin/dishes/available?q=${encodeURIComponent(query || '')}`);
+  return unwrap(api.GET('/admin/dishes/available', { params: { query: { q: query || '' } } }));
 }
 
+/** @param {string[]} codes */
 export function reorderDishes(codes) {
-  return apiRequest('/admin/dishes/reorder', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ codes }),
-  });
+  return unwrap(api.PUT('/admin/dishes/reorder', { body: { codes } }));
 }
 
+/** @param {Schemas['DishWrite']} dish */
 export function createDish(dish) {
-  return apiRequest('/admin/dishes', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(dish),
-  });
+  return unwrap(api.POST('/admin/dishes', { body: dish }));
 }
 
+/**
+ * @param {string} code
+ * @param {Schemas['DishWrite']} dish
+ */
 export function updateDish(code, dish) {
-  return apiRequest(`/admin/dishes/${encodeURIComponent(code)}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(dish),
-  });
+  return unwrap(api.PUT('/admin/dishes/{code}', { params: { path: { code } }, body: dish }));
 }
 
+/** @param {string} code */
 export function deleteDish(code) {
-  return apiRequest(`/admin/dishes/${encodeURIComponent(code)}`, { method: 'DELETE' });
+  return unwrap(api.DELETE('/admin/dishes/{code}', { params: { path: { code } } }));
 }
 
+/** @param {Schemas['CategoryWrite']} category */
 export function createCategory(category) {
-  return apiRequest('/admin/categories', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(category),
-  });
+  return unwrap(api.POST('/admin/categories', { body: category }));
 }
 
+/**
+ * @param {number} id
+ * @param {Schemas['CategoryWrite']} category
+ */
 export function updateCategory(id, category) {
-  return apiRequest(`/admin/categories/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(category),
-  });
+  return unwrap(api.PUT('/admin/categories/{id}', { params: { path: { id } }, body: category }));
 }
 
+/** @param {number} id */
 export function deleteCategory(id) {
-  return apiRequest(`/admin/categories/${id}`, { method: 'DELETE' });
+  return unwrap(api.DELETE('/admin/categories/{id}', { params: { path: { id } } }));
 }

@@ -52,10 +52,16 @@ broken line
 	}
 }
 
+// lineSpecFunc adapts a plain func to BulkOrderLineSpecification for spec
+// injection in tests.
+type lineSpecFunc func(line BulkOrderLine) bool
+
+func (s lineSpecFunc) IsValid(line BulkOrderLine) bool { return s(line) }
+
 func TestOrderServiceUsesInjectedSpec(t *testing.T) {
 	svc := &OrderService{spec: OrderSpec{
-		LineProcessable: BulkOrderLineSpecificationFunc(func(BulkOrderLine) bool { return true }),
-		LineFormat:      BulkOrderLineSpecificationFunc(func(BulkOrderLine) bool { return false }),
+		LineProcessable: lineSpecFunc(func(BulkOrderLine) bool { return true }),
+		LineFormat:      lineSpecFunc(func(BulkOrderLine) bool { return false }),
 		Quantity:        PositiveQuantitySpecification{},
 		UniqueItems:     UniqueOrderItemsSpecification{},
 	}}

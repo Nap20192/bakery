@@ -285,14 +285,6 @@ func WithColor(x ...bool) Option {
 	}
 }
 
-func WithOutputEmptyAttrs(x ...bool) Option {
-	return func(h *handlerOptions) {
-		for i := range x {
-			h.outputEmptyAttrs = x[i]
-		}
-	}
-}
-
 func WithEncoder(e Encoder) Option {
 	return func(h *handlerOptions) {
 		switch e {

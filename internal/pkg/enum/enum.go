@@ -30,17 +30,6 @@ func IsValidRole(role string) bool {
 	}
 }
 
-type Permission string
-
-const (
-	PermissionTechCard     Permission = "techcard:view"
-	PermissionSync         Permission = "sync:run"
-	PermissionManageUsers  Permission = "user:manage"
-	PermissionOrderWrite   Permission = "order:write"
-	PermissionOrderViewAll Permission = "order:view_all"
-	PermissionMonitorDough Permission = "monitor:dough"
-)
-
 type DepartmentType string
 
 const (

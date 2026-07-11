@@ -11,16 +11,11 @@ import (
 )
 
 type Querier interface {
-	// Проецирует журнал на заказ: для каждой позиции берётся значение из самого
-	// свежего листа (по id листа), позиции без записей в журнале сбрасываются.
-	ApplyOrderProduction(ctx context.Context, orderID int64) error
 	AssignUserDepartment(ctx context.Context, arg AssignUserDepartmentParams) (AuthUser, error)
 	BindTelegramID(ctx context.Context, arg BindTelegramIDParams) (AuthUser, error)
 	CancelOrder(ctx context.Context, arg CancelOrderParams) (Order, error)
-	ClearUncoveredOrderProduction(ctx context.Context, orderID int64) error
 	CountDishesByCategoryID(ctx context.Context, categoryID *int64) (int64, error)
 	CountOrders(ctx context.Context, arg CountOrdersParams) (int64, error)
-	CreateDepartment(ctx context.Context, arg CreateDepartmentParams) (Department, error)
 	CreateIikoSyncRun(ctx context.Context, arg CreateIikoSyncRunParams) (IikoSyncRun, error)
 	CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error)
 	CreateOrderCategory(ctx context.Context, arg CreateOrderCategoryParams) (OrderCategory, error)
@@ -39,6 +34,7 @@ type Querier interface {
 	DeleteOrdersCreatedBefore(ctx context.Context, createdAtBefore pgtype.Timestamptz) (int64, error)
 	DeleteProductionSheet(ctx context.Context, id int64) error
 	DeleteProductionSheetItems(ctx context.Context, sheetID int64) error
+	DeleteProductionSheetOrders(ctx context.Context, sheetID int64) error
 	DishExistsByCode(ctx context.Context, code string) (int64, error)
 	FinishIikoSyncRun(ctx context.Context, arg FinishIikoSyncRunParams) (IikoSyncRun, error)
 	GetActiveAssemblyChartByProductID(ctx context.Context, arg GetActiveAssemblyChartByProductIDParams) (GetActiveAssemblyChartByProductIDRow, error)
@@ -52,20 +48,26 @@ type Querier interface {
 	GetDepartmentByID(ctx context.Context, id int64) (Department, error)
 	GetIikoProductByCode(ctx context.Context, code string) (GetIikoProductByCodeRow, error)
 	GetIikoProductByID(ctx context.Context, id string) (GetIikoProductByIDRow, error)
-	GetIikoProductsByName(ctx context.Context, name string) ([]GetIikoProductsByNameRow, error)
 	GetOrderByID(ctx context.Context, id int64) (Order, error)
 	GetOrderByNumber(ctx context.Context, number string) (Order, error)
 	GetOrderCategoryByID(ctx context.Context, id int64) (OrderCategory, error)
+	// Позиции хранят только заявку. Факт отработки живёт в журнале и
+	// декорируется при чтении (GetOrderProductionFacts + мердж в репозитории).
 	GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]GetOrderItemsByOrderIDRow, error)
 	GetOrderItemsByOrderIDs(ctx context.Context, orderIds []int64) ([]GetOrderItemsByOrderIDsRow, error)
+	// Read-time декоратор: факт выпечки для позиций заказов из журнала (по
+	// каждой позиции побеждает самый свежий лист). Ключ — нормализованное имя.
+	GetOrderProductionFacts(ctx context.Context, orderIds []int64) ([]GetOrderProductionFactsRow, error)
 	// Заказ принадлежит максимум одному листу отработки (1:N от листа к
 	// заказам); на случай исторических пересечений берётся самый свежий лист.
+	// Принадлежность определяется сохранённым выбором, не отклонениями.
 	GetOrderProductionSheetID(ctx context.Context, orderID int64) (int64, error)
 	GetProductionSheet(ctx context.Context, id int64) (ProductionSheet, error)
 	InsertIikoAssemblyChartItem(ctx context.Context, arg InsertIikoAssemblyChartItemParams) error
 	InsertIikoPreparedChartItem(ctx context.Context, arg InsertIikoPreparedChartItemParams) error
 	InsertOrderOutboxEvent(ctx context.Context, arg InsertOrderOutboxEventParams) (int64, error)
 	InsertProductionSheetItem(ctx context.Context, arg InsertProductionSheetItemParams) error
+	InsertProductionSheetOrder(ctx context.Context, arg InsertProductionSheetOrderParams) error
 	ListAssemblyChartItemsByChartID(ctx context.Context, chartID string) ([]ListAssemblyChartItemsByChartIDRow, error)
 	ListAuthUsers(ctx context.Context) ([]AuthUser, error)
 	ListAuthUsersByDepartmentID(ctx context.Context, departmentID *int64) ([]AuthUser, error)
@@ -76,10 +78,16 @@ type Querier interface {
 	ListOrderCategories(ctx context.Context) ([]OrderCategory, error)
 	ListOrderHistoryByOrderID(ctx context.Context, orderID int64) ([]OrderHistory, error)
 	ListOrderHistoryItemsByHistoryID(ctx context.Context, historyID int64) ([]OrderHistoryItem, error)
+	// Пакетная версия для списка заказов: матрица должна видеть принадлежность
+	// к отработке без отдельного запроса на каждую карточку.
+	ListOrderProductionSheetIDs(ctx context.Context, orderIds []int64) ([]ListOrderProductionSheetIDsRow, error)
 	ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order, error)
 	ListPreparedChartItemsByChartID(ctx context.Context, preparedChartID string) ([]ListPreparedChartItemsByChartIDRow, error)
 	ListProductionSheetItems(ctx context.Context, sheetID int64) ([]ListProductionSheetItemsRow, error)
 	ListProductionSheetOrderIDs(ctx context.Context, sheetID int64) ([]int64, error)
+	ListProductionSheetOrderNumbers(ctx context.Context, sheetID int64) ([]string, error)
+	// order_numbers — сохранённый выбор партии (production_sheet_orders), а не
+	// заказы с отклонениями: лист покрывает партию целиком.
 	ListProductionSheets(ctx context.Context) ([]ListProductionSheetsRow, error)
 	ListUnpublishedOrderOutboxEvents(ctx context.Context, maxEvents int32) ([]ListUnpublishedOrderOutboxEventsRow, error)
 	MarkOrderOutboxEventPublished(ctx context.Context, id int64) error

@@ -2,8 +2,10 @@ import { Button } from '../../ui/Button';
 import { CategoryBadge } from '../../ui/CategoryBadge';
 import { InputField, SelectField } from '../../ui/Field';
 import { EmptyState } from '../../ui/EmptyState';
+import { SheetBadge } from '../../ui/SheetBadge';
 import { formatFulfillmentDate } from '../../lib/format';
 import { orderSource } from '../../lib/orders';
+import { productionDeviations, productionStatus } from '../../lib/production';
 
 function todayValue(offset = 0) {
   const date = new Date();
@@ -80,11 +82,16 @@ export function OrderList({
       <div className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
         {orders.length ? (
           orders.map((order) => {
+            const production = productionStatus(order);
             return (
               <div
                 key={order.number}
                 className={`w-full rounded-md border px-2.5 py-2 text-left transition ${
-                  selectedNumber === order.number ? 'border-stone-300 bg-stone-50' : 'border-transparent bg-white hover:border-stone-300 hover:bg-stone-50'
+                  selectedNumber === order.number
+                    ? 'border-stone-500 bg-white shadow-sm'
+                    : production
+                      ? 'border-stone-400 bg-stone-200/70 shadow-inner hover:border-stone-500 hover:bg-stone-200'
+                      : 'border-transparent bg-white hover:border-stone-300 hover:bg-stone-50'
                 }`}
               >
                 <div className="grid grid-cols-1 gap-2">
@@ -93,6 +100,9 @@ export function OrderList({
                       <strong className="flex flex-wrap items-center gap-1.5 break-words text-[13px] font-semibold leading-5 text-stone-900">
                         {order.number}
                         <CategoryBadge category={order.category} />
+                        {!order.cancelled && (
+                          <SheetBadge sheetId={order.production_sheet_id} deviations={productionDeviations(order)} showStatus />
+                        )}
                         {order.cancelled && (
                           <span className="inline-flex items-center rounded-full border border-red-300 bg-red-50 px-1.5 py-0 text-[10px] font-semibold uppercase leading-4 text-red-700">
                             Отменён

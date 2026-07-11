@@ -25,7 +25,6 @@ var (
 	ErrCategoryHasDishes        = apperr.Conflict("order.category_has_dishes", "У типа заявки есть блюда. Сначала перенесите их в другой тип.")
 	ErrProductionOrderNotFound  = apperr.NotFound("order.production_order_not_found", "Заказ для отработки не найден.")
 	ErrProductionSheetNotFound  = apperr.NotFound("order.production_sheet_not_found", "Отработка не найдена.")
-	ErrProductionNoChanges      = apperr.Invalid("order.production_no_changes", "Отработка без изменений не сохраняется: все значения совпадают с заявкой.")
 )
 
 // Service is the order use-case implementation. It depends only on the
@@ -203,9 +202,10 @@ func (s *Service) CancelOrder(ctx context.Context, number, byUsername string) (o
 	return s.repo.CancelOrder(ctx, number, strings.TrimSpace(byUsername))
 }
 
-// CreateProductionSheet создаёт документ отработки в журнале. Заявки не
-// изменяются: факт проецируется на produced_quantity позиций, различия
-// фиксируются в истории, наружу уходят события order.produced.
+// CreateProductionSheet создаёт документ отработки: фиксирует партию
+// (выбранные заказы) и отклонения факта от заявки. Заказы не изменяются —
+// факт декорирует их при чтении; наружу уходят события order.produced для
+// заказов, чей видимый факт изменился.
 func (s *Service) CreateProductionSheet(ctx context.Context, input RecordProductionInput) (orderdomain.ProductionSheet, error) {
 	orders, err := s.validateProductionInput(ctx, input)
 	if err != nil {
@@ -217,10 +217,9 @@ func (s *Service) CreateProductionSheet(ctx context.Context, input RecordProduct
 	})
 }
 
-// UpdateProductionSheet заменяет позиции существующего документа отработки.
-// Значение, равное заявке, убирает строку (отклонения больше нет); если
-// отклонений не осталось совсем — документ удаляется, возвращается пустой
-// ProductionSheet (ID == 0).
+// UpdateProductionSheet заменяет партию и отклонения существующего документа.
+// Значение, равное заявке, убирает строку отклонения; лист живёт, пока его
+// не удалят явно — даже если отклонений не осталось (партия зафиксирована).
 func (s *Service) UpdateProductionSheet(ctx context.Context, id int64, input RecordProductionInput) (orderdomain.ProductionSheet, error) {
 	if id <= 0 {
 		return orderdomain.ProductionSheet{}, ErrProductionSheetNotFound
@@ -229,12 +228,6 @@ func (s *Service) UpdateProductionSheet(ctx context.Context, id int64, input Rec
 		return orderdomain.ProductionSheet{}, ErrProductionSheetNotFound
 	}
 	orders, err := s.validateProductionInput(ctx, input)
-	if errors.Is(err, ErrProductionNoChanges) {
-		if err := s.repo.DeleteProductionSheet(ctx, id, strings.TrimSpace(input.ProducedByUsername)); err != nil {
-			return orderdomain.ProductionSheet{}, err
-		}
-		return orderdomain.ProductionSheet{}, nil
-	}
 	if err != nil {
 		return orderdomain.ProductionSheet{}, err
 	}
@@ -273,8 +266,10 @@ func (s *Service) GetProductionSheet(ctx context.Context, id int64) (orderdomain
 	return sheet, nil
 }
 
-// validateProductionInput проверяет заказы и позиции отработки: заказ
-// существует и не отменён, позиции принадлежат заказу, количества корректны.
+// validateProductionInput проверяет партию отработки: каждый заказ существует
+// и не отменён, позиции принадлежат заказу, количества корректны. Возвращает
+// ВСЕ заказы выбора (лист фиксирует партию); items — только отклонения от
+// заявки, поэтому у заказа они могут быть пустыми.
 func (s *Service) validateProductionInput(ctx context.Context, input RecordProductionInput) ([]OrderProductionInput, error) {
 	if len(input.Orders) == 0 {
 		return nil, apperr.Invalid("order.production_empty", "Нет заказов для отработки.")
@@ -330,13 +325,7 @@ func (s *Service) validateProductionInput(ctx context.Context, input RecordProdu
 				Reason:           reason,
 			})
 		}
-		if len(items) == 0 {
-			continue
-		}
 		result = append(result, OrderProductionInput{Number: number, Items: items})
-	}
-	if len(result) == 0 {
-		return nil, ErrProductionNoChanges
 	}
 	return result, nil
 }

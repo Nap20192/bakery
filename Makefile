@@ -1,7 +1,7 @@
 
 GOCMD = go
 
-.PHONY: build test lint vet sqlc test-orders
+.PHONY: build test lint vet sqlc api-gen test-orders
 
 build:
 	$(GOCMD) build ./...
@@ -17,6 +17,10 @@ lint:
 
 sqlc:
 	sqlc generate
+
+# Перегенерировать типы фронта из docs/api/openapi.yaml и проверить их.
+api-gen:
+	cd frontend && npm run api-gen && npm run typecheck
 
 # Удаляет ВСЕ заказы и создаёт свежие тестовые (dev-инструмент).
 test-orders:

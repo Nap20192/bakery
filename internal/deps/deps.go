@@ -24,7 +24,6 @@ import (
 type AppDeps struct {
 	AuthService       authuc.UseCase
 	AdminService      adminuc.UseCase
-	RbacService       *authuc.RBAC
 	DepartmentService departmentuc.UseCase
 	MonitorService    monitoruc.UseCase
 	OrderService      orderuc.UseCase
@@ -62,13 +61,6 @@ func WithAdminService() appOption {
 			return fmt.Errorf("missing dependencies for AdminService")
 		}
 		deps.AdminService = adminapp.New(deps.AuthService, deps.DepartmentService)
-		return nil
-	}
-}
-
-func WithRbacService() appOption {
-	return func(deps *AppDeps) error {
-		deps.RbacService = authapp.NewRBAC()
 		return nil
 	}
 }

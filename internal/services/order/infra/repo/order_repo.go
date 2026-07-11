@@ -205,7 +205,7 @@ func (r *OrderRepository) GetOrderByNumber(ctx context.Context, number string) (
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
-	items, err := r.queries.GetOrderItemsByOrderID(ctx, order.ID)
+	items, err := loadOrderItems(ctx, r.queries, order.ID)
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
@@ -213,7 +213,7 @@ func (r *OrderRepository) GetOrderByNumber(ctx context.Context, number string) (
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
-	result := orderFromRow(order, mapOrderItems(items), history)
+	result := orderFromRow(order, items, history)
 	if err := r.attachCategory(ctx, &result); err != nil {
 		return orderdomain.Order{}, err
 	}
@@ -271,12 +271,38 @@ func (r *OrderRepository) ListOrders(ctx context.Context, input orderuc.ListOrde
 	if err := r.attachCategories(ctx, result); err != nil {
 		return orderuc.ListOrdersResult{}, err
 	}
+	if err := r.attachProductionSheets(ctx, orderIDs, result); err != nil {
+		return orderuc.ListOrdersResult{}, err
+	}
 	return orderuc.ListOrdersResult{
 		Orders: result,
 		Total:  total,
 		Limit:  input.Limit,
 		Offset: input.Offset,
 	}, nil
+}
+
+// attachProductionSheets resolves production-sheet membership for a list in
+// one query. A sheet with zero deviations still marks the order as worked.
+func (r *OrderRepository) attachProductionSheets(ctx context.Context, ids []int64, orders []orderdomain.Order) error {
+	if len(orders) == 0 {
+		return nil
+	}
+	byID := make(map[int64]*orderdomain.Order, len(orders))
+	for i := range orders {
+		byID[ids[i]] = &orders[i]
+	}
+	rows, err := r.queries.ListOrderProductionSheetIDs(ctx, ids)
+	if err != nil {
+		return fmt.Errorf("list order production sheets: %w", err)
+	}
+	for _, row := range rows {
+		if order := byID[row.OrderID]; order != nil {
+			sheetID := row.SheetID
+			order.ProductionSheetID = &sheetID
+		}
+	}
+	return nil
 }
 
 func (r *OrderRepository) GetDepartmentByID(ctx context.Context, id int64) (orderuc.Department, error) {
@@ -517,7 +543,7 @@ func (r *OrderRepository) SetOrderFavorite(ctx context.Context, number string, f
 		}
 		return orderdomain.Order{}, fmt.Errorf("set order favorite: %w", err)
 	}
-	items, err := r.queries.GetOrderItemsByOrderID(ctx, row.ID)
+	items, err := loadOrderItems(ctx, r.queries, row.ID)
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
@@ -525,7 +551,7 @@ func (r *OrderRepository) SetOrderFavorite(ctx context.Context, number string, f
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
-	order := orderFromRow(row, mapOrderItems(items), history)
+	order := orderFromRow(row, items, history)
 	if err := r.attachCategory(ctx, &order); err != nil {
 		return orderdomain.Order{}, err
 	}
@@ -611,7 +637,7 @@ func (r *OrderRepository) withOrderTx(ctx context.Context, fn func(q sqlc.Querie
 
 // hydrateOrder loads an order's items and history for the given row.
 func (r *OrderRepository) hydrateOrder(ctx context.Context, q sqlc.Querier, row sqlc.Order) (orderdomain.Order, error) {
-	items, err := q.GetOrderItemsByOrderID(ctx, row.ID)
+	items, err := loadOrderItems(ctx, q, row.ID)
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
@@ -619,7 +645,7 @@ func (r *OrderRepository) hydrateOrder(ctx context.Context, q sqlc.Querier, row 
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
-	order := orderFromRow(row, mapOrderItems(items), history)
+	order := orderFromRow(row, items, history)
 	if err := r.attachCategory(ctx, &order); err != nil {
 		return orderdomain.Order{}, err
 	}
@@ -777,7 +803,8 @@ func parseComments(raw []byte) orderdomain.OrderComments {
 }
 
 // orderItemsByOrderIDs loads items for many orders in a single query and groups
-// them by order id, avoiding the N+1 of one query per order.
+// them by order id, avoiding the N+1 of one query per order. Items come back
+// decorated with the production fact from the journal.
 func (r *OrderRepository) orderItemsByOrderIDs(ctx context.Context, orderIDs []int64) (map[int64][]orderdomain.OrderItem, error) {
 	grouped := make(map[int64][]orderdomain.OrderItem, len(orderIDs))
 	if len(orderIDs) == 0 {
@@ -793,11 +820,69 @@ func (r *OrderRepository) orderItemsByOrderIDs(ctx context.Context, orderIDs []i
 			ProductName:      item.ProductName,
 			Quantity:         item.Quantity,
 			ReservedQuantity: item.ReservedQuantity,
-			ProducedQuantity: item.ProducedQuantity,
-			ProducedReason:   derefString(item.ProducedReason),
 		})
 	}
+	if err := decorateProductionFacts(ctx, r.queries, grouped); err != nil {
+		return nil, err
+	}
 	return grouped, nil
+}
+
+// loadOrderItems returns one order's items decorated with the production fact.
+func loadOrderItems(ctx context.Context, q sqlc.Querier, orderID int64) ([]orderdomain.OrderItem, error) {
+	rows, err := q.GetOrderItemsByOrderID(ctx, orderID)
+	if err != nil {
+		return nil, err
+	}
+	items := mapOrderItems(rows)
+	if err := decorateProductionFacts(ctx, q, map[int64][]orderdomain.OrderItem{orderID: items}); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+// decorateProductionFacts — read-time «декоратор» отработки: заказ не хранит
+// факт выпечки, он подтягивается из журнала (production_sheet_items, свежий
+// лист побеждает) и накладывается на позиции при чтении.
+func decorateProductionFacts(ctx context.Context, q sqlc.Querier, grouped map[int64][]orderdomain.OrderItem) error {
+	if len(grouped) == 0 {
+		return nil
+	}
+	ids := make([]int64, 0, len(grouped))
+	for id := range grouped {
+		ids = append(ids, id)
+	}
+	facts, err := q.GetOrderProductionFacts(ctx, ids)
+	if err != nil {
+		return fmt.Errorf("load production facts: %w", err)
+	}
+	if len(facts) == 0 {
+		return nil
+	}
+	byOrder := make(map[int64]map[string]sqlc.GetOrderProductionFactsRow, len(facts))
+	for _, fact := range facts {
+		byKey := byOrder[fact.OrderID]
+		if byKey == nil {
+			byKey = make(map[string]sqlc.GetOrderProductionFactsRow)
+			byOrder[fact.OrderID] = byKey
+		}
+		byKey[fact.ProductKey] = fact
+	}
+	for orderID, items := range grouped {
+		byKey := byOrder[orderID]
+		if byKey == nil {
+			continue
+		}
+		for i := range items {
+			key := strings.ToLower(strings.TrimSpace(items[i].ProductName))
+			if fact, ok := byKey[key]; ok {
+				quantity := fact.ProducedQuantity
+				items[i].ProducedQuantity = &quantity
+				items[i].ProducedReason = fact.Reason
+			}
+		}
+	}
+	return nil
 }
 
 func mapOrderItems(items []sqlc.GetOrderItemsByOrderIDRow) []orderdomain.OrderItem {
@@ -808,8 +893,6 @@ func mapOrderItems(items []sqlc.GetOrderItemsByOrderIDRow) []orderdomain.OrderIt
 			ProductName:      item.ProductName,
 			Quantity:         item.Quantity,
 			ReservedQuantity: item.ReservedQuantity,
-			ProducedQuantity: item.ProducedQuantity,
-			ProducedReason:   derefString(item.ProducedReason),
 		})
 	}
 	return result
@@ -823,11 +906,4 @@ func dishCatalogItem(row sqlc.DishCatalog) orderuc.DishCatalogItem {
 		CategoryID: row.CategoryID,
 		SortOrder:  row.SortOrder,
 	}
-}
-
-func derefString(value *string) string {
-	if value == nil {
-		return ""
-	}
-	return *value
 }

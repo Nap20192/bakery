@@ -111,7 +111,7 @@ Order service records domain events (`order.created`, `order.updated`) on the ag
 
 **RBAC roles:** `admin`, `shop`, `baker` (+ `sync` capability). No self-registration; admin panel is the only way to create users. Passwords are pbkdf2-hashed — admin resets, never reveals.
 
-**Отработка (production fact):** журнал документов (`production_sheets` + `production_sheet_items`). Связь: **у отработки много заказов, у заказа — максимум одна отработка** (пересечение с чужим листом — конфликт `order.production_exists`). Хранятся только отклонения от заявки (`produced_quantity` позиции = проекция журнала; nil = «испечено по заявке»); отработка без изменений отклоняется. Заявка магазина никогда не изменяется. CRUD `/production` — только baker/admin; каждый пересчёт пишет историю `change_type='produced'` и события `order.produced`/`order.production_cleared` в outbox. Заказ несёт `production_sheet_id` — UI связывает заказ↔отработку в обе стороны.
+**Отработка (production fact):** лист фиксирует **партию** — сохранённый выбор заказов (`production_sheet_orders`, включая заказы без отклонений) плюс отклонения факта (`production_sheet_items`). Журнал — **единственное место хранения факта; заказ при отработке не изменяется вообще** (read-time декоратор: `decorateProductionFacts` накладывает факт на позиции при чтении, свежий лист побеждает). Связь: **у отработки много заказов, у заказа — максимум одна отработка** — принадлежность определяется выбором партии (конфликт `order.production_exists`). Лист без отклонений валиден и живёт до явного удаления («все совпали» больше не удаляет документ). В историю заказа отработка не пишет; события `order.produced`/`order.production_cleared` — только при реальном изменении видимого факта. CRUD `/production` — только baker/admin. UI: редактор листа один и тот же при создании и правке (журнал), внутри листа — «Расчёт теста» по партии (мониторинг считает по `EffectiveQuantity()` — факт учитывается автоматически).
 
 **Monitor (ingredient calculation):** Business math lives in `monitor/domain`; the usecase loads the tech-card graph and calls it. Two formulas:
 - Assembly chart: `scale = ordered_qty / assembled_amount`, `child = item.amount_in × scale`
@@ -129,7 +129,7 @@ Frontend validation (past-date guard) is a UX hint only — backend enforces all
 
 ## How to extend
 
-**Add an endpoint:** Add method to `UseCase` interface → implement in service + repo if needed → add handler method + route in `infra/http/handler.go`.
+**Add an endpoint:** Add method to `UseCase` interface → implement in service + repo if needed → add handler method + route in `infra/http/handler.go` → describe it in `docs/api/openapi.yaml` (the route-sync test `internal/inbound/api/openapi_test.go` fails otherwise) → `make api-gen` to refresh the frontend's typed client.
 
 **Add a service:** domain → usecase (interfaces + impl) → infra/repo → infra/http → app/app.go → wire in `internal/deps` → add handler to `api.NewServer` if it has HTTP routes.
 

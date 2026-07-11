@@ -55,6 +55,8 @@ FROM orders
 WHERE number = sqlc.arg(number);
 
 -- name: GetOrderItemsByOrderID :many
+-- Позиции хранят только заявку. Факт отработки живёт в журнале и
+-- декорируется при чтении (GetOrderProductionFacts + мердж в репозитории).
 SELECT
     oi.id,
     oi.order_id,
@@ -62,8 +64,6 @@ SELECT
     oi.product_name,
     oi.quantity,
     oi.reserved_quantity,
-    oi.produced_quantity,
-    oi.produced_reason,
     COALESCE(p.code, '') AS product_code
 FROM order_items AS oi
 LEFT JOIN iiko_products AS p ON p.id = oi.iiko_product_id
@@ -78,8 +78,6 @@ SELECT
     oi.product_name,
     oi.quantity,
     oi.reserved_quantity,
-    oi.produced_quantity,
-    oi.produced_reason,
     COALESCE(p.code, '') AS product_code
 FROM order_items AS oi
 LEFT JOIN iiko_products AS p ON p.id = oi.iiko_product_id

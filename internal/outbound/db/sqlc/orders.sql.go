@@ -268,7 +268,7 @@ INSERT INTO order_items (
     $4,
     $5
 )
-RETURNING id, order_id, iiko_product_id, product_name, quantity, reserved_quantity, produced_quantity, produced_reason
+RETURNING id, order_id, iiko_product_id, product_name, quantity, reserved_quantity
 `
 
 type CreateOrderItemParams struct {
@@ -295,8 +295,6 @@ func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams
 		&i.ProductName,
 		&i.Quantity,
 		&i.ReservedQuantity,
-		&i.ProducedQuantity,
-		&i.ProducedReason,
 	)
 	return i, err
 }
@@ -391,8 +389,6 @@ SELECT
     oi.product_name,
     oi.quantity,
     oi.reserved_quantity,
-    oi.produced_quantity,
-    oi.produced_reason,
     COALESCE(p.code, '') AS product_code
 FROM order_items AS oi
 LEFT JOIN iiko_products AS p ON p.id = oi.iiko_product_id
@@ -401,17 +397,17 @@ ORDER BY oi.id
 `
 
 type GetOrderItemsByOrderIDRow struct {
-	ID               int64    `json:"id"`
-	OrderID          int64    `json:"order_id"`
-	IikoProductID    *string  `json:"iiko_product_id"`
-	ProductName      string   `json:"product_name"`
-	Quantity         float64  `json:"quantity"`
-	ReservedQuantity float64  `json:"reserved_quantity"`
-	ProducedQuantity *float64 `json:"produced_quantity"`
-	ProducedReason   *string  `json:"produced_reason"`
-	ProductCode      string   `json:"product_code"`
+	ID               int64   `json:"id"`
+	OrderID          int64   `json:"order_id"`
+	IikoProductID    *string `json:"iiko_product_id"`
+	ProductName      string  `json:"product_name"`
+	Quantity         float64 `json:"quantity"`
+	ReservedQuantity float64 `json:"reserved_quantity"`
+	ProductCode      string  `json:"product_code"`
 }
 
+// Позиции хранят только заявку. Факт отработки живёт в журнале и
+// декорируется при чтении (GetOrderProductionFacts + мердж в репозитории).
 func (q *Queries) GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]GetOrderItemsByOrderIDRow, error) {
 	rows, err := q.db.Query(ctx, getOrderItemsByOrderID, orderID)
 	if err != nil {
@@ -428,8 +424,6 @@ func (q *Queries) GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]
 			&i.ProductName,
 			&i.Quantity,
 			&i.ReservedQuantity,
-			&i.ProducedQuantity,
-			&i.ProducedReason,
 			&i.ProductCode,
 		); err != nil {
 			return nil, err
@@ -450,8 +444,6 @@ SELECT
     oi.product_name,
     oi.quantity,
     oi.reserved_quantity,
-    oi.produced_quantity,
-    oi.produced_reason,
     COALESCE(p.code, '') AS product_code
 FROM order_items AS oi
 LEFT JOIN iiko_products AS p ON p.id = oi.iiko_product_id
@@ -460,15 +452,13 @@ ORDER BY oi.order_id, oi.id
 `
 
 type GetOrderItemsByOrderIDsRow struct {
-	ID               int64    `json:"id"`
-	OrderID          int64    `json:"order_id"`
-	IikoProductID    *string  `json:"iiko_product_id"`
-	ProductName      string   `json:"product_name"`
-	Quantity         float64  `json:"quantity"`
-	ReservedQuantity float64  `json:"reserved_quantity"`
-	ProducedQuantity *float64 `json:"produced_quantity"`
-	ProducedReason   *string  `json:"produced_reason"`
-	ProductCode      string   `json:"product_code"`
+	ID               int64   `json:"id"`
+	OrderID          int64   `json:"order_id"`
+	IikoProductID    *string `json:"iiko_product_id"`
+	ProductName      string  `json:"product_name"`
+	Quantity         float64 `json:"quantity"`
+	ReservedQuantity float64 `json:"reserved_quantity"`
+	ProductCode      string  `json:"product_code"`
 }
 
 func (q *Queries) GetOrderItemsByOrderIDs(ctx context.Context, orderIds []int64) ([]GetOrderItemsByOrderIDsRow, error) {
@@ -487,8 +477,6 @@ func (q *Queries) GetOrderItemsByOrderIDs(ctx context.Context, orderIds []int64)
 			&i.ProductName,
 			&i.Quantity,
 			&i.ReservedQuantity,
-			&i.ProducedQuantity,
-			&i.ProducedReason,
 			&i.ProductCode,
 		); err != nil {
 			return nil, err

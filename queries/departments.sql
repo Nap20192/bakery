@@ -1,25 +1,3 @@
--- name: CreateDepartment :one
-INSERT INTO departments (
-    type,
-    code,
-    name,
-    iiko_department_id,
-    metadata_json,
-    is_active,
-    created_at,
-    updated_at
-) VALUES (
-    sqlc.arg(type),
-    sqlc.arg(code),
-    sqlc.arg(name),
-    sqlc.narg(iiko_department_id),
-    sqlc.arg(metadata_json),
-    sqlc.arg(is_active),
-    sqlc.arg(created_at),
-    sqlc.arg(updated_at)
-)
-RETURNING *;
-
 -- name: GetDepartmentByID :one
 SELECT *
 FROM departments

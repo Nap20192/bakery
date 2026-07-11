@@ -25,6 +25,35 @@
 
   /* Фон приложения — мука. */
   --color-flour: #f7f3ea;
+
+  /* Семантические токены shadcn/ui, отображённые на нашу taupe-палитру.
+     ui/-компоненты (Button, Field, Panel, Modal, …) собраны по shadcn-
+     паттерну и красятся ТОЛЬКО этими токенами — сменить тон интерфейса
+     можно в одном месте. */
+  --color-background: #f7f3ea; /* flour */
+  --color-foreground: #211911; /* stone-950 */
+  --color-card: #ffffff;
+  --color-card-foreground: #211911;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #211911;
+  --color-primary: #2d2318; /* stone-900 — корка */
+  --color-primary-foreground: #faf6ee;
+  --color-secondary: #f2ecdd; /* stone-100 */
+  --color-secondary-foreground: #3c2f23;
+  --color-muted: #faf6ee; /* stone-50 */
+  --color-muted-foreground: #665441; /* stone-600 */
+  --color-accent: #f2ecdd;
+  --color-accent-foreground: #211911;
+  --color-destructive: #b91c1c; /* red-700 — семантика данных, не тонируется */
+  --color-destructive-foreground: #ffffff;
+  --color-border: #e7dcc8; /* stone-200 */
+  --color-input: #d3c3a9; /* stone-300 */
+  --color-ring: #2d2318;
+
+  --radius: 0.5rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
 }
 
 :root {
@@ -49,6 +78,17 @@ body {
   min-width: 320px;
   color: var(--color-stone-950);
   background: var(--color-flour);
+}
+
+html {
+  scroll-padding-top: 4.5rem;
+}
+
+/* A shared fallback keeps keyboard focus visible even in legacy feature
+   controls that have not yet moved to the ui/ primitives. */
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
 }
 
 h1,

@@ -1,125 +1,113 @@
-import { apiRequest } from './client';
+// @ts-check
+import { api, unwrap } from './client';
+
+/** @typedef {import('./schema').components['schemas']} Schemas */
 
 export function fetchMe() {
-  return apiRequest('/me');
+  return unwrap(api.GET('/me'));
 }
 
 export function fetchCatalog() {
-  return apiRequest('/catalog');
+  return unwrap(api.GET('/catalog'));
 }
 
 export function fetchCategories() {
-  return apiRequest('/categories');
+  return unwrap(api.GET('/categories'));
 }
 
+/** @param {'shop' | 'workshop' | ''} [type] */
 export function fetchDepartments(type = '') {
-  const params = new URLSearchParams();
-  if (type) params.set('type', type);
-  const query = params.toString();
-  return apiRequest(`/departments${query ? `?${query}` : ''}`);
+  return unwrap(api.GET('/departments', { params: { query: type ? { type } : {} } }));
 }
 
+/**
+ * @param {number} page
+ * @param {number} limit
+ * @param {{ fromDepartmentID?: number, fulfillmentDate?: string, fulfillmentFrom?: string, fulfillmentTo?: string, categoryID?: number }} [filters]
+ */
 export function fetchOrders(page, limit, filters = {}) {
-  const params = new URLSearchParams({
-    page: String(page),
-    limit: String(limit),
-  });
-  if (filters.fromDepartmentID) {
-    params.set('from_department_id', String(filters.fromDepartmentID));
-  }
-  if (filters.fulfillmentDate) {
-    params.set('fulfillment_date', filters.fulfillmentDate);
-  }
-  if (filters.fulfillmentFrom) {
-    params.set('fulfillment_from', filters.fulfillmentFrom);
-  }
-  if (filters.fulfillmentTo) {
-    params.set('fulfillment_to', filters.fulfillmentTo);
-  }
-  if (filters.categoryID) {
-    params.set('category_id', String(filters.categoryID));
-  }
-  return apiRequest(`/orders?${params.toString()}`);
+  /** @type {NonNullable<import('./schema').operations['listOrders']['parameters']['query']>} */
+  const query = { page, limit };
+  if (filters.fromDepartmentID) query.from_department_id = filters.fromDepartmentID;
+  if (filters.fulfillmentDate) query.fulfillment_date = filters.fulfillmentDate;
+  if (filters.fulfillmentFrom) query.fulfillment_from = filters.fulfillmentFrom;
+  if (filters.fulfillmentTo) query.fulfillment_to = filters.fulfillmentTo;
+  if (filters.categoryID) query.category_id = filters.categoryID;
+  return unwrap(api.GET('/orders', { params: { query } }));
 }
 
+/** @param {string} number */
 export function fetchOrder(number) {
-  return apiRequest(`/orders/${encodeURIComponent(number)}`);
+  return unwrap(api.GET('/orders/{id}', { params: { path: { id: number } } }));
 }
 
+/** @param {Schemas['OrderWrite']} order */
 export function createOrder(order) {
-  return apiRequest('/orders', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(order),
-  });
+  return unwrap(api.POST('/orders', { body: order }));
 }
 
+/**
+ * @param {string} number
+ * @param {Schemas['OrderWrite']} order
+ */
 export function updateOrder(number, order) {
-  return apiRequest(`/orders/${encodeURIComponent(number)}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(order),
-  });
+  return unwrap(api.PUT('/orders/{id}', { params: { path: { id: number } }, body: order }));
 }
 
+/**
+ * @param {string} number
+ * @param {boolean} favorite
+ */
 export function setOrderFavorite(number, favorite) {
-  return apiRequest(`/orders/${encodeURIComponent(number)}/favorite`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ favorite }),
-  });
+  return unwrap(api.PATCH('/orders/{id}/favorite', { params: { path: { id: number } }, body: { favorite } }));
 }
 
+/** @param {string} number */
 export function cancelOrder(number) {
-  return apiRequest(`/orders/${encodeURIComponent(number)}/cancel`, {
-    method: 'POST',
-  });
+  return unwrap(api.POST('/orders/{id}/cancel', { params: { path: { id: number } } }));
 }
 
+/** @param {string} number */
 export function restoreOrder(number) {
-  return apiRequest(`/orders/${encodeURIComponent(number)}/restore`, {
-    method: 'POST',
-  });
+  return unwrap(api.POST('/orders/{id}/restore', { params: { path: { id: number } } }));
 }
 
 // Журнал отработок: каждая отработка — отдельный документ, который можно
 // открыть, изменить и удалить. Факт в заказах пересчитывается автоматически.
+/** @param {Schemas['ProductionWrite']['orders']} orders */
 export function createProductionSheet(orders) {
-  return apiRequest('/production', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ orders }),
-  });
+  return unwrap(api.POST('/production', { body: { orders } }));
 }
 
 export function fetchProductionSheets() {
-  return apiRequest('/production');
+  return unwrap(api.GET('/production'));
 }
 
+/** @param {number} id */
 export function fetchProductionSheet(id) {
-  return apiRequest(`/production/${id}`);
+  return unwrap(api.GET('/production/{id}', { params: { path: { id } } }));
 }
 
+/**
+ * @param {number} id
+ * @param {Schemas['ProductionWrite']['orders']} orders
+ */
 export function updateProductionSheet(id, orders) {
-  return apiRequest(`/production/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ orders }),
-  });
+  return unwrap(api.PUT('/production/{id}', { params: { path: { id } }, body: { orders } }));
 }
 
+/** @param {number} id */
 export function deleteProductionSheet(id) {
-  return apiRequest(`/production/${id}`, { method: 'DELETE' });
+  return unwrap(api.DELETE('/production/{id}', { params: { path: { id } } }));
 }
 
+/** @param {string} number */
 export function fetchOrderMonitor(number) {
-  return apiRequest(`/monitor/${encodeURIComponent(number)}`);
+  return unwrap(api.GET('/monitor/{id}', { params: { path: { id: number } } }));
 }
 
+/** @param {string[]} numbers */
 export function fetchBatchOrderMonitor(numbers) {
-  const params = new URLSearchParams();
-  for (const number of numbers) {
-    if (number) params.append('orders', number);
-  }
-  return apiRequest(`/monitor/batch?${params.toString()}`);
+  const orders = (numbers || []).filter(Boolean);
+  return unwrap(api.GET('/monitor/batch', { params: { query: { orders } } }));
 }
