@@ -2,10 +2,6 @@ export function trimString(value) {
   return String(value || '').trim();
 }
 
-export function apiURL(base, path) {
-  return `${base.replace(/\/$/, '')}${path}`;
-}
-
 export function orderNumberFromLocation() {
   const params = new URLSearchParams(window.location.search);
   return trimString(params.get('order') || params.get('order_number') || params.get('number'));

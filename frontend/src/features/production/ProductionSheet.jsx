@@ -61,12 +61,13 @@ function prorate(fact, perOrder) {
 
 // ProductionSheet — лист отработки: пекарь вводит факт по продуктам,
 // расхождения разносятся по заявкам (пропорционально, с ручной правкой).
-// Сохранение создаёт документ в журнале «Отработки», где его можно изменить
-// или удалить.
+// Лист фиксирует партию: сохраняются ВСЕ заказы выбора (и без отклонений
+// тоже) плюс отклонения факта. Один и тот же редактор используется при
+// создании (со страницы выбранных заказов) и при правке в журнале.
 // Быстрые обоснования отклонений — заполняют поле причины одним тапом.
 const REASON_PRESETS = ['Подгорело', 'Упало', 'Брак', 'Не хватило теста', 'Испекли про запас'];
 
-export function ProductionSheet({ orders, loading, onSave, onOpenJournal }) {
+export function ProductionSheet({ orders, loading, onSave, onOpenJournal, submitLabel = 'Сохранить отработку' }) {
   const rows = useMemo(() => buildRows(orders), [orders]);
   const [facts, setFacts] = useState({});
   const [allocations, setAllocations] = useState({});
@@ -115,22 +116,18 @@ export function ProductionSheet({ orders, loading, onSave, onOpenJournal }) {
   }
 
   const states = rows.map((row) => ({ row, ...rowState(row) }));
-  // Отработка без изменений не сохраняется: нужен хотя бы один продукт с
-  // фактом, отличным от заявки.
-  const hasChanges = states.some((state) => state.mismatch);
-  const canSave = !loading && hasChanges && states.every((state) => state.valid);
+  const canSave = !loading && states.every((state) => state.valid);
 
   function save() {
-    const perOrderItems = new Map();
+    // Партия сохраняется целиком: каждый выбранный заказ попадает в документ,
+    // items — только отклонения (факт, совпавший с заявкой, не хранится).
+    const perOrderItems = new Map(orders.map((order) => [order.number, []]));
     for (const { row, mismatch, values } of states) {
       if (!mismatch) continue;
       const reason = (reasons[row.key] || '').trim();
       row.perOrder.forEach((entry, index) => {
-        // Храним только отклонения: заказы, где факт совпал с заявкой,
-        // в документ не попадают.
         if (values[index] === entry.ordered) return;
-        if (!perOrderItems.has(entry.number)) perOrderItems.set(entry.number, []);
-        perOrderItems.get(entry.number).push({ product_name: row.name, produced_quantity: values[index], reason });
+        perOrderItems.get(entry.number)?.push({ product_name: row.name, produced_quantity: values[index], reason });
       });
     }
     onSave([...perOrderItems.entries()].map(([number, items]) => ({ number, items })));
@@ -229,14 +226,12 @@ export function ProductionSheet({ orders, loading, onSave, onOpenJournal }) {
           >
             Изменить или удалить — в журнале отработок
           </button>
-        ) : !hasChanges ? (
-          <span className="text-[12px] leading-5 text-stone-400">Все значения совпадают с заявкой — сохранять нечего.</span>
         ) : (
-          <span />
+          <span className="text-[12px] leading-5 text-stone-400">Лист сохраняет выбранные заказы; отклонения — только там, где факт отличается.</span>
         )}
         <Button variant="primary" onClick={save} disabled={!canSave}>
           <Icon name="select" size={15} />
-          Сохранить отработку
+          {submitLabel}
         </Button>
       </div>
     </div>

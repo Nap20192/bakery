@@ -1,19 +1,12 @@
-import { apiBase } from '../config/env';
-import { apiURL } from '../lib/url';
+// @ts-check
+import { api, unwrap } from './client';
 
 // login exchanges username + password for a bearer session token.
-// No authHeader (no session yet).
-export async function login(username, password) {
-  const url = apiURL(apiBase, '/login');
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
-  });
-  const contentType = response.headers.get('content-type') || '';
-  const payload = contentType.includes('application/json') ? await response.json().catch(() => ({})) : {};
-  if (!response.ok) {
-    throw new Error(payload.error || `HTTP ${response.status}`);
-  }
-  return payload; // { token, expires_at }
+// The auth middleware adds no header while there is no session yet.
+/**
+ * @param {string} username
+ * @param {string} password
+ */
+export function login(username, password) {
+  return unwrap(api.POST('/login', { body: { username, password } }));
 }

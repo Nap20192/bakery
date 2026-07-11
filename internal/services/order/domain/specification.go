@@ -11,9 +11,3 @@ type ParsedOrderLineSpecification interface {
 type OrderItemsSpecification interface {
 	IsValid(items []OrderItem) bool
 }
-
-type BulkOrderLineSpecificationFunc func(line BulkOrderLine) bool
-
-func (s BulkOrderLineSpecificationFunc) IsValid(line BulkOrderLine) bool {
-	return s(line)
-}

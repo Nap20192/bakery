@@ -2,11 +2,12 @@ import { isWebMode } from '../../lib/auth';
 import { Icon } from '../../ui/Icon';
 import { Button } from '../../ui/Button';
 
-const mobileColsClass = { 1: 'grid-cols-1', 2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4', 5: 'grid-cols-5' };
+const mobileColsClass = { 1: 'grid-cols-1', 2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4', 5: 'grid-cols-5', 6: 'grid-cols-6' };
 
 const navItems = [
   { route: { name: 'orders' }, label: 'Заказы', icon: 'orders', roles: ['shop', 'baker', 'admin'] },
   { route: { name: 'orderNew' }, label: 'Новый', icon: 'plus', roles: ['shop'] },
+  { route: { name: 'ordersTable' }, label: 'Таблица', icon: 'table', roles: ['baker', 'admin'] },
   { route: { name: 'production' }, label: 'Отработки', icon: 'calculator', roles: ['baker', 'admin'] },
   { route: { name: 'adminUsers' }, label: 'Люди', icon: 'users', roles: ['admin'] },
   { route: { name: 'adminDishes' }, label: 'Блюда', icon: 'orders', roles: ['admin'] },
@@ -21,23 +22,31 @@ export function OrdersLayout({ viewer, active, onNavigate, onLogout, children })
   const hideBottomNav = active === 'orderNew' || active === 'orderEdit';
 
   return (
-    <main className={`min-h-screen bg-flour text-stone-900 ${hideBottomNav ? '' : 'pb-16 sm:pb-0'}`}>
+    <div className={`min-h-screen bg-flour text-stone-900 ${hideBottomNav ? '' : 'pb-[calc(4rem+env(safe-area-inset-bottom))] sm:pb-0'}`}>
+      <a
+        href="#main-content"
+        className="fixed left-3 top-3 z-50 -translate-y-20 rounded-md bg-primary px-3 py-2 font-semibold text-primary-foreground shadow-lg transition-transform focus-visible:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      >
+        К содержанию
+      </a>
       <header className="sticky top-0 z-20 border-b border-stone-300 bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
         <div className="mx-auto flex max-w-[1440px] items-center gap-2">
           <button
             type="button"
             onClick={() => onNavigate({ name: 'orders' })}
-            className="shrink-0 rounded-md px-1 text-left text-[17px] font-bold leading-6 tracking-tight text-stone-950 focus:outline-none focus:ring-2 focus:ring-stone-900/20"
+            className="inline-flex min-h-11 shrink-0 items-center rounded-md px-1 text-left text-[17px] font-bold leading-6 tracking-tight text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 sm:min-h-9"
+            aria-label="Пекарня — к заказам"
           >
             Пекарня<span className="text-amber-500">.</span>
           </button>
-          <nav className="hidden min-w-0 flex-1 gap-1 overflow-x-auto px-1 sm:flex">
+          <nav aria-label="Основная навигация" className="hidden min-w-0 flex-1 gap-1 overflow-x-auto px-1 sm:flex">
             {items.map((item) => (
               <button
                 key={item.label}
                 type="button"
                 onClick={() => onNavigate(item.route)}
-                className={`shrink-0 rounded-md border px-3 py-1.5 text-[13px] font-semibold transition focus:outline-none focus:ring-2 focus:ring-stone-900/20 ${
+                aria-current={activeNavItem(active) === item.route.name ? 'page' : undefined}
+                className={`min-h-9 shrink-0 rounded-md border px-3 py-1.5 text-[13px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${
                   activeNavItem(active) === item.route.name
                     ? 'border-stone-900 bg-stone-900 text-white'
                     : 'border-stone-300 bg-white text-stone-800'
@@ -56,27 +65,30 @@ export function OrdersLayout({ viewer, active, onNavigate, onLogout, children })
           )}
         </div>
       </header>
-      {children}
+      <main id="main-content" tabIndex={-1} className="outline-none">
+        {children}
+      </main>
       {!hideBottomNav && (
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-300 bg-white/95 px-2 py-1.5 shadow-[0_-8px_20px_rgba(28,25,23,0.08)] backdrop-blur sm:hidden">
+      <nav aria-label="Основная навигация" className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-300 bg-white/95 px-2 pb-[calc(0.375rem+env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-8px_20px_rgba(28,25,23,0.08)] backdrop-blur sm:hidden">
         <div className={`mx-auto grid max-w-md gap-1 ${mobileColsClass[items.length] ?? 'grid-cols-3'}`}>
           {items.map((item) => (
             <button
               key={item.label}
               type="button"
               onClick={() => onNavigate(item.route)}
-              className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-md text-[11px] font-semibold transition focus:outline-none focus:ring-2 focus:ring-stone-900/20 ${
+              aria-current={activeNavItem(active) === item.route.name ? 'page' : undefined}
+              className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-0.5 rounded-md px-1 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${
                 activeNavItem(active) === item.route.name ? 'bg-stone-900 text-white' : 'text-stone-700 hover:bg-stone-50'
               }`}
             >
               <Icon name={item.icon} size={19} />
-              <span className="truncate">{item.label}</span>
+              <span className="w-full truncate text-center">{item.label}</span>
             </button>
           ))}
         </div>
       </nav>
       )}
-    </main>
+    </div>
   );
 }
 

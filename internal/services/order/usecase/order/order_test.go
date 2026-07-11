@@ -344,7 +344,7 @@ func TestServiceUpdateAndDeleteProductionSheetRequireExistingSheet(t *testing.T)
 	}
 }
 
-func TestServiceUpdateProductionSheetDeletesWhenAllValuesMatchOrder(t *testing.T) {
+func TestServiceUpdateProductionSheetKeepsBatchWhenAllValuesMatchOrder(t *testing.T) {
 	repo := &fakeRepo{
 		sheetsByID: map[int64]struct{}{5: {}},
 		ordersByNumber: map[string]orderdomain.Order{
@@ -353,7 +353,8 @@ func TestServiceUpdateProductionSheetDeletesWhenAllValuesMatchOrder(t *testing.T
 	}
 	svc := NewService(repo)
 
-	// Факт вернули к заявке — отклонений не осталось, документ удаляется.
+	// Факт вернули к заявке — отклонений не осталось, но лист фиксирует
+	// партию и живёт до явного удаления: заказ сохраняется без позиций.
 	sheet, err := svc.UpdateProductionSheet(context.Background(), 5, RecordProductionInput{
 		ProducedByUsername: "baker",
 		Orders:             []OrderProductionInput{{Number: "A", Items: []ProducedItemInput{{ProductName: "Хлеб", ProducedQuantity: 10}}}},
@@ -361,14 +362,18 @@ func TestServiceUpdateProductionSheetDeletesWhenAllValuesMatchOrder(t *testing.T
 	if err != nil {
 		t.Fatalf("UpdateProductionSheet returned error: %v", err)
 	}
-	if sheet.ID != 0 {
-		t.Fatalf("sheet.ID = %d, want 0 (deleted)", sheet.ID)
+	if sheet.ID != 5 {
+		t.Fatalf("sheet.ID = %d, want 5 (batch survives)", sheet.ID)
 	}
-	if len(repo.productionDeleted) != 1 || repo.productionDeleted[0] != 5 {
-		t.Fatalf("deleted = %#v, want [5]", repo.productionDeleted)
+	if len(repo.productionDeleted) != 0 {
+		t.Fatalf("delete must not be called, deleted = %#v", repo.productionDeleted)
 	}
-	if len(repo.productionInputs) != 0 {
-		t.Fatalf("save must not be called, inputs = %#v", repo.productionInputs)
+	if len(repo.productionInputs) != 1 {
+		t.Fatalf("inputs = %#v, want one save", repo.productionInputs)
+	}
+	saved := repo.productionInputs[0]
+	if saved.SheetID != 5 || len(saved.Orders) != 1 || saved.Orders[0].Number != "A" || len(saved.Orders[0].Items) != 0 {
+		t.Fatalf("saved = %#v, want order A with no deviation items", saved)
 	}
 }
 

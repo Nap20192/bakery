@@ -10,7 +10,3 @@ import (
 func New(queries *sqlc.Queries) authuc.UseCase {
 	return authuc.NewService(authrepo.New(queries))
 }
-
-func NewRBAC() *authuc.RBAC {
-	return authuc.NewRBAC()
-}

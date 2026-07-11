@@ -31,17 +31,6 @@ SELECT
 FROM iiko_products
 WHERE id = sqlc.arg(id);
 
--- name: GetIikoProductsByName :many
-SELECT
-    id,
-    code,
-    name,
-    type,
-    measure_unit,
-    raw_json
-FROM iiko_products
-WHERE trim(name) = trim(sqlc.arg(name));
-
 -- name: UpsertDishCatalogItem :one
 -- category_id keeps an already-assigned category on conflict, so re-seeding
 -- from templates/dishes.txt never clobbers the admin's assignment.

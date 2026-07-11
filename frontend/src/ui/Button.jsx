@@ -1,13 +1,25 @@
-const baseClass =
-  'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-md border px-3 py-1.5 text-[13px] font-semibold transition focus:outline-none focus:ring-2 focus:ring-stone-900/20 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-9';
+import { cva } from 'class-variance-authority';
+import { cn } from '../lib/cn';
 
-const variants = {
-  default: `${baseClass} border-stone-300 bg-white text-stone-800 hover:border-stone-400 hover:bg-stone-50`,
-  primary: `${baseClass} border-stone-900 bg-stone-900 text-white hover:bg-stone-800`,
-  danger: `${baseClass} border-red-300 bg-white text-red-700 hover:border-red-400 hover:bg-red-50 focus:ring-red-900/20`,
-  ghost: `${baseClass} border-transparent bg-transparent text-stone-600 hover:bg-stone-100 hover:text-stone-900`,
-};
+// Button — shadcn/ui-кнопка на cva и семантических токенах. Имена вариантов
+// исторические (см. вызовы по фичам): default = outline, primary = solid
+// primary, danger = outline destructive, ghost — прозрачная.
+const buttonVariants = cva(
+  'inline-flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:pointer-events-none disabled:opacity-50 sm:min-h-9',
+  {
+    variants: {
+      variant: {
+        default: 'border border-input bg-card text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground',
+        primary: 'bg-primary text-primary-foreground shadow-xs hover:bg-primary/90',
+        danger:
+          'border border-destructive/40 bg-card text-destructive shadow-xs hover:border-destructive/60 hover:bg-destructive/10 focus-visible:ring-destructive/30',
+        ghost: 'text-muted-foreground hover:bg-accent hover:text-foreground',
+      },
+    },
+    defaultVariants: { variant: 'default' },
+  },
+);
 
-export function Button({ variant = 'default', className = '', ...props }) {
-  return <button className={`${variants[variant] ?? variants.default} ${className}`.trim()} {...props} />;
+export function Button({ variant, className = '', ...props }) {
+  return <button className={cn(buttonVariants({ variant }), className)} {...props} />;
 }

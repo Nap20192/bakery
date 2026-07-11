@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '../../ui/Button';
 import { CategoryBadge } from '../../ui/CategoryBadge';
+import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { ErrorBanner } from '../../ui/ErrorBanner';
 import {
   createCategory,
@@ -33,6 +34,7 @@ export function AdminDishes() {
   const [query, setQuery] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [deleting, setDeleting] = useState(null);
   const dragCode = useRef(null);
 
   function load() {
@@ -90,8 +92,10 @@ export function AdminDishes() {
     load();
   }
 
-  async function onDelete(dish) {
-    if (!window.confirm(`Удалить «${dish.name}»?`)) return;
+  async function confirmDelete() {
+    const dish = deleting;
+    setDeleting(null);
+    if (!dish) return;
     setError('');
     try {
       await deleteDish(dish.code);
@@ -119,10 +123,10 @@ export function AdminDishes() {
   }
 
   return (
-    <main className="bg-flour p-4 text-stone-900 sm:p-6">
+    <section className="bg-flour p-4 text-stone-900 sm:p-6" aria-labelledby="dishes-title">
       <div className="mx-auto max-w-5xl">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <h1 className="flex items-center gap-2 text-lg font-semibold">
+          <h1 id="dishes-title" className="flex items-center gap-2 text-lg font-semibold">
             Блюда
             <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[12px] font-medium tabular-nums text-stone-600">{dishes.length}</span>
           </h1>
@@ -173,7 +177,7 @@ export function AdminDishes() {
                   categoryByID={categoryByID}
                   canReorder={canReorder}
                   onSave={onSave}
-                  onDelete={onDelete}
+                  onDelete={setDeleting}
                   setError={setError}
                   onDragStart={() => { dragCode.current = dish.code; }}
                   onDrop={() => onDrop(dish.code)}
@@ -186,7 +190,14 @@ export function AdminDishes() {
           </table>
         </div>
       </div>
-    </main>
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        title={`Удалить «${deleting?.name || ''}»?`}
+        description="Блюдо исчезнет из каталога и шаблонов заказа."
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleting(null)}
+      />
+    </section>
   );
 }
 
@@ -196,6 +207,7 @@ export function AdminDishes() {
 function CategoryManager({ categories, onChanged, onError }) {
   const [draft, setDraft] = useState({ name: '', letter: '', color: CATEGORY_COLOR_SLUGS[0] });
   const [busy, setBusy] = useState(false);
+  const [removing, setRemoving] = useState(null);
 
   async function onCreate() {
     setBusy(true);
@@ -221,8 +233,10 @@ function CategoryManager({ categories, onChanged, onError }) {
     }
   }
 
-  async function onRemove(category) {
-    if (!window.confirm(`Удалить тип «${category.name}»?`)) return;
+  async function confirmRemove() {
+    const category = removing;
+    setRemoving(null);
+    if (!category) return;
     onError('');
     try {
       await deleteCategory(category.id);
@@ -240,7 +254,7 @@ function CategoryManager({ categories, onChanged, onError }) {
       </p>
       <div className="space-y-2">
         {categories.map((category) => (
-          <CategoryRow key={category.id} category={category} onUpdate={onUpdate} onRemove={onRemove} />
+          <CategoryRow key={category.id} category={category} onUpdate={onUpdate} onRemove={setRemoving} />
         ))}
         <div className="grid gap-2 border-t border-stone-100 pt-3 sm:grid-cols-[minmax(0,1fr)_5rem_auto_auto]">
           <input
@@ -262,6 +276,13 @@ function CategoryManager({ categories, onChanged, onError }) {
           </Button>
         </div>
       </div>
+      <ConfirmDialog
+        open={Boolean(removing)}
+        title={`Удалить тип «${removing?.name || ''}»?`}
+        description="Тип с привязанными блюдами удалить нельзя — сначала перенесите их."
+        onConfirm={confirmRemove}
+        onCancel={() => setRemoving(null)}
+      />
     </section>
   );
 }

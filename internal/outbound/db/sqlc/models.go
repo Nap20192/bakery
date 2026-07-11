@@ -177,14 +177,12 @@ type OrderHistoryItem struct {
 }
 
 type OrderItem struct {
-	ID               int64    `json:"id"`
-	OrderID          int64    `json:"order_id"`
-	IikoProductID    *string  `json:"iiko_product_id"`
-	ProductName      string   `json:"product_name"`
-	Quantity         float64  `json:"quantity"`
-	ReservedQuantity float64  `json:"reserved_quantity"`
-	ProducedQuantity *float64 `json:"produced_quantity"`
-	ProducedReason   *string  `json:"produced_reason"`
+	ID               int64   `json:"id"`
+	OrderID          int64   `json:"order_id"`
+	IikoProductID    *string `json:"iiko_product_id"`
+	ProductName      string  `json:"product_name"`
+	Quantity         float64 `json:"quantity"`
+	ReservedQuantity float64 `json:"reserved_quantity"`
 }
 
 type OrderOutbox struct {
@@ -211,4 +209,9 @@ type ProductionSheetItem struct {
 	ProductName      string  `json:"product_name"`
 	ProducedQuantity float64 `json:"produced_quantity"`
 	Reason           string  `json:"reason"`
+}
+
+type ProductionSheetOrder struct {
+	SheetID int64 `json:"sheet_id"`
+	OrderID int64 `json:"order_id"`
 }

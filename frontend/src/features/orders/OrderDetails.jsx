@@ -5,10 +5,13 @@ import { CopyButton } from '../../ui/CopyButton';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { formatDate, formatFulfillmentDate, formatQuantity } from '../../lib/format';
+import { cn } from '../../lib/cn';
 import { orderCreator, orderItemsToText, orderQuantity } from '../../lib/orders';
+import { productionStatus, sheetStyle } from '../../lib/production';
 import { EmptyState } from '../../ui/EmptyState';
 
 export function OrderDetails({ order, catalog = [], canFavorite = false, onToggleFavorite, onOpenProduction }) {
+  const production = productionStatus(order);
   return (
     <>
       <div className="flex items-start justify-between gap-2">
@@ -23,9 +26,15 @@ export function OrderDetails({ order, catalog = [], canFavorite = false, onToggl
         </div>
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           {order.production_sheet_id && onOpenProduction && (
-            <Button onClick={() => onOpenProduction(order.production_sheet_id)} title="Открыть отработку в журнале">
+            // Кнопка перехода в цвете партии — тот же цвет, что у бейджа
+            // этого листа на карточках матрицы и в журнале.
+            <Button
+              onClick={() => onOpenProduction(order.production_sheet_id)}
+              title="Открыть отработку в журнале"
+              className={cn(sheetStyle(order.production_sheet_id).badge, 'hover:opacity-85')}
+            >
               <Icon name="calculator" size={15} />
-              <span className="hidden sm:inline">Отработка №{order.production_sheet_id}</span>
+              <span className="hidden sm:inline">{production?.deviations ? `±${production.deviations} · Отработка №${order.production_sheet_id}` : `✓ Отработан · №${order.production_sheet_id}`}</span>
               <span className="sm:hidden">№{order.production_sheet_id}</span>
             </Button>
           )}
@@ -52,6 +61,16 @@ export function OrderDetails({ order, catalog = [], canFavorite = false, onToggl
           )}
         </div>
       </div>
+
+      {production && (
+        <div className="mb-3 flex items-start gap-2 rounded-lg border border-stone-300 bg-stone-100/80 px-3 py-2 text-[13px] text-stone-800" role="status">
+          <span className="mt-0.5 font-bold" aria-hidden="true">{production.deviations > 0 ? '±' : '✓'}</span>
+          <div>
+            <strong className="block font-semibold">{production.label}</strong>
+            <span className="block text-[12px] text-stone-600">Заказ входит в отработку №{order.production_sheet_id}; расчёт теста использует зафиксированный факт.</span>
+          </div>
+        </div>
+      )}
 
       <div className="mb-3 grid grid-cols-2 gap-1.5 sm:gap-2 md:grid-cols-5">
         <MetaCell label="Создан" value={formatDate(order.created_at) || '-'} />
@@ -246,7 +265,6 @@ function changeLabel(type) {
   if (type === 'added') return '[добавлено]';
   if (type === 'updated') return '[изменено]';
   if (type === 'removed') return '[удалено]';
-  if (type === 'produced') return '[отработка]';
   return '[обновлено]';
 }
 
@@ -254,7 +272,6 @@ function changeColor(type) {
   if (type === 'added') return '#1f9d55';
   if (type === 'updated') return '#ffaf00';
   if (type === 'removed') return '#d64545';
-  if (type === 'produced') return '#0284c7';
   return '#57534e';
 }
 
@@ -262,7 +279,6 @@ function changeBackground(type) {
   if (type === 'added') return '#e7f6ed';
   if (type === 'updated') return '#fff0c2';
   if (type === 'removed') return '#fde8e8';
-  if (type === 'produced') return '#e0f2fe';
   return '#f5f5f4';
 }
 

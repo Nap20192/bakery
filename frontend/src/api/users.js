@@ -1,29 +1,26 @@
-import { apiRequest } from './client';
+// @ts-check
+import { api, unwrap } from './client';
+
+/** @typedef {import('./schema').components['schemas']} Schemas */
 
 export function fetchUsers() {
-  return apiRequest('/users');
+  return unwrap(api.GET('/users'));
 }
 
-export function fetchAdminDepartments() {
-  return apiRequest('/admin/departments');
-}
-
+/** @param {Schemas['UserCreate']} user */
 export function createUser(user) {
-  return apiRequest('/users', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(user),
-  });
+  return unwrap(api.POST('/users', { body: user }));
 }
 
+/**
+ * @param {number} id
+ * @param {Schemas['UserUpdate']} patch
+ */
 export function updateUser(id, patch) {
-  return apiRequest(`/users/${encodeURIComponent(id)}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(patch),
-  });
+  return unwrap(api.PATCH('/users/{id}', { params: { path: { id } }, body: patch }));
 }
 
+/** @param {number} id */
 export function deleteUser(id) {
-  return apiRequest(`/users/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  return unwrap(api.DELETE('/users/{id}', { params: { path: { id } } }));
 }

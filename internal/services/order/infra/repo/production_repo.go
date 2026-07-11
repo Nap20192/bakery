@@ -14,9 +14,13 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// Журнал отработок. Документ хранит факт выпечки по позициям заказов;
-// produced_quantity в самих заказах — проекция журнала (последний лист
-// побеждает), пересчитываемая здесь при каждом изменении.
+// Журнал отработок — единственное место, где живёт факт выпечки. Лист
+// фиксирует партию: сохранённый выбор заказов (production_sheet_orders) плюс
+// отклонения по позициям (production_sheet_items). Заказ при отработке не
+// изменяется: факт декорирует его позиции при чтении
+// (GetOrderProductionFacts + decorateProductionFacts). Наружу уходят события
+// produced/production_cleared — только для заказов, чей видимый факт реально
+// изменился.
 
 func (r *OrderRepository) SaveProductionSheet(ctx context.Context, input orderuc.SaveProductionSheetInput) (orderdomain.ProductionSheet, error) {
 	var sheetID int64
@@ -38,14 +42,11 @@ func (r *OrderRepository) SaveProductionSheet(ctx context.Context, input orderuc
 			for _, id := range prev {
 				affected[id] = struct{}{}
 			}
-			if err := q.DeleteProductionSheetItems(ctx, sheetID); err != nil {
-				return fmt.Errorf("delete production sheet items: %w", err)
-			}
-			if err := q.TouchProductionSheet(ctx, sheetID); err != nil {
-				return fmt.Errorf("touch production sheet: %w", err)
-			}
 		}
 
+		// Заказы из входа резолвятся и проверяются до любых записей — так
+		// «прежний факт» можно снять одним запросом по всем затронутым.
+		orderIDs := make(map[string]int64, len(input.Orders))
 		for _, order := range input.Orders {
 			row, err := q.GetOrderByNumber(ctx, strings.TrimSpace(order.Number))
 			if err != nil {
@@ -61,11 +62,38 @@ func (r *OrderRepository) SaveProductionSheet(ctx context.Context, input orderuc
 				return apperr.Conflict("order.production_exists",
 					fmt.Sprintf("По заказу %s уже есть отработка №%d — измените её в журнале.", row.Number, existingSheet))
 			}
+			orderIDs[order.Number] = row.ID
 			affected[row.ID] = struct{}{}
+		}
+
+		before, err := productionFactsByOrder(ctx, q, affected)
+		if err != nil {
+			return err
+		}
+
+		if input.SheetID != 0 {
+			if err := q.DeleteProductionSheetOrders(ctx, sheetID); err != nil {
+				return fmt.Errorf("delete production sheet orders: %w", err)
+			}
+			if err := q.DeleteProductionSheetItems(ctx, sheetID); err != nil {
+				return fmt.Errorf("delete production sheet items: %w", err)
+			}
+			if err := q.TouchProductionSheet(ctx, sheetID); err != nil {
+				return fmt.Errorf("touch production sheet: %w", err)
+			}
+		}
+		for _, order := range input.Orders {
+			// Выбор партии сохраняется целиком — и для заказов без отклонений.
+			if err := q.InsertProductionSheetOrder(ctx, sqlc.InsertProductionSheetOrderParams{
+				SheetID: sheetID,
+				OrderID: orderIDs[order.Number],
+			}); err != nil {
+				return fmt.Errorf("insert production sheet order: %w", err)
+			}
 			for _, item := range order.Items {
 				if err := q.InsertProductionSheetItem(ctx, sqlc.InsertProductionSheetItemParams{
 					SheetID:          sheetID,
-					OrderID:          row.ID,
+					OrderID:          orderIDs[order.Number],
 					ProductName:      item.ProductName,
 					ProducedQuantity: item.ProducedQuantity,
 					Reason:           item.Reason,
@@ -75,7 +103,7 @@ func (r *OrderRepository) SaveProductionSheet(ctx context.Context, input orderuc
 			}
 		}
 
-		return r.syncOrdersProduction(ctx, q, affected, input.ProducedByUsername)
+		return r.notifyProductionChanges(ctx, q, affected, before, input.ProducedByUsername)
 	})
 	if err != nil {
 		return orderdomain.ProductionSheet{}, err
@@ -89,14 +117,18 @@ func (r *OrderRepository) DeleteProductionSheet(ctx context.Context, id int64, b
 		if err != nil {
 			return fmt.Errorf("list production sheet orders: %w", err)
 		}
-		if err := q.DeleteProductionSheet(ctx, id); err != nil {
-			return fmt.Errorf("delete production sheet: %w", err)
-		}
 		affected := make(map[int64]struct{}, len(prev))
 		for _, orderID := range prev {
 			affected[orderID] = struct{}{}
 		}
-		return r.syncOrdersProduction(ctx, q, affected, byUsername)
+		before, err := productionFactsByOrder(ctx, q, affected)
+		if err != nil {
+			return err
+		}
+		if err := q.DeleteProductionSheet(ctx, id); err != nil {
+			return fmt.Errorf("delete production sheet: %w", err)
+		}
+		return r.notifyProductionChanges(ctx, q, affected, before, byUsername)
 	})
 }
 
@@ -131,15 +163,20 @@ func (r *OrderRepository) GetProductionSheet(ctx context.Context, id int64) (ord
 	if err != nil {
 		return orderdomain.ProductionSheet{}, fmt.Errorf("list production sheet items %d: %w", id, err)
 	}
+	// Партия листа — сохранённый выбор, включая заказы без отклонений.
+	orderNumbers, err := r.queries.ListProductionSheetOrderNumbers(ctx, id)
+	if err != nil {
+		return orderdomain.ProductionSheet{}, fmt.Errorf("list production sheet order numbers %d: %w", id, err)
+	}
 	sheet := orderdomain.ProductionSheet{
 		ID:                row.ID,
 		CreatedByUsername: row.CreatedByUsername,
 		CreatedAt:         row.CreatedAt.Time,
 		UpdatedAt:         row.UpdatedAt.Time,
+		OrderNumbers:      orderNumbers,
 		Items:             make([]orderdomain.ProductionSheetItem, 0, len(itemRows)),
 		ItemCount:         int64(len(itemRows)),
 	}
-	seenOrders := make(map[string]struct{})
 	for _, item := range itemRows {
 		sheet.Items = append(sheet.Items, orderdomain.ProductionSheetItem{
 			OrderNumber:      item.OrderNumber,
@@ -147,58 +184,71 @@ func (r *OrderRepository) GetProductionSheet(ctx context.Context, id int64) (ord
 			ProducedQuantity: item.ProducedQuantity,
 			Reason:           item.Reason,
 		})
-		if _, ok := seenOrders[item.OrderNumber]; !ok {
-			seenOrders[item.OrderNumber] = struct{}{}
-			sheet.OrderNumbers = append(sheet.OrderNumbers, item.OrderNumber)
-		}
 	}
 	return sheet, nil
 }
 
-// syncOrdersProduction перепроецирует журнал на затронутые заказы: обновляет
-// produced_quantity, пишет диф в историю и кладёт события produced/cleared в
-// outbox. Заказы без фактических изменений пропускаются.
-func (r *OrderRepository) syncOrdersProduction(ctx context.Context, q sqlc.Querier, orderIDs map[int64]struct{}, byUsername string) error {
-	for orderID := range orderIDs {
-		row, err := q.GetOrderByID(ctx, orderID)
-		if err != nil {
-			return fmt.Errorf("get order %d for production sync: %w", orderID, err)
-		}
-		before, err := q.GetOrderItemsByOrderID(ctx, orderID)
-		if err != nil {
-			return err
-		}
-		if err := q.ApplyOrderProduction(ctx, orderID); err != nil {
-			return fmt.Errorf("apply order production %d: %w", orderID, err)
-		}
-		if err := q.ClearUncoveredOrderProduction(ctx, orderID); err != nil {
-			return fmt.Errorf("clear uncovered production %d: %w", orderID, err)
-		}
-		after, err := q.GetOrderItemsByOrderID(ctx, orderID)
-		if err != nil {
-			return err
-		}
+// productionFact — видимое значение отработки одной позиции (для сравнения
+// «до/после» изменения журнала).
+type productionFact struct {
+	Quantity float64
+	Reason   string
+}
 
-		historyItems := producedDiff(before, after)
-		if len(historyItems) == 0 {
+// productionFactsByOrder снимает текущий факт по заказам одним запросом:
+// map[orderID]map[normalized product name]fact.
+func productionFactsByOrder(ctx context.Context, q sqlc.Querier, orderIDs map[int64]struct{}) (map[int64]map[string]productionFact, error) {
+	ids := make([]int64, 0, len(orderIDs))
+	for id := range orderIDs {
+		ids = append(ids, id)
+	}
+	result := make(map[int64]map[string]productionFact, len(ids))
+	if len(ids) == 0 {
+		return result, nil
+	}
+	rows, err := q.GetOrderProductionFacts(ctx, ids)
+	if err != nil {
+		return nil, fmt.Errorf("load production facts: %w", err)
+	}
+	for _, row := range rows {
+		facts := result[row.OrderID]
+		if facts == nil {
+			facts = make(map[string]productionFact)
+			result[row.OrderID] = facts
+		}
+		facts[row.ProductKey] = productionFact{Quantity: row.ProducedQuantity, Reason: row.Reason}
+	}
+	return result, nil
+}
+
+// notifyProductionChanges сравнивает факт до/после изменения журнала и кладёт
+// события produced/production_cleared в outbox только для заказов, чей
+// видимый факт изменился. Историю заказа отработка не пишет — она не является
+// изменением заказа.
+func (r *OrderRepository) notifyProductionChanges(
+	ctx context.Context,
+	q sqlc.Querier,
+	affected map[int64]struct{},
+	before map[int64]map[string]productionFact,
+	byUsername string,
+) error {
+	after, err := productionFactsByOrder(ctx, q, affected)
+	if err != nil {
+		return err
+	}
+	for orderID := range affected {
+		if equalFacts(before[orderID], after[orderID]) {
 			continue
 		}
-		if err := r.createOrderHistory(ctx, q, orderID, byUsername, historyItems); err != nil {
-			return err
+		row, err := q.GetOrderByID(ctx, orderID)
+		if err != nil {
+			return fmt.Errorf("get order %d for production notification: %w", orderID, err)
 		}
-
 		order, err := r.hydrateOrder(ctx, q, row)
 		if err != nil {
 			return err
 		}
-		hasProduction := false
-		for _, item := range order.Items {
-			if item.ProducedQuantity != nil {
-				hasProduction = true
-				break
-			}
-		}
-		if hasProduction {
+		if len(after[orderID]) > 0 {
 			order.RecordProduced(byUsername)
 		} else {
 			order.RecordProductionCleared(byUsername)
@@ -210,34 +260,16 @@ func (r *OrderRepository) syncOrdersProduction(ctx context.Context, q sqlc.Queri
 	return nil
 }
 
-// producedDiff собирает записи истории по изменившемуся факту выпечки.
-func producedDiff(before, after []sqlc.GetOrderItemsByOrderIDRow) []orderdomain.OrderHistoryItem {
-	prev := make(map[int64]*float64, len(before))
-	for _, item := range before {
-		prev[item.ID] = item.ProducedQuantity
+func equalFacts(a, b map[string]productionFact) bool {
+	if len(a) != len(b) {
+		return false
 	}
-	diff := make([]orderdomain.OrderHistoryItem, 0)
-	for _, item := range after {
-		old := prev[item.ID]
-		if equalProduced(old, item.ProducedQuantity) {
-			continue
+	for key, fact := range a {
+		if other, ok := b[key]; !ok || other != fact {
+			return false
 		}
-		diff = append(diff, orderdomain.OrderHistoryItem{
-			ChangeType:  orderdomain.ChangeTypeProduced,
-			ProductCode: item.ProductCode,
-			ProductName: item.ProductName,
-			OldQuantity: old,
-			NewQuantity: item.ProducedQuantity,
-		})
 	}
-	return diff
-}
-
-func equalProduced(a, b *float64) bool {
-	if a == nil || b == nil {
-		return a == b
-	}
-	return *a == *b
+	return true
 }
 
 // withTx runs fn inside a transaction (or directly without a pool, as in

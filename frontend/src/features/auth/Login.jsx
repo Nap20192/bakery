@@ -3,6 +3,7 @@ import { login } from '../../api/auth';
 import { setToken } from '../../lib/auth';
 import { logWarn } from '../../lib/logger';
 import { Button } from '../../ui/Button';
+import { ErrorBanner } from '../../ui/ErrorBanner';
 
 const fieldClass =
   'w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10';
@@ -47,6 +48,8 @@ export function Login({ onAuthenticated }) {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           autoComplete="username"
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? 'login-error' : undefined}
           autoFocus
         />
         <label className="mb-1 block text-[13px] font-medium text-stone-600" htmlFor="login-password">Пароль</label>
@@ -57,13 +60,13 @@ export function Login({ onAuthenticated }) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? 'login-error' : undefined}
         />
         <Button type="submit" variant="primary" className="w-full" disabled={loading || !username.trim() || !password}>
           {loading ? 'Вход…' : 'Войти'}
         </Button>
-        {error && (
-          <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800">{error}</div>
-        )}
+        <ErrorBanner id="login-error" error={error} className="mt-4" />
       </form>
     </main>
   );

@@ -69,13 +69,9 @@ type OrderHistory struct {
 	Items             []OrderHistoryItem
 }
 
-// ChangeTypeProduced — запись истории об отработке (факте выпечки):
-// OldQuantity/NewQuantity хранят прежний и новый факт.
-const ChangeTypeProduced = "produced"
-
-// ProductionSheet — документ отработки в журнале. Хранит факт выпечки по
-// позициям заказов; факт в самих заказах — проекция журнала (последний лист
-// побеждает), пересчитывается при изменении/удалении документа.
+// ProductionSheet — документ отработки в журнале, единственное место
+// хранения факта выпечки. Заказ при отработке не изменяется: факт
+// декорирует его позиции при чтении (свежий лист побеждает).
 type ProductionSheet struct {
 	ID                int64                 `json:"id"`
 	CreatedByUsername string                `json:"created_by_username"`

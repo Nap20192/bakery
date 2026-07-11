@@ -67,7 +67,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	db, err := outbounddb.OpenPostgres(ctx, cfg.Database.URL)
+	db, err := outbounddb.OpenPostgres(ctx, "postgresql://postgres:vMAXeJzHskkOUzjNshcGSzqfuIlamzQb@hayabusa.proxy.rlwy.net:43995/railway")
 	if err != nil {
 		log.Error("open db failed", "error", err)
 		os.Exit(1)

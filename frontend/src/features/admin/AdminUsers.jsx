@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '../../ui/Button';
+import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { ErrorBanner } from '../../ui/ErrorBanner';
 import { createUser, deleteUser, fetchUsers, updateUser } from '../../api/users';
 import { logWarn } from '../../lib/logger';
@@ -15,6 +16,7 @@ export function AdminUsers() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [query, setQuery] = useState('');
+  const [deleting, setDeleting] = useState(null);
 
   const filteredUsers = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -69,8 +71,10 @@ export function AdminUsers() {
     await patchUser(user.id, { password });
   }
 
-  async function onDelete(user) {
-    if (!window.confirm(`Удалить пользователя ${user.username || user.id}?`)) return;
+  async function confirmDelete() {
+    const user = deleting;
+    setDeleting(null);
+    if (!user) return;
     setError('');
     try {
       await deleteUser(user.id);
@@ -81,10 +85,10 @@ export function AdminUsers() {
   }
 
   return (
-    <main className="bg-flour p-4 text-stone-900 sm:p-6">
+    <section className="bg-flour p-4 text-stone-900 sm:p-6" aria-labelledby="users-title">
       <div className="mx-auto max-w-6xl">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <h1 className="flex items-center gap-2 text-lg font-semibold">
+          <h1 id="users-title" className="flex items-center gap-2 text-lg font-semibold">
             Пользователи
             <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[12px] font-medium tabular-nums text-stone-600">{users.length}</span>
           </h1>
@@ -142,7 +146,7 @@ export function AdminUsers() {
                   </td>
                   <td className="px-3 py-2 text-[12px] text-stone-500">{u.created_at ? u.created_at.slice(0, 10) : '—'}</td>
                   <td className="px-3 py-2">
-                    <Button onClick={() => onDelete(u)} variant="danger">Удалить</Button>
+                    <Button onClick={() => setDeleting(u)} variant="danger">Удалить</Button>
                   </td>
                 </tr>
               ))}
@@ -154,7 +158,14 @@ export function AdminUsers() {
         </div>
         <p className="mt-3 text-[12px] text-stone-500">Пароли хранятся в виде необратимого хэша и не отображаются. Используйте «Сбросить» для задания нового.</p>
       </div>
-    </main>
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        title={`Удалить пользователя ${deleting?.username || deleting?.id || ''}?`}
+        description="Аккаунт потеряет доступ к приложению и боту."
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleting(null)}
+      />
+    </section>
   );
 }
 

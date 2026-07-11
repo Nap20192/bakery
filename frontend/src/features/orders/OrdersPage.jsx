@@ -10,6 +10,7 @@ import { clearToken, getToken, isWebMode } from '../../lib/auth';
 import { logInfo, logWarn } from '../../lib/logger';
 import { miniAppModeFromLocation, orderNumberFromLocation, orderNumbersFromLocation, trimString } from '../../lib/url';
 import { OrdersLayout } from './OrdersLayout';
+import { OrdersTableView } from '../baker/OrdersTableView';
 import { ProductionJournal } from '../production/ProductionJournal';
 import { BakerOrdersView } from '../baker/BakerOrdersView';
 import { BakerSelectionReview } from '../baker/BakerSelectionReview';
@@ -463,6 +464,14 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
           initialSheetId={route.sheetId}
           onOpenOrder={(number) => navigate({ name: 'orderView', number })}
         />
+      </OrdersLayout>
+    );
+  }
+
+  if (canUseMonitor && route.name === 'ordersTable') {
+    return (
+      <OrdersLayout viewer={viewer} active={route.name} onNavigate={navigate} onLogout={handleLogout}>
+        <OrdersTableView catalog={catalog} />
       </OrdersLayout>
     );
   }

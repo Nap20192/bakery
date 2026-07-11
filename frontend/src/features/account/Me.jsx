@@ -16,10 +16,10 @@ function Row({ label, value }) {
 export function MePanel({ viewer, onLogout }) {
   const v = viewer || {};
   return (
-    <main className="bg-flour p-4 text-stone-900 sm:p-6">
+    <section className="bg-flour p-4 text-stone-900 sm:p-6" aria-labelledby="profile-title">
       <div className="mx-auto max-w-md">
         <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
-          <h1 className="mb-4 text-lg font-semibold text-stone-950">Профиль</h1>
+          <h1 id="profile-title" className="mb-4 text-lg font-semibold text-stone-950">Профиль</h1>
           <Row label="Роль" value={v.role} />
           <Row label="Telegram" value={v.telegram_username ? `@${v.telegram_username}` : ''} />
           <Row label="Отдел" value={v.department_name} />
@@ -33,6 +33,6 @@ export function MePanel({ viewer, onLogout }) {
           )}
         </div>
       </div>
-    </main>
+    </section>
   );
 }

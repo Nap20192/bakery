@@ -1,0 +1,1030 @@
+# Bakery HTTP API — the contract between the Go backend and the Mini App.
+#
+# Source of truth for both sides:
+#   - backend: internal/inbound/api/openapi_test.go checks every route
+#     registered in the mux appears here and vice versa;
+#   - frontend: `npm run api-gen` (openapi-typescript) generates
+#     frontend/src/api/schema.d.ts, which types the api/ modules.
+#
+# Keep paths sorted the way handlers register them. After changing a handler
+# or DTO: update this file → run the backend tests → `npm run api-gen`.
+openapi: 3.0.3
+info:
+  title: Bakery API
+  description: >
+    Order management for the bakery: shop заявки, baker matrix, production
+    sheets (отработка), dough monitoring, and admin dictionaries. All error
+    responses use the `{"error": "<safe message>"}` envelope.
+  version: 1.0.0
+servers:
+  - url: /api
+    description: Behind the frontend proxy (frontend/server.js)
+  - url: /
+    description: Direct backend access
+
+tags:
+  - name: system
+  - name: auth
+  - name: departments
+  - name: orders
+  - name: production
+  - name: monitor
+  - name: admin
+
+security:
+  - bearer: []
+  - tma: []
+
+paths:
+  /health:
+    get:
+      tags: [system]
+      summary: Liveness probe
+      security: []
+      operationId: health
+      responses:
+        "200":
+          description: Backend is up
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+
+  /login:
+    post:
+      tags: [auth]
+      summary: Web password login
+      description: Mini App clients do not use this — they send `tma <initData>` per request.
+      security: []
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string, format: password }
+      responses:
+        "200":
+          description: Session issued (7-day TTL)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [token, expires_at]
+                properties:
+                  token: { type: string }
+                  expires_at: { type: integer, format: int64, description: Unix seconds }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /me:
+    get:
+      tags: [auth]
+      summary: Current viewer profile
+      operationId: getMe
+      responses:
+        "200":
+          description: Role, telegram identity and optional department
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Me" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /departments:
+    get:
+      tags: [departments]
+      summary: Departments by type
+      operationId: listDepartments
+      parameters:
+        - name: type
+          in: query
+          schema: { type: string, enum: [shop, workshop] }
+          description: Omit for all departments.
+      responses:
+        "200":
+          description: Departments
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Department" }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /catalog:
+    get:
+      tags: [orders]
+      summary: Dish catalog for the order editor
+      operationId: getCatalog
+      responses:
+        "200":
+          description: Catalog items in display order
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/DishCatalogItem" }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /categories:
+    get:
+      tags: [orders]
+      summary: Order categories (типы заявок)
+      operationId: listCategories
+      responses:
+        "200":
+          description: Categories sorted by sort_order
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Category" }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /orders:
+    get:
+      tags: [orders]
+      summary: List orders (paged, filtered)
+      description: Shop users see their own shop's orders; baker/admin see all.
+      operationId: listOrders
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, maximum: 100, default: 10 } }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: from_department_id, in: query, schema: { type: integer, format: int64 } }
+        - { name: category_id, in: query, schema: { type: integer, format: int64 } }
+        - { name: fulfillment_date, in: query, schema: { type: string, format: date } }
+        - { name: fulfillment_from, in: query, schema: { type: string, format: date } }
+        - { name: fulfillment_to, in: query, schema: { type: string, format: date } }
+      responses:
+        "200":
+          description: Orders page
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrdersPage" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+    post:
+      tags: [orders]
+      summary: Create an order (shop/admin)
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OrderWrite" }
+      responses:
+        "200":
+          description: Created order
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /orders/{id}:
+    get:
+      tags: [orders]
+      summary: Order by number
+      operationId: getOrder
+      parameters: [{ $ref: "#/components/parameters/OrderNumber" }]
+      responses:
+        "200":
+          description: The order with history
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+        "404": { $ref: "#/components/responses/Error" }
+    put:
+      tags: [orders]
+      summary: Update an order (shop/admin; category never changes)
+      operationId: updateOrder
+      parameters: [{ $ref: "#/components/parameters/OrderNumber" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OrderWrite" }
+      responses:
+        "200":
+          description: Updated order
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /orders/{id}/cancel:
+    post:
+      tags: [orders]
+      summary: Soft-cancel an order (idempotent)
+      operationId: cancelOrder
+      parameters: [{ $ref: "#/components/parameters/OrderNumber" }]
+      responses:
+        "200":
+          description: The cancelled order
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /orders/{id}/restore:
+    post:
+      tags: [orders]
+      summary: Restore a cancelled order (idempotent)
+      operationId: restoreOrder
+      parameters: [{ $ref: "#/components/parameters/OrderNumber" }]
+      responses:
+        "200":
+          description: The restored order
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /orders/{id}/favorite:
+    patch:
+      tags: [admin]
+      summary: Toggle the favorite flag (admin)
+      operationId: setOrderFavorite
+      parameters: [{ $ref: "#/components/parameters/OrderNumber" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [favorite]
+              properties:
+                favorite: { type: boolean }
+      responses:
+        "200":
+          description: Updated order
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /production:
+    post:
+      tags: [production]
+      summary: Create a production sheet (baker/admin)
+      description: >
+        Fixes the batch: every selected order is saved on the sheet, items
+        carry only deviations from the заявка (orders may have none).
+      operationId: createProductionSheet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProductionWrite" }
+      responses:
+        "200":
+          description: The created sheet
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductionSheet" }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+    get:
+      tags: [production]
+      summary: Production journal (baker/admin)
+      operationId: listProductionSheets
+      responses:
+        "200":
+          description: Sheets, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ProductionSheet" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /production/{id}:
+    get:
+      tags: [production]
+      summary: Production sheet with items
+      operationId: getProductionSheet
+      parameters: [{ $ref: "#/components/parameters/SheetID" }]
+      responses:
+        "200":
+          description: The sheet
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductionSheet" }
+        "404": { $ref: "#/components/responses/Error" }
+    put:
+      tags: [production]
+      summary: Replace a sheet's batch and deviations
+      description: >
+        Values equal to the order quantity drop the deviation row; the sheet
+        keeps its batch and lives until explicitly deleted, even with no
+        deviations left.
+      operationId: updateProductionSheet
+      parameters: [{ $ref: "#/components/parameters/SheetID" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProductionWrite" }
+      responses:
+        "200":
+          description: Updated sheet, or `id:0` when deleted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductionSheet" }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+    delete:
+      tags: [production]
+      summary: Delete a sheet (facts fall back to the заявка)
+      operationId: deleteProductionSheet
+      parameters: [{ $ref: "#/components/parameters/SheetID" }]
+      responses:
+        "204": { description: Deleted }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /monitor/batch:
+    get:
+      tags: [monitor]
+      summary: Dough calculation for several orders
+      operationId: getBatchMonitor
+      parameters:
+        - name: orders
+          in: query
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: array
+            items: { type: string }
+          description: Order numbers (repeated param); duplicates are deduped.
+      responses:
+        "200":
+          description: Per-order reports plus totals
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BatchMonitor" }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /monitor/{id}:
+    get:
+      tags: [monitor]
+      summary: Dough calculation for one order (its category's codes)
+      operationId: getOrderMonitor
+      parameters: [{ $ref: "#/components/parameters/OrderNumber" }]
+      responses:
+        "200":
+          description: Reports for every monitor code of the order's category
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderMonitor" }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /monitor/{id}/{product_id}:
+    get:
+      tags: [monitor]
+      summary: Dough calculation for one order and one ingredient code
+      operationId: getOrderMonitorByProduct
+      parameters:
+        - { $ref: "#/components/parameters/OrderNumber" }
+        - { name: product_id, in: path, required: true, schema: { type: string }, description: Ingredient (dough) code }
+      responses:
+        "200":
+          description: Single-code report
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderMonitor" }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /users:
+    get:
+      tags: [admin]
+      summary: List users (admin)
+      operationId: listUsers
+      responses:
+        "200":
+          description: All accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/User" }
+        "403": { $ref: "#/components/responses/Error" }
+    post:
+      tags: [admin]
+      summary: Create a user (admin; the only way — no self-registration)
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UserCreate" }
+      responses:
+        "200":
+          description: Created user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+        "400": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /users/{id}:
+    patch:
+      tags: [admin]
+      summary: Update a user (partial; password change is a reset)
+      operationId: updateUser
+      parameters: [{ $ref: "#/components/parameters/UserID" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UserUpdate" }
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+    delete:
+      tags: [admin]
+      summary: Delete a user
+      operationId: deleteUser
+      parameters: [{ $ref: "#/components/parameters/UserID" }]
+      responses:
+        "204": { description: Deleted }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /admin/departments:
+    get:
+      tags: [admin]
+      summary: All departments for user assignment (admin)
+      operationId: listAdminDepartments
+      responses:
+        "200":
+          description: Departments
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Department" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /admin/dishes:
+    get:
+      tags: [admin]
+      summary: Dish catalog with codes (admin)
+      operationId: listDishes
+      responses:
+        "200":
+          description: Catalog rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Dish" }
+        "403": { $ref: "#/components/responses/Error" }
+    post:
+      tags: [admin]
+      summary: Add a dish to the catalog
+      operationId: createDish
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DishWrite" }
+      responses:
+        "200":
+          description: Created dish
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Dish" }
+        "400": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /admin/dishes/available:
+    get:
+      tags: [admin]
+      summary: Search iiko DISH products to add
+      operationId: searchAvailableDishes
+      parameters:
+        - { name: q, in: query, schema: { type: string }, description: Name or code substring }
+      responses:
+        "200":
+          description: Matching iiko products
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AvailableDish" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /admin/dishes/reorder:
+    put:
+      tags: [admin]
+      summary: Reorder the whole catalog
+      operationId: reorderDishes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [codes]
+              properties:
+                codes:
+                  type: array
+                  items: { type: string }
+      responses:
+        "204": { description: Reordered }
+        "400": { $ref: "#/components/responses/Error" }
+
+  /admin/dishes/{code}:
+    put:
+      tags: [admin]
+      summary: Update a catalog dish
+      operationId: updateDish
+      parameters: [{ $ref: "#/components/parameters/DishCode" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DishWrite" }
+      responses:
+        "200":
+          description: Updated dish
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Dish" }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+    delete:
+      tags: [admin]
+      summary: Remove a dish from the catalog
+      operationId: deleteDish
+      parameters: [{ $ref: "#/components/parameters/DishCode" }]
+      responses:
+        "204": { description: Deleted }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /admin/categories:
+    post:
+      tags: [admin]
+      summary: Create an order category
+      operationId: createCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CategoryWrite" }
+      responses:
+        "200":
+          description: Created category
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Category" }
+        "400": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /admin/categories/{id}:
+    put:
+      tags: [admin]
+      summary: Update a category (code is immutable)
+      operationId: updateCategory
+      parameters: [{ $ref: "#/components/parameters/CategoryID" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CategoryWrite" }
+      responses:
+        "200":
+          description: Updated category
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Category" }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+    delete:
+      tags: [admin]
+      summary: Delete a category (fails while dishes reference it)
+      operationId: deleteCategory
+      parameters: [{ $ref: "#/components/parameters/CategoryID" }]
+      responses:
+        "204": { description: Deleted }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      description: HMAC web session token from POST /login (7-day TTL).
+    tma:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: '`tma <initData>` — Telegram Mini App initData, validated per request (24h max age).'
+
+  parameters:
+    OrderNumber:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+      description: Order number, e.g. Г.Х.08.07.26.001
+    SheetID:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    UserID:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    DishCode:
+      name: code
+      in: path
+      required: true
+      schema: { type: string }
+    CategoryID:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+
+  responses:
+    Error:
+      description: Error with a safe user-facing message
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error: { type: string }
+
+  schemas:
+    Department:
+      type: object
+      required: [id, code, name, type]
+      properties:
+        id: { type: integer, format: int64 }
+        code: { type: string, example: gagarina }
+        name: { type: string, example: Магазин Гагарина }
+        type: { type: string, enum: [shop, workshop] }
+
+    Me:
+      type: object
+      required: [role, telegram_id, telegram_username, department_id, department_code, department_name, department_type]
+      properties:
+        role: { type: string }
+        telegram_id: { type: integer, format: int64 }
+        telegram_username: { type: string }
+        department_id: { type: integer, format: int64 }
+        department_code: { type: string }
+        department_name: { type: string }
+        department_type: { type: string }
+
+    Category:
+      type: object
+      required: [id, code, letter, name, color, sort_order, monitor_codes]
+      properties:
+        id: { type: integer, format: int64 }
+        code: { type: string, example: bread }
+        letter: { type: string, example: Х, description: Becomes part of the order number }
+        name: { type: string, example: Хлеб }
+        color:
+          type: string
+          enum: [amber, sky, violet, emerald, rose, stone]
+          description: Must stay in sync with domain.CategoryColors and frontend lib/categories.js
+        sort_order: { type: integer, format: int64 }
+        monitor_codes:
+          type: array
+          items: { type: string }
+          description: Dough codes used by /monitor for this category
+
+    CategoryWrite:
+      type: object
+      required: [code, letter, name, color]
+      properties:
+        code: { type: string }
+        letter: { type: string }
+        name: { type: string }
+        color: { type: string, enum: [amber, sky, violet, emerald, rose, stone] }
+        sort_order: { type: integer, format: int64 }
+        monitor_codes:
+          type: array
+          items: { type: string }
+
+    OrderItem:
+      type: object
+      required: [code, product_name, quantity, reserved_quantity, production_quantity]
+      properties:
+        code: { type: string }
+        product_name: { type: string }
+        quantity: { type: number }
+        reserved_quantity: { type: number }
+        production_quantity: { type: number, description: quantity + reserved_quantity }
+        produced_quantity:
+          type: number
+          nullable: true
+          description: Production fact; absent = baked as ordered
+        produced_reason: { type: string }
+
+    Comments:
+      type: object
+      required: [general, items]
+      properties:
+        general: { type: string }
+        items:
+          type: array
+          items:
+            type: object
+            required: [product_name, comment]
+            properties:
+              product_name: { type: string }
+              comment: { type: string }
+
+    HistoryItem:
+      type: object
+      required: [change_type, product_code, product_name]
+      properties:
+        change_type: { type: string, enum: [added, updated, removed] }
+        product_code: { type: string }
+        product_name: { type: string }
+        old_quantity: { type: number, nullable: true }
+        new_quantity: { type: number, nullable: true }
+        old_reserved_quantity: { type: number, nullable: true }
+        new_reserved_quantity: { type: number, nullable: true }
+
+    HistoryEntry:
+      type: object
+      required: [id, changed_by_username, changed_at, items]
+      properties:
+        id: { type: integer, format: int64 }
+        changed_by_username: { type: string }
+        changed_at: { type: string, description: RFC3339 }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/HistoryItem" }
+
+    Order:
+      type: object
+      required: [id, number, location, created_by_username, items, created_at, fulfillment_date, monitor_command, comments, favorite, cancelled]
+      properties:
+        id: { type: string }
+        number: { type: string, example: Г.Х.08.07.26.001 }
+        location: { type: string }
+        created_by_username: { type: string }
+        from_department: { $ref: "#/components/schemas/Department" }
+        to_department: { $ref: "#/components/schemas/Department" }
+        category: { $ref: "#/components/schemas/Category" }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/OrderItem" }
+        created_at: { type: string, description: RFC3339 }
+        fulfillment_date: { type: string, format: date }
+        monitor_command: { type: string, example: /monitor Г.Х.08.07.26.001 }
+        comments: { $ref: "#/components/schemas/Comments" }
+        favorite: { type: boolean }
+        cancelled: { type: boolean }
+        cancelled_by_username: { type: string }
+        production_sheet_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: The sheet covering this order (an order has at most one)
+        history:
+          type: array
+          items: { $ref: "#/components/schemas/HistoryEntry" }
+
+    OrdersPage:
+      type: object
+      required: [items, page, limit, offset, total, total_pages]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Order" }
+        page: { type: integer }
+        limit: { type: integer }
+        offset: { type: integer }
+        total: { type: integer, format: int64 }
+        total_pages: { type: integer }
+
+    OrderWrite:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            required: [product_name, quantity]
+            properties:
+              product_name: { type: string }
+              quantity: { type: number }
+              reserved_quantity: { type: number }
+        fulfillment_date: { type: string, format: date }
+        from_department_id: { type: integer, format: int64, nullable: true }
+        category_id:
+          type: integer
+          format: int64
+          description: Required on create; ignored on update (category is immutable)
+        comments: { $ref: "#/components/schemas/Comments" }
+
+    DishCatalogItem:
+      type: object
+      required: [code, name, theme, sort_order]
+      properties:
+        code: { type: string }
+        name: { type: string }
+        theme: { type: string, description: Display group, e.g. КОКРОКИ }
+        category_id: { type: integer, format: int64, nullable: true }
+        sort_order: { type: integer, format: int64 }
+
+    Dish:
+      allOf:
+        - $ref: "#/components/schemas/DishCatalogItem"
+
+    DishWrite:
+      type: object
+      required: [code, name, theme]
+      properties:
+        code: { type: string, description: iiko product code }
+        name: { type: string }
+        theme: { type: string }
+        category_id: { type: integer, format: int64, nullable: true }
+        sort_order: { type: integer, format: int64 }
+
+    AvailableDish:
+      type: object
+      required: [code, name, unit]
+      properties:
+        code: { type: string }
+        name: { type: string }
+        unit: { type: string }
+
+    ProductionItemWrite:
+      type: object
+      required: [product_name, produced_quantity]
+      properties:
+        product_name: { type: string }
+        produced_quantity: { type: number }
+        reason: { type: string, maxLength: 200, description: Optional justification («подгорело», «упало») }
+
+    ProductionWrite:
+      type: object
+      required: [orders]
+      properties:
+        orders:
+          description: The batch — every selected order, deviations optional per order
+          type: array
+          items:
+            type: object
+            required: [number, items]
+            properties:
+              number: { type: string }
+              items:
+                type: array
+                items: { $ref: "#/components/schemas/ProductionItemWrite" }
+
+    ProductionSheetItem:
+      type: object
+      required: [order_number, product_name, produced_quantity, reason]
+      properties:
+        order_number: { type: string }
+        product_name: { type: string }
+        produced_quantity: { type: number }
+        reason: { type: string }
+
+    ProductionSheet:
+      type: object
+      required: [id, created_by_username, created_at, updated_at, order_numbers, item_count]
+      properties:
+        id: { type: integer, format: int64 }
+        created_by_username: { type: string }
+        created_at: { type: string }
+        updated_at: { type: string }
+        order_numbers:
+          type: array
+          items: { type: string }
+          description: The saved batch — every covered order, including those without deviations
+        item_count: { type: integer, format: int64, description: Number of deviation rows }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/ProductionSheetItem" }
+
+    IngredientUsage:
+      type: object
+      required: [product_code, product_name, unit, quantity]
+      properties:
+        product_code: { type: string }
+        product_name: { type: string }
+        unit: { type: string }
+        quantity: { type: number }
+
+    IngredientReport:
+      type: object
+      required: [ingredient, breakdown]
+      properties:
+        ingredient: { $ref: "#/components/schemas/IngredientUsage" }
+        breakdown:
+          type: array
+          items:
+            type: object
+            required: [order_item_code, order_item_name, order_item_quantity, ingredient_quantity]
+            properties:
+              order_item_code: { type: string }
+              order_item_name: { type: string }
+              order_item_quantity: { type: number }
+              ingredient_quantity: { type: number }
+        components:
+          type: array
+          description: The ingredient's own recipe expanded one level, scaled to the total
+          items: { $ref: "#/components/schemas/IngredientUsage" }
+
+    MonitorReport:
+      type: object
+      required: [code, report]
+      properties:
+        code: { type: string, description: Monitored dough code }
+        report: { $ref: "#/components/schemas/IngredientReport" }
+
+    OrderMonitor:
+      type: object
+      required: [reports, order]
+      properties:
+        reports:
+          type: array
+          items: { $ref: "#/components/schemas/MonitorReport" }
+        order: { $ref: "#/components/schemas/Order" }
+
+    BatchMonitor:
+      type: object
+      required: [orders, total_reports]
+      properties:
+        orders:
+          type: array
+          items:
+            type: object
+            required: [order, reports]
+            properties:
+              order: { $ref: "#/components/schemas/Order" }
+              reports:
+                type: array
+                items: { $ref: "#/components/schemas/MonitorReport" }
+        total_reports:
+          type: array
+          items: { $ref: "#/components/schemas/MonitorReport" }
+
+    UserCreate:
+      type: object
+      required: [username, password, role]
+      properties:
+        username: { type: string }
+        password: { type: string, format: password }
+        telegram_username: { type: string }
+        role: { type: string, enum: [admin, shop, baker, user] }
+        department_code: { type: string }
+
+    UserUpdate:
+      type: object
+      properties:
+        username: { type: string }
+        role: { type: string, enum: [admin, shop, baker, user] }
+        department_code: { type: string }
+        password: { type: string, format: password }
+
+    User:
+      type: object
+      required: [id, username, telegram_username, role, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64 }
+        username: { type: string }
+        telegram_username: { type: string }
+        telegram_id: { type: integer, format: int64, nullable: true }
+        role: { type: string, enum: [admin, shop, baker, user] }
+        department_id: { type: integer, format: int64, nullable: true }
+        created_at: { type: string }
+        updated_at: { type: string }

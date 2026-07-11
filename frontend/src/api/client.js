@@ -1,9 +1,14 @@
+// @ts-check
+import createClient from 'openapi-fetch';
 import { apiBase } from '../config/env';
 import { authHeader } from '../lib/auth';
 import { logInfo, logWarn } from '../lib/logger';
-import { apiURL } from '../lib/url';
 
 export class ApiError extends Error {
+  /**
+   * @param {string} message
+   * @param {number} status
+   */
   constructor(message, status) {
     super(message);
     this.name = 'ApiError';
@@ -13,6 +18,7 @@ export class ApiError extends Error {
 
 // statusMessage returns a human-readable fallback when the backend response
 // carries no error text (proxy errors, unexpected failures).
+/** @param {number} status */
 function statusMessage(status) {
   if (status === 401) return 'Требуется вход в систему.';
   if (status === 403) return 'Недостаточно прав для этого действия.';
@@ -22,71 +28,52 @@ function statusMessage(status) {
   return 'Не удалось выполнить запрос. Попробуйте ещё раз.';
 }
 
-export async function apiRequest(path, options = {}) {
-  const url = apiURL(apiBase, path);
-  const started = performance.now();
-  logInfo('api.request', {
-    path,
-    url,
-    api_base: apiBase,
-    page_origin: window.location.origin,
-  });
+// Типизированный клиент по контракту docs/api/openapi.yaml: путь, метод,
+// параметры и тело каждой операции проверяются против сгенерированного
+// schema.d.ts (npm run api-gen). Вызов несуществующей ручки или опечатка в
+// поле — ошибка `npm run typecheck`, а не 404 в проде.
+const create = /** @type {typeof createClient<import('./schema').paths>} */ (createClient);
 
-  let response;
+export const api = create({ baseUrl: apiBase });
+
+api.use({
+  onRequest({ request }) {
+    for (const [name, value] of Object.entries(authHeader())) {
+      request.headers.set(name, value);
+    }
+    logInfo('api.request', { url: request.url, method: request.method });
+    return request;
+  },
+  onResponse({ request, response }) {
+    const log = response.ok ? logInfo : logWarn;
+    log('api.response', { url: request.url, method: request.method, status: response.status });
+    return response;
+  },
+});
+
+/**
+ * unwrap приводит результат openapi-fetch к прежнему контракту api-модулей:
+ * возвращает данные или бросает ApiError с безопасным русским сообщением.
+ * @template T
+ * @param {Promise<{ data?: T, error?: unknown, response: Response }>} call
+ * @returns {Promise<T>}
+ */
+export async function unwrap(call) {
+  let result;
   try {
-    response = await fetch(url, {
-      ...options,
-      headers: {
-        ...(options.headers || {}),
-        ...authHeader(),
-      },
-    });
+    result = await call;
   } catch (err) {
-    logWarn('api.network_error', {
-      path,
-      url,
-      api_base: apiBase,
-      duration_ms: Math.round(performance.now() - started),
-      error: err instanceof Error ? err.message : String(err),
-    });
+    logWarn('api.network_error', { error: err instanceof Error ? err.message : String(err) });
     throw new ApiError('Нет соединения с сервером. Проверьте подключение к интернету.', 0);
   }
-
-  const contentType = response.headers.get('content-type') || '';
-  const payload = contentType.includes('application/json') ? await response.json().catch(() => ({})) : {};
-  if (!response.ok) {
-    logWarn('api.error', {
-      path,
-      url,
-      api_base: apiBase,
-      status: response.status,
-      content_type: contentType,
-      duration_ms: Math.round(performance.now() - started),
-      error: payload.error || `HTTP ${response.status}`,
-    });
-    throw new ApiError(payload.error || statusMessage(response.status), response.status);
+  const { data, error, response } = result;
+  if (error !== undefined || !response.ok) {
+    const message =
+      error && typeof error === 'object' && 'error' in error && typeof error.error === 'string'
+        ? error.error
+        : statusMessage(response.status);
+    throw new ApiError(message, response.status);
   }
-  if (response.status === 204 || contentType === '') {
-    return {};
-  }
-  if (!contentType.includes('application/json')) {
-    logWarn('api.invalid_content_type', {
-      path,
-      url,
-      api_base: apiBase,
-      status: response.status,
-      content_type: contentType,
-      duration_ms: Math.round(performance.now() - started),
-    });
-    throw new ApiError('Сервер вернул некорректный ответ. Попробуйте позже.', response.status);
-  }
-
-  logInfo('api.response', {
-    path,
-    url,
-    status: response.status,
-    content_type: contentType,
-    duration_ms: Math.round(performance.now() - started),
-  });
-  return payload;
+  // 204 и пустые ответы: контракту фасадов достаточно пустого объекта.
+  return data ?? /** @type {T} */ ({});
 }

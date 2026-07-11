@@ -110,54 +110,6 @@ func (q *Queries) GetIikoProductByID(ctx context.Context, id string) (GetIikoPro
 	return i, err
 }
 
-const getIikoProductsByName = `-- name: GetIikoProductsByName :many
-SELECT
-    id,
-    code,
-    name,
-    type,
-    measure_unit,
-    raw_json
-FROM iiko_products
-WHERE trim(name) = trim($1)
-`
-
-type GetIikoProductsByNameRow struct {
-	ID          string  `json:"id"`
-	Code        string  `json:"code"`
-	Name        string  `json:"name"`
-	Type        *string `json:"type"`
-	MeasureUnit string  `json:"measure_unit"`
-	RawJson     string  `json:"raw_json"`
-}
-
-func (q *Queries) GetIikoProductsByName(ctx context.Context, name string) ([]GetIikoProductsByNameRow, error) {
-	rows, err := q.db.Query(ctx, getIikoProductsByName, name)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetIikoProductsByNameRow
-	for rows.Next() {
-		var i GetIikoProductsByNameRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Code,
-			&i.Name,
-			&i.Type,
-			&i.MeasureUnit,
-			&i.RawJson,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listDishCatalogItems = `-- name: ListDishCatalogItems :many
 SELECT id, code, name, theme, created_at, updated_at, sort_order, category_id
 FROM dish_catalog
