@@ -4,10 +4,9 @@ import { MePanel } from '../account/Me';
 import { AdminUsers } from '../admin/AdminUsers';
 import { AdminDishes } from '../admin/AdminDishes';
 import { apiBase, buildMode, frontendLogsEnabled } from '../../config/env';
-import { ApiError } from '../../api/client';
 import { cancelOrder, createOrder, createProductionSheet, fetchBatchOrderMonitor, fetchCatalog, fetchCategories, fetchDepartments, fetchMe, fetchOrder, fetchOrderMonitor, fetchOrders, restoreOrder, setOrderFavorite, updateOrder } from '../../api/orders';
 import { clearToken, getToken, isWebMode } from '../../lib/auth';
-import { logInfo, logWarn } from '../../lib/logger';
+import { logInfo } from '../../lib/logger';
 import { miniAppModeFromLocation, orderNumberFromLocation, orderNumbersFromLocation, trimString } from '../../lib/url';
 import { OrdersLayout } from './OrdersLayout';
 import { OrdersTableView } from '../baker/OrdersTableView';
@@ -16,6 +15,8 @@ import { BakerOrdersView } from '../baker/BakerOrdersView';
 import { BakerSelectionReview } from '../baker/BakerSelectionReview';
 import { BakerOrderReview } from '../baker/BakerOrderReview';
 import { ShopOrdersView } from '../shop/ShopOrdersView';
+import { MATRIX_PAGE_LIMIT, MATRIX_WINDOW_START_OFFSET, matrixWindow } from './orderWindow';
+import { useAuthenticatedTask } from './useAuthenticatedTask';
 
 const defaultPage = {
   page: 1,
@@ -23,30 +24,6 @@ const defaultPage = {
   total: 0,
   total_pages: 0,
 };
-
-// Page size for the baker matrix: the whole date window for every shop must
-// fit on one page, otherwise the shops×dates grid renders half-empty.
-const MATRIX_PAGE_LIMIT = 200;
-
-// The matrix loads orders in windows of 5 fulfillment days, starting from
-// yesterday (вчера, сегодня, завтра, +2, +3).
-const MATRIX_WINDOW_DAYS = 5;
-const MATRIX_WINDOW_START_OFFSET = -1;
-
-function dateValue(offset = 0) {
-  const date = new Date();
-  date.setDate(date.getDate() + offset);
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${date.getFullYear()}-${month}-${day}`;
-}
-
-function matrixWindow(startOffset) {
-  return {
-    fulfillmentFrom: dateValue(startOffset),
-    fulfillmentTo: dateValue(startOffset + MATRIX_WINDOW_DAYS - 1),
-  };
-}
 
 // canCreateOrders: only the shop role creates/edits orders (and picks the shop
 // to send from). Users are no longer bound to a department.
@@ -66,9 +43,8 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [selectionMode, setSelectionMode] = useState(false);
   const [monitor, setMonitor] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [authNeeded, setAuthNeeded] = useState(isWebMode() && !getToken());
+  const { error, loading, run, setError } = useAuthenticatedTask(() => setAuthNeeded(true));
   const [ordersPage, setOrdersPage] = useState(defaultPage);
   const [filters, setFilters] = useState({
     fromDepartmentID: '',
@@ -140,26 +116,6 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
     clearToken();
     setViewer(null);
     setAuthNeeded(true);
-  }
-
-  async function run(task) {
-    setLoading(true);
-    setError('');
-    try {
-      return await task();
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 401 && isWebMode()) {
-        clearToken();
-        setAuthNeeded(true);
-        return;
-      }
-      logWarn('action.failed', {
-        error: err instanceof Error ? err.message : String(err),
-      });
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
   }
 
   function loadViewer(launchMode = '', linkedOrderNumber = '', activeRoute = route) {
@@ -369,10 +325,16 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
   }
 
   function openSelectionReview() {
+    return openOrdersSelection(selectedOrderNumbers);
+  }
+
+  function openOrdersSelection(numbers) {
     return run(async () => {
-      const loaded = await Promise.all(selectedOrderNumbers.map((number) => fetchOrder(number)));
+      const loaded = await Promise.all(numbers.map((number) => fetchOrder(number)));
+      setSelectedOrderNumbers(numbers);
       setSelectedOrders(loaded);
       setSelectionMode(false);
+      setMonitor(null);
       navigate({ name: 'orderSelection' });
     });
   }
@@ -471,7 +433,11 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
   if (canUseMonitor && route.name === 'ordersTable') {
     return (
       <OrdersLayout viewer={viewer} active={route.name} onNavigate={navigate} onLogout={handleLogout}>
-        <OrdersTableView catalog={catalog} />
+        <OrdersTableView
+          catalog={catalog}
+          onStartProduction={openOrdersSelection}
+          onOpenProduction={(sheetId) => navigate({ name: 'production', sheetId })}
+        />
       </OrdersLayout>
     );
   }

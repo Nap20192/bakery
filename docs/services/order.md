@@ -121,8 +121,9 @@ Every event carries a full order snapshot.
 ## Production sheets (отработка)
 
 A production sheet is a **journal document** that fixes a **batch**: the
-saved selection of orders (`production_sheet_orders` — every selected order,
-deviations or not) plus the fact deviations (`production_sheet_items`). The
+saved selection of orders (`production_sheet_orders` — every selected order),
+the loaded quantities (`production_sheet_loads` — every position), and output
+deviations (`production_sheet_items`). The
 journal is the **only** place the fact is stored — **an отработка never
 modifies the order**. It acts as a read-time *decorator*: when the repository
 hydrates an order, it overlays the journal's facts onto the items
@@ -136,6 +137,9 @@ Rules (enforced in `usecase` + `infra/repo/production_repo.go`):
 - **The batch is saved whole.** Every order of the selection lands on the
   sheet, including orders with no deviations. A sheet with zero deviations
   is valid — it pins the batch for dough calculation.
+- **Loaded quantity is persisted whole.** Each item records «Закладка» even
+  when it equals the order. It is operational journal data and does not alter
+  the order or monitoring calculation.
 - **Deviations only.** An item whose fact equals the order's
   `ProductionQuantity()` is silently dropped from the document.
 - **1:N with exclusivity.** A sheet covers many orders; an order belongs to
@@ -146,8 +150,9 @@ Rules (enforced in `usecase` + `infra/repo/production_repo.go`):
   columns. Deleting a sheet simply removes the decoration; the order reads
   as "baked as ordered" again.
 - **Update semantics.** `PUT /production/{id}` replaces the batch and the
-  deviations. Setting a value back to the order quantity removes that
-  deviation row; the document itself lives until explicitly deleted.
+  loaded quantities and deviations. Setting output back to the order quantity
+  removes that deviation row; loaded quantities and the document remain until
+  explicitly deleted.
 - **Reasons** are optional, max 200 characters; UI offers presets
   («Подгорело», «Упало», …) plus free text.
 - **No order history.** An отработка is not a change to the order, so it
@@ -159,9 +164,10 @@ Rules (enforced in `usecase` + `infra/repo/production_repo.go`):
   (`order.production_cancelled`).
 
 UI: creating (from the baker's selection page) and editing (from the journal)
-use the **same editor** — aggregated per-product facts, proportional
-distribution across orders, reason presets — plus a «Расчёт теста» panel that
-runs batch monitoring over the sheet's orders.
+use the **same editor** — «Заказ / Закладка / Выход», automatic proportional
+distribution across orders (no manual allocation UI), optional comments opened
+per product, and reason presets — plus a
+«Расчёт теста» panel that runs batch monitoring over the sheet's orders.
 
 ## HTTP API
 

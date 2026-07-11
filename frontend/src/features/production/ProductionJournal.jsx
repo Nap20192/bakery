@@ -175,6 +175,7 @@ export function ProductionJournal({ initialSheetId = 0, onOpenOrder }) {
               </div>
               <ProductionSheet
                 orders={sheetOrders}
+                sheetItems={openSheet.items || []}
                 loading={busy}
                 onSave={save}
                 submitLabel="Сохранить изменения"

@@ -1,51 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/EmptyState';
 import { ErrorBanner } from '../../ui/ErrorBanner';
 import { Icon } from '../../ui/Icon';
 import { panelClass } from '../../ui/Panel';
-import { fetchCategories, fetchOrders } from '../../api/orders';
 import { categoryStyle } from '../../lib/categories';
 import { formatQuantity } from '../../lib/format';
-
-// Окно таблицы: вчера + неделя вперёд, листается кнопками на неделю.
-const WINDOW_DAYS = 8;
-const WINDOW_START_OFFSET = -1;
-
-const WEEKDAYS = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
-
-function dateKey(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-function addDays(date, days) {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-}
-
-// Колонки окна: сегодня и завтра несут семантическую подсветку — те же цвета,
-// что в матрице (зелёная — сегодня, янтарная — завтра).
-function buildColumns(shift) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const start = addDays(today, WINDOW_START_OFFSET + shift * (WINDOW_DAYS - 1));
-  const todayKey = dateKey(today);
-  const tomorrowKey = dateKey(addDays(today, 1));
-  return Array.from({ length: WINDOW_DAYS }, (_, index) => {
-    const date = addDays(start, index);
-    const key = dateKey(date);
-    return {
-      key,
-      label: `${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}`,
-      weekday: WEEKDAYS[date.getDay()],
-      tone: key === todayKey ? 'today' : key === tomorrowKey ? 'tomorrow' : '',
-    };
-  });
-}
+import { useOrdersTable } from './useOrdersTable';
+import { ProductionColumnModal } from './ProductionColumnModal';
 
 // Шапка липкая — фоны колонок сплошные, чтобы строки не просвечивали.
 const toneClasses = {
@@ -54,54 +16,10 @@ const toneClasses = {
   '': { header: 'bg-white text-stone-600', cell: '', total: 'bg-stone-50', badge: '' },
 };
 
-// buildGroups делит заказы окна по типу заявки (хлеб/булочки/…) и внутри
-// каждого типа группирует по блюдам: строка — блюдо, ячейка — суммарное
-// количество (заявка + резерв) на дату по всем магазинам.
-function buildGroups(orders, columns, catalog, categories) {
-  const columnKeys = new Set(columns.map((column) => column.key));
-  const catalogIndex = new Map(catalog.map((dish, index) => [String(dish.name || '').toLowerCase().trim(), index]));
-  const groups = new Map();
-  for (const order of orders) {
-    if (order.cancelled) continue;
-    const date = String(order.fulfillment_date || '');
-    if (!columnKeys.has(date)) continue;
-    const categoryID = order.category?.id || 0;
-    if (!groups.has(categoryID)) {
-      groups.set(categoryID, { category: order.category || null, byDish: new Map() });
-    }
-    const { byDish } = groups.get(categoryID);
-    for (const item of order.items || []) {
-      const key = String(item.product_name || '').toLowerCase().trim();
-      if (!byDish.has(key)) {
-        byDish.set(key, { key, name: item.product_name, cells: {}, total: 0 });
-      }
-      const row = byDish.get(key);
-      const quantity = Number(item.production_quantity || 0);
-      row.cells[date] = (row.cells[date] || 0) + quantity;
-      row.total += quantity;
-    }
-  }
-
-  const byDishSort = (a, b) => {
-    const ai = catalogIndex.has(a.key) ? catalogIndex.get(a.key) : Number.MAX_SAFE_INTEGER;
-    const bi = catalogIndex.has(b.key) ? catalogIndex.get(b.key) : Number.MAX_SAFE_INTEGER;
-    if (ai !== bi) return ai - bi;
-    return a.name.localeCompare(b.name, 'ru');
-  };
-  // Секции — в порядке справочника типов; легаси-заказы без типа — в конец.
-  const categoryOrder = new Map(categories.map((category, index) => [category.id, index]));
-  return [...groups.entries()]
-    .sort(([aID], [bID]) => (categoryOrder.get(aID) ?? Number.MAX_SAFE_INTEGER) - (categoryOrder.get(bID) ?? Number.MAX_SAFE_INTEGER))
-    .map(([, group]) => ({
-      category: group.category,
-      rows: [...group.byDish.values()].sort(byDishSort),
-    }));
-}
-
 // CategoryTable — таблица «блюда × даты» одного типа заявки. Раскладка под
 // телефон: скролл-контейнер с «заморозкой» — колонка блюд липнет влево,
 // строка дат — вверх, «Итого» — вниз; даты двигаются по горизонтали.
-function CategoryTable({ group, columns }) {
+function CategoryTable({ group, columns, onOpenColumn }) {
   const totals = {};
   for (const column of columns) {
     totals[column.key] = group.rows.reduce((sum, row) => sum + (row.cells[column.key] || 0), 0);
@@ -120,10 +38,17 @@ function CategoryTable({ group, columns }) {
                   key={column.key}
                   className={`sticky top-0 z-20 min-w-[3.5rem] border-b border-stone-200 px-2 py-2 text-center align-top ${toneClasses[column.tone].header}`}
                 >
-                  <span className="block text-[13px] font-semibold tabular-nums leading-5">{column.label}</span>
-                  <span className="block text-[10px] font-medium uppercase leading-4 opacity-80">
-                    {toneClasses[column.tone].badge || column.weekday}
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onOpenColumn(column)}
+                    className="min-h-11 w-full rounded-md px-1 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/30"
+                    aria-label={`Открыть заказы на ${column.label}`}
+                  >
+                    <span className="block text-[13px] font-semibold tabular-nums leading-5">{column.label}</span>
+                    <span className="block text-[10px] font-medium uppercase leading-4 opacity-80">
+                      {toneClasses[column.tone].badge || column.weekday}
+                    </span>
+                  </button>
                 </th>
               ))}
             </tr>
@@ -167,56 +92,29 @@ function CategoryTable({ group, columns }) {
 // разбитая на секции по типу заявки (хлеб/булочки/…). Внутри секции строки —
 // блюда в порядке каталога, колонки — даты окна, ячейка — сколько печь на
 // день суммарно по всем магазинам. Сегодня/завтра выделены цветом.
-export function OrdersTableView({ catalog = [] }) {
-  const [shift, setShift] = useState(0);
-  const [orders, setOrders] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [activeCategoryID, setActiveCategoryID] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+export function OrdersTableView({ catalog = [], onOpenProduction, onStartProduction }) {
+  const { activeGroup, columns, error, groups, loading, orders, setActiveCategoryID, setShift, shift } = useOrdersTable(catalog);
+  const [openColumn, setOpenColumn] = useState(null);
 
-  const columns = useMemo(() => buildColumns(shift), [shift]);
+  function ordersForColumn(column) {
+    const categoryID = activeGroup?.category?.id || 0;
+    return orders.filter((order) =>
+      !order.cancelled
+      && order.fulfillment_date === column.key
+      && (order.category?.id || 0) === categoryID,
+    );
+  }
 
-  useEffect(() => {
-    fetchCategories()
-      .then((rows) => setCategories(Array.isArray(rows) ? rows : []))
-      .catch(() => setCategories([]));
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoading(true);
-      setError('');
-      try {
-        const filters = { fulfillmentFrom: columns[0].key, fulfillmentTo: columns[columns.length - 1].key };
-        // Окно может содержать больше 100 заказов — выгребаем постранично.
-        const all = [];
-        for (let page = 1; page <= 10; page += 1) {
-          const result = await fetchOrders(page, 100, filters);
-          all.push(...(result.items || []));
-          if (all.length >= (result.total || 0) || !(result.items || []).length) break;
-        }
-        if (!cancelled) setOrders(all);
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+  function handleOpenColumn(column) {
+    const columnOrders = ordersForColumn(column);
+    if (!columnOrders.length) return;
+    const sheetIDs = [...new Set(columnOrders.map((order) => order.production_sheet_id).filter(Boolean))];
+    if (columnOrders.every((order) => order.production_sheet_id) && sheetIDs.length === 1) {
+      onOpenProduction(sheetIDs[0]);
+      return;
     }
-    load();
-    return () => { cancelled = true; };
-  }, [columns]);
-
-  const groups = useMemo(() => buildGroups(orders, columns, catalog, categories), [orders, columns, catalog, categories]);
-
-  // Хлеб и булочки — на «одной странице», но по очереди: активен один тип,
-  // остальные переключаются чипами. Выбор переживает смену окна дат, пока
-  // тип присутствует в данных.
-  const activeGroup = useMemo(() => {
-    if (!groups.length) return null;
-    return groups.find((group) => (group.category?.id || 0) === activeCategoryID) || groups[0];
-  }, [groups, activeCategoryID]);
+    setOpenColumn({ column, orders: columnOrders });
+  }
 
   return (
     <section className="px-3 py-3 pb-20 sm:px-5 sm:pb-5 lg:px-6">
@@ -224,7 +122,7 @@ export function OrdersTableView({ catalog = [] }) {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h1 className="m-0 text-lg font-semibold">Таблица</h1>
-            <p className="m-0 text-[12px] leading-5 text-stone-500">Сколько печь по дням: все заказы, сгруппированные по блюдам.</p>
+            <p className="m-0 text-[12px] leading-5 text-stone-500">Сколько печь по дням. Нажмите дату, чтобы отработать всю колонку.</p>
           </div>
           <div className="flex shrink-0 gap-1.5">
             <Button onClick={() => setShift((value) => value - 1)} disabled={loading} aria-label="Раньше">
@@ -266,10 +164,33 @@ export function OrdersTableView({ catalog = [] }) {
                 );
               })}
             </div>
-            {activeGroup && <CategoryTable key={activeGroup.category?.id || 'other'} group={activeGroup} columns={columns} />}
+            {activeGroup && (
+              <CategoryTable
+                key={activeGroup.category?.id || 'other'}
+                group={activeGroup}
+                columns={columns}
+                onOpenColumn={handleOpenColumn}
+              />
+            )}
           </>
         )}
       </div>
+      {openColumn && (
+        <ProductionColumnModal
+          column={openColumn.column}
+          category={activeGroup?.category}
+          orders={openColumn.orders}
+          onClose={() => setOpenColumn(null)}
+          onOpenProduction={(sheetID) => {
+            setOpenColumn(null);
+            onOpenProduction(sheetID);
+          }}
+          onStartProduction={(numbers) => {
+            setOpenColumn(null);
+            onStartProduction(numbers);
+          }}
+        />
+      )}
     </section>
   );
 }

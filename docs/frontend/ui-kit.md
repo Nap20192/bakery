@@ -208,6 +208,17 @@ ui/         the design system documented above
 config/     env.js (apiBase)
 ```
 
+Feature folders colocate their React components with hooks and pure projection
+modules. Examples: `baker/useOrdersTable.js` owns table loading state,
+`baker/ordersTableModel.js` and `baker/orderMatrix.js` contain independently
+testable data transformations, while `app/useAppRouter.js` owns History API
+synchronization. Components remain presentation/composition boundaries.
+
+Testing should prefer accessible roles and labels. Stable `data-testid`
+attributes are reserved for composite workflow roots (layout navigation,
+matrix, order card, selection bar), using the `component-element` convention;
+domain identifiers live in separate `data-*` attributes.
+
 Rules of thumb:
 
 - **`ui/` never imports from `features/`**; features compose `ui/`

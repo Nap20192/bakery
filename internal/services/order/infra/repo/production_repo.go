@@ -78,6 +78,9 @@ func (r *OrderRepository) SaveProductionSheet(ctx context.Context, input orderuc
 			if err := q.DeleteProductionSheetItems(ctx, sheetID); err != nil {
 				return fmt.Errorf("delete production sheet items: %w", err)
 			}
+			if err := q.DeleteProductionSheetLoads(ctx, sheetID); err != nil {
+				return fmt.Errorf("delete production sheet loads: %w", err)
+			}
 			if err := q.TouchProductionSheet(ctx, sheetID); err != nil {
 				return fmt.Errorf("touch production sheet: %w", err)
 			}
@@ -91,6 +94,17 @@ func (r *OrderRepository) SaveProductionSheet(ctx context.Context, input orderuc
 				return fmt.Errorf("insert production sheet order: %w", err)
 			}
 			for _, item := range order.Items {
+				if err := q.InsertProductionSheetLoad(ctx, sqlc.InsertProductionSheetLoadParams{
+					SheetID:        sheetID,
+					OrderID:        orderIDs[order.Number],
+					ProductName:    item.ProductName,
+					LoadedQuantity: *item.LoadedQuantity,
+				}); err != nil {
+					return fmt.Errorf("insert production sheet load: %w", err)
+				}
+				if !item.IsDeviation {
+					continue
+				}
 				if err := q.InsertProductionSheetItem(ctx, sqlc.InsertProductionSheetItemParams{
 					SheetID:          sheetID,
 					OrderID:          orderIDs[order.Number],
@@ -181,6 +195,7 @@ func (r *OrderRepository) GetProductionSheet(ctx context.Context, id int64) (ord
 		sheet.Items = append(sheet.Items, orderdomain.ProductionSheetItem{
 			OrderNumber:      item.OrderNumber,
 			ProductName:      item.ProductName,
+			LoadedQuantity:   item.LoadedQuantity,
 			ProducedQuantity: item.ProducedQuantity,
 			Reason:           item.Reason,
 		})

@@ -28,6 +28,7 @@ type productionOrderRequest struct {
 
 type productionItemRequest struct {
 	ProductName      string  `json:"product_name"`
+	LoadedQuantity   *float64 `json:"loaded_quantity"`
 	ProducedQuantity float64 `json:"produced_quantity"`
 	Reason           string  `json:"reason"`
 }
@@ -45,6 +46,7 @@ type productionSheetResponse struct {
 type productionSheetItemResponse struct {
 	OrderNumber      string  `json:"order_number"`
 	ProductName      string  `json:"product_name"`
+	LoadedQuantity   float64 `json:"loaded_quantity"`
 	ProducedQuantity float64 `json:"produced_quantity"`
 	Reason           string  `json:"reason"`
 }
@@ -55,6 +57,7 @@ func toProductionSheetResponse(sheet orderdomain.ProductionSheet) productionShee
 		items = append(items, productionSheetItemResponse{
 			OrderNumber:      item.OrderNumber,
 			ProductName:      item.ProductName,
+			LoadedQuantity:   item.LoadedQuantity,
 			ProducedQuantity: item.ProducedQuantity,
 			Reason:           item.Reason,
 		})
@@ -107,6 +110,7 @@ func (h *Handler) decodeProductionRequest(w http.ResponseWriter, r *http.Request
 		for _, item := range order.Items {
 			items = append(items, orderuc.ProducedItemInput{
 				ProductName:      item.ProductName,
+				LoadedQuantity:   item.LoadedQuantity,
 				ProducedQuantity: item.ProducedQuantity,
 				Reason:           item.Reason,
 			})

@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { Button } from '../../ui/Button';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { ErrorBanner } from '../../ui/ErrorBanner';
+import { compactControlClass } from '../../ui/Field';
 import { createUser, deleteUser, fetchUsers, updateUser } from '../../api/users';
 import { logWarn } from '../../lib/logger';
 
 const ROLES = ['admin', 'shop', 'baker'];
 
 const emptyForm = { username: '', password: '', telegram_username: '', role: 'shop' };
-const fieldClass = 'min-h-9 rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10';
 
 export function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -93,7 +93,7 @@ export function AdminUsers() {
             <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[12px] font-medium tabular-nums text-stone-600">{users.length}</span>
           </h1>
           <input
-            className={`${fieldClass} w-full sm:w-64`}
+            className={`${compactControlClass} w-full sm:w-64`}
             type="search"
             placeholder="Поиск: логин, telegram, роль…"
             value={query}
@@ -104,13 +104,13 @@ export function AdminUsers() {
         <ErrorBanner error={error} className="mb-4" />
 
         <form onSubmit={onCreate} className="mb-6 grid gap-2 rounded-lg border border-stone-300 bg-white p-4 shadow-sm md:grid-cols-5">
-          <input className={fieldClass} placeholder="логин" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
-          <input className={fieldClass} placeholder="пароль" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
-          <input className={fieldClass} placeholder="telegram @username" value={form.telegram_username} onChange={(e) => setForm({ ...form, telegram_username: e.target.value })} />
-          <select className={fieldClass} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
+          <input className={compactControlClass} placeholder="логин" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
+          <input className={compactControlClass} placeholder="пароль" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+          <input className={compactControlClass} placeholder="telegram @username" value={form.telegram_username} onChange={(e) => setForm({ ...form, telegram_username: e.target.value })} />
+          <select className={compactControlClass} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
             {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
-          <Button type="submit" variant="primary" disabled={busy || !form.username.trim() || !form.password}>Добавить</Button>
+          <Button type="submit" variant="primary" loading={busy} disabled={!form.username.trim() || !form.password}>Добавить</Button>
         </form>
 
         <div className="overflow-x-auto rounded-lg border border-stone-300 bg-white shadow-sm">
@@ -140,7 +140,7 @@ export function AdminUsers() {
                     <Button onClick={() => onResetPassword(u)}>Сбросить</Button>
                   </td>
                   <td className="px-3 py-2">
-                    <select className={fieldClass} value={u.role} onChange={(e) => patchUser(u.id, { role: e.target.value })}>
+                    <select className={compactControlClass} value={u.role} onChange={(e) => patchUser(u.id, { role: e.target.value })}>
                       {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                     </select>
                   </td>
@@ -181,7 +181,7 @@ function UsernameCell({ user, onSave }) {
 
   return (
     <input
-      className={`${fieldClass} w-32`}
+      className={`${compactControlClass} w-32`}
       value={value}
       onChange={(e) => setValue(e.target.value)}
       onBlur={commit}

@@ -1,0 +1,10 @@
+- main [ref=e3]:
+  - generic [ref=e4]:
+    - heading "Заказы пекарни" [level=1] [ref=e5]
+    - paragraph [ref=e6]: Войдите, чтобы продолжить.
+    - generic [ref=e7]: Логин
+    - textbox "Логин" [invalid] [ref=e8]: demo
+    - generic [ref=e9]: Пароль
+    - textbox "Пароль" [invalid] [ref=e10]: bad-password
+    - button "Войти" [ref=e11]
+    - alert [ref=e12]: Неверный логин или пароль.

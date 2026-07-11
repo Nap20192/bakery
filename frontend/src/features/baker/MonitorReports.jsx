@@ -13,9 +13,9 @@ export function MonitorReports({ monitor, onCalculate, loading, canCalculate = t
       return (
         <div className="mt-3 flex flex-col items-center gap-2 rounded-lg border border-dashed border-stone-300 bg-stone-50 px-4 py-8 text-center">
           <p className="m-0 text-[13px] text-stone-500">Расчёт расхода теста по заказам.</p>
-          <Button variant="primary" onClick={onCalculate} disabled={loading || !canCalculate}>
+          <Button variant="primary" onClick={onCalculate} loading={loading} disabled={!canCalculate}>
             <Icon name="calculator" size={16} />
-            {loading ? 'Считаем…' : 'Рассчитать тесто'}
+            Рассчитать тесто
           </Button>
         </div>
       );

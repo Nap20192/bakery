@@ -49,6 +49,16 @@ func (q *Queries) DeleteProductionSheetItems(ctx context.Context, sheetID int64)
 	return err
 }
 
+const deleteProductionSheetLoads = `-- name: DeleteProductionSheetLoads :exec
+DELETE FROM production_sheet_loads
+WHERE sheet_id = $1
+`
+
+func (q *Queries) DeleteProductionSheetLoads(ctx context.Context, sheetID int64) error {
+	_, err := q.db.Exec(ctx, deleteProductionSheetLoads, sheetID)
+	return err
+}
+
 const deleteProductionSheetOrders = `-- name: DeleteProductionSheetOrders :exec
 DELETE FROM production_sheet_orders
 WHERE sheet_id = $1
@@ -164,6 +174,28 @@ func (q *Queries) InsertProductionSheetItem(ctx context.Context, arg InsertProdu
 	return err
 }
 
+const insertProductionSheetLoad = `-- name: InsertProductionSheetLoad :exec
+INSERT INTO production_sheet_loads (sheet_id, order_id, product_name, loaded_quantity)
+VALUES ($1, $2, $3, $4)
+`
+
+type InsertProductionSheetLoadParams struct {
+	SheetID        int64   `json:"sheet_id"`
+	OrderID        int64   `json:"order_id"`
+	ProductName    string  `json:"product_name"`
+	LoadedQuantity float64 `json:"loaded_quantity"`
+}
+
+func (q *Queries) InsertProductionSheetLoad(ctx context.Context, arg InsertProductionSheetLoadParams) error {
+	_, err := q.db.Exec(ctx, insertProductionSheetLoad,
+		arg.SheetID,
+		arg.OrderID,
+		arg.ProductName,
+		arg.LoadedQuantity,
+	)
+	return err
+}
+
 const insertProductionSheetOrder = `-- name: InsertProductionSheetOrder :exec
 INSERT INTO production_sheet_orders (sheet_id, order_id)
 VALUES ($1, $2)
@@ -218,23 +250,30 @@ func (q *Queries) ListOrderProductionSheetIDs(ctx context.Context, orderIds []in
 
 const listProductionSheetItems = `-- name: ListProductionSheetItems :many
 SELECT
-    psi.id,
-    psi.order_id,
+    psl.order_id,
     o.number AS order_number,
-    psi.product_name,
-    psi.produced_quantity,
-    psi.reason
-FROM production_sheet_items psi
-JOIN orders o ON o.id = psi.order_id
-WHERE psi.sheet_id = $1
-ORDER BY psi.product_name, o.number
+    psl.product_name,
+    psl.loaded_quantity,
+    COALESCE(psi.produced_quantity, oi.quantity + oi.reserved_quantity)::DOUBLE PRECISION AS produced_quantity,
+    COALESCE(psi.reason, '')::TEXT AS reason
+FROM production_sheet_loads psl
+JOIN orders o ON o.id = psl.order_id
+JOIN order_items oi
+    ON oi.order_id = psl.order_id
+    AND lower(trim(oi.product_name)) = lower(trim(psl.product_name))
+LEFT JOIN production_sheet_items psi
+    ON psi.sheet_id = psl.sheet_id
+    AND psi.order_id = psl.order_id
+    AND lower(trim(psi.product_name)) = lower(trim(psl.product_name))
+WHERE psl.sheet_id = $1
+ORDER BY psl.product_name, o.number
 `
 
 type ListProductionSheetItemsRow struct {
-	ID               int64   `json:"id"`
 	OrderID          int64   `json:"order_id"`
 	OrderNumber      string  `json:"order_number"`
 	ProductName      string  `json:"product_name"`
+	LoadedQuantity   float64 `json:"loaded_quantity"`
 	ProducedQuantity float64 `json:"produced_quantity"`
 	Reason           string  `json:"reason"`
 }
@@ -249,10 +288,10 @@ func (q *Queries) ListProductionSheetItems(ctx context.Context, sheetID int64) (
 	for rows.Next() {
 		var i ListProductionSheetItemsRow
 		if err := rows.Scan(
-			&i.ID,
 			&i.OrderID,
 			&i.OrderNumber,
 			&i.ProductName,
+			&i.LoadedQuantity,
 			&i.ProducedQuantity,
 			&i.Reason,
 		); err != nil {

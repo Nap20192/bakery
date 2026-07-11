@@ -57,7 +57,7 @@ export function BakerSelectionReview({
               <section className={panelClass}>
                 <PanelHeader title="Отработка" />
                 <p className="m-0 mb-2 text-[12px] leading-5 text-stone-500">
-                  Сколько реально испечено. Заявки не изменяются; расхождения разносятся по заказам.
+                  Укажите закладку и фактический выход. Заявки не изменяются; значения разносятся по заказам.
                 </p>
                 <ProductionSheet
                   orders={selectedOrders}

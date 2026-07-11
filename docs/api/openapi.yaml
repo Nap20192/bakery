@@ -280,8 +280,8 @@ paths:
       tags: [production]
       summary: Create a production sheet (baker/admin)
       description: >
-        Fixes the batch: every selected order is saved on the sheet, items
-        carry only deviations from the заявка (orders may have none).
+        Fixes the batch: every selected order and each item's loaded quantity
+        are saved on the sheet; output facts become deviations from the заявка.
       operationId: createProductionSheet
       requestBody:
         required: true
@@ -328,9 +328,9 @@ paths:
       tags: [production]
       summary: Replace a sheet's batch and deviations
       description: >
-        Values equal to the order quantity drop the deviation row; the sheet
-        keeps its batch and lives until explicitly deleted, even with no
-        deviations left.
+        Output values equal to the order quantity drop the deviation row;
+        loaded quantities remain stored. The sheet keeps its batch and lives
+        until explicitly deleted, even with no output deviations left.
       operationId: updateProductionSheet
       parameters: [{ $ref: "#/components/parameters/SheetID" }]
       requestBody:
@@ -887,10 +887,11 @@ components:
 
     ProductionItemWrite:
       type: object
-      required: [product_name, produced_quantity]
+      required: [product_name, loaded_quantity, produced_quantity]
       properties:
         product_name: { type: string }
-        produced_quantity: { type: number }
+        loaded_quantity: { type: number, minimum: 0, description: Закладка — количество, переданное в производство }
+        produced_quantity: { type: number, minimum: 0, description: Выход — фактически полученное количество }
         reason: { type: string, maxLength: 200, description: Optional justification («подгорело», «упало») }
 
     ProductionWrite:
@@ -911,10 +912,11 @@ components:
 
     ProductionSheetItem:
       type: object
-      required: [order_number, product_name, produced_quantity, reason]
+      required: [order_number, product_name, loaded_quantity, produced_quantity, reason]
       properties:
         order_number: { type: string }
         product_name: { type: string }
+        loaded_quantity: { type: number }
         produced_quantity: { type: number }
         reason: { type: string }
 

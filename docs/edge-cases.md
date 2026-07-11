@@ -92,6 +92,11 @@ point to the service pages with implementation detail.
   deletes the document).
 - **Only deviations are stored per item.** A missing fact means "baked as
   ordered"; a sheet item equal to the order quantity is silently dropped.
+- **Loaded quantity («Закладка») is independent from output.** Every selected
+  order item stores its loaded quantity in `production_sheet_loads`, including
+  values equal to the order. Output deviations remain in
+  `production_sheet_items`, so changing only the loaded quantity does not emit
+  a produced/cleared event or change monitoring math.
 - **One sheet per order** (order side), many orders per sheet (sheet side) —
   membership is the **batch selection**, not deviations. Touching an order
   covered by another sheet is a conflict (`order.production_exists`) — the

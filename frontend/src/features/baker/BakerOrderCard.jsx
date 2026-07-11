@@ -17,6 +17,8 @@ export function BakerOrderCard({ order, selected, checked, selectionMode, onTogg
     <button
       type="button"
       onClick={handleClick}
+      data-testid="bakerOrderCard-root"
+      data-order-number={order.number}
       aria-label={`${order.items?.length || 0} позиций, ${orderCreator(order)}${production ? `, ${production.label}` : ''}`}
       className={`group relative w-full rounded-lg border px-2 py-1.5 text-left transition duration-150 focus:outline-none focus:ring-2 focus:ring-stone-900/20 active:scale-[0.98] ${
         style ? `border-l-4 ${style.stripe}` : ''

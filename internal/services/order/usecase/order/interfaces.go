@@ -164,8 +164,8 @@ type CatalogSeed struct {
 	CategoryCode string
 }
 
-// RecordProductionInput — отработка (факт выпечки) по нескольким заказам
-// одной партией: пекарь вводит факт на листе выпечки и разносит по заявкам.
+// RecordProductionInput — отработка по нескольким заказам одной партией:
+// пекарь вводит закладку и фактический выход, затем разносит их по заявкам.
 type RecordProductionInput struct {
 	ProducedByUsername string
 	Orders             []OrderProductionInput
@@ -178,7 +178,11 @@ type OrderProductionInput struct {
 
 type ProducedItemInput struct {
 	ProductName      string
+	// LoadedQuantity — закладка: сколько единиц передали в производство.
+	// nil keeps backward compatibility and defaults to the order quantity.
+	LoadedQuantity   *float64
 	ProducedQuantity float64
+	IsDeviation      bool
 	// Reason — необязательное обоснование отклонения («подгорело», «упало»).
 	Reason string
 }

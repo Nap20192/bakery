@@ -59,22 +59,37 @@ ORDER BY o.number;
 INSERT INTO production_sheet_items (sheet_id, order_id, product_name, produced_quantity, reason)
 VALUES (sqlc.arg(sheet_id), sqlc.arg(order_id), sqlc.arg(product_name), sqlc.arg(produced_quantity), sqlc.arg(reason));
 
+-- name: InsertProductionSheetLoad :exec
+INSERT INTO production_sheet_loads (sheet_id, order_id, product_name, loaded_quantity)
+VALUES (sqlc.arg(sheet_id), sqlc.arg(order_id), sqlc.arg(product_name), sqlc.arg(loaded_quantity));
+
 -- name: DeleteProductionSheetItems :exec
 DELETE FROM production_sheet_items
 WHERE sheet_id = sqlc.arg(sheet_id);
 
+-- name: DeleteProductionSheetLoads :exec
+DELETE FROM production_sheet_loads
+WHERE sheet_id = sqlc.arg(sheet_id);
+
 -- name: ListProductionSheetItems :many
 SELECT
-    psi.id,
-    psi.order_id,
+    psl.order_id,
     o.number AS order_number,
-    psi.product_name,
-    psi.produced_quantity,
-    psi.reason
-FROM production_sheet_items psi
-JOIN orders o ON o.id = psi.order_id
-WHERE psi.sheet_id = sqlc.arg(sheet_id)
-ORDER BY psi.product_name, o.number;
+    psl.product_name,
+    psl.loaded_quantity,
+    COALESCE(psi.produced_quantity, oi.quantity + oi.reserved_quantity)::DOUBLE PRECISION AS produced_quantity,
+    COALESCE(psi.reason, '')::TEXT AS reason
+FROM production_sheet_loads psl
+JOIN orders o ON o.id = psl.order_id
+JOIN order_items oi
+    ON oi.order_id = psl.order_id
+    AND lower(trim(oi.product_name)) = lower(trim(psl.product_name))
+LEFT JOIN production_sheet_items psi
+    ON psi.sheet_id = psl.sheet_id
+    AND psi.order_id = psl.order_id
+    AND lower(trim(psi.product_name)) = lower(trim(psl.product_name))
+WHERE psl.sheet_id = sqlc.arg(sheet_id)
+ORDER BY psl.product_name, o.number;
 
 -- name: ListProductionSheetOrderIDs :many
 SELECT order_id

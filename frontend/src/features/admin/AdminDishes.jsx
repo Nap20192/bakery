@@ -3,6 +3,7 @@ import { Button } from '../../ui/Button';
 import { CategoryBadge } from '../../ui/CategoryBadge';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { ErrorBanner } from '../../ui/ErrorBanner';
+import { compactControlClass } from '../../ui/Field';
 import {
   createCategory,
   createDish,
@@ -19,8 +20,7 @@ import { CATEGORY_COLOR_SLUGS, CATEGORY_COLORS } from '../../lib/categories';
 
 const fieldClass =
   'h-11 w-full min-w-0 rounded-lg border border-stone-200 bg-white px-3 text-base text-stone-900 outline-none transition focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10';
-const cellInputClass =
-  'h-9 w-full min-w-0 rounded-md border border-stone-300 bg-white px-2 text-sm outline-none focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10';
+const cellInputClass = `${compactControlClass} h-9 w-full min-w-0 px-2`;
 
 // AdminDishes is the full dish-catalog editor. Admins add dishes only from the
 // iiko tech cards in the database (looked up on demand, never loaded whole),
