@@ -29,7 +29,7 @@ export function MePanel({ viewer, onLogout }) {
               Выйти
             </Button>
           ) : (
-            <p className="mt-4 text-center text-[12px] text-stone-500">Вход через Telegram — выход не требуется.</p>
+            <p className="mt-4 text-center text-note text-stone-500">Вход через Telegram — выход не требуется.</p>
           )}
         </div>
       </div>

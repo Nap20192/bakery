@@ -30,6 +30,7 @@ func New(monitorSvc monitoruc.UseCase, orderSvc orderuc.UseCase, presenter *orde
 // RegisterRoutes wires the monitor endpoints behind Mini App authentication.
 func (h *Handler) RegisterRoutes(mux *http.ServeMux, auth *httpx.Authenticator) {
 	mux.Handle("GET /monitor/batch", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleMonitorBatch)))
+	mux.Handle("POST /monitor/calc", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleMonitorCalc)))
 	mux.Handle("GET /monitor/{id}", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleMonitorDefault)))
 	mux.Handle("GET /monitor/{id}/{product_id}", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleMonitorByProduct)))
 }

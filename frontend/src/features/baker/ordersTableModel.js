@@ -49,9 +49,18 @@ export function buildTableGroups(orders, columns, catalog, categories) {
       const key = String(item.product_name || '').toLowerCase().trim();
       if (!byDish.has(key)) byDish.set(key, { key, name: item.product_name, cells: {}, total: 0 });
       const row = byDish.get(key);
-      const quantity = Number(item.production_quantity || 0);
-      row.cells[date] = (row.cells[date] || 0) + quantity;
-      row.total += quantity;
+      const ordered = Number(item.production_quantity || 0);
+      // effective — фактический выход (декорированный факт отработки), для
+      // незатронутых позиций равен заявке. Ячейка «отработана», только пока
+      // КАЖДЫЙ заказ-вкладчик покрыт листом — тогда таблица фиксирует выход,
+      // а маленькая дельта показывает ± относительно заказа.
+      const effective = item.produced_quantity != null ? Number(item.produced_quantity) : ordered;
+      const cell = row.cells[date] || { ordered: 0, effective: 0, produced: true };
+      cell.ordered += ordered;
+      cell.effective += effective;
+      cell.produced = cell.produced && Boolean(order.production_sheet_id);
+      row.cells[date] = cell;
+      row.total += ordered;
     }
   }
 

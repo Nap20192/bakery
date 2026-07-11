@@ -38,7 +38,7 @@ function CategoryChip({ label, category, active, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium transition focus:outline-none focus:ring-2 focus:ring-stone-900/20 ${
+      className={`inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-body font-medium transition focus:outline-none focus:ring-2 focus:ring-stone-900/20 ${
         active ? activeClass : 'border-stone-300 bg-white text-stone-700 hover:border-stone-400'
       }`}
     >

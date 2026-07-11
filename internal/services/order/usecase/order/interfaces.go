@@ -177,7 +177,7 @@ type OrderProductionInput struct {
 }
 
 type ProducedItemInput struct {
-	ProductName      string
+	ProductName string
 	// LoadedQuantity — закладка: сколько единиц передали в производство.
 	// nil keeps backward compatibility and defaults to the order quantity.
 	LoadedQuantity   *float64

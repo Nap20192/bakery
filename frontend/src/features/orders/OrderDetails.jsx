@@ -19,7 +19,7 @@ export function OrderDetails({ order, catalog = [], canFavorite = false, onToggl
           <PanelHeader title={order.number} count={order.items?.length || 0} />
           <CategoryBadge category={order.category} />
           {order.cancelled && (
-            <span className="inline-flex items-center rounded-full border border-red-300 bg-red-50 px-2 py-0.5 text-[12px] font-semibold text-red-700">
+            <span className="inline-flex items-center rounded-full border border-red-300 bg-red-50 px-2 py-0.5 text-note font-semibold text-red-700">
               Отменён
             </span>
           )}
@@ -50,7 +50,7 @@ export function OrderDetails({ order, catalog = [], canFavorite = false, onToggl
             </Button>
           ) : (
             order.favorite && (
-              <span className="inline-flex items-center gap-1 text-[12px] font-medium text-stone-500" title="Избранный заказ">
+              <span className="inline-flex items-center gap-1 text-note font-medium text-stone-500" title="Избранный заказ">
                 <Icon name="star" size={14} filled />
                 <span className="hidden sm:inline">Избранное</span>
               </span>
@@ -63,11 +63,11 @@ export function OrderDetails({ order, catalog = [], canFavorite = false, onToggl
       </div>
 
       {production && (
-        <div className="mb-3 flex items-start gap-2 rounded-lg border border-stone-300 bg-stone-100/80 px-3 py-2 text-[13px] text-stone-800" role="status">
+        <div className="mb-3 flex items-start gap-2 rounded-lg border border-stone-300 bg-stone-100/80 px-3 py-2 text-body text-stone-800" role="status">
           <span className="mt-0.5 font-bold" aria-hidden="true">{production.deviations > 0 ? '±' : '✓'}</span>
           <div>
             <strong className="block font-semibold">{production.label}</strong>
-            <span className="block text-[12px] text-stone-600">Заказ входит в отработку №{order.production_sheet_id}; расчёт теста использует зафиксированный факт.</span>
+            <span className="block text-note text-stone-600">Заказ входит в отработку №{order.production_sheet_id}; расчёт теста использует зафиксированный факт.</span>
           </div>
         </div>
       )}
@@ -83,8 +83,8 @@ export function OrderDetails({ order, catalog = [], canFavorite = false, onToggl
       <OrderItems items={order.items || []} history={order.history || []} comments={commentByName(order)} catalog={catalog} />
       {order.comments?.general && (
         <div className="mt-3 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5">
-          <span className="block text-[11px] font-medium uppercase leading-4 text-stone-500">Комментарий</span>
-          <p className="m-0 mt-0.5 whitespace-pre-wrap break-words text-[13px] leading-5 text-stone-800">{order.comments.general}</p>
+          <span className="block text-caption font-medium uppercase leading-4 text-stone-500">Комментарий</span>
+          <p className="m-0 mt-0.5 whitespace-pre-wrap break-words text-body leading-5 text-stone-800">{order.comments.general}</p>
         </div>
       )}
       <OrderHistory history={order.history || []} />
@@ -116,7 +116,7 @@ function OrderItems({ items, history, comments = {}, catalog = [] }) {
     : 'grid-cols-[minmax(0,1fr)_4.6rem] sm:grid-cols-[minmax(0,1fr)_5rem]';
   return (
     <div className="overflow-hidden rounded-lg border border-stone-300 bg-white">
-      <div className={`grid ${rowGrid} gap-2 bg-stone-50 px-2.5 py-1.5 text-[11px] font-medium uppercase leading-5 text-stone-600 sm:px-3`}>
+      <div className={`grid ${rowGrid} gap-2 bg-stone-50 px-2.5 py-1.5 text-caption font-medium uppercase leading-5 text-stone-600 sm:px-3`}>
         <span>Позиция</span>
         <span className="text-right">Кол-во</span>
         {hasProduction && <span className="text-right">Испечено</span>}
@@ -124,7 +124,7 @@ function OrderItems({ items, history, comments = {}, catalog = [] }) {
       {groups.map((group) => (
         <div key={group.theme}>
           {showHeaders && (
-            <div className="border-t border-stone-300 bg-stone-50/70 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500 sm:px-3">
+            <div className="border-t border-stone-300 bg-stone-50/70 px-2.5 py-1 text-caption font-semibold uppercase tracking-wide text-stone-500 sm:px-3">
               {group.theme}
             </div>
           )}
@@ -133,28 +133,26 @@ function OrderItems({ items, history, comments = {}, catalog = [] }) {
               const change = latestChanges[item.code];
               return (
                 <div
-                  className={`grid ${rowGrid} items-start gap-2 border-l-4 px-2.5 py-1.5 text-[13px] sm:px-3`}
-                  style={{
-                    borderLeftColor: change ? changeColor(change.change_type) : 'transparent',
-                    backgroundColor: change ? changeBackground(change.change_type) : 'transparent',
-                  }}
+                  className={`grid ${rowGrid} items-start gap-2 border-l-4 px-2.5 py-1.5 text-body sm:px-3 ${
+                    change ? changeStyle(change.change_type).row : 'border-l-transparent'
+                  }`}
                   key={item.code || item.product_name}
                 >
                   <span className="min-w-0 break-words leading-5 text-stone-800">
                     {item.product_name}
                     {change && (
-                      <span className="ml-1 whitespace-nowrap text-[11px] font-semibold" style={{ color: changeColor(change.change_type) }}>
-                        {changeLabel(change.change_type)}
+                      <span className={`ml-1 whitespace-nowrap text-caption font-semibold ${changeStyle(change.change_type).text}`}>
+                        {changeStyle(change.change_type).label}
                       </span>
                     )}
                     {comments[item.product_name] && (
-                      <span className="mt-0.5 block break-words text-[12px] leading-4 text-stone-500">{comments[item.product_name]}</span>
+                      <span className="mt-0.5 block break-words text-note leading-4 text-stone-500">{comments[item.product_name]}</span>
                     )}
                     {item.produced_reason && (
-                      <span className="mt-0.5 block break-words text-[12px] leading-4 text-sky-700">Отработка: {item.produced_reason}</span>
+                      <span className="mt-0.5 block break-words text-note leading-4 text-sky-700">Отработка: {item.produced_reason}</span>
                     )}
                   </span>
-                  <span className="text-right text-[12px] font-semibold leading-5 text-stone-950 sm:text-[13px]">{orderQuantity(item)}</span>
+                  <span className="text-right text-note font-semibold leading-5 text-stone-950 sm:text-body">{orderQuantity(item)}</span>
                   {hasProduction && <ProducedCell item={item} />}
                 </div>
               );
@@ -162,7 +160,7 @@ function OrderItems({ items, history, comments = {}, catalog = [] }) {
           </div>
         </div>
       ))}
-      <div className={`grid ${rowGrid} gap-2 border-t border-stone-300 bg-stone-50 px-2.5 py-1.5 text-[12px] font-semibold leading-5 text-stone-900 sm:px-3`}>
+      <div className={`grid ${rowGrid} gap-2 border-t border-stone-300 bg-stone-50 px-2.5 py-1.5 text-note font-semibold leading-5 text-stone-900 sm:px-3`}>
         <span>Итого</span>
         <span className="text-right tabular-nums">{formatQuantity(totalQuantity)}</span>
         {hasProduction && <span className="text-right tabular-nums">{formatQuantity(totalProduced)}</span>}
@@ -174,13 +172,13 @@ function OrderItems({ items, history, comments = {}, catalog = [] }) {
 // ProducedCell показывает факт выпечки: недовоз красным, излишек зелёным.
 function ProducedCell({ item }) {
   if (item.produced_quantity == null) {
-    return <span className="text-right text-[12px] leading-5 text-stone-300">—</span>;
+    return <span className="text-right text-note leading-5 text-stone-300">—</span>;
   }
   const ordered = Number(item.production_quantity ?? (Number(item.quantity) || 0) + (Number(item.reserved_quantity) || 0));
   const produced = Number(item.produced_quantity);
   const tone = produced < ordered ? 'text-red-700' : produced > ordered ? 'text-emerald-700' : 'text-stone-700';
   return (
-    <span className={`text-right text-[12px] font-semibold leading-5 tabular-nums sm:text-[13px] ${tone}`}>
+    <span className={`text-right text-note font-semibold leading-5 tabular-nums sm:text-body ${tone}`}>
       {formatQuantity(produced)}
     </span>
   );
@@ -224,20 +222,20 @@ function OrderHistory({ history }) {
   if (!history.length) return null;
   return (
     <section className="mt-3 overflow-hidden rounded-lg border border-stone-300 bg-white">
-      <h4 className="border-b border-stone-300 bg-stone-50 px-2.5 py-2 text-[13px] font-semibold leading-5 text-stone-950 sm:px-3">История изменений</h4>
+      <h4 className="border-b border-stone-300 bg-stone-50 px-2.5 py-2 text-body font-semibold leading-5 text-stone-950 sm:px-3">История изменений</h4>
       <div className="divide-y divide-stone-300">
         {history.map((entry) => (
           <article className="px-2.5 py-2 sm:px-3" key={entry.id}>
-            <div className="mb-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] leading-5 text-stone-600">
+            <div className="mb-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-note leading-5 text-stone-600">
               <strong className="text-stone-800">{formatDate(entry.changed_at) || '-'}</strong>
               {entry.changed_by_username && <span>@{entry.changed_by_username.replace(/^@/, '')}</span>}
             </div>
             <div className="space-y-1">
               {(entry.items || []).map((item) => (
-                <div className="text-[13px] leading-5" key={`${entry.id}-${item.product_code}-${item.change_type}`}>
+                <div className="text-body leading-5" key={`${entry.id}-${item.product_code}-${item.change_type}`}>
                   <span className="min-w-0 break-words text-stone-800">
-                    <span className="font-semibold" style={{ color: changeColor(item.change_type) }}>
-                      {changeLabel(item.change_type)}
+                    <span className={`font-semibold ${changeStyle(item.change_type).text}`}>
+                      {changeStyle(item.change_type).label}
                     </span>{' '}
                     {item.product_name}
                     <span className="text-stone-600"> {historyQuantityText(item)}</span>
@@ -261,25 +259,18 @@ function latestHistoryByCode(history) {
   return result;
 }
 
-function changeLabel(type) {
-  if (type === 'added') return '[добавлено]';
-  if (type === 'updated') return '[изменено]';
-  if (type === 'removed') return '[удалено]';
-  return '[обновлено]';
-}
+// Стили типов изменений — Tailwind-классы вместо инлайновых hex: строка
+// позиции получает кромку и подложку, метка в тексте — цвет. Семантика
+// данных (зелёный/янтарный/красный), токенами не тонируется.
+const CHANGE_STYLES = {
+  added: { label: '[добавлено]', row: 'border-l-emerald-500 bg-emerald-50/70', text: 'text-emerald-700' },
+  updated: { label: '[изменено]', row: 'border-l-amber-400 bg-amber-50/70', text: 'text-amber-600' },
+  removed: { label: '[удалено]', row: 'border-l-red-400 bg-red-50/70', text: 'text-red-600' },
+};
+const CHANGE_FALLBACK = { label: '[обновлено]', row: 'border-l-stone-300 bg-stone-50', text: 'text-stone-600' };
 
-function changeColor(type) {
-  if (type === 'added') return '#1f9d55';
-  if (type === 'updated') return '#ffaf00';
-  if (type === 'removed') return '#d64545';
-  return '#57534e';
-}
-
-function changeBackground(type) {
-  if (type === 'added') return '#e7f6ed';
-  if (type === 'updated') return '#fff0c2';
-  if (type === 'removed') return '#fde8e8';
-  return '#f5f5f4';
+function changeStyle(type) {
+  return CHANGE_STYLES[type] || CHANGE_FALLBACK;
 }
 
 function historyQuantityText(item) {

@@ -106,6 +106,15 @@ export function fetchOrderMonitor(number) {
   return unwrap(api.GET('/monitor/{id}', { params: { path: { id: number } } }));
 }
 
+/**
+ * Калькулятор теста: расчёт по введённым вручную позициям, ничего не создаёт.
+ * @param {number} categoryId 0 = дефолтные коды теста
+ * @param {Schemas['DoughCalcRequest']['items']} items
+ */
+export function calcDough(categoryId, items) {
+  return unwrap(api.POST('/monitor/calc', { body: { category_id: categoryId, items } }));
+}
+
 /** @param {string[]} numbers */
 export function fetchBatchOrderMonitor(numbers) {
   const orders = (numbers || []).filter(Boolean);

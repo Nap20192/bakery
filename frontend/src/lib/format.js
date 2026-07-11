@@ -16,3 +16,20 @@ export function formatFulfillmentDate(value) {
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium' }).format(date);
 }
+
+// plural подбирает русскую форму слова под число: plural(3, 'заявка',
+// 'заявки', 'заявок') → «заявки». Возвращает только слово, без числа.
+export function plural(count, one, few, many) {
+  const n = Math.abs(Math.trunc(count)) % 100;
+  if (n >= 11 && n <= 14) return many;
+  switch (n % 10) {
+    case 1:
+      return one;
+    case 2:
+    case 3:
+    case 4:
+      return few;
+    default:
+      return many;
+  }
+}

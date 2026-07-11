@@ -5,7 +5,7 @@ import { cn } from '../lib/cn';
 // исторические (см. вызовы по фичам): default = outline, primary = solid
 // primary, danger = outline destructive, ghost — прозрачная.
 const buttonVariants = cva(
-  'inline-flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:pointer-events-none disabled:opacity-50 sm:min-h-9',
+  'inline-flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-body font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:pointer-events-none disabled:opacity-50 sm:min-h-9',
   {
     variants: {
       variant: {

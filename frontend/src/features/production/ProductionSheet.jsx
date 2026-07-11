@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/EmptyState';
 import { Icon } from '../../ui/Icon';
@@ -76,15 +76,30 @@ function prorate(fact, perOrder) {
 // Быстрые обоснования отклонений — заполняют поле причины одним тапом.
 const REASON_PRESETS = ['Подгорело', 'Упало', 'Брак', 'Не хватило теста', 'Испекли про запас'];
 
-export function ProductionSheet({ orders, sheetItems = [], loading, onSave, onOpenJournal, submitLabel = 'Сохранить отработку' }) {
+export function ProductionSheet({ orders, sheetItems = [], loading, onSave, onOpenJournal, onDirtyChange, submitLabel = 'Сохранить отработку' }) {
   const rows = useMemo(() => buildRows(orders, sheetItems), [orders, sheetItems]);
   const [loads, setLoads] = useState({});
   const [outputs, setOutputs] = useState({});
   const [reasons, setReasons] = useState({});
   const [openComments, setOpenComments] = useState({});
 
+  // Несохранённые правки листа: пока они есть, расчёт теста заблокирован
+  // (docs/constraints.md) — расчёт всегда идёт по сохранённому факту.
+  const dirty = Object.keys(loads).length > 0 || Object.keys(outputs).length > 0 || Object.keys(reasons).length > 0;
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+
   if (!rows.length) {
     return <EmptyState compact>В выбранных заказах нет позиций.</EmptyState>;
+  }
+
+  // «Отменить» возвращает редактор к последнему сохранённому состоянию.
+  function revert() {
+    setLoads({});
+    setOutputs({});
+    setReasons({});
+    setOpenComments({});
   }
 
   const hasSavedSheet = rows.some((row) => row.hasSaved);
@@ -152,7 +167,7 @@ export function ProductionSheet({ orders, sheetItems = [], loading, onSave, onOp
 
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-[minmax(5.5rem,1fr)_3.5rem_4.25rem_4.25rem] items-center gap-1.5 px-1 text-[10px] font-medium uppercase text-stone-500 sm:grid-cols-[minmax(0,1fr)_4.5rem_5rem_5rem] sm:gap-2 sm:text-[11px]">
+      <div className="grid grid-cols-[minmax(5.5rem,1fr)_3.5rem_4.25rem_4.25rem] items-center gap-1.5 px-1 text-caption font-medium uppercase text-stone-500 sm:grid-cols-[minmax(0,1fr)_4.5rem_5rem_5rem] sm:gap-2 sm:text-caption">
         <span>Продукт</span>
         <span className="text-center">Заказ</span>
         <span className="text-center">Закладка</span>
@@ -166,7 +181,7 @@ export function ProductionSheet({ orders, sheetItems = [], loading, onSave, onOp
           <div className="py-1.5" key={row.key}>
             <div className="grid grid-cols-[minmax(5.5rem,1fr)_3.5rem_4.25rem_4.25rem] items-center gap-1.5 sm:grid-cols-[minmax(0,1fr)_4.5rem_5rem_5rem] sm:gap-2">
               <span className="flex min-w-0 items-center gap-1.5">
-                <span className="min-w-0 flex-1 break-words text-[13px] leading-5 text-stone-800">{row.name}</span>
+                <span className="min-w-0 flex-1 break-words text-body leading-5 text-stone-800">{row.name}</span>
                 <button
                   type="button"
                   onClick={() => setOpenComments((current) => ({ ...current, [row.key]: !commentOpen }))}
@@ -183,7 +198,7 @@ export function ProductionSheet({ orders, sheetItems = [], loading, onSave, onOp
                   <Icon name="orders" size={14} />
                 </button>
               </span>
-              <span className="text-center text-[13px] font-medium tabular-nums text-stone-600">{formatQuantity(row.ordered)}</span>
+              <span className="text-center text-body font-medium tabular-nums text-stone-600">{formatQuantity(row.ordered)}</span>
               <input
                 className={`${quantityInputClass} ${loaded !== row.ordered ? 'border-sky-400 bg-sky-50' : ''}`}
                 type="text"
@@ -203,7 +218,7 @@ export function ProductionSheet({ orders, sheetItems = [], loading, onSave, onOp
             </div>
             {commentOpen && (
               <div className="fade-in mt-1.5 rounded-md border border-stone-200 bg-stone-50 p-2">
-                  <p className="m-0 mb-1 text-[11px] font-medium uppercase text-stone-400">Комментарий к выходу (необязательно)</p>
+                  <p className="m-0 mb-1 text-caption font-medium uppercase text-stone-400">Комментарий к выходу (необязательно)</p>
                   <div className="mb-1 flex flex-wrap gap-1">
                     {REASON_PRESETS.map((preset) => (
                       <button
@@ -215,7 +230,7 @@ export function ProductionSheet({ orders, sheetItems = [], loading, onSave, onOp
                             [row.key]: (current[row.key] ?? row.reason) === preset ? '' : preset,
                           }))
                         }
-                        className={`rounded-full border px-2 py-0.5 text-[12px] leading-5 transition focus:outline-none focus:ring-2 focus:ring-stone-900/20 ${
+                        className={`rounded-full border px-2 py-0.5 text-note leading-5 transition focus:outline-none focus:ring-2 focus:ring-stone-900/20 ${
                           reason === preset
                             ? 'border-stone-900 bg-stone-900 text-white'
                             : 'border-stone-300 bg-white text-stone-600 hover:border-stone-400'
@@ -245,17 +260,25 @@ export function ProductionSheet({ orders, sheetItems = [], loading, onSave, onOp
           <button
             type="button"
             onClick={onOpenJournal}
-            className="text-[12px] leading-5 text-stone-500 underline decoration-stone-300 underline-offset-2 hover:text-stone-800"
+            className="text-note leading-5 text-stone-500 underline decoration-stone-300 underline-offset-2 hover:text-stone-800"
           >
             Изменить или удалить — в журнале отработок
           </button>
         ) : (
-          <span className="text-[12px] leading-5 text-stone-400">Лист сохраняет выбранные заказы; отклонения — только там, где факт отличается.</span>
+          <span className="text-note leading-5 text-stone-400">Лист сохраняет выбранные заказы; отклонения — только там, где факт отличается.</span>
         )}
-        <Button variant="primary" onClick={save} loading={loading} disabled={!canSave}>
-          <Icon name="select" size={15} />
-          {submitLabel}
-        </Button>
+        <div className="flex shrink-0 gap-2">
+          {dirty && (
+            <Button onClick={revert} disabled={loading} aria-label="Отменить несохранённые правки">
+              <Icon name="close" size={15} />
+              Отменить
+            </Button>
+          )}
+          <Button variant="primary" onClick={save} loading={loading} disabled={!canSave}>
+            <Icon name="select" size={15} />
+            {submitLabel}
+          </Button>
+        </div>
       </div>
     </div>
   );

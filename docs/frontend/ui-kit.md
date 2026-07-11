@@ -42,6 +42,32 @@ Tailwind hues.
   `@fontsource-variable/golos-text` — no CDN.
 - Base 14px / 1.5, letter-spacing `-0.01em`; headings `-0.02em`.
 
+**Type scale — six steps, no other text sizes** (defined in `@theme`, used as
+`text-caption` … `text-page`; arbitrary `text-[13px]` is a review error):
+
+| Utility | Size/LH | Role |
+|---|---|---|
+| `text-caption` | 11/16 | uppercase-надзаголовки, оси таблиц — не основной текст |
+| `text-note` | 12/18 | вторичные подписи: автор, даты списков |
+| `text-body` | 13/20 | основной текст, кнопки |
+| `text-input` | 14/20 | значения полей (на телефоне медиа-правило поднимает до 16) |
+| `text-title` | 16/24 | заголовки панелей |
+| `text-page` | 18/26 | заголовок экрана |
+
+### Radii — the paper-journal rule
+
+The interface reads like a **бумажный журнал выпечки**: calm corners, nothing
+inflated. Tailwind steps are re-mapped in `@theme`:
+
+- `rounded-md` (8px) — controls: buttons, inputs, table cells;
+- `rounded-lg` = `rounded-xl` (10px) — one surface radius for cards, panels,
+  dialogs;
+- `rounded-full` — only data pills: category badges, sheet badges, chips,
+  counters.
+
+Don't introduce new radius values; change the mapping in `styles.css` if the
+character ever changes.
+
 ### Motion & mobile
 
 - Two keyframe utilities: `.fade-in` (0.15s) and `.pop-in` (0.16s, used by
@@ -224,7 +250,7 @@ Rules of thumb:
 - **`ui/` never imports from `features/`**; features compose `ui/`
   primitives. The only `ui → lib` dependency is `CategoryBadge → categories`.
 - Routing is hand-rolled (`history.pushState` + `parseRoute`); paths:
-  `/orders`, `/orders/new`, `/orders/selection`, `/orders/table`, `/orders/{number}`,
+  `/orders`, `/orders/new`, `/orders/selection`, `/orders/table`, `/calculator`, `/orders/{number}`,
   `/orders/{number}/edit`, `/orders/{number}/monitor`, `/production[/{id}]`,
   `/admin/users`, `/admin/dishes`, `/me`.
 - Role-based UI: `shop` creates/edits orders; `baker` gets the matrix,

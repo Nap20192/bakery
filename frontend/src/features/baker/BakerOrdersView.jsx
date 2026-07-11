@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Button } from "../../ui/Button";
 import { EmptyState } from "../../ui/EmptyState";
 import { Icon } from "../../ui/Icon";
-import { formatFulfillmentDate } from "../../lib/format";
+import { formatFulfillmentDate, plural } from "../../lib/format";
 import { BakerOrderCard } from "./BakerOrderCard";
 import { BakerOrderFilters } from "./BakerOrderFilters";
 import { OrderPreviewModal } from "../orders/OrderPreviewModal";
@@ -63,7 +63,7 @@ export function BakerOrdersView({
         />
 
         {error && (
-          <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800">
+          <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-body text-red-800">
             {error}
           </div>
         )}
@@ -77,7 +77,7 @@ export function BakerOrdersView({
               {matrix.columns.map((column) => (
                 <h3
                   key={column.key}
-                  className="m-0 truncate rounded-md bg-stone-200/80 px-2 py-1.5 text-center text-[11px] font-semibold uppercase tracking-wide text-stone-700 sm:text-[12px]"
+                  className="m-0 truncate rounded-md bg-stone-200/80 px-2 py-1.5 text-center text-caption font-semibold uppercase tracking-wide text-stone-700 sm:text-note"
                   title={column.name}
                 >
                   {column.name}
@@ -148,7 +148,7 @@ function WindowNav({ loading, filters, onShiftWindow }) {
         <Icon name="chevronLeft" size={15} />
         Раньше
       </Button>
-      <span className="text-center text-[12px] leading-5 text-stone-500">
+      <span className="text-center text-note leading-5 text-stone-500">
         {formatFulfillmentDate(filters.fulfillmentFrom)} — {formatFulfillmentDate(filters.fulfillmentTo)}
       </span>
       <Button onClick={() => onShiftWindow(5)} disabled={loading}>
@@ -190,8 +190,8 @@ function DateBand({ band, columns, children }) {
     return (
       <section className={`p-2 ${style.panel}`}>
         <div className="mb-1.5 flex items-baseline justify-between gap-2 px-0.5">
-          <span className={`text-[13px] font-bold leading-5 ${style.label}`}>{band.label}</span>
-          <span className={`text-[11px] font-semibold leading-5 tabular-nums ${style.count}`}>{band.total} заяв.</span>
+          <span className={`text-body font-bold leading-5 ${style.label}`}>{band.label}</span>
+          <span className={`text-caption font-semibold leading-5 tabular-nums ${style.count}`}>{band.total} {plural(band.total, 'заявка', 'заявки', 'заявок')}</span>
         </div>
         {grid}
       </section>
@@ -200,9 +200,9 @@ function DateBand({ band, columns, children }) {
   return (
     <section className="p-2">
       <div className="mb-1.5 flex items-center gap-2">
-        <span className="shrink-0 text-[12px] font-semibold leading-5 text-stone-500">{band.label}</span>
+        <span className="shrink-0 text-note font-semibold leading-5 text-stone-500">{band.label}</span>
         <span className="h-px flex-1 bg-stone-300" aria-hidden="true" />
-        <span className="shrink-0 text-[11px] leading-5 text-stone-400 tabular-nums">{band.total}</span>
+        <span className="shrink-0 text-caption leading-5 text-stone-400 tabular-nums">{band.total}</span>
       </div>
       {grid}
     </section>
@@ -216,7 +216,7 @@ function BottomActionBar({ loading, selectedCount, selectionMode, onOpenSelectio
   return (
     <div className="fade-in fixed inset-x-0 bottom-16 z-20 border-t border-stone-300 bg-white/95 px-3 py-2 backdrop-blur sm:bottom-0" data-testid="bakerOrders-selectionBar">
       <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-2">
-        <span className="min-w-0 truncate text-[13px] font-medium text-stone-700">Выбрано: {selectedCount}</span>
+        <span className="min-w-0 truncate text-body font-medium text-stone-700">Выбрано: {selectedCount}</span>
         <Button variant="primary" onClick={onOpenSelection} disabled={selectedCount === 0 || loading} className="shrink-0">
           Открыть выбранные
         </Button>

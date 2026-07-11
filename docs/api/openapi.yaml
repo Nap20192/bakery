@@ -381,6 +381,35 @@ paths:
         "400": { $ref: "#/components/responses/Error" }
         "404": { $ref: "#/components/responses/Error" }
 
+  /monitor/calc:
+    post:
+      tags: [monitor]
+      summary: Dough calculator — ad-hoc calculation without creating anything
+      description: >
+        Computes dough usage for manually entered items. Nothing is persisted;
+        monitor codes come from the chosen category (or the default set when
+        category_id is 0/omitted). Tech cards valid today are used.
+      operationId: calcDough
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DoughCalcRequest" }
+      responses:
+        "200":
+          description: Reports per monitor code
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [reports]
+                properties:
+                  reports:
+                    type: array
+                    items: { $ref: "#/components/schemas/MonitorReport" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+
   /monitor/{id}:
     get:
       tags: [monitor]
@@ -936,6 +965,25 @@ components:
         items:
           type: array
           items: { $ref: "#/components/schemas/ProductionSheetItem" }
+
+    DoughCalcRequest:
+      type: object
+      required: [items]
+      properties:
+        category_id:
+          type: integer
+          format: int64
+          description: Category whose monitor codes to use; 0/omitted = default set
+        items:
+          type: array
+          maxItems: 200
+          items:
+            type: object
+            required: [code, quantity]
+            properties:
+              code: { type: string, description: Dish catalog / iiko product code }
+              product_name: { type: string }
+              quantity: { type: number, exclusiveMinimum: 0 }
 
     IngredientUsage:
       type: object
