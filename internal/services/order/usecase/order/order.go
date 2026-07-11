@@ -310,10 +310,12 @@ func (s *Service) validateProductionInput(ctx context.Context, input RecordProdu
 			if item.ProducedQuantity < 0 || math.IsNaN(item.ProducedQuantity) || math.IsInf(item.ProducedQuantity, 0) {
 				return nil, apperr.Invalid("order.production_quantity", fmt.Sprintf("Укажите количество для позиции %q.", name))
 			}
-			// Отработка хранит только отклонения: факт, совпадающий с заявкой,
-			// не записывается — «испечено по заявке» и так подразумевается.
-			if item.ProducedQuantity == orderItem.ProductionQuantity() {
-				continue
+			loaded := orderItem.ProductionQuantity()
+			if item.LoadedQuantity != nil {
+				loaded = *item.LoadedQuantity
+			}
+			if loaded < 0 || math.IsNaN(loaded) || math.IsInf(loaded, 0) {
+				return nil, apperr.Invalid("order.production_loaded_quantity", fmt.Sprintf("Укажите закладку для позиции %q.", name))
 			}
 			reason := strings.TrimSpace(item.Reason)
 			if len([]rune(reason)) > 200 {
@@ -321,7 +323,9 @@ func (s *Service) validateProductionInput(ctx context.Context, input RecordProdu
 			}
 			items = append(items, ProducedItemInput{
 				ProductName:      orderItem.ProductName,
+				LoadedQuantity:   &loaded,
 				ProducedQuantity: item.ProducedQuantity,
+				IsDeviation:      item.ProducedQuantity != orderItem.ProductionQuantity(),
 				Reason:           reason,
 			})
 		}

@@ -211,6 +211,13 @@ type ProductionSheetItem struct {
 	Reason           string  `json:"reason"`
 }
 
+type ProductionSheetLoad struct {
+	SheetID        int64   `json:"sheet_id"`
+	OrderID        int64   `json:"order_id"`
+	ProductName    string  `json:"product_name"`
+	LoadedQuantity float64 `json:"loaded_quantity"`
+}
+
 type ProductionSheetOrder struct {
 	SheetID int64 `json:"sheet_id"`
 	OrderID int64 `json:"order_id"`

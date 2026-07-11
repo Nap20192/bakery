@@ -381,7 +381,7 @@ export function OrderEditor({ catalog, categories = [], order, shops = [], loadi
         </span>
         <div className="flex gap-2">
           <Button type="button" onClick={onCancel}>Отмена</Button>
-          <Button type="submit" variant="primary" disabled={!canSubmit}>
+          <Button type="submit" variant="primary" loading={loading} disabled={!canSubmit}>
             {order ? 'Сохранить' : 'Создать'}
           </Button>
         </div>

@@ -343,8 +343,10 @@ summary:
   позиции при чтении (`GetOrderProductionFacts` + `decorateProductionFacts`;
   по позиции побеждает самый свежий лист). Заказ несёт производный
   `production_sheet_id`; UI связывает заказ↔отработку в обе стороны.
-- Хранятся **только отклонения** (nil = «испечено по заявке»). Лист **без
-  отклонений валиден** — партия зафиксирована и живёт до явного удаления.
+- **Закладка** хранится для каждой позиции партии в
+  `production_sheet_loads`; **выход** хранит только отклонения в
+  `production_sheet_items` (nil = «выход по заявке»). Лист **без отклонений
+  валиден** — партия и закладка зафиксированы до явного удаления.
 - Обоснование отклонения (`reason`, до 200 символов; пресеты
   «Подгорело»/«Упало»/… + свободный текст) декорирует `produced_reason` и
   попадает в уведомление бота («Багет: 10 → 8 ⚠️ — подгорело»).
@@ -460,6 +462,30 @@ go test ./internal/inbound/api                     # spec ↔ routes sync
 make api-gen                                       # after any contract change
 cd frontend && npm run lint && npm run build       # frontend changes
 ```
+
+### Frontend delivery workflow
+
+Any task that changes `frontend/src`, frontend behavior, responsive layout,
+interaction, accessibility, or frontend-facing API code must use the repo-local
+`bakery-frontend-workflow` skill and follow
+`docs/frontend/development-workflow.md`:
+
+1. inspect the relevant route, feature, UI primitives, tokens, API facade and
+   dirty worktree before editing;
+2. state design intent for visible changes using `interface-design` and
+   validate decisions with `typeui-fundamentals`;
+3. implement one small complete vertical flow;
+4. run lint, typecheck, relevant tests and production build;
+5. verify the real flow in a browser at 375×812, 768×1024, 1280×800 and
+   1440×900, including keyboard, console and network checks;
+6. run accessibility checks and review the focused diff.
+
+Do not claim browser, accessibility, test or command success unless it was
+actually executed. If Playwright skills/dependencies are unavailable, report
+the missing capability and exact setup command. Ask one concise guiding
+question when ambiguity changes a business rule, persistence/API shape,
+destructive action or visual direction; otherwise use the smallest
+repo-consistent assumption.
 
 After SQL changes run `make sqlc` before building.
 

@@ -39,12 +39,13 @@ export function OrdersLayout({ viewer, active, onNavigate, onLogout, children })
           >
             Пекарня<span className="text-amber-500">.</span>
           </button>
-          <nav aria-label="Основная навигация" className="hidden min-w-0 flex-1 gap-1 overflow-x-auto px-1 sm:flex">
+          <nav aria-label="Основная навигация" data-testid="ordersLayout-desktopNav" className="hidden min-w-0 flex-1 gap-1 overflow-x-auto px-1 sm:flex">
             {items.map((item) => (
               <button
                 key={item.label}
                 type="button"
                 onClick={() => onNavigate(item.route)}
+                data-testid={`ordersLayout-navItem-${item.route.name}`}
                 aria-current={activeNavItem(active) === item.route.name ? 'page' : undefined}
                 className={`min-h-9 shrink-0 rounded-md border px-3 py-1.5 text-[13px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${
                   activeNavItem(active) === item.route.name
@@ -65,24 +66,25 @@ export function OrdersLayout({ viewer, active, onNavigate, onLogout, children })
           )}
         </div>
       </header>
-      <main id="main-content" tabIndex={-1} className="outline-none">
+      <main id="main-content" tabIndex={-1} className="outline-none" data-testid="ordersLayout-mainContent">
         {children}
       </main>
       {!hideBottomNav && (
-      <nav aria-label="Основная навигация" className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-300 bg-white/95 px-2 pb-[calc(0.375rem+env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-8px_20px_rgba(28,25,23,0.08)] backdrop-blur sm:hidden">
+      <nav aria-label="Основная навигация" data-testid="ordersLayout-mobileNav" className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-300 bg-white/95 px-2 pb-[calc(0.375rem+env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-8px_20px_rgba(28,25,23,0.08)] backdrop-blur sm:hidden">
         <div className={`mx-auto grid max-w-md gap-1 ${mobileColsClass[items.length] ?? 'grid-cols-3'}`}>
           {items.map((item) => (
             <button
               key={item.label}
               type="button"
               onClick={() => onNavigate(item.route)}
+              data-testid={`ordersLayout-mobileNavItem-${item.route.name}`}
               aria-current={activeNavItem(active) === item.route.name ? 'page' : undefined}
               className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-0.5 rounded-md px-1 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${
                 activeNavItem(active) === item.route.name ? 'bg-stone-900 text-white' : 'text-stone-700 hover:bg-stone-50'
               }`}
             >
               <Icon name={item.icon} size={19} />
-              <span className="w-full truncate text-center">{item.label}</span>
+              <span className="w-full truncate text-center max-[359px]:sr-only">{item.label}</span>
             </button>
           ))}
         </div>

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bakery Frontend Workflow"
+  short_description: "Проверяемый цикл frontend-разработки Bakery"
+  default_prompt: "Use $bakery-frontend-workflow to implement and verify this Bakery frontend change."

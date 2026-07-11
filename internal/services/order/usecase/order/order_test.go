@@ -282,6 +282,10 @@ func TestServiceCreateProductionSheetNormalizesItems(t *testing.T) {
 		input.Orders[0].Items[0].ProductName != "Хлеб Бородино" || input.Orders[0].Items[0].ProducedQuantity != 7 {
 		t.Fatalf("orders = %#v", input.Orders)
 	}
+	item := input.Orders[0].Items[0]
+	if item.LoadedQuantity == nil || *item.LoadedQuantity != 8 || !item.IsDeviation {
+		t.Fatalf("item = %#v, want default loaded quantity 8 and output deviation", item)
+	}
 }
 
 func TestServiceCreateProductionSheetRejectsUnknownItemAndCancelled(t *testing.T) {
@@ -305,6 +309,13 @@ func TestServiceCreateProductionSheetRejectsUnknownItemAndCancelled(t *testing.T
 	})
 	if err == nil {
 		t.Fatal("CreateProductionSheet must reject cancelled order")
+	}
+	negative := -1.0
+	_, err = svc.CreateProductionSheet(context.Background(), RecordProductionInput{
+		Orders: []OrderProductionInput{{Number: "A", Items: []ProducedItemInput{{ProductName: "Хлеб", LoadedQuantity: &negative, ProducedQuantity: 1}}}},
+	})
+	if err == nil {
+		t.Fatal("CreateProductionSheet must reject negative loaded quantity")
 	}
 	if len(repo.productionInputs) != 0 {
 		t.Fatal("nothing must be persisted on validation errors")
@@ -353,8 +364,8 @@ func TestServiceUpdateProductionSheetKeepsBatchWhenAllValuesMatchOrder(t *testin
 	}
 	svc := NewService(repo)
 
-	// Факт вернули к заявке — отклонений не осталось, но лист фиксирует
-	// партию и живёт до явного удаления: заказ сохраняется без позиций.
+	// Выход вернули к заказу — отклонений не осталось, но лист фиксирует
+	// партию и закладку для каждой позиции.
 	sheet, err := svc.UpdateProductionSheet(context.Background(), 5, RecordProductionInput{
 		ProducedByUsername: "baker",
 		Orders:             []OrderProductionInput{{Number: "A", Items: []ProducedItemInput{{ProductName: "Хлеб", ProducedQuantity: 10}}}},
@@ -372,8 +383,12 @@ func TestServiceUpdateProductionSheetKeepsBatchWhenAllValuesMatchOrder(t *testin
 		t.Fatalf("inputs = %#v, want one save", repo.productionInputs)
 	}
 	saved := repo.productionInputs[0]
-	if saved.SheetID != 5 || len(saved.Orders) != 1 || saved.Orders[0].Number != "A" || len(saved.Orders[0].Items) != 0 {
-		t.Fatalf("saved = %#v, want order A with no deviation items", saved)
+	if saved.SheetID != 5 || len(saved.Orders) != 1 || saved.Orders[0].Number != "A" || len(saved.Orders[0].Items) != 1 {
+		t.Fatalf("saved = %#v, want order A with its loaded item", saved)
+	}
+	item := saved.Orders[0].Items[0]
+	if item.LoadedQuantity == nil || *item.LoadedQuantity != 10 || item.IsDeviation {
+		t.Fatalf("saved item = %#v, want loaded 10 without output deviation", item)
 	}
 }
 

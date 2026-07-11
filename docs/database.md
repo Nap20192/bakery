@@ -62,7 +62,9 @@ worker on startup).
 | `ListProductionSheetOrderNumbers` | many | The batch's order numbers for `GetProductionSheet`. |
 | `InsertProductionSheetItem` | exec | One deviation row: sheet, order, product name, produced quantity, reason. |
 | `DeleteProductionSheetItems` | exec | Clears a sheet's items before re-insert (full replace on update). |
-| `ListProductionSheetItems` | many | Sheet items joined to orders for their numbers, sorted by product then order. |
+| `InsertProductionSheetLoad` | exec | One persisted «Закладка» row for every item in the saved batch. |
+| `DeleteProductionSheetLoads` | exec | Clears a sheet's loaded quantities before full-replace update. |
+| `ListProductionSheetItems` | many | All loaded items joined with optional output deviations and order numbers, sorted by product then order. |
 | `ListProductionSheetOrderIDs` | many | Orders in a sheet's batch — the "affected set" for change detection. |
 | `GetOrderProductionSheetID` | one | The sheet whose **batch** covers an order (newest wins on historical overlaps). Backs both the `production_sheet_id` in API responses and the one-sheet-per-order conflict check. |
 | `GetOrderProductionFacts` | many | **The read-time decorator**: per (order, normalized product name) the newest sheet's fact (`DISTINCT ON … ORDER BY sheet_id DESC`). The repo overlays these onto order items at read time and diffs before/after journal writes to decide whether to emit `order.produced`/`production_cleared`. |

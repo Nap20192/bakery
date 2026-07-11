@@ -134,6 +134,12 @@ npm run api-gen    # regenerate src/api/schema.d.ts from docs/api/openapi.yaml
 npm run typecheck  # tsc: check src/api against the generated schema
 ```
 
+Browser QA is documented in
+[`frontend/development-workflow.md`](frontend/development-workflow.md). After
+installing Playwright and axe, use the project's future `test:e2e` /
+`test:a11y` scripts; until then run browser checks through the installed
+`playwright-interactive` skill and report the exact tested viewports.
+
 After changing any backend route or DTO: update `docs/api/openapi.yaml`,
 run `go test ./internal/inbound/api` (route-sync test), then `make api-gen`
 (regenerates + typechecks the frontend client).

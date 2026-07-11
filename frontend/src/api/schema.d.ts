@@ -211,7 +211,7 @@ export interface paths {
         put?: never;
         /**
          * Create a production sheet (baker/admin)
-         * @description Fixes the batch: every selected order is saved on the sheet, items carry only deviations from the заявка (orders may have none).
+         * @description Fixes the batch: every selected order and each item's loaded quantity are saved on the sheet; output facts become deviations from the заявка.
          */
         post: operations["createProductionSheet"];
         delete?: never;
@@ -231,7 +231,7 @@ export interface paths {
         get: operations["getProductionSheet"];
         /**
          * Replace a sheet's batch and deviations
-         * @description Values equal to the order quantity drop the deviation row; the sheet keeps its batch and lives until explicitly deleted, even with no deviations left.
+         * @description Output values equal to the order quantity drop the deviation row; loaded quantities remain stored. The sheet keeps its batch and lives until explicitly deleted, even with no output deviations left.
          */
         put: operations["updateProductionSheet"];
         post?: never;
@@ -625,6 +625,9 @@ export interface components {
         };
         ProductionItemWrite: {
             product_name: string;
+            /** @description Закладка — количество */
+            loaded_quantity: number;
+            /** @description Выход — фактически полученное количество */
             produced_quantity: number;
             /** @description Optional justification («подгорело» */
             reason?: string;
@@ -639,6 +642,7 @@ export interface components {
         ProductionSheetItem: {
             order_number: string;
             product_name: string;
+            loaded_quantity: number;
             produced_quantity: number;
             reason: string;
         };

@@ -34,6 +34,7 @@ type Querier interface {
 	DeleteOrdersCreatedBefore(ctx context.Context, createdAtBefore pgtype.Timestamptz) (int64, error)
 	DeleteProductionSheet(ctx context.Context, id int64) error
 	DeleteProductionSheetItems(ctx context.Context, sheetID int64) error
+	DeleteProductionSheetLoads(ctx context.Context, sheetID int64) error
 	DeleteProductionSheetOrders(ctx context.Context, sheetID int64) error
 	DishExistsByCode(ctx context.Context, code string) (int64, error)
 	FinishIikoSyncRun(ctx context.Context, arg FinishIikoSyncRunParams) (IikoSyncRun, error)
@@ -67,6 +68,7 @@ type Querier interface {
 	InsertIikoPreparedChartItem(ctx context.Context, arg InsertIikoPreparedChartItemParams) error
 	InsertOrderOutboxEvent(ctx context.Context, arg InsertOrderOutboxEventParams) (int64, error)
 	InsertProductionSheetItem(ctx context.Context, arg InsertProductionSheetItemParams) error
+	InsertProductionSheetLoad(ctx context.Context, arg InsertProductionSheetLoadParams) error
 	InsertProductionSheetOrder(ctx context.Context, arg InsertProductionSheetOrderParams) error
 	ListAssemblyChartItemsByChartID(ctx context.Context, chartID string) ([]ListAssemblyChartItemsByChartIDRow, error)
 	ListAuthUsers(ctx context.Context) ([]AuthUser, error)

@@ -69,9 +69,9 @@ type OrderHistory struct {
 	Items             []OrderHistoryItem
 }
 
-// ProductionSheet — документ отработки в журнале, единственное место
-// хранения факта выпечки. Заказ при отработке не изменяется: факт
-// декорирует его позиции при чтении (свежий лист побеждает).
+// ProductionSheet — документ отработки в журнале: хранит закладку каждой
+// позиции партии и отклонения фактического выхода. Заказ не изменяется:
+// выход декорирует его позиции при чтении (свежий лист побеждает).
 type ProductionSheet struct {
 	ID                int64                 `json:"id"`
 	CreatedByUsername string                `json:"created_by_username"`
@@ -86,6 +86,7 @@ type ProductionSheet struct {
 type ProductionSheetItem struct {
 	OrderNumber      string  `json:"order_number"`
 	ProductName      string  `json:"product_name"`
+	LoadedQuantity   float64 `json:"loaded_quantity"`
 	ProducedQuantity float64 `json:"produced_quantity"`
 	// Reason — необязательное обоснование отклонения.
 	Reason string `json:"reason"`

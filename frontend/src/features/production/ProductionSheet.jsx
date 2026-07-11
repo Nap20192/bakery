@@ -4,34 +4,43 @@ import { EmptyState } from '../../ui/EmptyState';
 import { Icon } from '../../ui/Icon';
 import { formatQuantity } from '../../lib/format';
 
-const factInputClass =
-  'h-9 w-20 rounded-md border border-stone-300 bg-white px-2 text-center text-sm tabular-nums outline-none focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10';
+const quantityInputClass =
+  'h-9 w-full min-w-0 rounded-md border border-stone-300 bg-white px-1.5 text-center text-sm tabular-nums outline-none focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10';
 
 // buildRows агрегирует позиции выбранных заказов по продукту: сколько
 // заказано суммарно и по каждому заказу, и какой факт уже внесён.
-function buildRows(orders) {
+function buildRows(orders, sheetItems) {
+  const savedByOrder = new Map(
+    (sheetItems || []).map((item) => [`${item.order_number}\u0000${String(item.product_name || '').toLowerCase().trim()}`, item]),
+  );
   const rows = [];
   const byKey = new Map();
   for (const order of orders) {
     for (const item of order.items || []) {
       const key = String(item.product_name || '').toLowerCase().trim();
       if (!byKey.has(key)) {
-        const row = { key, name: item.product_name, ordered: 0, produced: 0, hasProduced: false, perOrder: [] };
+        const row = { key, name: item.product_name, ordered: 0, loaded: 0, produced: 0, hasSaved: false, reason: '', perOrder: [] };
         byKey.set(key, row);
         rows.push(row);
       }
       const row = byKey.get(key);
       const ordered = Number(item.production_quantity || 0);
+      const saved = savedByOrder.get(`${order.number}\u0000${key}`);
+      const loaded = saved?.loaded_quantity != null ? Number(saved.loaded_quantity) : ordered;
+      const produced = item.produced_quantity != null ? Number(item.produced_quantity) : ordered;
       row.ordered += ordered;
+      row.loaded += loaded;
       row.perOrder.push({
         number: order.number,
         shop: order.from_department?.name || order.location || order.number,
         ordered,
-        produced: item.produced_quantity ?? null,
+        loaded,
+        produced,
       });
       // В журнале хранятся только отклонения: nil = «испечено по заявке».
-      row.produced += item.produced_quantity != null ? Number(item.produced_quantity) : ordered;
-      if (item.produced_quantity != null) row.hasProduced = true;
+      row.produced += produced;
+      if (saved) row.hasSaved = true;
+      if (!row.reason && item.produced_reason) row.reason = item.produced_reason;
     }
   }
   return rows;
@@ -59,60 +68,65 @@ function prorate(fact, perOrder) {
   return floors;
 }
 
-// ProductionSheet — лист отработки: пекарь вводит факт по продуктам,
-// расхождения разносятся по заявкам (пропорционально, с ручной правкой).
+// ProductionSheet — лист отработки: пекарь вводит агрегаты по продуктам,
+// а значения автоматически разносятся по заявкам пропорционально заказу.
 // Лист фиксирует партию: сохраняются ВСЕ заказы выбора (и без отклонений
 // тоже) плюс отклонения факта. Один и тот же редактор используется при
 // создании (со страницы выбранных заказов) и при правке в журнале.
 // Быстрые обоснования отклонений — заполняют поле причины одним тапом.
 const REASON_PRESETS = ['Подгорело', 'Упало', 'Брак', 'Не хватило теста', 'Испекли про запас'];
 
-export function ProductionSheet({ orders, loading, onSave, onOpenJournal, submitLabel = 'Сохранить отработку' }) {
-  const rows = useMemo(() => buildRows(orders), [orders]);
-  const [facts, setFacts] = useState({});
-  const [allocations, setAllocations] = useState({});
+export function ProductionSheet({ orders, sheetItems = [], loading, onSave, onOpenJournal, submitLabel = 'Сохранить отработку' }) {
+  const rows = useMemo(() => buildRows(orders, sheetItems), [orders, sheetItems]);
+  const [loads, setLoads] = useState({});
+  const [outputs, setOutputs] = useState({});
   const [reasons, setReasons] = useState({});
+  const [openComments, setOpenComments] = useState({});
 
   if (!rows.length) {
     return <EmptyState compact>В выбранных заказах нет позиций.</EmptyState>;
   }
 
-  const hasAnyProduced = rows.some((row) => row.hasProduced);
+  const hasSavedSheet = rows.some((row) => row.hasSaved);
 
-  function factOf(row) {
-    const raw = facts[row.key];
+  function quantityOf(row, values, fallback) {
+    const raw = values[row.key];
     if (raw !== undefined) return raw === '' ? NaN : Number(raw);
-    return row.hasProduced ? row.produced : row.ordered;
+    return fallback;
   }
 
-  function allocationOf(row) {
-    const fact = factOf(row);
-    const stored = allocations[row.key];
-    if (stored && stored.fact === fact) return stored.values;
-    if (row.hasProduced && row.produced === fact) {
-      return row.perOrder.map((entry) => (entry.produced != null ? Number(entry.produced) : entry.ordered));
+  function allocationOf(row, total, field) {
+    if (row.hasSaved && row[field] === total) {
+      return row.perOrder.map((entry) => Number(entry[field]));
     }
-    return prorate(Number.isFinite(fact) ? fact : 0, row.perOrder);
+    return prorate(Number.isFinite(total) ? total : 0, row.perOrder);
   }
 
-  function setFact(row, value) {
-    setFacts((current) => ({ ...current, [row.key]: value.replace(/\D/g, '') }));
-  }
-
-  function setAllocation(row, index, value) {
-    const fact = factOf(row);
-    const values = [...allocationOf(row)];
-    values[index] = value === '' ? 0 : Number(value.replace(/\D/g, '') || 0);
-    setAllocations((current) => ({ ...current, [row.key]: { fact, values } }));
+  function setQuantity(setter, row, value) {
+    setter((current) => ({ ...current, [row.key]: value.replace(/\D/g, '') }));
   }
 
   function rowState(row) {
-    const fact = factOf(row);
-    if (!Number.isFinite(fact)) return { valid: false, mismatch: false };
-    const mismatch = fact !== row.ordered;
-    const values = allocationOf(row);
-    const sum = values.reduce((total, value) => total + value, 0);
-    return { valid: !mismatch || sum === fact, mismatch, fact, values, sum };
+    const loaded = quantityOf(row, loads, row.loaded);
+    // На новом листе выход следует за закладкой. В сохранённом листе связь
+    // остаётся только когда все исходные значения равны; любое сохранённое
+    // отклонение считается осознанным и никогда автоматически не затирается.
+    const savedValuesAreDefault = row.loaded === row.ordered && row.produced === row.loaded;
+    const outputFollowsLoad = outputs[row.key] === undefined && (!row.hasSaved || savedValuesAreDefault);
+    const output = outputFollowsLoad ? loaded : quantityOf(row, outputs, row.produced);
+    if (!Number.isFinite(loaded) || !Number.isFinite(output)) return { valid: false, expanded: false };
+    const loadValues = allocationOf(row, loaded, 'loaded');
+    const outputValues = outputFollowsLoad
+      ? loadValues
+      : allocationOf(row, output, 'produced');
+    return {
+      valid: true,
+      loaded,
+      output,
+      outputFollowsLoad,
+      loadValues,
+      outputValues,
+    };
   }
 
   const states = rows.map((row) => ({ row, ...rowState(row) }));
@@ -122,12 +136,15 @@ export function ProductionSheet({ orders, loading, onSave, onOpenJournal, submit
     // Партия сохраняется целиком: каждый выбранный заказ попадает в документ,
     // items — только отклонения (факт, совпавший с заявкой, не хранится).
     const perOrderItems = new Map(orders.map((order) => [order.number, []]));
-    for (const { row, mismatch, values } of states) {
-      if (!mismatch) continue;
-      const reason = (reasons[row.key] || '').trim();
+    for (const { row, loadValues, outputValues } of states) {
+      const reason = (reasons[row.key] ?? row.reason).trim();
       row.perOrder.forEach((entry, index) => {
-        if (values[index] === entry.ordered) return;
-        perOrderItems.get(entry.number)?.push({ product_name: row.name, produced_quantity: values[index], reason });
+        perOrderItems.get(entry.number)?.push({
+          product_name: row.name,
+          loaded_quantity: loadValues[index],
+          produced_quantity: outputValues[index],
+          reason: outputValues[index] === entry.ordered ? '' : reason,
+        });
       });
     }
     onSave([...perOrderItems.entries()].map(([number, items]) => ({ number, items })));
@@ -135,52 +152,58 @@ export function ProductionSheet({ orders, loading, onSave, onOpenJournal, submit
 
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-[minmax(0,1fr)_4.5rem_5rem] items-center gap-2 px-1 text-[11px] font-medium uppercase text-stone-400">
+      <div className="grid grid-cols-[minmax(5.5rem,1fr)_3.5rem_4.25rem_4.25rem] items-center gap-1.5 px-1 text-[10px] font-medium uppercase text-stone-500 sm:grid-cols-[minmax(0,1fr)_4.5rem_5rem_5rem] sm:gap-2 sm:text-[11px]">
         <span>Продукт</span>
-        <span className="text-center">Заказано</span>
-        <span className="text-center">Испечено</span>
+        <span className="text-center">Заказ</span>
+        <span className="text-center">Закладка</span>
+        <span className="text-center">Выход</span>
       </div>
       <div className="divide-y divide-stone-100">
-        {states.map(({ row, mismatch, valid, fact, values, sum }) => (
+        {states.map(({ row, loaded, output, outputFollowsLoad }) => {
+          const reason = reasons[row.key] ?? row.reason;
+          const commentOpen = Boolean(openComments[row.key] || reason);
+          return (
           <div className="py-1.5" key={row.key}>
-            <div className="grid grid-cols-[minmax(0,1fr)_4.5rem_5rem] items-center gap-2">
-              <span className="min-w-0 break-words text-[13px] leading-5 text-stone-800">{row.name}</span>
+            <div className="grid grid-cols-[minmax(5.5rem,1fr)_3.5rem_4.25rem_4.25rem] items-center gap-1.5 sm:grid-cols-[minmax(0,1fr)_4.5rem_5rem_5rem] sm:gap-2">
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span className="min-w-0 flex-1 break-words text-[13px] leading-5 text-stone-800">{row.name}</span>
+                <button
+                  type="button"
+                  onClick={() => setOpenComments((current) => ({ ...current, [row.key]: !commentOpen }))}
+                  title="Комментарий"
+                  aria-label={`${row.name}: комментарий`}
+                  className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border transition ${
+                    reason
+                      ? 'border-stone-900 bg-stone-900 text-white'
+                      : commentOpen
+                        ? 'border-stone-400 text-stone-700'
+                        : 'border-stone-200 text-stone-400 hover:border-stone-400 hover:text-stone-700'
+                  }`}
+                >
+                  <Icon name="orders" size={14} />
+                </button>
+              </span>
               <span className="text-center text-[13px] font-medium tabular-nums text-stone-600">{formatQuantity(row.ordered)}</span>
               <input
-                className={`${factInputClass} ${mismatch ? 'border-amber-400 bg-amber-50' : ''}`}
+                className={`${quantityInputClass} ${loaded !== row.ordered ? 'border-sky-400 bg-sky-50' : ''}`}
                 type="text"
                 inputMode="numeric"
-                aria-label={`${row.name}: испечено`}
-                value={facts[row.key] ?? String(factOf(row))}
-                onChange={(event) => setFact(row, event.target.value)}
+                aria-label={`${row.name}: закладка`}
+                value={loads[row.key] ?? String(row.loaded)}
+                onChange={(event) => setQuantity(setLoads, row, event.target.value)}
+              />
+              <input
+                className={`${quantityInputClass} ${output !== row.ordered ? 'border-amber-400 bg-amber-50' : ''}`}
+                type="text"
+                inputMode="numeric"
+                aria-label={`${row.name}: выход`}
+                value={outputs[row.key] ?? String(outputFollowsLoad ? loaded : row.produced)}
+                onChange={(event) => setQuantity(setOutputs, row, event.target.value)}
               />
             </div>
-            {mismatch && (
-              <div className="mt-1.5 space-y-1 rounded-md bg-stone-50 p-2">
-                <p className="m-0 text-[11px] font-medium uppercase text-stone-400">Разнос по заявкам</p>
-                {row.perOrder.map((entry, index) => (
-                  <div className="grid grid-cols-[minmax(0,1fr)_4.5rem_5rem] items-center gap-2" key={entry.number}>
-                    <span className="min-w-0 truncate text-[12px] leading-5 text-stone-600" title={entry.number}>
-                      {entry.number}
-                    </span>
-                    <span className="text-center text-[12px] tabular-nums text-stone-500">{formatQuantity(entry.ordered)}</span>
-                    <input
-                      className={factInputClass}
-                      type="text"
-                      inputMode="numeric"
-                      aria-label={`${row.name} ${entry.number}: факт`}
-                      value={String(values[index] ?? 0)}
-                      onChange={(event) => setAllocation(row, index, event.target.value)}
-                    />
-                  </div>
-                ))}
-                {!valid && (
-                  <p className="m-0 text-[12px] leading-5 text-red-700">
-                    Разнесено {formatQuantity(sum || 0)} из {formatQuantity(fact || 0)} — суммы должны совпасть.
-                  </p>
-                )}
-                <div className="border-t border-stone-200 pt-1.5">
-                  <p className="m-0 mb-1 text-[11px] font-medium uppercase text-stone-400">Почему? (необязательно)</p>
+            {commentOpen && (
+              <div className="fade-in mt-1.5 rounded-md border border-stone-200 bg-stone-50 p-2">
+                  <p className="m-0 mb-1 text-[11px] font-medium uppercase text-stone-400">Комментарий к выходу (необязательно)</p>
                   <div className="mb-1 flex flex-wrap gap-1">
                     {REASON_PRESETS.map((preset) => (
                       <button
@@ -189,11 +212,11 @@ export function ProductionSheet({ orders, loading, onSave, onOpenJournal, submit
                         onClick={() =>
                           setReasons((current) => ({
                             ...current,
-                            [row.key]: current[row.key] === preset ? '' : preset,
+                            [row.key]: (current[row.key] ?? row.reason) === preset ? '' : preset,
                           }))
                         }
                         className={`rounded-full border px-2 py-0.5 text-[12px] leading-5 transition focus:outline-none focus:ring-2 focus:ring-stone-900/20 ${
-                          reasons[row.key] === preset
+                          reason === preset
                             ? 'border-stone-900 bg-stone-900 text-white'
                             : 'border-stone-300 bg-white text-stone-600 hover:border-stone-400'
                         }`}
@@ -208,17 +231,17 @@ export function ProductionSheet({ orders, loading, onSave, onOpenJournal, submit
                     maxLength={200}
                     placeholder="Своя причина…"
                     aria-label={`${row.name}: причина отклонения`}
-                    value={reasons[row.key] || ''}
+                    value={reason}
                     onChange={(event) => setReasons((current) => ({ ...current, [row.key]: event.target.value }))}
                   />
-                </div>
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-stone-200 pt-2">
-        {hasAnyProduced && onOpenJournal ? (
+        {hasSavedSheet && onOpenJournal ? (
           <button
             type="button"
             onClick={onOpenJournal}
@@ -229,7 +252,7 @@ export function ProductionSheet({ orders, loading, onSave, onOpenJournal, submit
         ) : (
           <span className="text-[12px] leading-5 text-stone-400">Лист сохраняет выбранные заказы; отклонения — только там, где факт отличается.</span>
         )}
-        <Button variant="primary" onClick={save} disabled={!canSave}>
+        <Button variant="primary" onClick={save} loading={loading} disabled={!canSave}>
           <Icon name="select" size={15} />
           {submitLabel}
         </Button>
