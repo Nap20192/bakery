@@ -77,6 +77,7 @@ codes summed across all requested orders.
 | `GET /monitor/{id}` | Reports for order `{id}` (order number) across all of its category's monitor codes. 404 for orders the viewer cannot read (same visibility as orders). |
 | `GET /monitor/{id}/{product_id}` | Report for one specific ingredient code. |
 | `GET /monitor/batch?orders=N1&orders=N2…` | Multi-order calculation for the baker's selection view: per-order reports + totals. Duplicate numbers are deduped. |
+| `POST /monitor/calc` | **Dough calculator**: ad-hoc calculation for manually entered items (`{category_id, items: [{code, product_name, quantity}]}`) — nothing is persisted. Codes come from the category (or the default set); tech cards valid today. Backs the `/calculator` route. |
 
 Calculation failures (broken tech cards, missing products) answer
 `400 «Не удалось посчитать калькуляцию. Проверьте заказ и техкарты.»`; the

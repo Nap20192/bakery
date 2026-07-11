@@ -27,10 +27,10 @@ type productionOrderRequest struct {
 }
 
 type productionItemRequest struct {
-	ProductName      string  `json:"product_name"`
+	ProductName      string   `json:"product_name"`
 	LoadedQuantity   *float64 `json:"loaded_quantity"`
-	ProducedQuantity float64 `json:"produced_quantity"`
-	Reason           string  `json:"reason"`
+	ProducedQuantity float64  `json:"produced_quantity"`
+	Reason           string   `json:"reason"`
 }
 
 type productionSheetResponse struct {

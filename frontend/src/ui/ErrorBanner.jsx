@@ -7,7 +7,7 @@ export function ErrorBanner({ error, className = '', ...props }) {
   return (
     <div
       role="alert"
-      className={cn('rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-[13px] text-destructive', className)}
+      className={cn('rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-body text-destructive', className)}
       {...props}
     >
       {error}

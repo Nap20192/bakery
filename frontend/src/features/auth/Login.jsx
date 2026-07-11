@@ -40,8 +40,8 @@ export function Login({ onAuthenticated }) {
     <main className="flex min-h-screen items-center justify-center bg-flour p-4 text-stone-900">
       <form onSubmit={onSubmit} className="w-full max-w-sm rounded-xl border border-stone-200 bg-white p-6 shadow-sm" data-testid="login-form">
         <h1 className="mb-1 text-center text-lg font-semibold text-stone-950">Заказы пекарни</h1>
-        <p className="mb-5 text-center text-[13px] leading-5 text-stone-600">Войдите, чтобы продолжить.</p>
-        <label className="mb-1 block text-[13px] font-medium text-stone-600" htmlFor="login-username">Логин</label>
+        <p className="mb-5 text-center text-body leading-5 text-stone-600">Войдите, чтобы продолжить.</p>
+        <label className="mb-1 block text-body font-medium text-stone-600" htmlFor="login-username">Логин</label>
         <input
           id="login-username"
           className={`mb-3 ${fieldClass}`}
@@ -52,7 +52,7 @@ export function Login({ onAuthenticated }) {
           aria-describedby={error ? 'login-error' : undefined}
           autoFocus
         />
-        <label className="mb-1 block text-[13px] font-medium text-stone-600" htmlFor="login-password">Пароль</label>
+        <label className="mb-1 block text-body font-medium text-stone-600" htmlFor="login-password">Пароль</label>
         <input
           id="login-password"
           type="password"

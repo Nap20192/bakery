@@ -90,7 +90,7 @@ export function AdminUsers() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h1 id="users-title" className="flex items-center gap-2 text-lg font-semibold">
             Пользователи
-            <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[12px] font-medium tabular-nums text-stone-600">{users.length}</span>
+            <span className="rounded-full bg-stone-100 px-2 py-0.5 text-note font-medium tabular-nums text-stone-600">{users.length}</span>
           </h1>
           <input
             className={`${compactControlClass} w-full sm:w-64`}
@@ -115,7 +115,7 @@ export function AdminUsers() {
 
         <div className="overflow-x-auto rounded-lg border border-stone-300 bg-white shadow-sm">
           <table className="w-full text-sm">
-            <thead className="bg-stone-50 text-left text-[12px] text-stone-500">
+            <thead className="bg-stone-50 text-left text-note text-stone-500">
               <tr>
                 <th className="px-3 py-2">ID</th>
                 <th className="px-3 py-2">Логин</th>
@@ -144,7 +144,7 @@ export function AdminUsers() {
                       {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                     </select>
                   </td>
-                  <td className="px-3 py-2 text-[12px] text-stone-500">{u.created_at ? u.created_at.slice(0, 10) : '—'}</td>
+                  <td className="px-3 py-2 text-note text-stone-500">{u.created_at ? u.created_at.slice(0, 10) : '—'}</td>
                   <td className="px-3 py-2">
                     <Button onClick={() => setDeleting(u)} variant="danger">Удалить</Button>
                   </td>
@@ -156,7 +156,7 @@ export function AdminUsers() {
             </tbody>
           </table>
         </div>
-        <p className="mt-3 text-[12px] text-stone-500">Пароли хранятся в виде необратимого хэша и не отображаются. Используйте «Сбросить» для задания нового.</p>
+        <p className="mt-3 text-note text-stone-500">Пароли хранятся в виде необратимого хэша и не отображаются. Используйте «Сбросить» для задания нового.</p>
       </div>
       <ConfirmDialog
         open={Boolean(deleting)}

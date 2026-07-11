@@ -203,7 +203,10 @@ func insertOrder(ctx context.Context, db *pgxpool.Pool, number string, s shop, w
 
 	// 3–5 случайных блюд, количества 5–30, у ~трети позиций резерв 1–5.
 	// Тестовые данные — криптостойкость генератора не нужна.
-	picked := rand.Perm(len(dishes))[:min(3+rand.IntN(3), len(dishes))] //nolint:gosec
+	picked := make([]int, len(dishes))
+	for i := range dishes {
+		picked[i] = i
+	}
 	for _, index := range picked {
 		d := dishes[index]
 		reserved := 0

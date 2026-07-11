@@ -50,10 +50,36 @@
   --color-input: #d3c3a9; /* stone-300 */
   --color-ring: #2d2318;
 
+  /* ФИКСАЦИЯ ОСНОВ — канон интерфейса. Менять осознанно, целиком, с
+     обновлением docs/frontend/ui-kit.md.
+
+     Скругления: характер «бумажного журнала» — спокойные углы, ничего
+     надутого. Переопределяем стандартные ступени Tailwind: контролы (md)
+     8px, карточки/панели (lg и xl схлопнуты) 10px. Полные пилюли
+     (rounded-full) — только бирки/чипы. */
   --radius: 0.5rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
+  --radius-md: 0.5rem; /* контролы: кнопки, поля, ячейки */
+  --radius-lg: 0.625rem; /* карточки */
+  --radius-xl: 0.625rem; /* панели = карточки: один радиус поверхностей */
+
+  /* Типографическая шкала — 6 ступеней, других размеров текста нет.
+     caption: uppercase-надзаголовки и оси таблиц (НЕ основной текст);
+     note: вторичные подписи (автор, даты списков);
+     body: основной текст и кнопки;
+     input: значения полей (на телефоне медиа-правило поднимает до 16px);
+     title: заголовки панелей; page: заголовок экрана. */
+  --text-caption: 0.6875rem;
+  --text-caption--line-height: 1rem;
+  --text-note: 0.75rem;
+  --text-note--line-height: 1.125rem;
+  --text-body: 0.8125rem;
+  --text-body--line-height: 1.25rem;
+  --text-input: 0.875rem;
+  --text-input--line-height: 1.25rem;
+  --text-title: 1rem;
+  --text-title--line-height: 1.5rem;
+  --text-page: 1.125rem;
+  --text-page--line-height: 1.625rem;
 }
 
 :root {

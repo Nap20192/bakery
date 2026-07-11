@@ -29,6 +29,7 @@ and edge-cases pages are **explanation** (understand why).
 | [frontend/development-workflow.md](frontend/development-workflow.md) | How-to | AI-assisted frontend workflow: research, design, vertical slices, browser QA, accessibility, skills and evidence |
 | [frontend/improvement-plan.md](frontend/improvement-plan.md) | How-to | Prioritized readability / responsiveness / UX improvement roadmap |
 | [edge-cases.md](edge-cases.md) | Explanation | Domain rules and edge cases that must not regress |
+| [constraints.md](constraints.md) | Reference | Hard product constraints (e.g. dough calc only on a saved production sheet) |
 
 Related documents outside `docs/`:
 

@@ -21,14 +21,14 @@ import { formatDate, formatQuantity } from '../../lib/format';
 // OrderLink — номер заказа как переход «отработка → заказ».
 function OrderLink({ number, onOpenOrder }) {
   if (!onOpenOrder) {
-    return <span className="min-w-0 truncate text-[12px] leading-5 text-stone-500" title={number}>{number}</span>;
+    return <span className="min-w-0 truncate text-note leading-5 text-stone-500" title={number}>{number}</span>;
   }
   return (
     <button
       type="button"
       onClick={() => onOpenOrder(number)}
       title={`Открыть заказ ${number}`}
-      className="min-w-0 truncate text-left text-[12px] leading-5 text-stone-600 underline decoration-stone-300 underline-offset-2 hover:text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/20"
+      className="min-w-0 truncate text-left text-note leading-5 text-stone-600 underline decoration-stone-300 underline-offset-2 hover:text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/20"
     >
       {number}
     </button>
@@ -51,6 +51,9 @@ export function ProductionJournal({ initialSheetId = 0, onOpenOrder }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [removing, setRemoving] = useState(null);
+  // Констрейнт (docs/constraints.md): расчёт по партии — только при
+  // сохранённом листе; несохранённые правки блокируют мониторинг.
+  const [sheetDirty, setSheetDirty] = useState(false);
 
   function load() {
     fetchProductionSheets()
@@ -144,9 +147,9 @@ export function ProductionJournal({ initialSheetId = 0, onOpenOrder }) {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h1 className="m-0 flex items-center gap-2 text-lg font-semibold">
             Отработки
-            <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[12px] font-medium tabular-nums text-stone-600">{sheets.length}</span>
+            <span className="rounded-full bg-stone-100 px-2 py-0.5 text-note font-medium tabular-nums text-stone-600">{sheets.length}</span>
           </h1>
-          <p className="m-0 text-[12px] leading-5 text-stone-500">Новая отработка создаётся со страницы выбранных заказов.</p>
+          <p className="m-0 text-note leading-5 text-stone-500">Новая отработка создаётся со страницы выбранных заказов.</p>
         </div>
 
         <ErrorBanner error={error} />
@@ -168,26 +171,33 @@ export function ProductionJournal({ initialSheetId = 0, onOpenOrder }) {
                 </div>
               </div>
               <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-stone-50 px-2.5 py-1.5">
-                <span className="text-[11px] font-medium uppercase text-stone-400">Заказы партии:</span>
+                <span className="text-caption font-medium uppercase text-stone-400">Заказы партии:</span>
                 {(openSheet.order_numbers || []).map((number) => (
                   <OrderLink key={number} number={number} onOpenOrder={onOpenOrder} />
                 ))}
               </div>
               <ProductionSheet
+                key={`${openSheet.id}:${openSheet.updated_at}`}
                 orders={sheetOrders}
                 sheetItems={openSheet.items || []}
                 loading={busy}
                 onSave={save}
+                onDirtyChange={setSheetDirty}
                 submitLabel="Сохранить изменения"
               />
             </section>
             <section className={panelClass}>
               <PanelHeader title="Расчёт теста" eyebrow="С учётом отработки" />
+              {sheetDirty && (
+                <p className="m-0 mb-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-note text-amber-800" role="status">
+                  Сначала сохраните или отмените правки отработки — расчёт идёт по сохранённому факту.
+                </p>
+              )}
               <MonitorReports
-                monitor={monitor}
+                monitor={sheetDirty ? null : monitor}
                 onCalculate={calculate}
                 loading={busy}
-                canCalculate={(openSheet.order_numbers || []).length > 0}
+                canCalculate={(openSheet.order_numbers || []).length > 0 && !sheetDirty}
               />
             </section>
           </div>
@@ -196,15 +206,15 @@ export function ProductionJournal({ initialSheetId = 0, onOpenOrder }) {
             {sheets.map((sheet) => (
               <section className={`${panelClass} flex flex-wrap items-center justify-between gap-2`} key={sheet.id}>
                 <button type="button" className="min-w-0 flex-1 text-left focus:outline-none" onClick={() => open(sheet.id)}>
-                  <span className="flex items-center gap-2 text-[14px] font-semibold leading-6 text-stone-950">
+                  <span className="flex items-center gap-2 text-input font-semibold leading-6 text-stone-950">
                     <SheetBadge sheetId={sheet.id} />
                     Отработка №{sheet.id}
                     <span className="font-normal text-stone-500">{formatDate(sheet.created_at)}</span>
                   </span>
-                  <span className="block truncate text-[12px] leading-5 text-stone-500">
+                  <span className="block truncate text-note leading-5 text-stone-500">
                     @{(sheet.created_by_username || '—').replace(/^@/, '')} · заказов: {sheet.order_numbers.length} · отклонений: {formatQuantity(sheet.item_count)}
                   </span>
-                  <span className="block truncate text-[12px] leading-5 text-stone-400">{sheet.order_numbers.join(', ')}</span>
+                  <span className="block truncate text-note leading-5 text-stone-400">{sheet.order_numbers.join(', ')}</span>
                 </button>
                 <div className="flex shrink-0 gap-2">
                   <Button onClick={() => open(sheet.id)}>Открыть</Button>

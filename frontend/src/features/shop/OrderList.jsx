@@ -37,11 +37,11 @@ export function OrderList({
           <h1 className="m-0 flex items-center gap-2 text-[20px] font-semibold leading-7 text-stone-950">
             Заказы
             {page.total > 0 && (
-              <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[12px] font-medium tabular-nums text-stone-600">{page.total}</span>
+              <span className="rounded-full bg-stone-100 px-2 py-0.5 text-note font-medium tabular-nums text-stone-600">{page.total}</span>
             )}
           </h1>
           {viewer?.department_name && (
-            <p className="m-0 truncate text-[12px] leading-5 text-stone-600">
+            <p className="m-0 truncate text-note leading-5 text-stone-600">
               {viewer.department_name}
               {viewer.telegram_username && ` / @${viewer.telegram_username}`}
             </p>
@@ -97,21 +97,21 @@ export function OrderList({
                 <div className="grid grid-cols-1 gap-2">
                   <button className="min-w-0 text-left" onClick={() => onSelect(order.number)}>
                     <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5">
-                      <strong className="flex flex-wrap items-center gap-1.5 break-words text-[13px] font-semibold leading-5 text-stone-900">
+                      <strong className="flex flex-wrap items-center gap-1.5 break-words text-body font-semibold leading-5 text-stone-900">
                         {order.number}
                         <CategoryBadge category={order.category} />
                         {!order.cancelled && (
                           <SheetBadge sheetId={order.production_sheet_id} deviations={productionDeviations(order)} showStatus />
                         )}
                         {order.cancelled && (
-                          <span className="inline-flex items-center rounded-full border border-red-300 bg-red-50 px-1.5 py-0 text-[10px] font-semibold uppercase leading-4 text-red-700">
+                          <span className="inline-flex items-center rounded-full border border-red-300 bg-red-50 px-1.5 py-0 text-caption font-semibold uppercase leading-4 text-red-700">
                             Отменён
                           </span>
                         )}
                       </strong>
-                      <span className="text-[12px] leading-5 text-stone-600">{order.items?.length || 0} поз.</span>
-                      <strong className="break-words text-[12px] font-semibold leading-5 text-stone-800">Откуда: {orderSource(order)}</strong>
-                      <span className="text-[12px] leading-5 text-stone-600">{formatFulfillmentDate(order.fulfillment_date) || '-'}</span>
+                      <span className="text-note leading-5 text-stone-600">{order.items?.length || 0} поз.</span>
+                      <strong className="break-words text-note font-semibold leading-5 text-stone-800">Откуда: {orderSource(order)}</strong>
+                      <span className="text-note leading-5 text-stone-600">{formatFulfillmentDate(order.fulfillment_date) || '-'}</span>
                     </div>
                   </button>
                 </div>

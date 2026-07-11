@@ -9,6 +9,7 @@ import { clearToken, getToken, isWebMode } from '../../lib/auth';
 import { logInfo } from '../../lib/logger';
 import { miniAppModeFromLocation, orderNumberFromLocation, orderNumbersFromLocation, trimString } from '../../lib/url';
 import { OrdersLayout } from './OrdersLayout';
+import { DoughCalculator } from '../baker/DoughCalculator';
 import { OrdersTableView } from '../baker/OrdersTableView';
 import { ProductionJournal } from '../production/ProductionJournal';
 import { BakerOrdersView } from '../baker/BakerOrdersView';
@@ -438,6 +439,14 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
           onStartProduction={openOrdersSelection}
           onOpenProduction={(sheetId) => navigate({ name: 'production', sheetId })}
         />
+      </OrdersLayout>
+    );
+  }
+
+  if (canUseMonitor && route.name === 'doughCalc') {
+    return (
+      <OrdersLayout viewer={viewer} active={route.name} onNavigate={navigate} onLogout={handleLogout}>
+        <DoughCalculator />
       </OrdersLayout>
     );
   }

@@ -7,11 +7,11 @@ export function PanelHeader({ eyebrow, title, count }) {
   return (
     <div className="mb-2.5 flex items-start justify-between gap-3">
       <div className="min-w-0">
-        {eyebrow && <span className="text-[11px] font-medium uppercase text-muted-foreground">{eyebrow}</span>}
-        <h3 className="m-0 break-words text-[16px] font-semibold leading-6 text-foreground sm:text-[18px]">{title}</h3>
+        {eyebrow && <span className="text-caption font-medium uppercase text-muted-foreground">{eyebrow}</span>}
+        <h3 className="m-0 break-words text-title font-semibold text-foreground sm:text-page">{title}</h3>
       </div>
       {count !== undefined && (
-        <span className="shrink-0 rounded-full border border-border bg-muted px-2 py-1 text-[11px] font-medium text-muted-foreground sm:text-xs">
+        <span className="shrink-0 rounded-full border border-border bg-muted px-2 py-1 text-caption font-medium tabular-nums text-muted-foreground">
           {count} поз.
         </span>
       )}

@@ -128,7 +128,7 @@ export function AdminDishes() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h1 id="dishes-title" className="flex items-center gap-2 text-lg font-semibold">
             Блюда
-            <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[12px] font-medium tabular-nums text-stone-600">{dishes.length}</span>
+            <span className="rounded-full bg-stone-100 px-2 py-0.5 text-note font-medium tabular-nums text-stone-600">{dishes.length}</span>
           </h1>
           <input
             className="h-9 w-full rounded-md border border-stone-300 bg-white px-3 text-sm outline-none focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10 sm:w-64"
@@ -154,11 +154,11 @@ export function AdminDishes() {
           <input className={fieldClass} placeholder="Группа (необязательно)" value={group} onChange={(e) => setGroup(e.target.value)} />
           <Button type="button" variant="primary" onClick={onAdd} disabled={busy || !selected}>Добавить</Button>
         </div>
-        <p className="mb-6 text-[12px] text-stone-500">Начните вводить название или код — блюда подгружаются из техкарт по мере ввода. Порядок меняется перетаскиванием строк.</p>
+        <p className="mb-6 text-note text-stone-500">Начните вводить название или код — блюда подгружаются из техкарт по мере ввода. Порядок меняется перетаскиванием строк.</p>
 
         <div className="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm">
           <table className="w-full text-sm">
-            <thead className="bg-stone-50 text-left text-[12px] text-stone-500">
+            <thead className="bg-stone-50 text-left text-note text-stone-500">
               <tr>
                 <th className="w-8 px-2 py-2"></th>
                 <th className="px-3 py-2">Код</th>
@@ -184,7 +184,7 @@ export function AdminDishes() {
                 />
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={6} className="px-3 py-6 text-center text-[13px] text-stone-500">{query ? 'Ничего не найдено.' : 'Блюд нет.'}</td></tr>
+                <tr><td colSpan={6} className="px-3 py-6 text-center text-body text-stone-500">{query ? 'Ничего не найдено.' : 'Блюд нет.'}</td></tr>
               )}
             </tbody>
           </table>
@@ -248,8 +248,8 @@ function CategoryManager({ categories, onChanged, onError }) {
 
   return (
     <section className="mb-6 rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
-      <h2 className="m-0 mb-1 text-[15px] font-semibold text-stone-950">Типы заявок</h2>
-      <p className="m-0 mb-3 text-[12px] leading-5 text-stone-500">
+      <h2 className="m-0 mb-1 text-title font-semibold text-stone-950">Типы заявок</h2>
+      <p className="m-0 mb-3 text-note leading-5 text-stone-500">
         Тип выбирается магазином при создании заявки. Буква попадает в номер заказа, цвет выделяет заявки у пекаря.
       </p>
       <div className="space-y-2">
@@ -306,11 +306,11 @@ function CategoryRow({ category, onUpdate, onRemove }) {
       <div className="grid items-center gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <CategoryBadge category={category} />
-          <span className="min-w-0 truncate text-[12px] text-stone-500">
+          <span className="min-w-0 truncate text-note text-stone-500">
             Тесто: {category.monitor_codes?.length ? category.monitor_codes.join(', ') : <strong className="text-red-700">коды не настроены</strong>}
           </span>
         </div>
-        <span className="text-[12px] text-stone-500">Буква в номере: <strong className="text-stone-800">{category.letter || '—'}</strong></span>
+        <span className="text-note text-stone-500">Буква в номере: <strong className="text-stone-800">{category.letter || '—'}</strong></span>
         <div className="flex justify-end gap-2">
           <Button
             onClick={() => {
@@ -340,7 +340,7 @@ function CategoryRow({ category, onUpdate, onRemove }) {
         <ColorSwatches value={draft.color} onChange={(color) => setDraft({ ...draft, color })} />
       </div>
       <label className="block">
-        <span className="mb-1 block text-[12px] font-medium text-stone-500">Коды теста для расчёта (через запятую)</span>
+        <span className="mb-1 block text-note font-medium text-stone-500">Коды теста для расчёта (через запятую)</span>
         <input
           className={cellInputClass}
           placeholder="Например: 17642, 17644, 17650"
@@ -456,7 +456,7 @@ function DishPicker({ selected, onSelect, takenCodes, onError }) {
                 onClick={() => pick(d)}
               >
                 <span className="text-stone-900">{d.name}</span>
-                <span className="ml-2 font-mono text-[12px] text-stone-400">{d.code}</span>
+                <span className="ml-2 font-mono text-note text-stone-400">{d.code}</span>
               </button>
             </li>
           ))}
@@ -513,7 +513,7 @@ function DishRow({ dish, categories, categoryByID, canReorder, onSave, onDelete,
     return (
       <tr className="border-t border-stone-100" {...dragProps}>
         <td className={`px-2 py-2 text-center text-stone-300 ${canReorder ? 'cursor-grab' : ''}`} title={canReorder ? 'Перетащите для сортировки' : 'Сбросьте поиск, чтобы менять порядок'}>⠿</td>
-        <td className="px-3 py-2 font-mono text-[12px] text-stone-500">{dish.code}</td>
+        <td className="px-3 py-2 font-mono text-note text-stone-500">{dish.code}</td>
         <td className="px-3 py-2 text-stone-900">{dish.name}</td>
         <td className="px-3 py-2">
           <CategoryBadge category={categoryByID.get(String(dish.category_id || ''))} />
@@ -533,7 +533,7 @@ function DishRow({ dish, categories, categoryByID, canReorder, onSave, onDelete,
   return (
     <tr className="border-t border-stone-100 bg-stone-50/60">
       <td className="px-2 py-2"></td>
-      <td className="px-3 py-2 font-mono text-[12px] text-stone-400">{dish.code}</td>
+      <td className="px-3 py-2 font-mono text-note text-stone-400">{dish.code}</td>
       <td className="px-3 py-2"><input className={cellInputClass} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></td>
       <td className="px-3 py-2">
         <select

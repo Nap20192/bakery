@@ -13,8 +13,8 @@ export function BakerOrderReview({ loading, order, catalog = [], monitor, error,
         <section className="rounded-lg border border-stone-300 bg-white p-3 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h1 className="m-0 text-[18px] font-semibold leading-7 text-stone-950">{order?.number || 'Заказ'}</h1>
-              <p className="m-0 text-[13px] leading-5 text-stone-600">Просмотр и расчёт</p>
+              <h1 className="m-0 text-page font-semibold leading-7 text-stone-950">{order?.number || 'Заказ'}</h1>
+              <p className="m-0 text-body leading-5 text-stone-600">Просмотр и расчёт</p>
             </div>
             <Button onClick={onBack} className="shrink-0">
               <Icon name="chevronLeft" size={16} />

@@ -259,6 +259,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/monitor/calc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dough calculator — ad-hoc calculation without creating anything
+         * @description Computes dough usage for manually entered items. Nothing is persisted; monitor codes come from the chosen category (or the default set when category_id is 0/omitted). Tech cards valid today are used.
+         */
+        post: operations["calcDough"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/monitor/{id}": {
         parameters: {
             query?: never;
@@ -660,6 +680,19 @@ export interface components {
              */
             item_count: number;
             items?: components["schemas"]["ProductionSheetItem"][];
+        };
+        DoughCalcRequest: {
+            /**
+             * Format: int64
+             * @description Category whose monitor codes to use; 0/omitted = default set
+             */
+            category_id?: number;
+            items: {
+                /** @description Dish catalog / iiko product code */
+                code: string;
+                product_name?: string;
+                quantity: number;
+            }[];
         };
         IngredientUsage: {
             product_code: string;
@@ -1238,6 +1271,34 @@ export interface operations {
             };
             400: components["responses"]["Error"];
             404: components["responses"]["Error"];
+        };
+    };
+    calcDough: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DoughCalcRequest"];
+            };
+        };
+        responses: {
+            /** @description Reports per monitor code */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        reports: components["schemas"]["MonitorReport"][];
+                    };
+                };
+            };
+            400: components["responses"]["Error"];
+            401: components["responses"]["Error"];
         };
     };
     getOrderMonitor: {
