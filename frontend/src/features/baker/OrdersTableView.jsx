@@ -159,7 +159,7 @@ export function OrdersTableView({ catalog = [], onOpenProduction, onStartProduct
       <div className="mx-auto max-w-[1440px] space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h1 className="m-0 text-lg font-semibold">Таблица</h1>
+            <h1 className="m-0 text-page font-semibold">Таблица</h1>
             <p className="m-0 text-note leading-5 text-stone-500">Сколько печь по дням. Нажмите дату, чтобы отработать всю колонку.</p>
           </div>
           <div className="flex shrink-0 gap-1.5">

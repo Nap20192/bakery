@@ -25,7 +25,7 @@ export function CopyButton({ getText, label = 'Копировать', copiedLabe
 
   return (
     <Button type="button" onClick={copy} className={className} title={label} aria-label={label} {...props}>
-      <Icon name={copied ? 'select' : 'orders'} size={15} />
+      <Icon name={copied ? 'select' : 'copy'} size={15} />
       <span className={labelClassName}>{copied ? copiedLabel : label}</span>
     </Button>
   );

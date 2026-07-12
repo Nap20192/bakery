@@ -149,11 +149,30 @@ sheets.
 
 ### `Icon`
 
-Inline 24×24 stroke SVG set keyed by name: `orders, plus, users, user,
-logout, eye, select, calculator, chevronLeft, chevronRight, close, star`.
-Props: `size` (default 18), `strokeWidth`, `filled` (for the favorite star).
-Unknown names fall back to `orders`. `aria-hidden` — always pair with a text
-label or `aria-label` on the interactive parent.
+Inline 24×24 stroke SVG set keyed by semantic name: `orders, plus, users,
+user, logout, copy, eye, select, calculator, chevronLeft, chevronRight,
+close, star, table, journal, menu`. Props: `size` (default 18),
+`strokeWidth`, `filled` (for the favorite star). Unknown names fall back to
+`orders`. `aria-hidden` — always pair with a text label or `aria-label` on the
+interactive parent.
+
+Choosing and adding icons:
+
+1. Pick the name by meaning, not by shape. A copy action uses `copy`; a
+   successful copied state can use `select`; navigation to the order matrix
+   uses `orders`.
+2. Reuse an existing semantic name when the action is the same. Add a new name
+   only when reusing an icon would make two different actions look identical.
+3. Use `frontend/icons.svg` as the local source sheet for new glyphs. Choose
+   the simplest 24×24 outlined glyph that matches the action, then normalize it
+   into `frontend/src/ui/Icon.jsx` with `viewBox="0 0 24 24"` and
+   `currentColor`.
+4. Keep the default light outline (`strokeWidth={1.5}`) from the Figma icon
+   set. Increase stroke weight only for one-off emphasis, such as the mobile
+   menu trigger.
+5. Do not inline ad hoc SVG in feature components. If an icon is reused or
+   belongs to an action, add it to `Icon.jsx` and document its semantic name
+   here.
 
 ### `CategoryBadge`
 

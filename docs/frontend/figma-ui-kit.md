@@ -1,8 +1,10 @@
 # Figma UI kit reference
 
-Bakery uses the following Figma Community file as its canonical external UI
-kit. It is the source of truth for colors, typography, layout, grids, spacing,
-buttons, tags, fields, tables, overlays, states and responsive composition:
+Bakery uses the following Figma Community file as a secondary external UI
+reference. `DESIGN.md` is the source of truth for colors, typography, spacing,
+surfaces and component styling. Use Figma for component anatomy, iconography,
+layout ideas and exact node inspection when a task explicitly references a
+Figma frame.
 
 - [MCP Apps for Claude (Community)](https://www.figma.com/design/zcWlfgVfMNX576XBSC99Z6/MCP-Apps-for-Claude--Community-?node-id=467-20292&p=f&t=fTfT3Zbz8Lc0YnU8-0)
 - file key: `zcWlfgVfMNX576XBSC99Z6`
@@ -13,15 +15,16 @@ buttons, tags, fields, tables, overlays, states and responsive composition:
 
 ## How agents use it
 
-1. Read `.interface-design/system.md` before visible frontend changes.
+1. Read `DESIGN.md` and `.interface-design/system.md` before visible frontend changes.
 2. For a supplied Figma URL, extract its file key and exact node ID.
 3. Use Figma MCP `get_design_context` for implementation context. If the
    desktop-plugin selection is unavailable, use `get_screenshot` and
    `get_metadata` to inspect the node, then ask for a selected component only
    when exact variables or generated reference code are required.
-4. Search the Figma design system before creating a new pattern.
-5. Map exact Figma values into Bakery semantic CSS tokens; never paste raw
-   values across feature files.
+4. Search the Figma design system before creating a new pattern when the task
+   is Figma-driven.
+5. Map approved Figma structure into Bakery semantic CSS tokens; never paste
+   raw values across feature files.
 6. Adapt Figma components to Bakery's roles and content; do not copy demo
    screens verbatim.
 
@@ -42,19 +45,18 @@ Node `467:20292` contains eight groups:
 
 The public Figma embed verifies these baseline values from the Color canvas:
 `color-text-info` `#3266B5`, light info/border `#80AADD`,
-`color-text-danger` `#7F2C28`, and light danger `#EE8884`. They are mapped to
-Bakery's shared semantic tokens. Other exact values require an active layer
-selection in Figma Desktop; do not introduce a new visual token until its
-Figma node has been read.
+`color-text-danger` `#7F2C28`, and light danger `#EE8884`. These values are
+documented as observed Figma values only; they are not Bakery's active palette
+unless a future task explicitly changes `DESIGN.md`. Other exact values require
+an active layer selection in Figma Desktop.
 
 ## Verified typography and border structure
 
-Node `7:19` defines two families: `Anthropic Sans` for interface copy and
-`JetBrains Mono` for technical values. Its weight tokens are Normal (400),
-Medium (500), Semibold (600), and Bold (700); its text roles are
-XS/SM/MD/LG/XL/2XL/3XL. Bakery maps them to the semantic type scale in
-`src/styles.css`; Inter is bundled as an explicit fallback because the kit's
-Anthropic Sans asset is not published through npm and Bakery's UI is Russian.
+Node `7:19` defines `Anthropic Sans` for interface copy and `JetBrains Mono`
+for technical values. Bakery now follows `DESIGN.md`: serif headings,
+humanist sans body/UI and mono technical values. Inter and JetBrains Mono are
+bundled fallbacks; the supplied Anthropic Sans archive is not used because it
+does not cover Bakery's Russian UI safely.
 
 Node `467:21770` defines the border vocabulary: radius
 XS/SM/MD/LG/XL/Full and a regular border width. Shared components keep their
@@ -64,7 +66,9 @@ status markers.
 Node `467:21815` contains separate desktop-web and mobile icon sets. Bakery
 keeps its existing semantic SVG names, but applies the kit's lighter outlined
 stroke as the default. A feature may request a heavier stroke only where the
-action needs explicit visual emphasis.
+action needs explicit visual emphasis. The checked-in `frontend/icons.svg` file
+is the local reference sheet for these glyphs; app code still consumes icons
+through `frontend/src/ui/Icon.jsx` so features do not copy raw SVG.
 
 ## Project-specific constraints
 

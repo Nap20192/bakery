@@ -54,6 +54,9 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
   });
   const filtersRef = useRef(filters);
   const windowStartRef = useRef(MATRIX_WINDOW_START_OFFSET);
+  // Источник для дублирования переживает смену маршрута на orderNew: bootstrap
+  // → loadViewer иначе пересоздаёт редактор с order=null и стирает префилл.
+  const duplicateSourceRef = useRef(null);
 
   const selectedNumber = selectedOrder?.number || '';
 
@@ -150,7 +153,9 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
       setCatalog(Array.isArray(items) ? items : []);
       if (canCreateOrders(current)) {
         if (activeRoute.name === 'orderNew' || launchMode === 'create') {
-          setEditor({ mode: 'create', order: null });
+          const source = duplicateSourceRef.current;
+          duplicateSourceRef.current = null;
+          setEditor({ mode: 'create', order: source });
         } else if (activeRoute.name === 'orderEdit' || (launchMode === 'edit' && linkedOrderNumber)) {
           const order = await fetchOrder(activeRoute.number || linkedOrderNumber);
           setSelectedOrder(order);
@@ -361,6 +366,16 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
     setMonitor(null);
   }
 
+  // openDuplicateOrder открывает форму нового заказа, предзаполненную позициями
+  // выбранного (mode='create' → сохранение делает POST нового заказа).
+  function openDuplicateOrder() {
+    if (!selectedOrder) return;
+    duplicateSourceRef.current = selectedOrder;
+    navigate({ name: 'orderNew' });
+    setEditor({ mode: 'create', order: selectedOrder });
+    setMonitor(null);
+  }
+
   function saveOrder(request) {
     return run(async () => {
       const saved = editor?.mode === 'update'
@@ -540,6 +555,7 @@ export function OrdersPage({ route = { name: 'orders' }, navigate = () => {} }) 
           onToggleFavorite={toggleFavorite}
           onCancelOrder={(number) => changeCancellation(number, true)}
           onRestoreOrder={(number) => changeCancellation(number, false)}
+          onDuplicate={openDuplicateOrder}
           onSelect={(number) => loadOrder(number)}
           onPageChange={loadOrders}
           onFiltersChange={updateFilters}

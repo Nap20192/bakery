@@ -34,7 +34,7 @@ export function OrderList({
     <aside className="m-3 flex min-h-[32rem] max-h-[70vh] flex-col gap-2.5 rounded-lg border border-stone-300 bg-white p-3 shadow-sm lg:sticky lg:top-[3.75rem] lg:ml-3 lg:mr-0 lg:h-[calc(100vh-5.25rem)] lg:max-h-none lg:min-h-[38rem]">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <h1 className="m-0 flex items-center gap-2 text-[20px] font-semibold leading-7 text-stone-950">
+          <h1 className="m-0 flex items-center gap-2 text-page font-semibold leading-7 text-stone-950">
             Заказы
             {page.total > 0 && (
               <span className="rounded-full bg-stone-100 px-2 py-0.5 text-note font-medium tabular-nums text-stone-600">{page.total}</span>

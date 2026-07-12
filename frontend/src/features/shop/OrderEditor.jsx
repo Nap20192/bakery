@@ -50,14 +50,19 @@ function parsePasteLine(line) {
   return { name, quantity, reserved };
 }
 
-export function OrderEditor({ catalog, categories = [], order, shops = [], loading, onCancel, onSave }) {
+export function OrderEditor({ mode, catalog, categories = [], order, shops = [], loading, onCancel, onSave }) {
+  // mode: 'create' | 'update'. Дублирование — это mode='create' с исходным
+  // order для префилла позиций: форма ведёт себя как новый заказ (POST, выбор
+  // типа зафиксирован из источника, дата пустая), но поля предзаполнены.
+  const isEdit = mode ? mode === 'update' : Boolean(order);
   const [fromDepartmentID, setFromDepartmentID] = useState(
     order?.from_department?.id ? String(order.from_department.id) : '',
   );
   // Тип заявки выбирается первым шагом при создании; при редактировании он
   // зафиксирован (тип участвует в номере заказа и не меняется).
   const [categoryID, setCategoryID] = useState(order?.category?.id ? String(order.category.id) : '');
-  const [date, setDate] = useState(order?.fulfillment_date || '');
+  // Дата не переносится в дубликат — новый заказ получает свою дату выполнения.
+  const [date, setDate] = useState(isEdit ? order?.fulfillment_date || '' : '');
   const [quantities, setQuantities] = useState(() => initialQuantities(order));
   const [comments, setComments] = useState(() => initialItemComments(order));
   const [openComments, setOpenComments] = useState({});
@@ -185,7 +190,8 @@ export function OrderEditor({ catalog, categories = [], order, shops = [], loadi
   const selectedCategory = categories.find((category) => String(category.id) === String(categoryID)) || order?.category || null;
 
   // Шаг 1 при создании: выбор типа заявки. Форма с блюдами появляется после.
-  if (!order && !categoryID) {
+  // При дублировании тип уже перенесён из источника — шаг пропускается.
+  if (!isEdit && !categoryID) {
     return (
       <div className="space-y-3">
         <PanelHeader title="Новый заказ" />
@@ -221,9 +227,9 @@ export function OrderEditor({ catalog, categories = [], order, shops = [], loadi
     <form className="space-y-3" onSubmit={submit}>
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <PanelHeader title={order ? `Изменить ${order.number}` : 'Новый заказ'} />
+          <PanelHeader title={isEdit ? `Изменить ${order.number}` : 'Новый заказ'} />
           <CategoryBadge category={selectedCategory} />
-          {!order && (
+          {!isEdit && (
             <Button type="button" variant="ghost" className="!min-h-7 !px-2 text-note" onClick={() => setCategoryID('')}>
               Сменить тип
             </Button>
@@ -382,7 +388,7 @@ export function OrderEditor({ catalog, categories = [], order, shops = [], loadi
         <div className="flex gap-2">
           <Button type="button" onClick={onCancel}>Отмена</Button>
           <Button type="submit" variant="primary" loading={loading} disabled={!canSubmit}>
-            {order ? 'Сохранить' : 'Создать'}
+            {isEdit ? 'Сохранить' : 'Создать'}
           </Button>
         </div>
       </div>

@@ -4,9 +4,7 @@ import { setToken } from '../../lib/auth';
 import { logWarn } from '../../lib/logger';
 import { Button } from '../../ui/Button';
 import { ErrorBanner } from '../../ui/ErrorBanner';
-
-const fieldClass =
-  'w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10';
+import { controlClass } from '../../ui/Field';
 
 // Login renders the username/password form for the plain-web build. On success
 // it stores the bearer session token and notifies the parent. Mini App clients
@@ -37,14 +35,14 @@ export function Login({ onAuthenticated }) {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-flour p-4 text-stone-900">
-      <form onSubmit={onSubmit} className="w-full max-w-sm rounded-xl border border-stone-200 bg-white p-6 shadow-sm" data-testid="login-form">
-        <h1 className="mb-1 text-center text-lg font-semibold text-stone-950">Заказы пекарни</h1>
-        <p className="mb-5 text-center text-body leading-5 text-stone-600">Войдите, чтобы продолжить.</p>
-        <label className="mb-1 block text-body font-medium text-stone-600" htmlFor="login-username">Логин</label>
+    <main className="flex min-h-screen items-center justify-center bg-background p-4 text-foreground">
+      <form onSubmit={onSubmit} className="ui-panel w-full max-w-sm" data-testid="login-form">
+        <h1 className="mb-2 text-center text-title text-foreground">Заказы пекарни</h1>
+        <p className="mb-6 text-center text-body leading-6 text-text-secondary">Войдите, чтобы продолжить.</p>
+        <label className="ui-field__label" htmlFor="login-username">Логин</label>
         <input
           id="login-username"
-          className={`mb-3 ${fieldClass}`}
+          className={`mb-4 ${controlClass}`}
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           autoComplete="username"
@@ -52,11 +50,11 @@ export function Login({ onAuthenticated }) {
           aria-describedby={error ? 'login-error' : undefined}
           autoFocus
         />
-        <label className="mb-1 block text-body font-medium text-stone-600" htmlFor="login-password">Пароль</label>
+        <label className="ui-field__label" htmlFor="login-password">Пароль</label>
         <input
           id="login-password"
           type="password"
-          className={`mb-5 ${fieldClass}`}
+          className={`mb-6 ${controlClass}`}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"
