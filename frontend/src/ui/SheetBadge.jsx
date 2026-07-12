@@ -10,8 +10,7 @@ export function SheetBadge({ sheetId, deviations = 0, showStatus = false, classN
   return (
     <span
       className={cn(
-        'inline-flex min-w-0 max-w-full items-center gap-1 overflow-hidden rounded-full border px-1.5 py-0.5 text-caption font-semibold leading-4 tabular-nums',
-        style.badge,
+        'ui-number inline-flex min-w-0 max-w-full items-center gap-1 overflow-hidden text-caption font-semibold leading-4',
         className,
       )}
       title={deviations > 0 ? `Отработан с отклонениями · лист №${sheetId} · отклонений: ${deviations}` : `Отработан по заявке · лист №${sheetId}`}

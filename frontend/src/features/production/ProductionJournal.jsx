@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button } from '../../ui/Button';
+import { CategoryBadge } from '../../ui/CategoryBadge';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { EmptyState } from '../../ui/EmptyState';
 import { ErrorBanner } from '../../ui/ErrorBanner';
@@ -10,6 +11,7 @@ import { ProductionSheet } from './ProductionSheet';
 import {
   deleteProductionSheet,
   fetchBatchOrderMonitor,
+  fetchCategories,
   fetchOrder,
   fetchOrderMonitor,
   fetchProductionSheet,
@@ -17,6 +19,7 @@ import {
   updateProductionSheet,
 } from '../../api/orders';
 import { formatDate, formatQuantity } from '../../lib/format';
+import { buildProductionJournalMatrix, formatJournalDate } from './productionJournalModel';
 
 // OrderLink — номер заказа как переход «отработка → заказ».
 function OrderLink({ number, onOpenOrder }) {
@@ -45,25 +48,43 @@ function OrderLink({ number, onOpenOrder }) {
 // onOpenOrder ведёт обратно к заказу.
 export function ProductionJournal({ initialSheetId = 0, onOpenOrder }) {
   const [sheets, setSheets] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [openSheet, setOpenSheet] = useState(null);
   const [sheetOrders, setSheetOrders] = useState([]);
   const [monitor, setMonitor] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [loadingList, setLoadingList] = useState(true);
   const [removing, setRemoving] = useState(null);
   // Констрейнт (docs/constraints.md): расчёт по партии — только при
   // сохранённом листе; несохранённые правки блокируют мониторинг.
   const [sheetDirty, setSheetDirty] = useState(false);
 
-  function load() {
-    fetchProductionSheets()
-      .then((rows) => setSheets(Array.isArray(rows) ? rows : []))
-      .catch((err) => setError(err instanceof Error ? err.message : String(err)));
+  async function load() {
+    try {
+      const [rows, categoryRows] = await Promise.all([fetchProductionSheets(), fetchCategories()]);
+      const list = Array.isArray(rows) ? rows : [];
+      const firstOrders = await Promise.allSettled(
+        list.map((sheet) => sheet.order_numbers?.[0] ? fetchOrder(sheet.order_numbers[0]) : Promise.resolve(null)),
+      );
+      setSheets(list.map((sheet, index) => ({
+        ...sheet,
+        category: firstOrders[index]?.status === 'fulfilled' ? firstOrders[index].value?.category || null : null,
+      })));
+      setCategories(Array.isArray(categoryRows) ? categoryRows : []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoadingList(false);
+    }
   }
 
   useEffect(() => {
-    load();
-    if (initialSheetId > 0) open(initialSheetId);
+    const timer = window.setTimeout(() => {
+      load();
+      if (initialSheetId > 0) open(initialSheetId);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [initialSheetId]);
 
   async function open(id) {
@@ -141,6 +162,8 @@ export function ProductionJournal({ initialSheetId = 0, onOpenOrder }) {
     }
   }
 
+  const journal = buildProductionJournalMatrix(sheets, categories);
+
   return (
     <section className="px-3 py-3 pb-20 sm:px-5 sm:pb-5 lg:px-6">
       <div className="mx-auto max-w-5xl space-y-4">
@@ -201,28 +224,10 @@ export function ProductionJournal({ initialSheetId = 0, onOpenOrder }) {
               />
             </section>
           </div>
+        ) : loadingList ? (
+          <p className="m-0 py-8 text-center text-body text-stone-500" role="status">Загружаем журнал…</p>
         ) : sheets.length ? (
-          <div className="space-y-2">
-            {sheets.map((sheet) => (
-              <section className={`${panelClass} flex flex-wrap items-center justify-between gap-2`} key={sheet.id}>
-                <button type="button" className="min-w-0 flex-1 text-left focus:outline-none" onClick={() => open(sheet.id)}>
-                  <span className="flex items-center gap-2 text-input font-semibold leading-6 text-stone-950">
-                    <SheetBadge sheetId={sheet.id} />
-                    Отработка №{sheet.id}
-                    <span className="font-normal text-stone-500">{formatDate(sheet.created_at)}</span>
-                  </span>
-                  <span className="block truncate text-note leading-5 text-stone-500">
-                    @{(sheet.created_by_username || '—').replace(/^@/, '')} · заказов: {sheet.order_numbers.length} · отклонений: {formatQuantity(sheet.item_count)}
-                  </span>
-                  <span className="block truncate text-note leading-5 text-stone-400">{sheet.order_numbers.join(', ')}</span>
-                </button>
-                <div className="flex shrink-0 gap-2">
-                  <Button onClick={() => open(sheet.id)}>Открыть</Button>
-                  <Button variant="danger" disabled={busy} onClick={() => setRemoving(sheet)}>Удалить</Button>
-                </div>
-              </section>
-            ))}
-          </div>
+          <ProductionJournalMatrix journal={journal} busy={busy} onOpen={open} onRemove={setRemoving} />
         ) : (
           <EmptyState>Отработок пока нет. Выберите заказы в матрице и сохраните факт выпечки.</EmptyState>
         )}
@@ -235,5 +240,76 @@ export function ProductionJournal({ initialSheetId = 0, onOpenOrder }) {
         onCancel={() => setRemoving(null)}
       />
     </section>
+  );
+}
+
+function ProductionJournalMatrix({ journal, busy, onOpen, onRemove }) {
+  return (
+    <div className="overflow-auto rounded-xl border border-stone-200 bg-white shadow-sm">
+      <table className="w-full min-w-[44rem] border-collapse text-body">
+        <thead>
+          <tr>
+            <th className="sticky left-0 top-0 z-30 w-36 border-b border-r border-stone-200 bg-stone-50 px-3 py-2 text-left text-caption font-medium uppercase text-stone-500">
+              Дата
+            </th>
+            {journal.columns.map((column) => (
+              <th key={column.key} className="sticky top-0 z-20 min-w-60 border-b border-stone-200 bg-stone-50 px-3 py-2 text-left">
+                {column.category ? <CategoryBadge category={column.category} /> : <span className="text-note font-semibold text-stone-600">Без типа</span>}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {journal.rows.map((row) => (
+            <tr key={row.dateKey} className="border-b border-stone-100 last:border-0">
+              <th className="sticky left-0 z-10 border-r border-stone-200 bg-white px-3 py-3 text-left align-top text-note font-semibold text-stone-700">
+                {formatJournalDate(row.dateKey)}
+              </th>
+              {journal.columns.map((column) => {
+                const cellSheets = row.cells[column.key] || [];
+                return (
+                  <td key={column.key} className="min-w-60 bg-white p-1.5 align-top">
+                    {cellSheets.length ? (
+                      <div className="space-y-1.5">
+                        {cellSheets.map((sheet) => (
+                          <ProductionJournalCell key={sheet.id} sheet={sheet} busy={busy} onOpen={onOpen} onRemove={onRemove} />
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="block px-2 py-3 text-center text-stone-300" aria-label="Нет отработок">·</span>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ProductionJournalCell({ sheet, busy, onOpen, onRemove }) {
+  const orderCount = sheet.order_numbers?.length || 0;
+  const deviationCount = Number(sheet.item_count) || 0;
+  return (
+    <div className="rounded-lg border border-stone-200 bg-stone-50/60 p-2">
+      <button type="button" className="block w-full rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/30" onClick={() => onOpen(sheet.id)}>
+        <span className="flex items-center gap-2 text-input font-semibold text-stone-950">
+          <SheetBadge sheetId={sheet.id} deviations={deviationCount} />
+          <span>Отработка №{sheet.id}</span>
+        </span>
+        <span className="mt-0.5 block text-note leading-5 text-stone-500">
+          @{(sheet.created_by_username || '—').replace(/^@/, '')} · {orderCount} {orderCount === 1 ? 'заказ' : 'заказов'}
+        </span>
+        <span className={`block text-note leading-5 ${deviationCount ? 'font-medium text-amber-800' : 'text-stone-500'}`}>
+          {deviationCount ? `Отклонений: ${formatQuantity(deviationCount)}` : 'Без отклонений'}
+        </span>
+      </button>
+      <div className="mt-1.5 flex gap-1.5 border-t border-stone-200 pt-1.5">
+        <Button className="flex-1" onClick={() => onOpen(sheet.id)}>Открыть</Button>
+        <Button variant="danger" disabled={busy} onClick={() => onRemove(sheet)}>Удалить</Button>
+      </div>
+    </div>
   );
 }

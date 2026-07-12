@@ -8,8 +8,8 @@ export function ConfirmDialog({ open, title, description = '', confirmLabel = 'Ð
   return (
     <AlertDialog.Root open={open} onOpenChange={(next) => { if (!next) onCancel(); }}>
       <AlertDialog.Portal>
-        <AlertDialog.Overlay className="fade-in fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
-        <AlertDialog.Content className="pop-in fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl border border-border bg-card p-4 text-card-foreground shadow-xl focus:outline-none">
+        <AlertDialog.Overlay className="fade-in fixed inset-0 z-50 bg-slate-dark/60" />
+        <AlertDialog.Content className="pop-in fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-[1.5rem] border border-border bg-card p-6 text-card-foreground shadow-none focus:outline-none">
           <AlertDialog.Title className="m-0 text-title font-semibold leading-6 text-foreground">{title}</AlertDialog.Title>
           {description ? (
             <AlertDialog.Description className="m-0 mt-1 text-body leading-5 text-muted-foreground">{description}</AlertDialog.Description>
