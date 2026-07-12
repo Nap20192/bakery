@@ -3,18 +3,18 @@ import { cn } from '../lib/cn';
 // Поля формы в стиле shadcn/ui Input/Select + Label, на семантических
 // токенах. select остаётся нативным — на телефоне системный пикер удобнее.
 export const controlClass =
-  'flex min-h-11 w-full rounded-md border border-input bg-card px-2.5 text-input text-foreground shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-9';
+  'ui-control';
 
 // Compact native control for dense tables and admin toolbars. It deliberately
 // keeps sizing separate from the base mobile-first form control.
 export const compactControlClass =
-  'min-h-9 rounded-md border border-input bg-card px-3 py-1.5 text-sm text-foreground shadow-xs outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50';
+  'ui-control ui-control--compact';
 
-const labelClass = 'mb-1 block text-note font-medium text-muted-foreground';
+const labelClass = 'ui-field__label';
 
 export function SelectField({ label, value, onChange, children, className = '', ...props }) {
   return (
-    <label className={cn('block', className)}>
+    <label className={cn('ui-field', className)}>
       {label && <span className={labelClass}>{label}</span>}
       <select className={controlClass} value={value} onChange={onChange} {...props}>
         {children}
@@ -25,7 +25,7 @@ export function SelectField({ label, value, onChange, children, className = '', 
 
 export function InputField({ label, className = '', ...props }) {
   return (
-    <label className={cn('block', className)}>
+    <label className={cn('ui-field', className)}>
       {label && <span className={labelClass}>{label}</span>}
       <input className={controlClass} {...props} />
     </label>

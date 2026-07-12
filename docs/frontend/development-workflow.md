@@ -10,8 +10,8 @@
 |---|---|
 | UI | React 19, JavaScript + `// @ts-check` для API |
 | Сборка | Vite 8 |
-| Стили | Tailwind CSS 4, CSS-first tokens в `src/styles.css` |
-| UI primitives | `src/ui`, `cva`, Radix для overlays |
+| Стили | переход от Tailwind CSS 4 к CSS-first tokens в `src/styles.css` |
+| UI primitives | `src/ui`, Radix для overlays |
 | Routing | собственный History API router (`app/routes.js`, `useAppRouter`) |
 | Data fetching | typed `openapi-fetch` facades в `src/api` |
 | Shared state | локальные hooks; Context только при доказанной необходимости |
@@ -116,9 +116,11 @@ API, необратимое действие или визуальное нап�
 - состояния loading, empty, error, success, disabled, hover и focus;
 - как смысл дублируется без зависимости только от цвета.
 
-Сохраняйте характер Bakery: Golos Text, flour/crust taupe surfaces, тихие
-границы, цвет категорий как данные, emerald/amber для дат. Избегайте
-glassmorphism, декоративных gradients, emoji-icons, лишних карточек и pills.
+Сохраняйте характер Bakery и Anthropic field-journal: Source Serif 4 для
+содержательного текста, Inter для UI-хрома, тёплые parchment-поверхности,
+тихие границы и clay только для главного действия. Цвет категорий остаётся
+доменными данными. Избегайте glassmorphism, декоративных gradients,
+emoji-icons, лишних карточек, pills и теней.
 
 ### 4. Реализация vertical slice
 

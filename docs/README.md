@@ -26,8 +26,11 @@ and edge-cases pages are **explanation** (understand why).
 | [services/sync.md](services/sync.md) | Reference | iiko catalog and tech-card snapshot sync |
 | [services/techcard.md](services/techcard.md) | Reference | Tech-card lookup service |
 | [frontend/ui-kit.md](frontend/ui-kit.md) | Reference | Design tokens, UI components, category color system, frontend conventions |
+| [frontend/figma-ui-kit.md](frontend/figma-ui-kit.md) | Reference | Primary Figma UI kit, verified nodes and MCP usage rules |
+| [frontend/anthropic-field-journal.md](frontend/anthropic-field-journal.md) | Reference | Current parchment/clay visual system for all shared frontend surfaces and controls |
 | [frontend/development-workflow.md](frontend/development-workflow.md) | How-to | AI-assisted frontend workflow: research, design, vertical slices, browser QA, accessibility, skills and evidence |
 | [frontend/improvement-plan.md](frontend/improvement-plan.md) | How-to | Prioritized readability / responsiveness / UX improvement roadmap |
+| [frontend/tailwind-migration.md](frontend/tailwind-migration.md) | How-to | Incremental migration from Tailwind utilities to plain component CSS |
 | [edge-cases.md](edge-cases.md) | Explanation | Domain rules and edge cases that must not regress |
 | [constraints.md](constraints.md) | Reference | Hard product constraints (e.g. dough calc only on a saved production sheet) |
 

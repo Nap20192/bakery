@@ -9,9 +9,9 @@ export function Modal({ onClose, children, maxWidthClass = 'max-w-3xl' }) {
       <Dialog.Portal>
         {/* Content внутри Overlay — паттерн «скроллируемый оверлей»: длинное
             содержимое прокручивается вместе с подложкой. */}
-        <Dialog.Overlay className="fade-in fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/40 p-2 backdrop-blur-sm sm:p-4">
+        <Dialog.Overlay className="fade-in fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-slate-dark/60 p-2 sm:p-4">
           <Dialog.Content
-            className={`pop-in my-auto w-full ${maxWidthClass} rounded-xl border border-border bg-card p-4 text-card-foreground shadow-xl focus:outline-none`}
+            className={`pop-in my-auto w-full ${maxWidthClass} rounded-[1.5rem] border border-border bg-card p-6 text-card-foreground shadow-none focus:outline-none`}
             aria-describedby={undefined}
             onOpenAutoFocus={(event) => event.preventDefault()}
           >

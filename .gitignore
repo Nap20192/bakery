@@ -29,3 +29,7 @@ bakery
 
 # Claude Code generated files
 skills-lock.json
+
+# Local browser QA artifacts
+.playwright-cli/
+output/playwright/

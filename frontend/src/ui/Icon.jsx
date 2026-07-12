@@ -15,7 +15,9 @@ const paths = {
   journal: 'M6 3.5h12A1.5 1.5 0 0 1 19.5 5v14a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 19V5A1.5 1.5 0 0 1 6 3.5ZM8.5 3.5v17M12 8h4M12 12h4',
 };
 
-export function Icon({ name, size = 18, className = '', strokeWidth = 2, filled = false }) {
+// The Figma desktop/mobile icon sets use a light outlined treatment. Individual
+// call sites may still opt into a heavier stroke when the action needs it.
+export function Icon({ name, size = 18, className = '', strokeWidth = 1.5, filled = false }) {
   return (
     <svg
       aria-hidden="true"
