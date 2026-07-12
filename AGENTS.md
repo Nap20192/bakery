@@ -101,8 +101,8 @@ frontend/src/
   api/                  типизированный клиент: schema.d.ts (генерат) +
                         openapi-fetch фасады (// @ts-check)
   lib/ app/             утилиты, роутинг
-  styles.css            токены (@theme): Anthropic field-journal — тёплый
-                        parchment, Source Serif 4/Inter fallbacks
+  styles.css            токены (@theme): Claude Warm Editorial из DESIGN.md —
+                        cream/terracotta, serif headings, Inter body/UI
 
 docs/                   reference: architecture, services/, database.md,
                         api/openapi.yaml, frontend/ui-kit.md, commands,
@@ -482,10 +482,11 @@ interaction, accessibility, or frontend-facing API code must use the repo-local
 `docs/frontend/development-workflow.md`:
 
 1. inspect the relevant route, feature, UI primitives, tokens, API facade and
-   dirty worktree before editing; read `.interface-design/system.md` and the
-   linked Anthropic field-journal reference before visible UI changes. It is
-   the source of truth for colors, typography, layout, grids, controls and
-   component states; Figma remains secondary for anatomy and iconography;
+   dirty worktree before editing; read `DESIGN.md`,
+   `.interface-design/system.md` and `docs/frontend/figma-ui-kit.md` before
+   visible UI changes. `DESIGN.md` is the source of truth for colors,
+   typography, layout, grids, controls and component states; Figma remains
+   secondary for anatomy and iconography;
 2. state design intent for visible changes using `interface-design` and
    validate decisions with `typeui-fundamentals`;
 3. implement one small complete vertical flow;

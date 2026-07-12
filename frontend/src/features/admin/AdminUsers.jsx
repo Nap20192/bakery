@@ -88,7 +88,7 @@ export function AdminUsers() {
     <section className="bg-flour p-4 text-stone-900 sm:p-6" aria-labelledby="users-title">
       <div className="mx-auto max-w-6xl">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <h1 id="users-title" className="flex items-center gap-2 text-lg font-semibold">
+          <h1 id="users-title" className="flex items-center gap-2 text-page font-semibold">
             Пользователи
             <span className="rounded-full bg-stone-100 px-2 py-0.5 text-note font-medium tabular-nums text-stone-600">{users.length}</span>
           </h1>

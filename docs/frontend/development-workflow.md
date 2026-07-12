@@ -116,10 +116,10 @@ API, необратимое действие или визуальное нап�
 - состояния loading, empty, error, success, disabled, hover и focus;
 - как смысл дублируется без зависимости только от цвета.
 
-Сохраняйте характер Bakery и Anthropic field-journal: Source Serif 4 для
-содержательного текста, Inter для UI-хрома, тёплые parchment-поверхности,
-тихие границы и clay только для главного действия. Цвет категорий остаётся
-доменными данными. Избегайте glassmorphism, декоративных gradients,
+Сохраняйте характер Bakery по `DESIGN.md`: serif для display/headings,
+humanist sans/Inter для body и UI-хрома, cream/secondary поверхности,
+тихие границы и terracotta только для главного действия. Цвет категорий
+остаётся доменными данными. Избегайте glassmorphism, декоративных gradients,
 emoji-icons, лишних карточек, pills и теней.
 
 ### 4. Реализация vertical slice

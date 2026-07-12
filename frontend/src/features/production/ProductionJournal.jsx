@@ -168,7 +168,7 @@ export function ProductionJournal({ initialSheetId = 0, onOpenOrder }) {
     <section className="px-3 py-3 pb-20 sm:px-5 sm:pb-5 lg:px-6">
       <div className="mx-auto max-w-5xl space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="m-0 flex items-center gap-2 text-lg font-semibold">
+          <h1 className="m-0 flex items-center gap-2 text-page font-semibold">
             Отработки
             <span className="rounded-full bg-stone-100 px-2 py-0.5 text-note font-medium tabular-nums text-stone-600">{sheets.length}</span>
           </h1>

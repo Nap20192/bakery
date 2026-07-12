@@ -1,126 +1,144 @@
-/* Anthropic field-journal foundations. Category colours remain domain data;
-   the product chrome itself is deliberately parchment-neutral. */
+/* Claude Warm Editorial foundations from DESIGN.md. Category colours remain
+   domain data; shared product chrome uses the cream/terracotta system. */
 @import "@fontsource-variable/inter";
 @import "@fontsource-variable/jetbrains-mono";
-@import "@fontsource-variable/source-serif-4";
 @import "tailwindcss";
 
 @theme {
-  /* Anthropic Sans and Serif are not published as a Cyrillic webfont. Bundled
-     Inter and Source Serif 4 are metrically stable, Cyrillic-safe fallbacks. */
-  --font-sans: "Anthropic Sans", "Inter Variable", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-  --font-serif: "Anthropic Serif", "Source Serif 4 Variable", "Source Serif 4", Georgia, Cambria, "Times New Roman", serif;
-  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-sans: "Styrene A", "Anthropic Sans", "Inter Variable", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-serif: "Tiempos Headline", "Iowan Old Style", Georgia, Cambria, "Times New Roman", serif;
+  --font-mono: "GT America Mono", "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* Warm parchment ramp under legacy stone utility names. */
-  --color-stone-50: #faf9f5;
-  --color-stone-100: #f0eee6;
-  --color-stone-200: #e3dacc;
-  --color-stone-300: #cccbc8;
-  --color-stone-400: #b0aea5;
-  --color-stone-500: #87867f;
-  --color-stone-600: #6b6a64;
-  --color-stone-700: #4d4c48;
-  --color-stone-800: #3d3d3a;
-  --color-stone-900: #242422;
-  --color-stone-950: #141413;
-  --color-flour: #f0eee6;
-  --color-slate-dark: #141413;
-  --color-ivory-medium: #f0eee6;
-  --color-ivory-light: #faf9f5;
-  --color-cloud-medium: #b0aea5;
-  --color-cloud-dark: #87867f;
-  --color-oat-warm: #e3dacc;
-  --color-manilla: #f5e3c7;
-  --color-clay: #d97757;
-  --color-clay-deep: #c6613f;
+  /* Legacy stone utility names mapped to the active warm editorial palette. */
+  --color-stone-50: #f4f3ee;
+  --color-stone-100: #eeede6;
+  --color-stone-200: #d8d3c8;
+  --color-stone-300: #d8d3c8;
+  --color-stone-400: #8a847a;
+  --color-stone-500: #8a847a;
+  --color-stone-600: #5a554e;
+  --color-stone-700: #5a554e;
+  --color-stone-800: #191817;
+  --color-stone-900: #191817;
+  --color-stone-950: #191817;
 
-  --color-background: #f0eee6;
-  --color-foreground: #141413;
-  --color-card: #faf9f5;
-  --color-card-foreground: #141413;
-  --color-popover: #faf9f5;
-  --color-popover-foreground: #141413;
-  --color-primary: #d97757;
-  --color-primary-foreground: #faf9f5;
-  --color-secondary: #e3dacc;
-  --color-secondary-foreground: #141413;
-  --color-muted: #f0eee6;
-  --color-muted-foreground: #87867f;
-  --color-accent: #e3dacc;
-  --color-accent-foreground: #141413;
-  --color-destructive: #c6613f;
-  --color-destructive-foreground: #faf9f5;
-  --color-border: #cccbc8;
-  --color-input: #87867f;
-  --color-ring: #141413;
+  --color-bg-primary: #f4f3ee;
+  --color-bg-secondary: #eeede6;
+  --color-bg-inverse: #191817;
+  --color-text-primary: #191817;
+  --color-text-secondary: #5a554e;
+  --color-text-muted: #8a847a;
+  --color-accent-action: #c96442;
+  --color-accent-action-hover: #b55738;
+  --color-accent-soft: #e89268;
+  --color-success: #6b7a3d;
+  --color-warning: #c98a42;
+  --color-danger: #a53e2a;
 
-  --radius: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1.5rem;
-  --radius-xl: 1.5rem;
+  --color-background: #f4f3ee;
+  --color-foreground: #191817;
+  --color-card: #eeede6;
+  --color-card-foreground: #191817;
+  --color-popover: #eeede6;
+  --color-popover-foreground: #191817;
+  --color-primary: #c96442;
+  --color-primary-foreground: #f4f3ee;
+  --color-secondary: #eeede6;
+  --color-secondary-foreground: #191817;
+  --color-muted: #eeede6;
+  --color-muted-foreground: #8a847a;
+  --color-accent: #c96442;
+  --color-accent-foreground: #f4f3ee;
+  --color-destructive: #a53e2a;
+  --color-destructive-foreground: #f4f3ee;
+  --color-border: #d8d3c8;
+  --color-input: #d8d3c8;
+  --color-ring: #c96442;
+  --color-inverse: #191817;
 
-  --text-caption: 0.75rem;
-  --text-caption--line-height: 1.05rem;
-  --text-note: 0.75rem;
-  --text-note--line-height: 1rem;
-  --text-body: 1.25rem;
-  --text-body--line-height: 1.75rem;
-  --text-input: 1rem;
-  --text-input--line-height: 1rem;
-  --text-title: 1.5rem;
-  --text-title--line-height: 1.3;
-  --text-page: 3.8125rem;
-  --text-page--line-height: 1.1;
+  --radius: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.5rem;
+
+  /* Тип-шкала DESIGN.md (13/15/17/21/26/32) для ОПЕРАЦИОННОГО приложения.
+     Роли утилит: caption 13 (надзаголовки, оси таблиц), note 15 (подписи),
+     body 17 (основной текст, карточки), input 15 (поля), title 21 (заголовки
+     панелей), page 26/32 (заголовок экрана — единственный serif-момент).
+     Крупные display-размеры (40/50/62) для hero тут не нужны и НЕ мапятся на
+     утилиты, чтобы заголовки экранов не превращались в билборды. */
+  --text-caption: 0.8125rem; /* 13 */
+  --text-caption--line-height: 1rem;
+  --text-note: 0.9375rem; /* 15 */
+  --text-note--line-height: 1.25rem;
+  --text-body: 1.0625rem; /* 17 */
+  --text-body--line-height: 1.4rem;
+  --text-input: 0.9375rem; /* 15 */
+  --text-input--line-height: 1.25rem;
+  --text-title: 1.3125rem; /* 21 */
+  --text-title--line-height: 1.75rem;
+  --text-page: 2rem; /* 32 desktop, 26 на телефоне (медиазапрос ниже) */
+  --text-page--line-height: 1.15;
 }
 
 :root {
   /* Plain-CSS source of truth introduced during the incremental Tailwind
-     migration. The matching @theme values stay above until feature utility
-     classes have been migrated; removing Tailwind must not remove tokens. */
-  --font-sans: "Anthropic Sans", "Inter Variable", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-  --font-serif: "Anthropic Serif", "Source Serif 4 Variable", "Source Serif 4", Georgia, Cambria, "Times New Roman", serif;
-  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --color-slate-dark: #141413;
-  --color-ivory-medium: #f0eee6;
-  --color-ivory-light: #faf9f5;
-  --color-cloud-medium: #b0aea5;
-  --color-cloud-dark: #87867f;
-  --color-stone: #cccbc8;
-  --color-slate-medium: #3d3d3a;
-  --color-oat-warm: #e3dacc;
-  --color-manilla: #f5e3c7;
-  --color-clay: #d97757;
-  --color-clay-deep: #c6613f;
-  --color-background: var(--color-ivory-medium);
-  --color-foreground: var(--color-slate-dark);
-  --color-card: var(--color-ivory-light);
-  --color-card-foreground: var(--color-slate-dark);
-  --color-primary: var(--color-clay);
-  --color-primary-foreground: var(--color-ivory-light);
-  --color-muted: var(--color-ivory-medium);
-  --color-muted-foreground: var(--color-cloud-dark);
-  --color-accent: var(--color-oat-warm);
-  --color-accent-foreground: var(--color-slate-dark);
-  --color-destructive: var(--color-clay-deep);
-  --color-border: var(--color-stone);
-  --color-input: var(--color-cloud-dark);
-  --color-ring: var(--color-slate-dark);
-  --radius-control: 0.75rem;
-  --radius-surface: 1.5rem;
-  --text-caption-size: 0.75rem;
-  --text-note-size: 0.75rem;
-  --text-body-size: 1rem;
-  --text-input-size: 1rem;
-  --text-title-size: 1.5rem;
-  --text-page-size: 3.8125rem;
+     migration. Matching @theme values stay above until utilities are gone. */
+  --font-sans: "Styrene A", "Anthropic Sans", "Inter Variable", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-serif: "Tiempos Headline", "Iowan Old Style", Georgia, Cambria, "Times New Roman", serif;
+  --font-mono: "GT America Mono", "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --bg-primary: #f4f3ee;
+  --bg-secondary: #eeede6;
+  --bg-inverse: #191817;
+  --text-primary: #191817;
+  --text-secondary: #5a554e;
+  --text-muted: #8a847a;
+  --accent: #c96442;
+  --accent-hover: #b55738;
+  --accent-soft: #e89268;
+  --border: #d8d3c8;
+  --success: #6b7a3d;
+  --warning: #c98a42;
+  --danger: #a53e2a;
+
+  --color-background: var(--bg-primary);
+  --color-foreground: var(--text-primary);
+  --color-card: var(--bg-secondary);
+  --color-card-foreground: var(--text-primary);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--bg-primary);
+  --color-secondary: var(--bg-secondary);
+  --color-secondary-foreground: var(--text-primary);
+  --color-muted: var(--bg-secondary);
+  --color-muted-foreground: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--bg-primary);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: var(--bg-primary);
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--accent);
+  --color-inverse: var(--bg-inverse);
+
+  --radius-control: 0.375rem;
+  --radius-surface: 0.5rem;
+  --shadow-modal: 0 8px 24px rgba(25, 24, 23, 0.08);
+
+  --text-caption-size: 0.8125rem; /* 13 */
+  --text-note-size: 0.9375rem; /* 15 */
+  --text-body-size: 1.0625rem; /* 17 */
+  --text-input-size: 0.9375rem; /* 15 */
+  --text-title-size: 1.3125rem; /* 21 */
+  --text-page-size: 2rem; /* 32 */
+
   color: var(--color-foreground);
   background: var(--color-background);
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-synthesis: none;
-  font-size: 20px;
-  line-height: 1.4;
-  letter-spacing: normal;
+  font-size: 17px;
+  line-height: 1.6;
+  letter-spacing: 0;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -141,19 +159,37 @@ html {
   scroll-padding-top: 4.5rem;
 }
 
-/* A shared fallback keeps keyboard focus visible even in legacy feature
-   controls that have not yet moved to the ui/ primitives. */
 :where(button, a, input, select, textarea):focus-visible {
   outline: 2px solid var(--color-ring);
   outline-offset: 2px;
 }
 
+/* Serif — только заголовки экрана и модалок (editorial-момент). Заголовки
+   разделов/панелей (h3/h4) и мелкие подписи — sans (UI), по DESIGN §7
+   «serif for page/modal headings and sans for body/UI». */
 h1,
-h2,
+h2 {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
 h3,
 h4 {
   font-family: var(--font-sans);
-  letter-spacing: -0.002em;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+p,
+li,
+td,
+th {
+  text-wrap: pretty;
 }
 
 button,
@@ -189,7 +225,6 @@ textarea {
   touch-action: manipulation;
 }
 
-/* Minimal, lightweight motion. */
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -200,6 +235,11 @@ textarea {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
 .fade-in {
   animation: fade-in 0.15s ease-out;
 }
@@ -208,9 +248,14 @@ textarea {
   animation: pop-in 0.16s ease-out;
 }
 
+.slide-in-right {
+  animation: slide-in-right 0.18s ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .fade-in,
-  .pop-in {
+  .pop-in,
+  .slide-in-right {
     animation: none;
   }
 }
@@ -218,6 +263,13 @@ textarea {
 /* Inputs must be >=16px on phones, otherwise iOS Safari zooms the viewport on
    focus. Applies to native inputs and MUI fields alike. */
 @media (max-width: 640px) {
+  :root {
+    /* Заголовок экрана на телефоне: 32 → 26 (утилита text-page ссылается на
+       эту переменную, поэтому переопределение каскадирует). */
+    --text-page: 1.625rem;
+    --text-page-size: 1.625rem;
+  }
+
   input,
   select,
   textarea,

@@ -4,9 +4,9 @@ Last updated: 2026-07-12
 
 ## Primary visual reference
 
-Use [Anthropic field-journal style](../docs/frontend/anthropic-field-journal.md)
-as the project's canonical visual system. It controls colour, typography,
-spacing, elevation, radii, surfaces and shared component states.
+Use [DESIGN.md](../DESIGN.md) as the project's canonical visual system. It
+controls colour, typography, spacing, elevation, radii, surfaces and shared
+component states.
 
 The Figma Community file **MCP Apps for Claude (Community)** remains a
 secondary reference for component anatomy and iconography only. Its previous
@@ -37,27 +37,28 @@ content or replace Bakery business structures with generic cards.
 When Figma and the current Bakery UI differ:
 
 1. accessibility and domain constraints win;
-2. the Anthropic field-journal style wins for visual decisions;
+2. `DESIGN.md` wins for visual decisions;
 3. exact Figma values are mapped into Bakery semantic CSS tokens rather than
    scattered raw values;
 4. existing flows remain stable unless the task explicitly changes them.
 
 ## Color roles
 
-Map the supplied parchment palette through semantic CSS variables in
+Map the supplied warm editorial palette through semantic CSS variables in
 `frontend/src/styles.css`; raw values only belong in the reference layer.
-Clay is exclusive to the primary consequential CTA. Category colors
+Terracotta is exclusive to the primary consequential CTA. Category colors
 (`amber`, `sky`, `violet`, `emerald`, `rose`, `stone`) remain product data and
 are always accompanied by a name/dot/symbol, never used as the only status.
 
 ## Foundation choices
 
-- Typography: Anthropic Serif for reading copy, Anthropic Sans for UI chrome
-  and JetBrains Mono for technical values. Source Serif 4 and Inter are the
-  bundled Cyrillic-safe fallbacks. Retain tabular mono numerals for quantities
-  and IDs.
-- Spacing: 4px base unit. Use the documented 4/8/12/16/24/32 scale.
-- Depth: no shadows; use warm surface steps and a 1px hairline border.
+- Typography: serif display/headings (`Tiempos Headline`, `Iowan Old Style`,
+  Georgia fallback), humanist sans body/UI (bundled Inter fallback), and
+  JetBrains Mono for technical values. Retain tabular mono numerals for
+  quantities and IDs.
+- Spacing: 8px baseline with 4px-compatible component increments.
+- Depth: no shadows; use warm surface steps and a 1px hairline border. Modals
+  may use the documented soft shadow.
 - Touch targets: minimum 44px on mobile.
 - Focus: visible 2px focus indicator with at least 3:1 contrast.
 - Motion: 100–200ms state transitions; respect reduced motion.

@@ -1,4 +1,5 @@
 import { Button } from '../../ui/Button';
+import { Icon } from '../../ui/Icon';
 import { ErrorBanner } from '../../ui/ErrorBanner';
 import { EmptyState } from '../../ui/EmptyState';
 import { panelClass } from '../../ui/Panel';
@@ -25,6 +26,7 @@ export function ShopOrdersView({
   onToggleFavorite,
   onCancelOrder,
   onRestoreOrder,
+  onDuplicate,
   onSelect,
   onPageChange,
   onFiltersChange,
@@ -58,6 +60,7 @@ export function ShopOrdersView({
             <section className={panelClass}>
               <OrderEditor
                 key={`${editor.mode}-${editor.order?.number || 'new'}`}
+                mode={editor.mode}
                 catalog={catalog}
                 categories={categories}
                 order={editor.order}
@@ -69,21 +72,35 @@ export function ShopOrdersView({
             </section>
           ) : selectedOrder ? (
             <section className={panelClass}>
-              <div className="mb-3 flex flex-wrap justify-end gap-2">
+              {/* Единая панель действий заказа: все кнопки в один ряд, справа,
+                  одной высоты. «Дублировать» создаёт новый заказ, копируя
+                  позиции источника. */}
+              <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
                 {canManage && (
-                  selectedOrder.cancelled ? (
-                    <Button onClick={() => onRestoreOrder?.(selectedOrder.number)} disabled={loading}>
-                      Восстановить
+                  <>
+                    <Button
+                      onClick={() => onDuplicate?.(selectedOrder.number)}
+                      disabled={loading}
+                      title="Создать новый заказ, скопировав позиции этого"
+                    >
+                      <Icon name="copy" size={15} />
+                      Дублировать
                     </Button>
-                  ) : (
-                    <Button variant="danger" onClick={() => onCancelOrder?.(selectedOrder.number)} disabled={loading}>
-                      Отменить
+                    {selectedOrder.cancelled ? (
+                      <Button onClick={() => onRestoreOrder?.(selectedOrder.number)} disabled={loading}>
+                        Восстановить
+                      </Button>
+                    ) : (
+                      <Button variant="danger" onClick={() => onCancelOrder?.(selectedOrder.number)} disabled={loading}>
+                        <Icon name="close" size={15} />
+                        Отменить
+                      </Button>
+                    )}
+                    <Button variant="primary" onClick={onEdit} disabled={loading || selectedOrder.cancelled}>
+                      Изменить
                     </Button>
-                  )
+                  </>
                 )}
-                <Button onClick={onEdit} disabled={loading || selectedOrder.cancelled}>
-                  Изменить
-                </Button>
               </div>
               <OrderDetails order={selectedOrder} catalog={catalog} canFavorite={canFavorite} onToggleFavorite={onToggleFavorite} />
             </section>
