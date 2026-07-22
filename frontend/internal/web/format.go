@@ -20,6 +20,17 @@ func formatDate(value string) string {
 	return value
 }
 
+// formatDayMonth renders "21.07" for the date grids, where the weekday sits
+// right above and the year never varies within a visible window.
+func formatDayMonth(value string) string {
+	for _, layout := range []string{"2006-01-02", time.RFC3339, "2006-01-02T15:04:05.999999Z07:00"} {
+		if parsed, err := time.Parse(layout, value); err == nil {
+			return parsed.Format("02.01")
+		}
+	}
+	return value
+}
+
 func formatDateTime(value string) string {
 	for _, layout := range []string{time.RFC3339, "2006-01-02T15:04:05.999999Z07:00"} {
 		parsed, err := time.Parse(layout, value)

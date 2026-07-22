@@ -3,7 +3,6 @@
 
   const selectionKey = 'bakery:selected-orders';
   const selectionModeKey = 'bakery:selection-mode';
-  const selectionFilterKey = 'bakery:selection-filter';
 
   document.addEventListener('htmx:configRequest', (event) => {
     const token = document.querySelector('meta[name="csrf-token"]')?.content;
@@ -31,6 +30,24 @@
     initializeSelectionRemoval(root);
     initializeCatalog(root);
     initializeProduction(root);
+    initializeScrollHints(root);
+  }
+
+  // Marks a scroll frame while its table still has content to the right, so the
+  // edge fade only appears when dragging sideways would actually reveal something.
+  function initializeScrollHints(root) {
+    root.querySelectorAll('.scroll-frame:not([data-ready])').forEach((frame) => {
+      frame.dataset.ready = 'true';
+      const scroller = frame.firstElementChild;
+      if (!scroller) return;
+      const update = () => {
+        const more = scroller.scrollWidth - scroller.clientWidth - scroller.scrollLeft > 2;
+        frame.dataset.scrollMore = String(more);
+      };
+      scroller.addEventListener('scroll', update, { passive: true });
+      new ResizeObserver(update).observe(scroller);
+      update();
+    });
   }
 
   function initializeSelectionRemoval(root) {
@@ -141,28 +158,34 @@
     if (!toggle || !cards.length) return;
     if (toggle.dataset.ready === 'true') return;
     toggle.dataset.ready = 'true';
+
     let mode = sessionStorage.getItem(selectionModeKey) === 'true';
     let selected = selection();
-    const filter = root.querySelector('[data-selection-toolbar]')?.dataset.selectionFilter || '';
-    const previousFilter = sessionStorage.getItem(selectionFilterKey);
-    if (previousFilter !== null && previousFilter !== filter) {
-      selected = [];
-      sessionStorage.removeItem(selectionKey);
-    }
-    sessionStorage.setItem(selectionFilterKey, filter);
+    const clear = root.querySelector('[data-selection-clear]');
+    const open = root.querySelector('[data-selection-open]');
+    const count = root.querySelector('[data-selection-count]');
+    const store = () => sessionStorage.setItem(selectionKey, JSON.stringify(selected));
+    const blocked = (card) => card.dataset.cancelled === 'true' || Boolean(card.dataset.sheet);
 
     const render = () => {
       document.body.classList.toggle('selection-active', mode);
       toggle.setAttribute('aria-pressed', String(mode));
-      toggle.textContent = mode ? 'Завершить выбор' : 'Выбор партии';
+      toggle.textContent = mode ? 'Готово' : 'Выбор партии';
       cards.forEach((card) => {
         const picked = selected.some((item) => item.number === card.dataset.number);
         card.classList.toggle('is-selected', picked);
-        card.setAttribute('aria-pressed', String(picked));
+        // Only a card you can actually toggle should announce itself as a button.
+        if (mode) {
+          card.setAttribute('role', 'button');
+          card.setAttribute('tabindex', '0');
+          card.setAttribute('aria-pressed', String(picked));
+          card.toggleAttribute('aria-disabled', blocked(card));
+        } else {
+          ['role', 'tabindex', 'aria-pressed', 'aria-disabled'].forEach((name) => card.removeAttribute(name));
+        }
       });
-      const open = root.querySelector('[data-selection-open]');
-      const count = root.querySelector('[data-selection-count]');
       if (count) count.textContent = String(selected.length);
+      if (clear) clear.hidden = !mode || selected.length === 0;
       if (open) {
         open.hidden = selected.length === 0;
         const params = new URLSearchParams();
@@ -171,20 +194,7 @@
       }
     };
 
-    toggle.addEventListener('click', () => {
-      mode = !mode;
-      sessionStorage.setItem(selectionModeKey, String(mode));
-      render();
-    });
-    // Capture phase: hx-boost binds its own handler to the card link, and on the
-    // bubble path that runs before this one, so the boosted navigation would win.
-    cards.forEach((card) => card.addEventListener('click', (event) => {
-      if (event.target.closest('button, input, select, textarea')) return;
-      if (!mode) return;
-      event.preventDefault();
-      event.stopPropagation();
-      const number = card.dataset.number;
-      const category = card.dataset.category;
+    const pick = (card) => {
       if (card.dataset.cancelled === 'true') {
         showToast('Отменённый заказ нельзя добавить в партию.');
         return;
@@ -193,13 +203,48 @@
         showToast(`Заказ уже входит в отработку №${card.dataset.sheet}.`);
         return;
       }
+      const number = card.dataset.number;
       const found = selected.findIndex((item) => item.number === number);
-      if (found >= 0) selected.splice(found, 1);
-      else if (selected.length && selected[0].category !== category) showToast('В одну партию можно выбрать заявки только одного типа.');
-      else selected.push({ number, category });
-      sessionStorage.setItem(selectionKey, JSON.stringify(selected));
+      if (found >= 0) {
+        selected.splice(found, 1);
+      } else if (selected.length && selected[0].category !== card.dataset.category) {
+        const locked = selected[0].categoryName || 'другого типа';
+        showToast(`В партии уже заявки «${locked}». Снимите их, чтобы выбрать другой тип.`);
+        return;
+      } else {
+        selected.push({ number, category: card.dataset.category, categoryName: card.dataset.categoryName || '' });
+      }
+      store();
       render();
-    }, true));
+    };
+
+    toggle.addEventListener('click', () => {
+      mode = !mode;
+      sessionStorage.setItem(selectionModeKey, String(mode));
+      render();
+    });
+    clear?.addEventListener('click', () => {
+      selected = [];
+      store();
+      render();
+    });
+
+    cards.forEach((card) => {
+      // Capture phase: hx-boost binds its own handler to the card link, and on the
+      // bubble path that runs before this one, so the boosted navigation would win.
+      card.addEventListener('click', (event) => {
+        if (event.target.closest('button, input, select, textarea')) return;
+        if (!mode) return;
+        event.preventDefault();
+        event.stopPropagation();
+        pick(card);
+      }, true);
+      card.addEventListener('keydown', (event) => {
+        if (!mode || (event.key !== 'Enter' && event.key !== ' ')) return;
+        event.preventDefault();
+        pick(card);
+      });
+    });
     render();
   }
 

@@ -20,22 +20,25 @@
   </form>
 
   {{if canUseProduction .Viewer}}
-    <div class="matrix-toolbar" data-selection-toolbar data-selection-filter="{{$data.Filters.CategoryID}}:{{$data.Filters.FulfillmentFrom}}:{{$data.Filters.FulfillmentTo}}">
+    <div class="matrix-toolbar" data-selection-toolbar>
       <div class="window-nav">
         <a class="button" href="/orders?fulfillment_from={{$data.PrevFrom}}&fulfillment_to={{$data.PrevTo}}&category_id={{$data.Filters.CategoryID}}">← Раньше</a>
         <span>{{$data.Filters.FulfillmentFrom}} — {{$data.Filters.FulfillmentTo}}</span>
         <a class="button" href="/orders?fulfillment_from={{$data.NextFrom}}&fulfillment_to={{$data.NextTo}}&category_id={{$data.Filters.CategoryID}}">Позже →</a>
       </div>
-      <button class="button" type="button" data-selection-toggle aria-pressed="false">Выбор партии</button>
-      <a class="button button-primary" href="/orders/selection" data-selection-open hidden>Открыть выбранные <span data-selection-count>0</span></a>
+      <div class="selection-actions">
+        <button class="button" type="button" data-selection-toggle aria-pressed="false">Выбор партии</button>
+        <button class="button button-ghost" type="button" data-selection-clear hidden>Снять всё</button>
+        <a class="button button-primary" href="/orders/selection" data-selection-open hidden>Открыть <span data-selection-count>0</span></a>
+      </div>
     </div>
     {{if $data.Matrix}}
-    <div class="matrix-scroll" role="region" aria-label="Матрица заказов" tabindex="0">
+    <div class="scroll-frame"><div class="matrix-scroll" role="region" aria-label="Матрица заказов" tabindex="0">
       <table class="order-matrix">
         <thead><tr><th class="matrix-axis">Дата</th>{{range $data.Shops}}<th>{{.Name}}</th>{{end}}</tr></thead>
         <tbody>
         {{range $row := $data.Matrix}}
-          <tr><th class="matrix-axis"><strong>{{$row.Label}}</strong><small>{{formatDate $row.Date}}</small></th>
+          <tr><th class="matrix-axis {{if $row.Tone}}tone-{{$row.Tone}}{{end}}"><strong>{{$row.Label}}</strong><small>{{formatDayMonth $row.Date}}</small></th>
           {{range $cell := $row.Cells}}<td>
             <div class="matrix-cell">
             {{range $order := $cell.Orders}}{{template "order-card" $order}}{{else}}{{template "empty-cell"}}{{end}}
@@ -45,7 +48,7 @@
         {{end}}
         </tbody>
       </table>
-    </div>
+    </div></div>
     {{else}}{{template "empty-state" (dict "Text" "На выбранные даты заказов нет.")}}{{end}}
   {{else}}
     <div class="shop-order-list">

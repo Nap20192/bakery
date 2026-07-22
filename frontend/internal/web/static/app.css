@@ -142,8 +142,15 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .selection-active .order-card[data-cancelled="true"], .selection-active .order-card[data-sheet]:not([data-sheet=""]) { cursor: not-allowed; opacity: 0.38; }
 .sheet-olive { background-color: #e9eddc !important; }.sheet-copper { background-color: #f1e3d8 !important; }.sheet-blue { background-color: #e2eaf0 !important; }.sheet-plum { background-color: #ece2ec !important; }.sheet-moss { background-color: #e3ebe2 !important; }.sheet-clay { background-color: #eee2dc !important; }
 .matrix-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
+.selection-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .window-nav { color: var(--ink-soft); font-size: 0.8rem; }
 .matrix-scroll, .summary-scroll, .journal-scroll, .production-table-wrap, .item-table-wrap { overflow: auto; overscroll-behavior-inline: contain; }
+/* Fade on the right edge of a table that can still be dragged sideways. It has
+   to overlay the scroller from outside: table cells are opaque and would paint
+   over any background or inset shadow set on the scroller itself. */
+.scroll-frame { position: relative; }
+.scroll-frame::after { position: absolute; top: 0; right: 0; bottom: 0; width: 30px; background: linear-gradient(to left, rgba(25, 24, 23, 0.16), transparent); content: ""; opacity: 0; pointer-events: none; transition: opacity 140ms ease; }
+.scroll-frame[data-scroll-more="true"]::after { opacity: 1; }
 .order-matrix { width: 100%; min-width: 780px; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
 .order-matrix th, .order-matrix td { width: 220px; border-right: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); vertical-align: top; }
 .order-matrix thead th { position: sticky; z-index: 20; top: 0; padding: 10px 12px; color: var(--ink-soft); background: var(--paper); font-size: 0.75rem; text-align: left; }
@@ -275,7 +282,10 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .main-nav { position: absolute; top: calc(100% + 1px); right: 12px; left: 12px; display: none; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; padding: 8px; border: 1px solid var(--line); border-radius: var(--radius-surface); background: var(--surface); box-shadow: 0 8px 24px rgba(25, 24, 23, 0.08); }
   .main-nav.is-open { display: grid; }
   .main-nav a { padding-inline: 12px; }
-  .detail-grid, .production-layout, .calculator-layout { grid-template-columns: 1fr; }
+  /* minmax(0, …), not 1fr: plain 1fr floors the column at min-content, and the
+     wide item/production tables inside would stretch the whole page instead of
+     scrolling within their own wrapper. */
+  .detail-grid, .production-layout, .calculator-layout { grid-template-columns: minmax(0, 1fr); }
   .detail-aside { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .monitor-panel { grid-column: 1 / -1; }
   .shop-order-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -319,8 +329,11 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .matrix-cell .order-card-foot { align-items: flex-start; flex-direction: column; gap: 2px; }
   .shop-order-list { grid-template-columns: 1fr; }
   .meta-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .detail-aside { grid-template-columns: 1fr; }
-  .item-table { min-width: 560px; }
+  .detail-aside { grid-template-columns: minmax(0, 1fr); }
+  /* Quantities are the point of this page, so the table compresses to fit
+     rather than hiding its numeric columns behind a horizontal scroll. */
+  .item-table { min-width: 0; }
+  .item-table th, .item-table td { padding: 8px 5px; }
   .category-picker, .category-picker.compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .category-choice { min-height: 58px; padding: 8px; }
   .catalog-row { grid-template-columns: minmax(130px, 1fr) 76px 76px; gap: 6px; }

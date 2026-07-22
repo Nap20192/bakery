@@ -30,6 +30,7 @@ func parseTemplates() (*template.Template, error) {
 		"eqID":             equalOptionalID,
 		"formatDate":       formatDate,
 		"formatDateTime":   formatDateTime,
+		"formatDayMonth":   formatDayMonth,
 		"formatQty":        formatQuantity,
 		"inputQty":         inputQuantity,
 		"isAdmin":          application.IsAdmin,

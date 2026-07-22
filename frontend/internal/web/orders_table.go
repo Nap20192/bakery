@@ -86,15 +86,8 @@ func (s *server) ordersTablePage(w http.ResponseWriter, r *http.Request) {
 
 func buildOrdersTable(orders []contract.Order, catalog []contract.Dish, categories []contract.Category, activeID int64, start, end time.Time) ordersTableData {
 	data := ordersTableData{Categories: categories, ActiveCategoryID: activeID}
-	today := startOfDay(time.Now())
 	for day := start; !day.After(end); day = day.AddDate(0, 0, 1) {
-		tone := ""
-		if day.Equal(today) {
-			tone = "today"
-		} else if day.Equal(today.AddDate(0, 0, 1)) {
-			tone = "tomorrow"
-		}
-		data.Columns = append(data.Columns, tableColumn{Date: day.Format(time.DateOnly), Label: relativeDateLabel(day), Tone: tone})
+		data.Columns = append(data.Columns, tableColumn{Date: day.Format(time.DateOnly), Label: weekdayLabel(day), Tone: dayTone(day)})
 	}
 	filteredOrders := make([]contract.Order, 0)
 	for _, order := range orders {

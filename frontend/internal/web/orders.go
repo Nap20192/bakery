@@ -29,6 +29,7 @@ type matrixCell struct {
 type matrixRow struct {
 	Date  string
 	Label string
+	Tone  string
 	Cells []matrixCell
 }
 
@@ -590,7 +591,7 @@ func buildOrderMatrix(orders []contract.Order, shops []contract.Department, from
 	rows := make([]matrixRow, 0, 5)
 	for day := to; !day.Before(from); day = day.AddDate(0, 0, -1) {
 		key := day.Format(time.DateOnly)
-		row := matrixRow{Date: key, Label: relativeDateLabel(day)}
+		row := matrixRow{Date: key, Label: weekdayLabel(day), Tone: dayTone(day)}
 		for _, shop := range shops {
 			row.Cells = append(row.Cells, matrixCell{Shop: shop, Orders: byDateShop[key][shop.ID]})
 		}
@@ -615,19 +616,21 @@ func matrixShops(orders []contract.Order, shops []contract.Department) []contrac
 	return shops
 }
 
-func relativeDateLabel(day time.Time) string {
+// weekdayLabel names the day. Today and tomorrow keep their own colour через
+// tone-today/tone-tomorrow, so the label itself stays uniform.
+func weekdayLabel(day time.Time) string {
+	return [...]string{"Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"}[int(day.Weekday())]
+}
+
+func dayTone(day time.Time) string {
 	today := startOfDay(time.Now())
-	delta := int(day.Sub(today).Hours() / 24)
-	switch delta {
-	case -1:
-		return "Вчера"
-	case 0:
-		return "Сегодня"
-	case 1:
-		return "Завтра"
-	default:
-		return day.Format("02.01")
+	switch {
+	case day.Equal(today):
+		return "today"
+	case day.Equal(today.AddDate(0, 0, 1)):
+		return "tomorrow"
 	}
+	return ""
 }
 
 func selectedOrderNumbers(r *http.Request) []string {
