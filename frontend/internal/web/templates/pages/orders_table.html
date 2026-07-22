@@ -2,7 +2,7 @@
 {{$data := .Data}}
 <section class="page table-page">
   <header class="page-heading">
-    {{template "page-title" (dict "Eyebrow" "Производственный план" "Title" "Таблица" "Lede" "Сколько печь по дням. Дата открывает новую или существующую партию.")}}
+    {{template "page-title" (dict "Title" "Таблица" "Lede" "Клик по дате открывает отработку.")}}
     <div class="window-nav">
       <a class="button" href="/orders/table?start={{$data.PrevStart}}&category_id={{$data.ActiveCategoryID}}">← Раньше</a>
       <a class="button" href="/orders/table?start={{$data.TodayStart}}&category_id={{$data.ActiveCategoryID}}">Сегодня</a>

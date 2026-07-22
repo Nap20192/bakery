@@ -2,22 +2,22 @@
 {{$data := .Data}}
 <section class="page selection-page">
   <header class="page-heading">
-    {{template "page-title" (dict "Eyebrow" "Новая партия" "Title" "Отработка" "Lede" "Проверьте состав партии и зафиксируйте закладку и выход.")}}
+    {{template "page-title" (dict "Title" "Новая отработка")}}
     <a class="button" href="/orders">К матрице</a>
   </header>
   {{if $data.Orders}}
   <section class="batch-orders">
-    {{template "section-heading" (dict "Eyebrow" "Партия" "Title" "Заказы" "Count" (len $data.Orders))}}
+    {{template "section-heading" (dict "Title" "Заказы партии" "Count" (len $data.Orders))}}
     {{range $data.Orders}}<details class="batch-order"><summary><span><strong>{{.Number}}</strong>{{template "category-badge" .Category}}</span><span>{{len .Items}} поз. · @{{.CreatedByUsername}} <button class="text-action" type="button" data-selection-remove="{{.Number}}">Убрать</button></span></summary><ul>{{range .Items}}<li><span>{{.ProductName}}</span><strong>{{formatQty .ProductionQuantity}}</strong></li>{{end}}</ul></details>{{end}}
   </section>
   <div class="production-layout">
     <section class="surface">
-      {{template "section-heading" (dict "Eyebrow" "Факт выпечки" "Title" "Заказ / закладка / выход")}}
+      {{template "section-heading" (dict "Title" "Факт выпечки")}}
       {{template "production-form" (dict "Action" "/production" "CSRF" .CSRF "Rows" $data.Rows "Submit" "Сохранить отработку")}}
     </section>
     <section class="surface monitor-panel">
-      {{template "section-heading" (dict "Eyebrow" "Расчёт теста" "Title" "После сохранения")}}
-      <p class="flash flash-warning">Сначала сохраните отработку. Расчёт выполняется только по сохранённому факту.</p>
+      {{template "section-heading" (dict "Title" "Расчёт теста")}}
+      <p class="flash flash-warning">Доступен после сохранения отработки.</p>
       <button class="button button-wide" disabled>Рассчитать тесто</button>
     </section>
   </div>

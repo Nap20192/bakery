@@ -1,11 +1,11 @@
 {{/* Dough calculation: the side panel that triggers it and the result markup. */}}
 
-{{/* monitor-panel: Eyebrow, Title, Placeholder, Orders (order numbers to calculate),
+{{/* monitor-panel: Title, Placeholder, Orders (order numbers to calculate),
      Dirty (sheet editors must be saved before calculating).
      Rendered as the /fragments/monitor response target. */}}
 {{define "monitor-panel"}}
 <section class="surface monitor-panel">
-  {{template "section-heading" (dict "Eyebrow" .Eyebrow "Title" .Title)}}
+  {{template "section-heading" (dict "Title" .Title)}}
   <div id="monitor-result"><p class="muted">{{.Placeholder}}</p></div>
   {{if .Dirty}}<p class="dirty-warning" data-dirty-warning hidden>Сохраните или отмените правки перед расчётом.</p>{{end}}
   <button class="button button-primary button-wide" {{if .Dirty}}data-monitor-button{{end}} hx-get="/fragments/monitor?{{range .Orders}}order={{urlquery .}}&{{end}}" hx-target="#monitor-result" hx-select="unset" hx-swap="innerHTML" hx-disabled-elt="this" hx-indicator="#global-progress">Рассчитать тесто</button>

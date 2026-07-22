@@ -2,7 +2,7 @@
 {{$data := .Data}}
 <section class="page production-page">
   <header class="page-heading">
-    {{template "page-title" (dict "Eyebrow" "Факт производства" "Title" "Журнал отработок" "Lede" "Каждая запись фиксирует отдельную партию и её выход.")}}
+    {{template "page-title" (dict "Title" "Журнал отработок")}}
     <span class="count">{{$data.Count}}</span>
   </header>
   {{if $data.Rows}}<div class="journal-scroll" role="region" aria-label="Журнал отработок" tabindex="0"><table class="journal-table"><thead><tr><th class="journal-axis">Дата</th>{{range $data.Categories}}<th>{{template "category-badge" .}}</th>{{end}}</tr></thead><tbody>

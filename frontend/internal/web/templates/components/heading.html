@@ -1,8 +1,9 @@
-{{/* Heading blocks shared by every page. */}}
+{{/* Heading blocks shared by every page. One label per block: an eyebrow above
+     the title only ever repeated what the title or the nav already said. */}}
 
-{{/* page-title: Eyebrow, Title, Lede — the left column of <header class="page-heading">.
-     The right column stays inline because it holds arbitrary markup. */}}
-{{define "page-title"}}<div><p class="eyebrow">{{.Eyebrow}}</p><h1>{{.Title}}</h1>{{if .Lede}}<p class="lede">{{.Lede}}</p>{{end}}</div>{{end}}
+{{/* page-title: Title, Lede — the left column of <header class="page-heading">.
+     Lede carries a rule the page cannot show on its own; most pages omit it. */}}
+{{define "page-title"}}<div><h1>{{.Title}}</h1>{{if .Lede}}<p class="lede">{{.Lede}}</p>{{end}}</div>{{end}}
 
-{{/* section-heading: Eyebrow, Title, Step, Count */}}
-{{define "section-heading"}}<div class="section-heading">{{if .Step}}<span class="step-number">{{.Step}}</span>{{end}}<div><p class="eyebrow">{{.Eyebrow}}</p><h2>{{.Title}}</h2></div>{{if isset . "Count"}}<span class="count">{{.Count}}</span>{{end}}</div>{{end}}
+{{/* section-heading: Title, Step, Count */}}
+{{define "section-heading"}}<div class="section-heading"><div class="section-heading-main">{{if .Step}}<span class="step-number">{{.Step}}</span>{{end}}<h2>{{.Title}}</h2></div>{{if isset . "Count"}}<span class="count">{{.Count}}</span>{{end}}</div>{{end}}

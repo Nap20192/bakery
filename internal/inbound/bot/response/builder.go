@@ -9,16 +9,14 @@ import (
 	orderdomain "bakery/internal/services/order/domain"
 )
 
-type Builder struct{}
-
-func (Builder) OrderSummary(order orderdomain.Order, fromDepartment string, toDepartment string) string {
+func OrderSummary(order orderdomain.Order, fromDepartment string, toDepartment string) string {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "<b>Заказ <code>%s</code> отправлен</b>\n\n", html.EscapeString(order.Number))
 	writeOrderDetails(&sb, order, fromDepartment, toDepartment)
 	return sb.String()
 }
 
-func (Builder) OrderUpdated(order orderdomain.Order, fromDepartment string, toDepartment string) string {
+func OrderUpdated(order orderdomain.Order, fromDepartment string, toDepartment string) string {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "<b>Заказ <code>%s</code> обновлен</b>\n\n", html.EscapeString(order.Number))
 	writeOrderDetails(&sb, order, fromDepartment, toDepartment)
@@ -26,7 +24,7 @@ func (Builder) OrderUpdated(order orderdomain.Order, fromDepartment string, toDe
 	return sb.String()
 }
 
-func (Builder) OrderCancelled(order orderdomain.Order, fromDepartment string, toDepartment string) string {
+func OrderCancelled(order orderdomain.Order, fromDepartment string, toDepartment string) string {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "<b>❌ Заказ <code>%s</code> отменён</b>\n\n", html.EscapeString(order.Number))
 	writeOrderDetails(&sb, order, fromDepartment, toDepartment)
@@ -36,7 +34,7 @@ func (Builder) OrderCancelled(order orderdomain.Order, fromDepartment string, to
 	return sb.String()
 }
 
-func (Builder) OrderRestored(order orderdomain.Order, fromDepartment string, toDepartment string) string {
+func OrderRestored(order orderdomain.Order, fromDepartment string, toDepartment string) string {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "<b>♻️ Заказ <code>%s</code> восстановлен</b>\n\n", html.EscapeString(order.Number))
 	writeOrderDetails(&sb, order, fromDepartment, toDepartment)
@@ -45,7 +43,7 @@ func (Builder) OrderRestored(order orderdomain.Order, fromDepartment string, toD
 
 // OrderProduced — уведомление об отработке: сколько реально испечено по
 // каждой позиции в сравнении с заявкой.
-func (Builder) OrderProduced(order orderdomain.Order, byUsername string) string {
+func OrderProduced(order orderdomain.Order, byUsername string) string {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "<b>🥖 Отработка по заказу <code>%s</code></b>\n\n", html.EscapeString(order.Number))
 	if actor := strings.TrimPrefix(strings.TrimSpace(byUsername), "@"); actor != "" {
@@ -80,7 +78,7 @@ func (Builder) OrderProduced(order orderdomain.Order, byUsername string) string 
 }
 
 // OrderProductionCleared — уведомление о снятии отработки.
-func (Builder) OrderProductionCleared(order orderdomain.Order, byUsername string) string {
+func OrderProductionCleared(order orderdomain.Order, byUsername string) string {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "<b>↩️ Отработка по заказу <code>%s</code> снята</b>\n", html.EscapeString(order.Number))
 	if actor := strings.TrimPrefix(strings.TrimSpace(byUsername), "@"); actor != "" {

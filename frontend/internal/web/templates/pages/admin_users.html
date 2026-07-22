@@ -2,7 +2,7 @@
 {{$data := .Data}}
 <section class="page admin-page">
   <header class="page-heading">
-    {{template "page-title" (dict "Eyebrow" "Администрирование" "Title" "Пользователи" "Lede" "Учётные записи, роли и привязка к подразделениям.")}}
+    {{template "page-title" (dict "Title" "Пользователи")}}
     <span class="count">{{len $data.Users}}</span>
   </header>
   <details class="create-panel" {{if .Error}}open{{end}}><summary>Добавить пользователя</summary>

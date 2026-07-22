@@ -21,7 +21,6 @@ import (
 
 	"bakery/internal/config"
 	outbounddb "bakery/internal/outbound/db"
-	"bakery/internal/pkg/helpers"
 	orderdomain "bakery/internal/services/order/domain"
 	"bakery/pkg/logger"
 
@@ -52,7 +51,7 @@ func main() {
 	yes := flag.Bool("yes", false, "подтвердить удаление всех заказов")
 	flag.Parse()
 
-	_ = config.LoadDotenv()
+	config.LoadDotenv()
 	cfg := config.New()
 	log, err := logger.InitLogger(cfg.Log.Level, cfg.Log.Pretty, "")
 	if err != nil {
@@ -72,7 +71,7 @@ func main() {
 		log.Error("open db failed", "error", err)
 		os.Exit(1)
 	}
-	defer helpers.ClosePool(db)
+	defer db.Close()
 
 	if err := run(ctx, db); err != nil {
 		log.Error("testingorders failed", "error", err)

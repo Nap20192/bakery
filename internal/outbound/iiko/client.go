@@ -8,8 +8,6 @@ import (
 	"net/http/cookiejar"
 	"strings"
 	"time"
-
-	"golang.org/x/net/publicsuffix"
 )
 
 type IikoClient interface {
@@ -31,9 +29,7 @@ type Client struct {
 }
 
 func NewClient(login, password string, api *Api) (*Client, error) {
-	jar, err := cookiejar.New(&cookiejar.Options{
-		PublicSuffixList: publicsuffix.List,
-	})
+	jar, err := cookiejar.New(nil)
 
 	if err != nil {
 		return nil, fmt.Errorf("iiko: cookiejar: %w", err)

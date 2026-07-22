@@ -28,8 +28,8 @@ const (
 var frontendFiles embed.FS
 
 type server struct {
-	queries   *application.Queries
-	commands  *application.Commands
+	queries   application.Queries
+	commands  application.Commands
 	logger    *slog.Logger
 	templates *template.Template
 	static    http.Handler
@@ -47,7 +47,7 @@ type page struct {
 	Data        any
 }
 
-func New(queries *application.Queries, commands *application.Commands, logger *slog.Logger) (http.Handler, error) {
+func New(queries application.Queries, commands application.Commands, logger *slog.Logger) (http.Handler, error) {
 	server, err := newServer(queries, commands, logger)
 	if err != nil {
 		return nil, err
@@ -55,7 +55,7 @@ func New(queries *application.Queries, commands *application.Commands, logger *s
 	return server.routes(), nil
 }
 
-func newServer(queries *application.Queries, commands *application.Commands, logger *slog.Logger) (*server, error) {
+func newServer(queries application.Queries, commands application.Commands, logger *slog.Logger) (*server, error) {
 	templates, err := parseTemplates()
 	if err != nil {
 		return nil, err

@@ -13,13 +13,12 @@ import (
 	"bakery/internal/deps"
 	outbounddb "bakery/internal/outbound/db"
 	"bakery/internal/pkg/dbmigrate"
-	"bakery/internal/pkg/helpers"
 	"bakery/pkg/logger"
 	"bakery/pkg/rabbitmq"
 )
 
 func main() {
-	_ = config.LoadDotenv()
+	config.LoadDotenv()
 
 	cfg := config.New()
 
@@ -37,7 +36,7 @@ func main() {
 		log.Error("open db failed", "error", err)
 		os.Exit(1)
 	}
-	defer helpers.ClosePool(db)
+	defer db.Close()
 	if err = dbmigrate.ApplyMigrations(ctx, db, log, cfg.Migration.Dir); err != nil {
 		log.Error("apply db migrations failed", "error", err, "dir", cfg.Migration.Dir)
 		os.Exit(1)

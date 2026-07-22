@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"bakery/frontend/internal/application"
 	"bakery/frontend/internal/backend"
 	"bakery/internal/inbound/api/contract"
 )
@@ -47,11 +46,7 @@ func TestFragmentRequestsOverrideShellSelection(t *testing.T) {
 func TestTemplatesRenderEveryView(t *testing.T) {
 	t.Parallel()
 	client := backend.New("http://127.0.0.1:1", time.Second)
-	srv, err := newServer(
-		application.NewQueries(client),
-		application.NewCommands(client),
-		slog.New(slog.NewTextHandler(io.Discard, nil)),
-	)
+	srv, err := newServer(client, client, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err != nil {
 		t.Fatalf("newServer: %v", err)
 	}

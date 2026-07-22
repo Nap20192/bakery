@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 
+	"bakery/internal/inbound/bot/response"
 	"bakery/internal/pkg/enum"
 	authuc "bakery/internal/services/auth/usecase/auth"
 	orderdomain "bakery/internal/services/order/domain"
@@ -58,17 +59,17 @@ func (b *OrderBot) handleOrderEvent(ctx context.Context, body []byte) error {
 	var message string
 	switch env.Type {
 	case orderdomain.EventOrderCreated:
-		message = responses.OrderSummary(order, fromName, toName)
+		message = response.OrderSummary(order, fromName, toName)
 	case orderdomain.EventOrderUpdated:
-		message = responses.OrderUpdated(order, fromName, toName)
+		message = response.OrderUpdated(order, fromName, toName)
 	case orderdomain.EventOrderCancelled:
-		message = responses.OrderCancelled(order, fromName, toName)
+		message = response.OrderCancelled(order, fromName, toName)
 	case orderdomain.EventOrderRestored:
-		message = responses.OrderRestored(order, fromName, toName)
+		message = response.OrderRestored(order, fromName, toName)
 	case orderdomain.EventOrderProduced:
-		message = responses.OrderProduced(order, payload.ProducedByUsername)
+		message = response.OrderProduced(order, payload.ProducedByUsername)
 	case orderdomain.EventOrderProductionCleared:
-		message = responses.OrderProductionCleared(order, payload.ProducedByUsername)
+		message = response.OrderProductionCleared(order, payload.ProducedByUsername)
 	default:
 		slog.WarnContext(ctx, "unknown order event type", "type", env.Type)
 		return nil

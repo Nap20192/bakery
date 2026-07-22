@@ -2,7 +2,7 @@
 {{$order := .Data.Order}}
 <section class="page order-detail-page">
   <header class="page-heading">
-    <div><p class="eyebrow">Заявка</p><h1>{{$order.Number}}</h1><div class="heading-badges">{{template "category-badge" $order.Category}}{{if $order.Cancelled}}<span class="status status-danger">✕ Отменён</span>{{end}}{{if $order.ProductionSheetID}}<a class="status {{sheetTone $order.ProductionSheetID}}" href="/production/{{$order.ProductionSheetID}}">✓ Отработка №{{$order.ProductionSheetID}}</a>{{end}}</div></div>
+    <div><h1>{{$order.Number}}</h1><div class="heading-badges">{{template "category-badge" $order.Category}}{{if $order.Cancelled}}<span class="status status-danger">✕ Отменён</span>{{end}}{{if $order.ProductionSheetID}}<a class="status {{sheetTone $order.ProductionSheetID}}" href="/production/{{$order.ProductionSheetID}}">✓ Отработка №{{$order.ProductionSheetID}}</a>{{end}}</div></div>
     <div class="actions">
       {{if canManageOrders $.Viewer}}
         <a class="button button-primary" href="/orders/{{urlquery $order.Number}}/edit">Изменить</a>
@@ -21,7 +21,7 @@
 
   <div class="detail-grid">
     <section class="surface">
-      {{template "section-heading" (dict "Eyebrow" "Состав заявки" "Title" "Позиции" "Count" (len $order.Items))}}
+      {{template "section-heading" (dict "Title" "Позиции" "Count" (len $order.Items))}}
       {{range $group := .Data.Groups}}
       <div class="item-group"><h3>{{$group.Name}}</h3>
         <div class="item-table-wrap"><table class="item-table"><thead><tr><th>Блюдо</th><th>Заказ</th><th>Резерв</th>{{if canUseProduction $.Viewer}}<th>Испечено</th>{{end}}</tr></thead><tbody>
@@ -35,9 +35,8 @@
     <aside class="detail-aside">
       {{if canUseProduction $.Viewer}}
         {{template "monitor-panel" (dict
-          "Eyebrow" "Технология"
           "Title" "Расчёт теста"
-          "Placeholder" "Расчёт использует сохранённый факт отработки."
+          "Placeholder" "Считается по сохранённому факту отработки."
           "Orders" (list $order.Number))}}
       {{end}}
       {{if isAdmin $.Viewer}}<form class="surface compact-form" action="/orders/{{urlquery $order.Number}}/favorite" method="post">{{template "csrf" $.CSRF}}<input type="hidden" name="favorite" value="{{if $order.Favorite}}false{{else}}true{{end}}"><button class="button button-wide" type="submit">{{if $order.Favorite}}Убрать из избранного{{else}}Добавить в избранное{{end}}</button></form>{{end}}
@@ -45,6 +44,6 @@
     </aside>
   </div>
 
-  {{if $order.History}}<section class="history">{{template "section-heading" (dict "Eyebrow" "Изменения" "Title" "История")}}{{range $entry := $order.History}}<details><summary>{{formatDateTime $entry.ChangedAt}} · @{{$entry.ChangedByUsername}}</summary><ul>{{range $entry.Items}}<li>{{.ProductName}} — {{.ChangeType}}</li>{{end}}</ul></details>{{end}}</section>{{end}}
+  {{if $order.History}}<section class="history">{{template "section-heading" (dict "Title" "История")}}{{range $entry := $order.History}}<details><summary>{{formatDateTime $entry.ChangedAt}} · @{{$entry.ChangedByUsername}}</summary><ul>{{range $entry.Items}}<li>{{.ProductName}} — {{.ChangeType}}</li>{{end}}</ul></details>{{end}}</section>{{end}}
 </section>
 {{end}}
