@@ -301,12 +301,19 @@ func (s *server) orderSelectionPage(w http.ResponseWriter, r *http.Request) {
 	}
 	numbers := selectedOrderNumbers(r)
 	orders := make([]contract.Order, 0, len(numbers))
+	skipped := make([]string, 0)
 	var categoryID int64
 	for _, number := range numbers {
 		order, err := s.queries.Order(r.Context(), cred, number)
 		if err != nil {
 			s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить выбранные заказы."))
 			return
+		}
+		// A stale pick would otherwise reach the API and fail there with
+		// order.production_exists, after the baker has already filled the sheet.
+		if order.Cancelled || order.ProductionSheetID != nil {
+			skipped = append(skipped, order.Number)
+			continue
 		}
 		currentCategoryID := int64(0)
 		if order.Category != nil {
@@ -319,7 +326,11 @@ func (s *server) orderSelectionPage(w http.ResponseWriter, r *http.Request) {
 		categoryID = currentCategoryID
 		orders = append(orders, order)
 	}
-	s.render(w, r, http.StatusOK, page{Title: "Партия", View: "selection", Viewer: viewer, Data: selectionData{Orders: orders, Rows: buildProductionRows(orders, nil)}})
+	notice := ""
+	if len(skipped) > 0 {
+		notice = "Не вошли в партию (уже отработаны или отменены): " + strings.Join(skipped, ", ") + "."
+	}
+	s.render(w, r, http.StatusOK, page{Title: "Партия", View: "selection", Viewer: viewer, Error: notice, Data: selectionData{Orders: orders, Rows: buildProductionRows(orders, nil)}})
 }
 
 func (s *server) monitorFragment(w http.ResponseWriter, r *http.Request) {
