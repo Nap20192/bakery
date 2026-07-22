@@ -67,6 +67,6 @@
     <span class="order-card-meta">{{len .Items}} поз. · {{if .FromDepartment}}{{.FromDepartment.Name}}{{else}}{{.Location}}{{end}}</span>
     <span class="order-card-state">{{if .Cancelled}}✕ Отменён{{else if .ProductionSheetID}}✓ Отработка №{{.ProductionSheetID}}{{else}}{{template "category-badge" .Category}}{{end}}</span>
   </a>
-  <button class="order-preview-action" type="button" hx-get="/fragments/orders/{{urlquery .Number}}" hx-target="#preview-slot" hx-swap="innerHTML" hx-disinherit="hx-select" aria-label="Обзор заказа {{.Number}}">Обзор</button>
+  <button class="order-preview-action" type="button" hx-get="/fragments/orders/{{urlquery .Number}}" hx-target="#preview-slot" hx-select="unset" hx-swap="innerHTML" aria-label="Обзор заказа {{.Number}}">Обзор</button>
 </article>
 {{end}}

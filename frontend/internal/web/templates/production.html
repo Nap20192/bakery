@@ -34,7 +34,7 @@
         <div class="form-actions"><button class="button" type="button" data-production-reset>Отменить правки</button><button class="button button-primary" type="submit">Сохранить изменения</button></div>
       </form>
     </section>
-    <section class="surface monitor-panel"><div class="section-heading"><div><p class="eyebrow">Технология</p><h2>Расчёт теста</h2></div></div><div id="monitor-result"><p class="muted">По сохранённому факту партии.</p></div><p class="dirty-warning" data-dirty-warning hidden>Сохраните или отмените правки перед расчётом.</p><button class="button button-primary button-wide" data-monitor-button hx-get="/fragments/monitor?{{range $sheet.OrderNumbers}}order={{urlquery .}}&{{end}}" hx-target="#monitor-result" hx-swap="innerHTML" hx-disinherit="hx-select" hx-disabled-elt="this" hx-indicator="#global-progress">Рассчитать тесто</button></section>
+    <section class="surface monitor-panel"><div class="section-heading"><div><p class="eyebrow">Технология</p><h2>Расчёт теста</h2></div></div><div id="monitor-result"><p class="muted">По сохранённому факту партии.</p></div><p class="dirty-warning" data-dirty-warning hidden>Сохраните или отмените правки перед расчётом.</p><button class="button button-primary button-wide" data-monitor-button hx-get="/fragments/monitor?{{range $sheet.OrderNumbers}}order={{urlquery .}}&{{end}}" hx-target="#monitor-result" hx-select="unset" hx-swap="innerHTML" hx-disabled-elt="this" hx-indicator="#global-progress">Рассчитать тесто</button></section>
   </div>
 </section>
 {{end}}
