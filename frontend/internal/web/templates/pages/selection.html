@@ -15,11 +15,11 @@
       {{template "section-heading" (dict "Title" "Факт выпечки")}}
       {{template "production-form" (dict "Action" "/production" "CSRF" .CSRF "Rows" $data.Rows "Submit" "Сохранить отработку")}}
     </section>
-    <section class="surface monitor-panel">
-      {{template "section-heading" (dict "Title" "Расчёт теста")}}
-      <p class="flash flash-warning">Доступен после сохранения отработки.</p>
-      <button class="button button-wide" disabled>Рассчитать тесто</button>
-    </section>
+    {{template "monitor-panel" (dict
+      "Title" "Расчёт теста"
+      "Placeholder" "Считается по заявкам партии. После сохранения отработки — по факту."
+      "Orders" $data.Numbers
+      "Dirty" true)}}
   </div>
   {{else}}{{template "empty-state" (dict "Text" "Партия пуста. Вернитесь в матрицу и выберите заказы одного типа.")}}{{end}}
 </section>
