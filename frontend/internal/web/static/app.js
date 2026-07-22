@@ -176,10 +176,13 @@
       sessionStorage.setItem(selectionModeKey, String(mode));
       render();
     });
+    // Capture phase: hx-boost binds its own handler to the card link, and on the
+    // bubble path that runs before this one, so the boosted navigation would win.
     cards.forEach((card) => card.addEventListener('click', (event) => {
       if (event.target.closest('button, input, select, textarea')) return;
       if (!mode) return;
       event.preventDefault();
+      event.stopPropagation();
       const number = card.dataset.number;
       const category = card.dataset.category;
       if (card.dataset.cancelled === 'true') {
@@ -196,7 +199,7 @@
       else selected.push({ number, category });
       sessionStorage.setItem(selectionKey, JSON.stringify(selected));
       render();
-    }));
+    }, true));
     render();
   }
 
