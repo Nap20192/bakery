@@ -12,7 +12,7 @@
         <p class="eyebrow">Веб-версия</p>
         <h2>Войти</h2>
       </div>
-      {{if .Error}}<div class="flash flash-error" role="alert">{{.Error}}</div>{{end}}
+      {{if .Error}}{{template "inline-error" .Error}}{{end}}
       <label class="field"><span>Логин</span><input name="username" autocomplete="username" required autofocus></label>
       <label class="field"><span>Пароль</span><input name="password" type="password" autocomplete="current-password" required></label>
       <button class="button button-primary button-wide" type="submit">Войти</button>

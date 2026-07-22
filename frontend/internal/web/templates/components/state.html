@@ -1,0 +1,14 @@
+{{/* Flash messages, inline errors and empty placeholders. */}}
+
+{{define "flash"}}
+  {{if .Error}}<div class="flash flash-error" role="alert">{{.Error}}</div>{{end}}
+  {{if .Success}}<div class="flash flash-success" role="status">{{.Success}}</div>{{end}}
+{{end}}
+
+{{/* inline-error takes the message text; used by fragment responses. */}}
+{{define "inline-error"}}<div class="flash flash-error" role="alert">{{.}}</div>{{end}}
+
+{{/* empty-state: Text, Compact */}}
+{{define "empty-state"}}<div class="empty-state{{if .Compact}} compact{{end}}">{{.Text}}</div>{{end}}
+
+{{define "empty-cell"}}<span class="empty-cell" aria-label="Пусто">·</span>{{end}}

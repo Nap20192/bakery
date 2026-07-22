@@ -1,0 +1,33 @@
+{{define "admin-dishes"}}
+{{$data := .Data}}
+<section class="page admin-page">
+  <header class="page-heading">{{template "page-title" (dict "Eyebrow" "Администрирование" "Title" "Каталог и типы" "Lede" "Порядок блюд, категории заявки и коды расчёта теста.")}}</header>
+
+  <section class="admin-section">
+    {{template "section-heading" (dict "Eyebrow" "Типы заявок" "Title" "Категории")}}
+    <div class="category-admin-grid">
+    {{range $category := $data.Categories}}<form class="category-admin category-border-{{categoryTone $category}}" action="/admin/categories/{{$category.ID}}" method="post">{{template "csrf" $.CSRF}}<div class="form-grid two"><label class="field"><span>Название</span><input name="name" value="{{$category.Name}}" required></label><label class="field"><span>Код</span><input name="code" value="{{$category.Code}}" required></label><label class="field"><span>Буква</span><input name="letter" value="{{$category.Letter}}" maxlength="2" required></label><label class="field"><span>Цвет</span><select name="color">{{template "color-options" $category.Color}}</select></label><label class="field field-wide"><span>Коды теста</span><textarea name="monitor_codes" rows="2">{{join $category.MonitorCodes ", "}}</textarea></label></div><div class="form-actions"><button class="button button-primary" type="submit">Сохранить</button><button class="button button-danger" type="submit" formaction="/admin/categories/{{$category.ID}}/delete" data-confirm="Удалить тип {{$category.Name}}?">Удалить</button></div></form>{{end}}
+    <form class="category-admin" action="/admin/categories" method="post">{{template "csrf" .CSRF}}<h3>Новый тип</h3><div class="form-grid two"><label class="field"><span>Название</span><input name="name" required></label><label class="field"><span>Код</span><input name="code" required></label><label class="field"><span>Буква</span><input name="letter" maxlength="2" required></label><label class="field"><span>Цвет</span><select name="color">{{template "color-options" "stone"}}</select></label><label class="field field-wide"><span>Коды теста</span><textarea name="monitor_codes" rows="2"></textarea></label></div><button class="button button-primary" type="submit">Создать тип</button></form>
+    </div>
+  </section>
+
+  <section class="admin-section">
+    {{template "section-heading" (dict "Eyebrow" "iiko" "Title" "Добавить блюдо")}}
+    <form class="filters" action="/admin/dishes" method="get"><label class="field compact"><span>Поиск по названию или коду</span><input name="q" value="{{$data.Search}}" type="search"></label><button class="button" type="submit">Найти</button></form>
+    {{if $data.Available}}<div class="available-list">{{range $data.Available}}<form class="available-row" action="/admin/dishes" method="post">{{template "csrf" $.CSRF}}<input type="hidden" name="code" value="{{.Code}}"><input type="hidden" name="name" value="{{.Name}}"><span><strong>{{.Name}}</strong><small>{{.Code}} · {{.Unit}}</small></span><input name="theme" placeholder="Группа" required aria-label="Группа {{.Name}}"><select name="category_id" aria-label="Тип заявки {{.Name}}"><option value="">Без типа</option>{{template "id-options" (dict "Items" $data.Categories "Selected" 0)}}</select><button class="button button-primary" type="submit">Добавить</button></form>{{end}}</div>{{end}}
+  </section>
+
+  <section class="admin-section">
+    {{template "section-heading" (dict "Eyebrow" "Порядок показа" "Title" "Блюда" "Count" (len $data.Dishes))}}
+    <div class="dish-admin-list">
+    {{range $index, $dish := $data.Dishes}}<details class="admin-row"><summary><span class="order-index">{{add $index 1}}</span><span><strong>{{$dish.Name}}</strong><small>{{$dish.Theme}} · {{$dish.Code}}</small></span><span>{{range $data.Categories}}{{if eqID .ID $dish.CategoryID}}{{template "category-badge" .}}{{end}}{{end}}</span></summary>
+      <form class="form-grid three" action="/admin/dishes/{{urlquery $dish.Code}}" method="post">{{template "csrf" $.CSRF}}<label class="field"><span>Название</span><input name="name" value="{{$dish.Name}}" required></label><label class="field"><span>Группа</span><input name="theme" value="{{$dish.Theme}}" required></label><label class="field"><span>Тип</span><select name="category_id"><option value="">Без типа</option>{{template "id-options" (dict "Items" $data.Categories "Selected" (deref $dish.CategoryID))}}</select></label><div class="form-actions"><button class="button button-primary" type="submit">Сохранить</button><button class="button button-danger" type="submit" formaction="/admin/dishes/{{urlquery $dish.Code}}/delete" data-confirm="Удалить блюдо {{$dish.Name}}?">Удалить</button></div></form>
+      <div class="reorder-actions">
+        {{template "reorder-button" (dict "CSRF" $.CSRF "Code" $dish.Code "Direction" "up" "Icon" "↑" "Label" (printf "Поднять %s" $dish.Name))}}
+        {{template "reorder-button" (dict "CSRF" $.CSRF "Code" $dish.Code "Direction" "down" "Icon" "↓" "Label" (printf "Опустить %s" $dish.Name))}}
+      </div>
+    </details>{{end}}
+    </div>
+  </section>
+</section>
+{{end}}

@@ -1,0 +1,50 @@
+{{define "order-detail"}}
+{{$order := .Data.Order}}
+<section class="page order-detail-page">
+  <header class="page-heading">
+    <div><p class="eyebrow">Заявка</p><h1>{{$order.Number}}</h1><div class="heading-badges">{{template "category-badge" $order.Category}}{{if $order.Cancelled}}<span class="status status-danger">✕ Отменён</span>{{end}}{{if $order.ProductionSheetID}}<a class="status {{sheetTone $order.ProductionSheetID}}" href="/production/{{$order.ProductionSheetID}}">✓ Отработка №{{$order.ProductionSheetID}}</a>{{end}}</div></div>
+    <div class="actions">
+      {{if canManageOrders $.Viewer}}
+        <a class="button button-primary" href="/orders/{{urlquery $order.Number}}/edit">Изменить</a>
+        <a class="button" href="/orders/new?duplicate={{urlquery $order.Number}}">Повторить</a>
+      {{end}}
+      <a class="button" href="/orders">К списку</a>
+    </div>
+  </header>
+
+  <dl class="meta-grid">
+    <div><dt>Выполнить</dt><dd>{{formatDate $order.FulfillmentDate}}</dd></div>
+    <div><dt>Магазин</dt><dd>{{if $order.FromDepartment}}{{$order.FromDepartment.Name}}{{else}}{{$order.Location}}{{end}}</dd></div>
+    <div><dt>Автор</dt><dd>@{{$order.CreatedByUsername}}</dd></div>
+    <div><dt>Создан</dt><dd>{{formatDateTime $order.CreatedAt}}</dd></div>
+  </dl>
+
+  <div class="detail-grid">
+    <section class="surface">
+      {{template "section-heading" (dict "Eyebrow" "Состав заявки" "Title" "Позиции" "Count" (len $order.Items))}}
+      {{range $group := .Data.Groups}}
+      <div class="item-group"><h3>{{$group.Name}}</h3>
+        <div class="item-table-wrap"><table class="item-table"><thead><tr><th>Блюдо</th><th>Заказ</th><th>Резерв</th>{{if canUseProduction $.Viewer}}<th>Испечено</th>{{end}}</tr></thead><tbody>
+          {{range $item := $group.Items}}<tr><td><strong>{{$item.ProductName}}</strong>{{with commentFor $item.ProductName $order.Comments.Items}}<small>{{.}}</small>{{end}}</td><td>{{formatQty $item.Quantity}}</td><td>{{formatQty $item.ReservedQuantity}}</td>{{if canUseProduction $.Viewer}}<td class="{{if $item.ProducedQuantity}}production-fact{{end}}">{{if $item.ProducedQuantity}}{{formatQty $item.ProducedQuantity}}{{else}}—{{end}}{{if $item.ProducedReason}}<small>{{$item.ProducedReason}}</small>{{end}}</td>{{end}}</tr>{{end}}
+        </tbody></table></div>
+      </div>
+      {{end}}
+      {{if $order.Comments.General}}<div class="note"><strong>Комментарий</strong><p>{{$order.Comments.General}}</p></div>{{end}}
+    </section>
+
+    <aside class="detail-aside">
+      {{if canUseProduction $.Viewer}}
+        {{template "monitor-panel" (dict
+          "Eyebrow" "Технология"
+          "Title" "Расчёт теста"
+          "Placeholder" "Расчёт использует сохранённый факт отработки."
+          "Orders" (list $order.Number))}}
+      {{end}}
+      {{if isAdmin $.Viewer}}<form class="surface compact-form" action="/orders/{{urlquery $order.Number}}/favorite" method="post">{{template "csrf" $.CSRF}}<input type="hidden" name="favorite" value="{{if $order.Favorite}}false{{else}}true{{end}}"><button class="button button-wide" type="submit">{{if $order.Favorite}}Убрать из избранного{{else}}Добавить в избранное{{end}}</button></form>{{end}}
+      {{if canManageOrders $.Viewer}}<form class="surface compact-form" action="/orders/{{urlquery $order.Number}}/{{if $order.Cancelled}}restore{{else}}cancel{{end}}" method="post" {{if not $order.Cancelled}}data-confirm="Отменить заказ {{$order.Number}}?"{{end}}>{{template "csrf" $.CSRF}}<button class="button {{if not $order.Cancelled}}button-danger{{end}} button-wide" type="submit">{{if $order.Cancelled}}Восстановить заказ{{else}}Отменить заказ{{end}}</button></form>{{end}}
+    </aside>
+  </div>
+
+  {{if $order.History}}<section class="history">{{template "section-heading" (dict "Eyebrow" "Изменения" "Title" "История")}}{{range $entry := $order.History}}<details><summary>{{formatDateTime $entry.ChangedAt}} · @{{$entry.ChangedByUsername}}</summary><ul>{{range $entry.Items}}<li>{{.ProductName}} — {{.ChangeType}}</li>{{end}}</ul></details>{{end}}</section>{{end}}
+</section>
+{{end}}

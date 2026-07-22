@@ -1,0 +1,7 @@
+{{/* Form building blocks. */}}
+
+{{/* csrf takes the token itself: {{template "csrf" $.CSRF}} */}}
+{{define "csrf"}}<input type="hidden" name="_csrf" value="{{.}}">{{end}}
+
+{{/* reorder-button: CSRF, Code, Direction, Icon, Label */}}
+{{define "reorder-button"}}<form action="/admin/dishes/reorder" method="post">{{template "csrf" .CSRF}}<input type="hidden" name="code" value="{{.Code}}"><input type="hidden" name="direction" value="{{.Direction}}"><button class="button button-icon" type="submit" aria-label="{{.Label}}">{{.Icon}}</button></form>{{end}}

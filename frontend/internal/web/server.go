@@ -24,7 +24,7 @@ const (
 	csrfCookie    = "bakery_csrf"
 )
 
-//go:embed templates/*.html static/* static/vendor/*
+//go:embed templates static
 var frontendFiles embed.FS
 
 type server struct {
@@ -56,27 +56,9 @@ func New(queries *application.Queries, commands *application.Commands, logger *s
 }
 
 func newServer(queries *application.Queries, commands *application.Commands, logger *slog.Logger) (*server, error) {
-	templates, err := template.New("layout").Funcs(template.FuncMap{
-		"active":           activePath,
-		"add":              func(a, b int) int { return a + b },
-		"canManageOrders":  application.CanManageOrders,
-		"canUseProduction": application.CanUseProduction,
-		"categoryTone":     categoryTone,
-		"commentFor":       commentFor,
-		"eqID":             equalOptionalID,
-		"formatDate":       formatDate,
-		"formatDateTime":   formatDateTime,
-		"formatQty":        formatQuantity,
-		"inputQty":         inputQuantity,
-		"isAdmin":          application.IsAdmin,
-		"join":             strings.Join,
-		"roleName":         roleName,
-		"sheetTone":        sheetTone,
-		"sub":              func(a, b int) int { return a - b },
-		"urlquery":         url.QueryEscape,
-	}).ParseFS(frontendFiles, "templates/*.html")
+	templates, err := parseTemplates()
 	if err != nil {
-		return nil, fmt.Errorf("parse templates: %w", err)
+		return nil, err
 	}
 	staticFS, err := fs.Sub(frontendFiles, "static")
 	if err != nil {

@@ -45,18 +45,7 @@
     </header>
     <main id="main" tabindex="-1">
       {{template "flash" .}}
-      {{if eq .View "orders"}}{{template "orders" .}}{{end}}
-      {{if eq .View "order-detail"}}{{template "order-detail" .}}{{end}}
-      {{if eq .View "order-form"}}{{template "order-form" .}}{{end}}
-      {{if eq .View "selection"}}{{template "selection" .}}{{end}}
-      {{if eq .View "orders-table"}}{{template "orders-table" .}}{{end}}
-      {{if eq .View "production"}}{{template "production" .}}{{end}}
-      {{if eq .View "production-detail"}}{{template "production-detail" .}}{{end}}
-      {{if eq .View "calculator"}}{{template "calculator" .}}{{end}}
-      {{if eq .View "admin-users"}}{{template "admin-users" .}}{{end}}
-      {{if eq .View "admin-dishes"}}{{template "admin-dishes" .}}{{end}}
-      {{if eq .View "me"}}{{template "me" .}}{{end}}
-      {{if eq .View "error"}}{{template "error-page" .}}{{end}}
+      {{view .View .}}
     </main>
   </div>
   {{end}}
@@ -64,15 +53,4 @@
   <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 </body>
 </html>
-{{end}}
-
-{{define "flash"}}
-  {{if .Error}}<div class="flash flash-error" role="alert">{{.Error}}</div>{{end}}
-  {{if .Success}}<div class="flash flash-success" role="status">{{.Success}}</div>{{end}}
-{{end}}
-
-{{define "inline-error"}}<div class="flash flash-error" role="alert">{{.}}</div>{{end}}
-
-{{define "category-badge"}}
-  {{if .}}<span class="category category-{{categoryTone .}}"><span aria-hidden="true"></span>{{.Name}}</span>{{else}}<span class="category category-stone"><span aria-hidden="true"></span>Без типа</span>{{end}}
 {{end}}

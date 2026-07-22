@@ -1,0 +1,23 @@
+{{/* Production sheet editor. The same form serves a new batch and a saved sheet. */}}
+
+{{/* production-form: Action, CSRF, Rows, Submit */}}
+{{define "production-form"}}
+<form class="production-form" action="{{.Action}}" method="post" data-production-form hx-sync="this:replace" hx-disabled-elt="find button[type=submit]">
+  {{template "csrf" .CSRF}}
+  {{template "production-rows" .Rows}}
+  <div class="form-actions"><button class="button" type="button" data-production-reset>Отменить правки</button><button class="button button-primary" type="submit">{{.Submit}}</button></div>
+</form>
+{{end}}
+
+{{/* production-rows takes the row slice. */}}
+{{define "production-rows"}}
+<div class="production-table-wrap"><table class="production-table"><thead><tr><th>Позиция</th><th>Заказ</th><th>Закладка</th><th>Выход</th><th>Причина</th></tr></thead><tbody>
+{{range .}}<tr data-production-row data-linked="{{.Linked}}" data-initial-linked="{{.Linked}}">
+  <td><input type="hidden" name="order_number" value="{{.OrderNumber}}"><input type="hidden" name="product_name" value="{{.ProductName}}"><strong>{{.ProductName}}</strong><small>{{.OrderNumber}}</small></td>
+  <td class="ordered" data-ordered="{{.OrderedQuantity}}">{{formatQty .OrderedQuantity}}</td>
+  <td><input class="quantity-input" type="number" name="loaded_quantity" min="0" step="0.1" inputmode="decimal" value="{{formatQty .LoadedQuantity}}" required></td>
+  <td><input class="quantity-input" type="number" name="produced_quantity" min="0" step="0.1" inputmode="decimal" value="{{formatQty .ProducedQuantity}}" required></td>
+  <td><input name="reason" value="{{.Reason}}" maxlength="200" placeholder="Если есть отклонение"></td>
+</tr>{{end}}
+</tbody></table></div>
+{{end}}
