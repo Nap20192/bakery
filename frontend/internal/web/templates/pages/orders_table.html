@@ -10,8 +10,8 @@
     </div>
   </header>
   <nav class="category-tabs" aria-label="Тип заявки">{{range $data.Categories}}<a class="category-tab category-tab-{{categoryTone .}} {{if eq .ID $data.ActiveCategoryID}}is-active{{end}}" href="/orders/table?category_id={{.ID}}">{{.Name}}</a>{{end}}</nav>
-  <div class="summary-scroll" role="region" aria-label="Сводка блюд по датам" tabindex="0"><table class="summary-table"><thead><tr><th class="summary-axis">Блюдо</th>{{range $data.Columns}}<th class="tone-{{.Tone}}">{{if .ActionURL}}<a href="{{.ActionURL}}"><strong>{{.Label}}</strong><small>{{formatDate .Date}}</small></a>{{else}}<strong>{{.Label}}</strong><small>{{formatDate .Date}}</small>{{end}}</th>{{end}}</tr></thead><tbody>
+  <div class="scroll-frame"><div class="summary-scroll" role="region" aria-label="Сводка блюд по датам" tabindex="0"><table class="summary-table"><thead><tr><th class="summary-axis">Блюдо</th>{{range $data.Columns}}<th class="tone-{{.Tone}}">{{if .ActionURL}}<a href="{{.ActionURL}}"><strong>{{.Label}}</strong><small>{{formatDayMonth .Date}}</small></a>{{else}}<strong>{{.Label}}</strong><small>{{formatDayMonth .Date}}</small>{{end}}</th>{{end}}</tr></thead><tbody>
     {{range $row := $data.Rows}}<tr><th class="summary-axis">{{$row.Dish.Name}}</th>{{range $cell := $row.Cells}}<td>{{if $cell.Quantity}}<strong>{{formatQty $cell.Quantity}}</strong>{{if $cell.Produced}}{{if $cell.Delta}}<sup class="{{if lt $cell.Delta 0.0}}negative{{else}}positive{{end}}">{{if gt $cell.Delta 0.0}}+{{end}}{{formatQty $cell.Delta}}</sup>{{else}}<sup class="done">✓</sup>{{end}}{{end}}{{else}}{{template "empty-cell"}}{{end}}</td>{{end}}</tr>{{end}}
-  </tbody><tfoot><tr><th class="summary-axis">Итого</th>{{range $data.Totals}}<td>{{if .}}{{formatQty .}}{{else}}·{{end}}</td>{{end}}</tr></tfoot></table></div>
+  </tbody><tfoot><tr><th class="summary-axis">Итого</th>{{range $data.Totals}}<td>{{if .}}{{formatQty .}}{{else}}·{{end}}</td>{{end}}</tr></tfoot></table></div></div>
 </section>
 {{end}}

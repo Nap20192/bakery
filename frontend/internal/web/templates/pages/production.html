@@ -5,8 +5,8 @@
     {{template "page-title" (dict "Title" "Журнал отработок")}}
     <span class="count">{{$data.Count}}</span>
   </header>
-  {{if $data.Rows}}<div class="journal-scroll" role="region" aria-label="Журнал отработок" tabindex="0"><table class="journal-table"><thead><tr><th class="journal-axis">Дата</th>{{range $data.Categories}}<th>{{template "category-badge" .}}</th>{{end}}</tr></thead><tbody>
-    {{range $row := $data.Rows}}<tr><th class="journal-axis">{{formatDate $row.Date}}</th>{{range $cell := $row.Cells}}<td>{{range $cell}}<a class="sheet-link {{sheetTone .Sheet.ID}}" href="/production/{{.Sheet.ID}}"><strong>№{{.Sheet.ID}}</strong><span>@{{.Sheet.CreatedByUsername}} · {{len .Sheet.OrderNumbers}} зак.</span><small>{{if .Sheet.ItemCount}}± Отклонений: {{.Sheet.ItemCount}}{{else}}✓ Без отклонений{{end}}</small></a>{{else}}{{template "empty-cell"}}{{end}}</td>{{end}}</tr>{{end}}
-  </tbody></table></div>{{else}}{{template "empty-state" (dict "Text" "Отработок пока нет. Выберите заказы в матрице и сохраните факт выпечки.")}}{{end}}
+  {{if $data.Rows}}<div class="scroll-frame"><div class="journal-scroll" role="region" aria-label="Журнал отработок" tabindex="0"><table class="journal-table"><thead><tr><th class="journal-axis">Дата</th>{{range $data.Categories}}<th>{{template "category-badge" .}}</th>{{end}}</tr></thead><tbody>
+    {{range $row := $data.Rows}}<tr><th class="journal-axis">{{formatDayMonth $row.Date}}</th>{{range $cell := $row.Cells}}<td>{{range $cell}}<a class="sheet-link {{sheetTone .Sheet.ID}}" href="/production/{{.Sheet.ID}}"><strong>№{{.Sheet.ID}}</strong><span>@{{.Sheet.CreatedByUsername}} · {{len .Sheet.OrderNumbers}} зак.</span><small>{{if .Sheet.ItemCount}}± Отклонений: {{.Sheet.ItemCount}}{{else}}✓ Без отклонений{{end}}</small></a>{{else}}{{template "empty-cell"}}{{end}}</td>{{end}}</tr>{{end}}
+  </tbody></table></div></div>{{else}}{{template "empty-state" (dict "Text" "Отработок пока нет. Выберите заказы в матрице и сохраните факт выпечки.")}}{{end}}
 </section>
 {{end}}
