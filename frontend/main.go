@@ -11,22 +11,18 @@ import (
 	"syscall"
 	"time"
 
-	"bakery/frontend/internal/application"
 	"bakery/frontend/internal/backend"
 	"bakery/frontend/internal/web"
 	"bakery/internal/config"
 )
 
 func main() {
-	if err := config.LoadDotenv(); err != nil {
-		slog.Error("load dotenv", "error", err)
-		os.Exit(1)
-	}
+	config.LoadDotenv()
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	apiURL := env("BACKEND_URL", "http://127.0.0.1:8080")
 	client := backend.New(apiURL, 20*time.Second)
-	handler, err := web.New(application.NewQueries(client), application.NewCommands(client), logger)
+	handler, err := web.New(client, client, logger)
 	if err != nil {
 		logger.Error("initialize frontend", "error", err)
 		os.Exit(1)

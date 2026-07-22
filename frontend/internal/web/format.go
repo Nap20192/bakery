@@ -50,7 +50,15 @@ func formatQuantity(value any) string {
 	if math.Abs(number-math.Round(number)) < 0.000001 {
 		return strconv.FormatInt(int64(math.Round(number)), 10)
 	}
-	return strconv.FormatFloat(number, 'f', -1, 64)
+	// Dough calculations divide by assembled amounts and produce long tails such
+	// as 1.3333333333333333. Two decimals is display-only rounding; the backend
+	// keeps full precision. Order and production quantities never carry more than
+	// one decimal, so they pass through unchanged.
+	rounded := math.Round(number*100) / 100
+	if math.Abs(rounded-math.Round(rounded)) < 0.000001 {
+		return strconv.FormatInt(int64(math.Round(rounded)), 10)
+	}
+	return strconv.FormatFloat(rounded, 'f', -1, 64)
 }
 
 func inputQuantity(value float64) string {

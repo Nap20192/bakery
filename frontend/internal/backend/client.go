@@ -28,8 +28,8 @@ type Client struct {
 }
 
 var (
-	_ application.QueryGateway   = (*Client)(nil)
-	_ application.CommandGateway = (*Client)(nil)
+	_ application.Queries  = (*Client)(nil)
+	_ application.Commands = (*Client)(nil)
 )
 
 // New returns a client for the API rooted at baseURL.

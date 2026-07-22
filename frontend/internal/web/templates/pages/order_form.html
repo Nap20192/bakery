@@ -1,29 +1,29 @@
 {{define "order-form"}}
 {{$data := .Data}}
 {{$update := eq $data.Mode "update"}}
-{{$eyebrow := "Новая заявка"}}{{$title := "Собрать заявку"}}{{$step := "Что заказываем"}}{{$submit := "Создать заказ"}}
-{{if $update}}{{$eyebrow = "Редактирование"}}{{$title = "Изменить заявку"}}{{$step = "Тип зафиксирован"}}{{$submit = "Сохранить изменения"}}{{end}}
+{{$title := "Новая заявка"}}{{$step := "Тип заявки"}}{{$submit := "Создать заказ"}}
+{{if $update}}{{$title = "Изменить заявку"}}{{$step = "Тип заявки (зафиксирован)"}}{{$submit = "Сохранить изменения"}}{{end}}
 {{$back := "/orders"}}{{if $data.Order}}{{$back = printf "/orders/%s" (urlquery $data.Order.Number)}}{{end}}
 <section class="page order-editor" data-order-editor>
   <header class="page-heading">
-    {{template "page-title" (dict "Eyebrow" $eyebrow "Title" $title "Lede" "Сначала выберите тип, затем заполните только нужные количества.")}}
+    {{template "page-title" (dict "Title" $title)}}
     <a class="button" href="{{$back}}">Закрыть</a>
   </header>
   <form class="editor-form" action="{{if $update}}/orders/{{urlquery $data.Order.Number}}/edit{{else}}/orders{{end}}" method="post" hx-disabled-elt="find button[type=submit]" hx-sync="this:replace">
     {{template "csrf" .CSRF}}
     <section class="editor-step">
-      {{template "section-heading" (dict "Step" "1" "Eyebrow" "Тип заявки" "Title" $step)}}
+      {{template "section-heading" (dict "Step" "1" "Title" $step)}}
       {{template "category-picker" (dict "Categories" $data.Categories "Selected" $data.CategoryID "Locked" $update)}}
     </section>
     <section class="editor-step">
-      {{template "section-heading" (dict "Step" "2" "Eyebrow" "Доставка" "Title" "Куда и когда")}}
+      {{template "section-heading" (dict "Step" "2" "Title" "Куда и когда")}}
       <div class="form-grid two">
         <label class="field"><span>Магазин</span><select name="from_department_id" required><option value="">Выберите магазин</option>{{template "id-options" (dict "Items" $data.Shops "Selected" $data.FromDepartmentID)}}</select></label>
         <label class="field"><span>Дата выполнения</span><input type="date" name="fulfillment_date" value="{{$data.FulfillmentDate}}" min="{{.Today}}" required></label>
       </div>
     </section>
     <section class="editor-step">
-      <div class="section-heading"><span class="step-number">3</span><div><p class="eyebrow">Количество</p><h2>Позиции</h2></div><output class="editor-summary" data-editor-summary>0 поз.</output></div>
+      <div class="section-heading"><div class="section-heading-main"><span class="step-number">3</span><h2>Позиции</h2></div><output class="editor-summary" data-editor-summary>0 поз.</output></div>
       <div class="catalog-groups">
       {{range $group := $data.Groups}}<section class="catalog-group"><h3>{{$group.Name}}</h3><div class="catalog-list">
         {{range $item := $group.Items}}<div class="catalog-row" data-catalog-row data-category="{{deref $item.Dish.CategoryID}}" data-name="{{$item.Dish.Name}}">

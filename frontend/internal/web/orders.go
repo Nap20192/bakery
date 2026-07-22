@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -674,8 +673,4 @@ func fallback(value, fallbackValue string) string {
 		return fallbackValue
 	}
 	return value
-}
-
-func sortOrdersByNumber(orders []contract.Order) {
-	sort.SliceStable(orders, func(i, j int) bool { return orders[i].Number < orders[j].Number })
 }

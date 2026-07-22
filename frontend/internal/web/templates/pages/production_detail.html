@@ -3,9 +3,8 @@
 <section class="page production-detail-page">
   <header class="page-heading">
     {{template "page-title" (dict
-      "Eyebrow" "Документ партии"
       "Title" (printf "Отработка №%d" $sheet.ID)
-      "Lede" (printf "%s · @%s · %d заказов" (formatDateTime $sheet.CreatedAt) $sheet.CreatedByUsername (len $sheet.OrderNumbers)))}}
+      "Lede" (printf "%s · @%s" (formatDateTime $sheet.CreatedAt) $sheet.CreatedByUsername))}}
     <div class="actions">
       <a class="button" href="/production">К журналу</a>
       <form action="/production/{{$sheet.ID}}/delete" method="post" data-confirm="Удалить отработку №{{$sheet.ID}}? Заказы вернутся к факту по заявке.">{{template "csrf" .CSRF}}<button class="button button-danger" type="submit">Удалить</button></form>
@@ -14,13 +13,12 @@
   <div class="batch-links">{{range $sheet.OrderNumbers}}<a href="/orders/{{urlquery .}}">{{.}}</a>{{end}}</div>
   <div class="production-layout">
     <section class="surface">
-      {{template "section-heading" (dict "Eyebrow" "Факт выпечки" "Title" "Заказ / закладка / выход")}}
+      {{template "section-heading" (dict "Title" "Факт выпечки")}}
       {{template "production-form" (dict "Action" (printf "/production/%d" $sheet.ID) "CSRF" .CSRF "Rows" $data.Rows "Submit" "Сохранить изменения")}}
     </section>
     {{template "monitor-panel" (dict
-      "Eyebrow" "Технология"
       "Title" "Расчёт теста"
-      "Placeholder" "По сохранённому факту партии."
+      "Placeholder" "Считается по сохранённому факту партии."
       "Orders" $sheet.OrderNumbers
       "Dirty" true)}}
   </div>
