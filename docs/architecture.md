@@ -1,8 +1,9 @@
 # Architecture
 
 The system is a **modular monolith** with clean architecture and strict
-dependency inversion. One Go module produces two binaries that share the same
-service code but wire different subsets of it.
+dependency inversion. One Go module produces the worker, bot, and frontend
+binaries. The worker and bot share service code; the frontend is an HTTP
+client of the worker API.
 
 ## Technology stack
 
@@ -23,22 +24,19 @@ Backend (`go.mod`, `docker-compose.yml`):
 | Migrations | goose-format SQL files, applied by the built-in runner `internal/pkg/dbmigrate` (no external goose binary) |
 | Lint | golangci-lint (`.golangci.yml`) |
 
-Frontend (`frontend/package-lock.json` — resolved versions):
+Frontend (`frontend/`):
 
 | Component | Version |
 |---|---|
-| React / React DOM | 19.2.6 |
-| Vite | 8.0.14 (`@vitejs/plugin-react` 6.0.2) |
-| Tailwind CSS | 4.3.0 (CSS-first `@theme`, via `@tailwindcss/vite`) |
-| `radix-ui` (headless primitives: Dialog, AlertDialog) | 1.6.2 |
-| `class-variance-authority` + `clsx` + `tailwind-merge` (shadcn/ui pattern in `src/ui/`) | latest |
-| `@fontsource-variable/golos-text` | 5.2.8 |
-| ESLint | 10.4.0 (flat config, react-hooks + react-refresh plugins) |
-| Runtime | Node.js proxy server (`frontend/server.js`) on Railway; no framework, plain `node:http` |
+| Runtime and rendering | Go `net/http`, `html/template`, `embed` |
+| Hypermedia | HTMX 2.0.4, vendored in `static/vendor` |
+| Styling | plain mobile-first CSS with semantic tokens |
+| Browser code | plain JavaScript for Telegram bridge and local interaction state |
+| Application boundary | CQRS `Queries` and `Commands` in `frontend/internal/application` |
+| API adapter | typed Go package `frontend/internal/backend` |
 
-`react`, `react-dom`, `vite`, and `@vitejs/plugin-react` are declared as
-`latest` in `package.json` — the versions above are what the lock file
-currently pins; check `package-lock.json` after any `npm install`.
+There is no Node runtime, bundler, package manager, or client framework in the
+frontend build.
 
 ## Binaries
 
@@ -46,10 +44,12 @@ currently pins; check `package-lock.json` after any `npm install`.
 |---|---|
 | `cmd/worker` | HTTP API, iiko sync loop, order cleanup ticker, outbox relay. Applies DB migrations on startup, ensures the admin user, seeds the dish catalog from `templates/`. |
 | `cmd/bot` | Telegram bot (login/info commands, Mini App entry) and the RabbitMQ consumer that turns order events into Telegram notifications. |
+| `frontend` | HTML/HTMX BFF. Renders the Mini App, owns browser cookies and CSRF, and calls the worker API over HTTP. |
 
 The bot binary contains **no** HTTP API and the worker contains **no**
 Telegram polling; the only channel between them is RabbitMQ (plus the shared
-database).
+database). The frontend contains no repositories or service use cases and
+never accesses the database directly.
 
 ## Layering
 
@@ -114,6 +114,24 @@ clear error when a dependency is missing.
 each handler's `RegisterRoutes` on a single `http.ServeMux`, plus
 `GET /health`.
 
+## Frontend CQRS boundary
+
+The BFF has three explicit layers:
+
+```text
+web handlers -> application Queries / Commands <- backend HTTP adapter
+```
+
+- `application` owns the gateway ports, read/write facades, frontend filters,
+  and safe transport errors;
+- `backend` implements both ports over the worker HTTP API;
+- `web` owns cookies, CSRF, routes, view-model projection and HTML rendering;
+- `frontend/main.go` is the composition root and is the only place that wires
+  the concrete adapter into Queries and Commands.
+
+Web handlers do not import the backend adapter. The application layer does not
+know about HTTP, templates, cookies, or worker implementation details.
+
 ## API contract (OpenAPI)
 
 The HTTP API is described in **`docs/api/openapi.yaml`** — the single source
@@ -122,14 +140,15 @@ of truth for both sides:
 - **Backend**: `internal/inbound/api/openapi_test.go` fails when a route
   registered in the mux is missing from the spec or vice versa (it scans the
   `mux.Handle("METHOD /path"` patterns in the delivery adapters).
-- **Frontend**: `npm run api-gen` (or `make api-gen`) regenerates
-  `frontend/src/api/schema.d.ts` via openapi-typescript; the `src/api/`
-  modules call the backend through a typed `openapi-fetch` client, so an
-  unknown path, wrong method, or misspelled field fails `npm run typecheck`.
-  The generated `schema.d.ts` is committed.
+- **Shared Go DTOs**: `internal/inbound/api/contract` is used by worker HTTP
+  handlers and the frontend backend adapter, so request and response structs
+  are not duplicated.
+- **Frontend**: `frontend/internal/backend` implements application query and
+  command ports. `go test ./frontend/...` compiles the boundary and executes
+  every HTML view with typed fixtures.
 
 Changing a handler or DTO: update the spec → `go test ./internal/inbound/api`
-→ `make api-gen`.
+→ `make frontend-check`.
 
 ## Authentication
 
@@ -155,6 +174,11 @@ Three middlewares gate the routes:
 Finer-grained rules (e.g. "only shop creates orders", "only baker/admin
 writes production sheets") are enforced inside the handlers on top of these
 middlewares.
+
+The frontend BFF receives Telegram initData or a web password once, validates
+it through the worker, and stores the resulting API credential in an
+`HttpOnly`, `SameSite=Lax` cookie. Mutating HTML routes require a separate
+CSRF token. Browser code never stores or sends the worker bearer token.
 
 ## Events and messaging
 
@@ -227,12 +251,11 @@ initData validation and web session tokens.
 
 ## Frontend deployment
 
-The frontend (`frontend/`) is a React/Vite Telegram Mini App deployed on
-Railway as a small Node proxy (`frontend/server.js`) that serves the static
-build and proxies `/api/*` to the backend over Railway's private network
-(`http://<service>.railway.internal:8080`). See
-[frontend/ui-kit.md](frontend/ui-kit.md) for the frontend's internal
-structure.
+The frontend (`frontend/`) is a Go HTML/HTMX Telegram Mini App deployed on
+Railway as a separate public service. Its BFF calls the worker over Railway's
+private network (`http://<service>.railway.internal:8080`), while templates,
+CSS, JavaScript, and HTMX are embedded into one static binary. See
+[frontend/ui-kit.md](frontend/ui-kit.md) for its interface conventions.
 
 ## Error-handling policy
 

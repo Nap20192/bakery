@@ -1,0 +1,78 @@
+{{define "layout"}}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f4f3ee">
+  <meta name="csrf-token" content="{{.CSRF}}">
+  <meta name="htmx-config" content='{"includeIndicatorStyles":false}'>
+  <title>{{.Title}} · Bakery</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/app.css">
+  <script defer src="https://telegram.org/js/telegram-web-app.js?62"></script>
+  <script defer src="/static/vendor/htmx.min.js"></script>
+  <script defer src="/static/app.js"></script>
+</head>
+<body>
+  <div id="global-progress" class="progress" role="progressbar" aria-label="Загрузка"></div>
+  {{if eq .View "login"}}
+    {{template "login" .}}
+  {{else}}
+  <div id="app-shell" class="app-shell" hx-boost="true" hx-target="#app-shell" hx-select="#app-shell" hx-swap="outerHTML show:window:top" hx-indicator="#global-progress">
+    <header class="topbar">
+      <a class="brand" href="/orders" aria-label="Bakery, заказы">
+        <span class="brand-mark" aria-hidden="true">B</span>
+        <span><strong>Bakery</strong><small>Производственный журнал</small></span>
+      </a>
+      {{if .Viewer}}
+      <button class="menu-toggle" type="button" data-menu-toggle aria-expanded="false" aria-controls="main-nav">Меню</button>
+      <nav id="main-nav" class="main-nav" aria-label="Основная навигация">
+        {{if ne .Viewer.Role "admin"}}<a href="/orders" {{if active .CurrentPath "/orders"}}aria-current="page"{{end}}>Заказы</a>{{end}}
+        {{if canUseProduction .Viewer}}
+          <a href="/orders" {{if eq .CurrentPath "/orders"}}aria-current="page"{{end}}>Матрица</a>
+          <a href="/orders/table" {{if active .CurrentPath "/orders/table"}}aria-current="page"{{end}}>Таблица</a>
+          <a href="/production" {{if active .CurrentPath "/production"}}aria-current="page"{{end}}>Отработки</a>
+          <a href="/calculator" {{if active .CurrentPath "/calculator"}}aria-current="page"{{end}}>Тесто</a>
+        {{end}}
+        {{if isAdmin .Viewer}}
+          <a href="/admin/users" {{if active .CurrentPath "/admin/users"}}aria-current="page"{{end}}>Пользователи</a>
+          <a href="/admin/dishes" {{if active .CurrentPath "/admin/dishes"}}aria-current="page"{{end}}>Каталог</a>
+        {{end}}
+        <a href="/me" {{if active .CurrentPath "/me"}}aria-current="page"{{end}}>Профиль</a>
+      </nav>
+      {{end}}
+    </header>
+    <main id="main" tabindex="-1">
+      {{template "flash" .}}
+      {{if eq .View "orders"}}{{template "orders" .}}{{end}}
+      {{if eq .View "order-detail"}}{{template "order-detail" .}}{{end}}
+      {{if eq .View "order-form"}}{{template "order-form" .}}{{end}}
+      {{if eq .View "selection"}}{{template "selection" .}}{{end}}
+      {{if eq .View "orders-table"}}{{template "orders-table" .}}{{end}}
+      {{if eq .View "production"}}{{template "production" .}}{{end}}
+      {{if eq .View "production-detail"}}{{template "production-detail" .}}{{end}}
+      {{if eq .View "calculator"}}{{template "calculator" .}}{{end}}
+      {{if eq .View "admin-users"}}{{template "admin-users" .}}{{end}}
+      {{if eq .View "admin-dishes"}}{{template "admin-dishes" .}}{{end}}
+      {{if eq .View "me"}}{{template "me" .}}{{end}}
+      {{if eq .View "error"}}{{template "error-page" .}}{{end}}
+    </main>
+  </div>
+  {{end}}
+  <div id="preview-slot"></div>
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>
+{{end}}
+
+{{define "flash"}}
+  {{if .Error}}<div class="flash flash-error" role="alert">{{.Error}}</div>{{end}}
+  {{if .Success}}<div class="flash flash-success" role="status">{{.Success}}</div>{{end}}
+{{end}}
+
+{{define "inline-error"}}<div class="flash flash-error" role="alert">{{.}}</div>{{end}}
+
+{{define "category-badge"}}
+  {{if .}}<span class="category category-{{categoryTone .}}"><span aria-hidden="true"></span>{{.Name}}</span>{{else}}<span class="category category-stone"><span aria-hidden="true"></span>Без типа</span>{{end}}
+{{end}}

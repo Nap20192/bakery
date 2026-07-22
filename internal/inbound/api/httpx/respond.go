@@ -10,22 +10,17 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"bakery/internal/inbound/api/contract"
 )
 
 // ErrorResponse is the standard JSON error body.
-type ErrorResponse struct {
-	Error string `json:"error"`
-}
+type ErrorResponse = contract.Error
 
 // DepartmentResponse is the shared department projection embedded by several
 // services (orders carry departments, the department and admin lists return
 // them directly).
-type DepartmentResponse struct {
-	ID   int64  `json:"id"`
-	Code string `json:"code"`
-	Name string `json:"name"`
-	Type string `json:"type"`
-}
+type DepartmentResponse = contract.Department
 
 // WriteJSON encodes payload as a JSON response with the given status.
 func WriteJSON(w http.ResponseWriter, status int, payload any) {
