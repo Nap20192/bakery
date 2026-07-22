@@ -6,11 +6,12 @@ import (
 	"net/http"
 	"strconv"
 
+	"bakery/internal/inbound/api/contract"
 	"bakery/internal/inbound/api/httpx"
 	orderdomain "bakery/internal/services/order/domain"
 )
 
-func (req dishWriteRequest) toDomain() orderdomain.DishCatalogItem {
+func dishWriteToDomain(req contract.DishWrite) orderdomain.DishCatalogItem {
 	return orderdomain.DishCatalogItem{
 		Code:       req.Code,
 		Name:       req.Name,
@@ -20,36 +21,11 @@ func (req dishWriteRequest) toDomain() orderdomain.DishCatalogItem {
 	}
 }
 
-func toDishResponse(item orderdomain.DishCatalogItem) dishResponse {
-	return dishResponse{Code: item.Code, Name: item.Name, Theme: item.Theme, CategoryID: item.CategoryID, SortOrder: item.SortOrder}
+func toDishResponse(item orderdomain.DishCatalogItem) contract.Dish {
+	return contract.Dish{Code: item.Code, Name: item.Name, Theme: item.Theme, CategoryID: item.CategoryID, SortOrder: item.SortOrder}
 }
 
-type dishResponse struct {
-	Code       string `json:"code"`
-	Name       string `json:"name"`
-	Theme      string `json:"theme"`
-	CategoryID *int64 `json:"category_id"`
-	SortOrder  int64  `json:"sort_order"`
-}
-
-type dishWriteRequest struct {
-	Code       string `json:"code"`
-	Name       string `json:"name"`
-	Theme      string `json:"theme"`
-	CategoryID *int64 `json:"category_id"`
-	SortOrder  int64  `json:"sort_order"`
-}
-
-type categoryWriteRequest struct {
-	Code         string   `json:"code"`
-	Letter       string   `json:"letter"`
-	Name         string   `json:"name"`
-	Color        string   `json:"color"`
-	SortOrder    int64    `json:"sort_order"`
-	MonitorCodes []string `json:"monitor_codes"`
-}
-
-func (req categoryWriteRequest) toDomain() orderdomain.OrderCategory {
+func categoryWriteToDomain(req contract.CategoryWrite) orderdomain.OrderCategory {
 	return orderdomain.OrderCategory{
 		Code:         req.Code,
 		Letter:       req.Letter,
@@ -76,12 +52,12 @@ func (h *Handler) RegisterAdminRoutes(mux *http.ServeMux, auth *httpx.Authentica
 }
 
 func (h *Handler) handleCreateCategory(w http.ResponseWriter, r *http.Request) {
-	var req categoryWriteRequest
+	var req contract.CategoryWrite
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httpx.WriteError(w, http.StatusBadRequest, "Некорректные данные.")
 		return
 	}
-	category, err := h.orderSvc.CreateOrderCategory(r.Context(), req.toDomain())
+	category, err := h.orderSvc.CreateOrderCategory(r.Context(), categoryWriteToDomain(req))
 	if err != nil {
 		httpx.WriteAppError(w, r, err, "Не удалось создать тип заявки.")
 		return
@@ -95,12 +71,12 @@ func (h *Handler) handleUpdateCategory(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, http.StatusBadRequest, "Укажите тип заявки.")
 		return
 	}
-	var req categoryWriteRequest
+	var req contract.CategoryWrite
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httpx.WriteError(w, http.StatusBadRequest, "Некорректные данные.")
 		return
 	}
-	category, err := h.orderSvc.UpdateOrderCategory(r.Context(), id, req.toDomain())
+	category, err := h.orderSvc.UpdateOrderCategory(r.Context(), id, categoryWriteToDomain(req))
 	if err != nil {
 		httpx.WriteAppError(w, r, err, "Не удалось обновить тип заявки.")
 		return
@@ -121,13 +97,9 @@ func (h *Handler) handleDeleteCategory(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-type favoriteRequest struct {
-	Favorite bool `json:"favorite"`
-}
-
 func (h *Handler) handleSetFavorite(w http.ResponseWriter, r *http.Request) {
 	number := httpx.Trim(r.PathValue("id"))
-	var req favoriteRequest
+	var req contract.FavoriteUpdate
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httpx.WriteError(w, http.StatusBadRequest, "Некорректные данные.")
 		return
@@ -147,17 +119,11 @@ func (h *Handler) handleListDishes(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, http.StatusInternalServerError, "Не удалось получить блюда.")
 		return
 	}
-	out := make([]dishResponse, 0, len(items))
+	out := make([]contract.Dish, 0, len(items))
 	for _, item := range items {
 		out = append(out, toDishResponse(item))
 	}
 	httpx.WriteJSON(w, http.StatusOK, out)
-}
-
-type availableDishResponse struct {
-	Code string `json:"code"`
-	Name string `json:"name"`
-	Unit string `json:"unit"`
 }
 
 func (h *Handler) handleListAvailableDishes(w http.ResponseWriter, r *http.Request) {
@@ -168,19 +134,15 @@ func (h *Handler) handleListAvailableDishes(w http.ResponseWriter, r *http.Reque
 		httpx.WriteError(w, http.StatusInternalServerError, "Не удалось получить блюда.")
 		return
 	}
-	out := make([]availableDishResponse, 0, len(dishes))
+	out := make([]contract.AvailableDish, 0, len(dishes))
 	for _, dish := range dishes {
-		out = append(out, availableDishResponse{Code: dish.Code, Name: dish.Name, Unit: dish.Unit})
+		out = append(out, contract.AvailableDish{Code: dish.Code, Name: dish.Name, Unit: dish.Unit})
 	}
 	httpx.WriteJSON(w, http.StatusOK, out)
 }
 
-type reorderRequest struct {
-	Codes []string `json:"codes"`
-}
-
 func (h *Handler) handleReorderDishes(w http.ResponseWriter, r *http.Request) {
-	var req reorderRequest
+	var req contract.ReorderDishes
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httpx.WriteError(w, http.StatusBadRequest, "Некорректные данные.")
 		return
@@ -193,12 +155,12 @@ func (h *Handler) handleReorderDishes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleCreateDish(w http.ResponseWriter, r *http.Request) {
-	var req dishWriteRequest
+	var req contract.DishWrite
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httpx.WriteError(w, http.StatusBadRequest, "Некорректные данные.")
 		return
 	}
-	item, err := h.orderSvc.AddDishCatalogItem(r.Context(), req.toDomain())
+	item, err := h.orderSvc.AddDishCatalogItem(r.Context(), dishWriteToDomain(req))
 	if err != nil {
 		httpx.WriteAppError(w, r, err, "Не удалось добавить блюдо.")
 		return
@@ -208,12 +170,12 @@ func (h *Handler) handleCreateDish(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleUpdateDish(w http.ResponseWriter, r *http.Request) {
 	code := httpx.Trim(r.PathValue("code"))
-	var req dishWriteRequest
+	var req contract.DishWrite
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httpx.WriteError(w, http.StatusBadRequest, "Некорректные данные.")
 		return
 	}
-	item, err := h.orderSvc.UpdateDishCatalogItem(r.Context(), code, req.toDomain())
+	item, err := h.orderSvc.UpdateDishCatalogItem(r.Context(), code, dishWriteToDomain(req))
 	if err != nil {
 		httpx.WriteAppError(w, r, err, "Не удалось обновить блюдо.")
 		return

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"bakery/internal/inbound/api/contract"
 	"bakery/internal/pkg/enum"
 
 	"bakery/internal/inbound/api/httpx"
@@ -23,30 +24,6 @@ const (
 	maxOrderItems          = 250
 	maxItemQuantity        = 100000
 )
-
-type orderWriteRequest struct {
-	Items            []orderWriteItem   `json:"items"`
-	FulfillmentDate  string             `json:"fulfillment_date"`
-	FromDepartmentID *int64             `json:"from_department_id"`
-	CategoryID       int64              `json:"category_id"`
-	Comments         orderWriteComments `json:"comments"`
-}
-
-type orderWriteItem struct {
-	ProductName      string  `json:"product_name"`
-	Quantity         float64 `json:"quantity"`
-	ReservedQuantity float64 `json:"reserved_quantity"`
-}
-
-type orderWriteComments struct {
-	General string              `json:"general"`
-	Items   []orderWriteComment `json:"items"`
-}
-
-type orderWriteComment struct {
-	ProductName string `json:"product_name"`
-	Comment     string `json:"comment"`
-}
 
 // handleCatalog returns the dish catalog. Shops build orders from it; bakers
 // use it to group order positions by catalog theme in the order views.
@@ -61,7 +38,11 @@ func (h *Handler) handleCatalog(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, http.StatusInternalServerError, "Не удалось загрузить список блюд.")
 		return
 	}
-	httpx.WriteJSON(w, http.StatusOK, items)
+	responses := make([]contract.Dish, 0, len(items))
+	for _, item := range items {
+		responses = append(responses, toDishResponse(item))
+	}
+	httpx.WriteJSON(w, http.StatusOK, responses)
 }
 
 func (h *Handler) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
@@ -205,7 +186,7 @@ type validatedOrderWrite struct {
 	comments         orderdomain.OrderComments
 }
 
-func buildComments(req orderWriteComments) orderdomain.OrderComments {
+func buildComments(req contract.Comments) orderdomain.OrderComments {
 	out := orderdomain.OrderComments{General: strings.TrimSpace(req.General)}
 	for _, c := range req.Items {
 		name := strings.TrimSpace(c.ProductName)
@@ -219,7 +200,7 @@ func buildComments(req orderWriteComments) orderdomain.OrderComments {
 }
 
 func decodeOrderWriteRequest(w http.ResponseWriter, r *http.Request) (validatedOrderWrite, bool) {
-	var request orderWriteRequest
+	var request contract.OrderWrite
 	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&request); err != nil {

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"bakery/internal/inbound/api/contract"
 	"bakery/internal/inbound/api/httpx"
 	departmentuc "bakery/internal/services/department/usecase/department"
 	orderdomain "bakery/internal/services/order/domain"
@@ -117,7 +118,7 @@ func (h *Handler) handleListOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.WriteJSON(w, http.StatusOK, ordersPageResponse{
+	httpx.WriteJSON(w, http.StatusOK, contract.OrdersPage{
 		Items:      h.presenter.BuildOrderResponses(r.Context(), result.Orders),
 		Page:       page,
 		Limit:      result.Limit,
@@ -139,7 +140,7 @@ func (h *Handler) handleListCategories(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, http.StatusInternalServerError, "Не удалось загрузить типы заявок.")
 		return
 	}
-	responses := make([]CategoryResponse, 0, len(categories))
+	responses := make([]contract.Category, 0, len(categories))
 	for _, category := range categories {
 		responses = append(responses, *buildCategoryResponse(&category))
 	}

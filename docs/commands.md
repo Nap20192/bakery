@@ -124,25 +124,27 @@ After editing SQL in `queries/`: `make sqlc` → `make build`. Never edit
 ## Frontend (`frontend/`)
 
 ```bash
-cd frontend
-npm install        # once / after dependency changes
-npm run dev        # Vite dev server on http://localhost:5173, proxies /api
-npm run lint       # eslint
-npm run build      # production build to dist/
-npm run preview    # serve the production build locally
-npm run api-gen    # regenerate src/api/schema.d.ts from docs/api/openapi.yaml
-npm run typecheck  # tsc: check src/api against the generated schema
+# Worker must be running on :8080.
+FRONTEND_ADDR=:5173 BACKEND_URL=http://127.0.0.1:8080 go run ./frontend
+
+# Frontend-only checks.
+gofmt -w frontend/main.go frontend/internal
+go test ./frontend/...
+go vet ./frontend/...
+
+# Production binary.
+go build -o /tmp/bakery-frontend ./frontend
 ```
 
 Browser QA is documented in
-[`frontend/development-workflow.md`](frontend/development-workflow.md). After
-installing Playwright and axe, use the project's future `test:e2e` /
-`test:a11y` scripts; until then run browser checks through the installed
-`playwright-interactive` skill and report the exact tested viewports.
+[`frontend/development-workflow.md`](frontend/development-workflow.md). Run
+Playwright and axe through the installed browser skills and report the exact
+tested viewports.
 
 After changing any backend route or DTO: update `docs/api/openapi.yaml`,
-run `go test ./internal/inbound/api` (route-sync test), then `make api-gen`
-(regenerates + typechecks the frontend client).
+run `go test ./internal/inbound/api` (route-sync test), then
+`make frontend-check` (compiles the typed Go API client and renders every
+template fixture).
 
 The dev server expects the worker on :8080. Login for local web testing:
 `admin` / `ADMIN_PASSWORD` from `.env`.
@@ -176,7 +178,7 @@ docker compose up -d db rabbitmq
 cp .env.example .env          # fill in tokens/passwords
 go run ./cmd/worker           # applies migrations, seeds admin + catalog
 # in a second terminal:
-cd frontend && npm install && npm run dev
+FRONTEND_ADDR=:5173 BACKEND_URL=http://127.0.0.1:8080 go run ./frontend
 ```
 
 **Full reset of local data:**

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"bakery/internal/inbound/api/contract"
 	"bakery/internal/inbound/api/httpx"
 	"bakery/internal/pkg/authtoken"
 	authuc "bakery/internal/services/auth/usecase/auth"
@@ -34,26 +35,6 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, auth *httpx.Authenticator) 
 	mux.Handle("GET /me", auth.RequireAuth(http.HandlerFunc(h.handleMe)))
 }
 
-type loginRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-type loginResponse struct {
-	Token     string `json:"token"`
-	ExpiresAt int64  `json:"expires_at"`
-}
-
-type meResponse struct {
-	Role           string `json:"role"`
-	TelegramID     int64  `json:"telegram_id"`
-	TelegramUser   string `json:"telegram_username"`
-	DepartmentID   int64  `json:"department_id"`
-	DepartmentCode string `json:"department_code"`
-	DepartmentName string `json:"department_name"`
-	DepartmentType string `json:"department_type"`
-}
-
 // handleLogin authenticates a plain-web visitor with username + password and
 // issues a bearer session token. Mini App clients do not use this — they
 // authenticate per request with Telegram initData.
@@ -63,7 +44,7 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req loginRequest
+	var req contract.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httpx.WriteError(w, http.StatusBadRequest, "Некорректные данные входа.")
 		return
@@ -87,7 +68,7 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, http.StatusInternalServerError, "Не удалось создать сессию.")
 		return
 	}
-	httpx.WriteJSON(w, http.StatusOK, loginResponse{
+	httpx.WriteJSON(w, http.StatusOK, contract.LoginResponse{
 		Token:     token,
 		ExpiresAt: time.Now().Add(webSessionTTL).Unix(),
 	})
@@ -95,9 +76,9 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleMe(w http.ResponseWriter, r *http.Request) {
 	viewer, _ := httpx.MiniAppUserFromContext(r.Context())
-	resp := meResponse{
-		Role:         viewer.Auth.Role,
-		TelegramUser: httpx.TelegramUsernameOf(viewer.Auth),
+	resp := contract.Me{
+		Role:             viewer.Auth.Role,
+		TelegramUsername: httpx.TelegramUsernameOf(viewer.Auth),
 	}
 	if viewer.Auth.TelegramID != nil {
 		resp.TelegramID = *viewer.Auth.TelegramID

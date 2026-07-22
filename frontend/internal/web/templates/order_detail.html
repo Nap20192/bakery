@@ -1,0 +1,60 @@
+{{define "order-detail"}}
+{{$order := .Data.Order}}
+<section class="page order-detail-page">
+  <header class="page-heading">
+    <div><p class="eyebrow">Заявка</p><h1>{{$order.Number}}</h1><div class="heading-badges">{{template "category-badge" $order.Category}}{{if $order.Cancelled}}<span class="status status-danger">✕ Отменён</span>{{end}}{{if $order.ProductionSheetID}}<a class="status {{sheetTone $order.ProductionSheetID}}" href="/production/{{$order.ProductionSheetID}}">✓ Отработка №{{$order.ProductionSheetID}}</a>{{end}}</div></div>
+    <div class="actions">
+      {{if canManageOrders $.Viewer}}
+        <a class="button button-primary" href="/orders/{{urlquery $order.Number}}/edit">Изменить</a>
+        <a class="button" href="/orders/new?duplicate={{urlquery $order.Number}}">Повторить</a>
+      {{end}}
+      <a class="button" href="/orders">К списку</a>
+    </div>
+  </header>
+
+  <dl class="meta-grid">
+    <div><dt>Выполнить</dt><dd>{{formatDate $order.FulfillmentDate}}</dd></div>
+    <div><dt>Магазин</dt><dd>{{if $order.FromDepartment}}{{$order.FromDepartment.Name}}{{else}}{{$order.Location}}{{end}}</dd></div>
+    <div><dt>Автор</dt><dd>@{{$order.CreatedByUsername}}</dd></div>
+    <div><dt>Создан</dt><dd>{{formatDateTime $order.CreatedAt}}</dd></div>
+  </dl>
+
+  <div class="detail-grid">
+    <section class="surface">
+      <div class="section-heading"><div><p class="eyebrow">Состав заявки</p><h2>Позиции</h2></div><span class="count">{{len $order.Items}}</span></div>
+      {{range $group := .Data.Groups}}
+      <div class="item-group"><h3>{{$group.Name}}</h3>
+        <div class="item-table-wrap"><table class="item-table"><thead><tr><th>Блюдо</th><th>Заказ</th><th>Резерв</th>{{if canUseProduction $.Viewer}}<th>Испечено</th>{{end}}</tr></thead><tbody>
+          {{range $item := $group.Items}}<tr><td><strong>{{$item.ProductName}}</strong>{{with commentFor $item.ProductName $order.Comments.Items}}<small>{{.}}</small>{{end}}</td><td>{{formatQty $item.Quantity}}</td><td>{{formatQty $item.ReservedQuantity}}</td>{{if canUseProduction $.Viewer}}<td class="{{if $item.ProducedQuantity}}production-fact{{end}}">{{if $item.ProducedQuantity}}{{formatQty $item.ProducedQuantity}}{{else}}—{{end}}{{if $item.ProducedReason}}<small>{{$item.ProducedReason}}</small>{{end}}</td>{{end}}</tr>{{end}}
+        </tbody></table></div>
+      </div>
+      {{end}}
+      {{if $order.Comments.General}}<div class="note"><strong>Комментарий</strong><p>{{$order.Comments.General}}</p></div>{{end}}
+    </section>
+
+    <aside class="detail-aside">
+      {{if canUseProduction $.Viewer}}
+      <section class="surface monitor-panel">
+        <div class="section-heading"><div><p class="eyebrow">Технология</p><h2>Расчёт теста</h2></div></div>
+        <div id="monitor-result"><p class="muted">Расчёт использует сохранённый факт отработки.</p></div>
+        <button class="button button-primary button-wide" hx-get="/fragments/monitor?order={{urlquery $order.Number}}" hx-target="#monitor-result" hx-swap="innerHTML" hx-disinherit="hx-select" hx-disabled-elt="this" hx-indicator="#global-progress">Рассчитать тесто</button>
+      </section>
+      {{end}}
+      {{if isAdmin $.Viewer}}<form class="surface compact-form" action="/orders/{{urlquery $order.Number}}/favorite" method="post"><input type="hidden" name="_csrf" value="{{$.CSRF}}"><input type="hidden" name="favorite" value="{{if $order.Favorite}}false{{else}}true{{end}}"><button class="button button-wide" type="submit">{{if $order.Favorite}}Убрать из избранного{{else}}Добавить в избранное{{end}}</button></form>{{end}}
+      {{if canManageOrders $.Viewer}}<form class="surface compact-form" action="/orders/{{urlquery $order.Number}}/{{if $order.Cancelled}}restore{{else}}cancel{{end}}" method="post" {{if not $order.Cancelled}}data-confirm="Отменить заказ {{$order.Number}}?"{{end}}><input type="hidden" name="_csrf" value="{{$.CSRF}}"><button class="button {{if not $order.Cancelled}}button-danger{{end}} button-wide" type="submit">{{if $order.Cancelled}}Восстановить заказ{{else}}Отменить заказ{{end}}</button></form>{{end}}
+    </aside>
+  </div>
+
+  {{if $order.History}}<section class="history"><div class="section-heading"><div><p class="eyebrow">Изменения</p><h2>История</h2></div></div>{{range $entry := $order.History}}<details><summary>{{formatDateTime $entry.ChangedAt}} · @{{$entry.ChangedByUsername}}</summary><ul>{{range $entry.Items}}<li>{{.ProductName}} — {{.ChangeType}}</li>{{end}}</ul></details>{{end}}</section>{{end}}
+</section>
+{{end}}
+
+{{define "order-preview"}}
+<dialog class="preview-dialog" data-auto-dialog aria-labelledby="preview-title">
+  <div class="preview-header"><div><p class="eyebrow">Обзор заявки</p><h2 id="preview-title">{{.Number}}</h2></div><form method="dialog"><button class="button button-icon" aria-label="Закрыть">×</button></form></div>
+  <div class="heading-badges">{{template "category-badge" .Category}}{{if .ProductionSheetID}}<span class="status {{sheetTone .ProductionSheetID}}">✓ Отработка №{{.ProductionSheetID}}</span>{{end}}</div>
+  <dl class="preview-meta"><div><dt>Выполнить</dt><dd>{{formatDate .FulfillmentDate}}</dd></div><div><dt>Магазин</dt><dd>{{if .FromDepartment}}{{.FromDepartment.Name}}{{else}}{{.Location}}{{end}}</dd></div></dl>
+  <ul class="preview-items">{{range .Items}}<li><span>{{.ProductName}}</span><strong>{{formatQty .ProductionQuantity}}</strong></li>{{end}}</ul>
+  <div class="form-actions"><form method="dialog"><button class="button">Закрыть</button></form><a class="button button-primary" href="/orders/{{urlquery .Number}}">Открыть заказ</a></div>
+</dialog>
+{{end}}

@@ -1,0 +1,20 @@
+{{define "error-page"}}
+<section class="page narrow-page">
+  <p class="eyebrow">Ошибка</p>
+  <h1>Не удалось открыть страницу</h1>
+  <p>{{.Error}}</p>
+  <a class="button" href="/orders">К заказам</a>
+</section>
+{{end}}
+
+{{define "me"}}
+<section class="page narrow-page">
+  <header class="page-heading"><div><p class="eyebrow">Учётная запись</p><h1>Профиль</h1></div></header>
+  <dl class="profile-list">
+    <div><dt>Роль</dt><dd>{{roleName .Viewer.Role}}</dd></div>
+    <div><dt>Telegram</dt><dd>{{if .Viewer.TelegramUsername}}@{{.Viewer.TelegramUsername}}{{else}}Не привязан{{end}}</dd></div>
+    <div><dt>Подразделение</dt><dd>{{if .Viewer.DepartmentName}}{{.Viewer.DepartmentName}}{{else}}Не назначено{{end}}</dd></div>
+  </dl>
+  <form action="/session/logout" method="post"><input type="hidden" name="_csrf" value="{{.CSRF}}"><button class="button button-danger" type="submit">Выйти</button></form>
+</section>
+{{end}}
