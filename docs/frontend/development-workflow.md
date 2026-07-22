@@ -5,6 +5,21 @@ The Bakery frontend is a server-rendered Go application in `frontend/`.
 and forms, `static/app.css` contains the design system, and `static/app.js`
 contains the small amount of client state that HTML cannot express directly.
 
+Templates are split by role:
+
+```
+templates/layout.html       the shell
+templates/pages/            one file per page.View, template name == View
+templates/components/       partials shared between pages
+```
+
+`templates.go` owns the parse step and the FuncMap. Two helpers exist because
+`{{template}}` cannot express them: `view` dispatches on `page.View` at run time
+(the layout would otherwise need an if-chain per page), and `dict` builds the
+argument map for a component (`{{template}}` passes a single value). A key left
+out of `dict` renders as its zero value, so optional component parameters are
+simply omitted; `isset` tells an omitted parameter apart from a zero count.
+
 ## Architecture rules
 
 | Area | Bakery |
@@ -13,7 +28,7 @@ contains the small amount of client state that HTML cannot express directly.
 | Rendering | standard-library `html/template` + embedded templates |
 | Browser interaction | vendored HTMX 2.0.4 + plain JavaScript |
 | Styling | plain mobile-first CSS with semantic tokens |
-| API access | CQRS facades over typed `frontend/internal/backend`; browser never calls JSON API |
+| API access | `application.Queries` / `application.Commands` ports, implemented by `frontend/internal/backend`; browser never calls JSON API |
 | Authentication | API credential in `HttpOnly`, `SameSite=Lax` cookie |
 | Contract | `docs/api/openapi.yaml` + compiled Go client/tests |
 | Browser QA | Playwright and axe |

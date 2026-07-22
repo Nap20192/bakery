@@ -168,6 +168,14 @@
     const blocked = (card) => card.dataset.cancelled === 'true' || Boolean(card.dataset.sheet);
 
     const render = () => {
+      // An order produced or cancelled since it was picked cannot stay in the
+      // batch: pick() refuses to add one, so it must not survive in storage
+      // either. Only cards on screen can be judged; the rest the server drops.
+      const stale = new Set(cards.filter(blocked).map((card) => card.dataset.number));
+      if (selected.some((item) => stale.has(item.number))) {
+        selected = selected.filter((item) => !stale.has(item.number));
+        store();
+      }
       document.body.classList.toggle('selection-active', mode);
       toggle.setAttribute('aria-pressed', String(mode));
       toggle.textContent = mode ? 'Готово' : 'Выбор партии';
@@ -179,7 +187,9 @@
           card.setAttribute('role', 'button');
           card.setAttribute('tabindex', '0');
           card.setAttribute('aria-pressed', String(picked));
-          card.toggleAttribute('aria-disabled', blocked(card));
+          // aria-disabled must carry the literal "true"; an empty value reads as false.
+          if (blocked(card)) card.setAttribute('aria-disabled', 'true');
+          else card.removeAttribute('aria-disabled');
         } else {
           ['role', 'tabindex', 'aria-pressed', 'aria-disabled'].forEach((name) => card.removeAttribute(name));
         }
