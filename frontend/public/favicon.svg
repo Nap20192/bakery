@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Bakery">
-  <rect width="64" height="64" rx="8" fill="#f4f3ee"/>
-  <path d="M16 39c0-9.4 7.2-17 16-17s16 7.6 16 17v3H16v-3Z" fill="#c96442"/>
-  <path d="M23 34c1.4-3.4 4.7-5.8 9-5.8s7.6 2.4 9 5.8" fill="none" stroke="#f4f3ee" stroke-width="3" stroke-linecap="round"/>
-  <path d="M20 44h24" stroke="#191817" stroke-width="3" stroke-linecap="round"/>
-</svg>

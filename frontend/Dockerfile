@@ -1,24 +1,23 @@
-FROM node:22-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
-WORKDIR /src/frontend
+WORKDIR /src
 
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY go.mod go.sum ./
+RUN go mod download
 
-COPY . ./
-RUN npm run build
+COPY . .
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/bakery-frontend ./frontend
 
-FROM node:22-alpine
+FROM alpine:3.23
 
-ENV HOST=0.0.0.0
-ENV PORT=8080
+RUN addgroup -S bakery && adduser -S -G bakery bakery
+
+ENV FRONTEND_ADDR=:8080
 ENV BACKEND_URL=http://bakery.railway.internal:8080
 
-WORKDIR /app
+COPY --from=builder /out/bakery-frontend /usr/local/bin/bakery-frontend
 
-COPY server.js ./server.js
-COPY --from=builder /src/frontend/dist ./dist
-
+USER bakery
 EXPOSE 8080
 
-CMD ["node", "server.js"]
+ENTRYPOINT ["/usr/local/bin/bakery-frontend"]

@@ -3,7 +3,12 @@
   "build": {
     "builder": "DOCKERFILE",
     "dockerfilePath": "/frontend/Dockerfile",
-    "buildEnvironment": "V3"
+    "buildEnvironment": "V3",
+    "watchPatterns": [
+      "/frontend/**",
+      "/go.mod",
+      "/go.sum"
+    ]
   },
   "deploy": {
     "runtime": "V2",

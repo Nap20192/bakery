@@ -2,7 +2,7 @@
 
 Documentation for the bakery order-management system: a Go 1.26 modular
 monolith (worker + Telegram bot) over PostgreSQL 17 and RabbitMQ 3, with a
-React 19 / Vite 8 / Tailwind 4 Telegram Mini App frontend. Exact pinned
+Go HTML/HTMX Telegram Mini App frontend. Exact pinned
 versions: [architecture.md → Technology stack](architecture.md#technology-stack).
 
 Organised loosely by the [Diátaxis](https://diataxis.fr/) framework: the
@@ -30,7 +30,6 @@ and edge-cases pages are **explanation** (understand why).
 | [../DESIGN.md](../DESIGN.md) | Reference | Current Claude Warm Editorial visual system for shared frontend surfaces and controls |
 | [frontend/development-workflow.md](frontend/development-workflow.md) | How-to | AI-assisted frontend workflow: research, design, vertical slices, browser QA, accessibility, skills and evidence |
 | [frontend/improvement-plan.md](frontend/improvement-plan.md) | How-to | Prioritized readability / responsiveness / UX improvement roadmap |
-| [frontend/tailwind-migration.md](frontend/tailwind-migration.md) | How-to | Incremental migration from Tailwind utilities to plain component CSS |
 | [edge-cases.md](edge-cases.md) | Explanation | Domain rules and edge cases that must not regress |
 | [constraints.md](constraints.md) | Reference | Hard product constraints (e.g. dough calc only on a saved production sheet) |
 
@@ -39,4 +38,5 @@ Related documents outside `docs/`:
 - `AGENTS.md` — contributor guide (commands, conventions, how to extend).
 - `CLAUDE.md` — condensed rules for AI-assisted work.
 - `frontend/FRONTEND_BEHAVIOR.md` — full route and behavior spec of the Mini App.
+- `frontend/README.md` — frontend BFF layout and quick-start.
 - `templates/monitor_codes.txt` — dough monitoring codes per order category.

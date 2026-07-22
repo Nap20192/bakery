@@ -163,10 +163,12 @@ point to the service pages with implementation detail.
 ## Frontend
 
 - All frontend validation is advisory; the backend re-validates everything.
-- `ApiError` fallbacks cover proxy/HTML error responses (non-JSON bodies are
-  errors) and network loss (`status 0`).
+- `application.Error` carries only the backend's safe message. Transport and
+  non-JSON failures use a handler-owned Russian fallback.
 - Inputs must stay ≥16px on phones (iOS zoom); touch targets ≥44px
-  (`min-h-11`).
-- Category Tailwind classes are literal strings on purpose — building them
-  dynamically breaks the JIT purge (see
-  [ui-kit.md](frontend/ui-kit.md#category-color-system-srclibcategoriesjs)).
+  (enforced in the mobile CSS rules).
+- The browser never receives a bearer token. The BFF stores API credentials
+  in an `HttpOnly`, `SameSite=Lax` cookie and requires CSRF validation for
+  mutations.
+- Category slugs are validated by `categoryTone` before they become literal
+  CSS modifier classes; unknown values render as `stone`.

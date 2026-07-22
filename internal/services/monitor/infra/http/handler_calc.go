@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"bakery/internal/inbound/api/contract"
 	"bakery/internal/inbound/api/httpx"
 	orderdomain "bakery/internal/services/order/domain"
 )
@@ -17,21 +18,6 @@ const (
 	calcMaxItems    = 200
 	calcMaxQuantity = 100000
 )
-
-type calcItemRequest struct {
-	Code        string  `json:"code"`
-	ProductName string  `json:"product_name"`
-	Quantity    float64 `json:"quantity"`
-}
-
-type calcRequest struct {
-	CategoryID int64             `json:"category_id"`
-	Items      []calcItemRequest `json:"items"`
-}
-
-type calcResponse struct {
-	Reports []monitorReportResponse `json:"reports"`
-}
 
 // handleMonitorCalc — калькулятор теста: расход по введённым вручную позициям,
 // без создания заказа или каких-либо записей. Синтетический «заказ» живёт
@@ -43,7 +29,7 @@ func (h *Handler) handleMonitorCalc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req calcRequest
+	var req contract.DoughCalcRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httpx.WriteError(w, http.StatusBadRequest, "Некорректные данные калькулятора.")
 		return
@@ -98,7 +84,7 @@ func (h *Handler) handleMonitorCalc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	reports := make([]monitorReportResponse, 0, len(codes))
+	reports := make([]contract.MonitorReport, 0, len(codes))
 	for _, code := range codes {
 		report, err := h.monitorSvc.GetIngredientsByCode(r.Context(), code, order)
 		if err != nil {
@@ -106,7 +92,7 @@ func (h *Handler) handleMonitorCalc(w http.ResponseWriter, r *http.Request) {
 			httpx.WriteError(w, http.StatusBadRequest, "Не удалось посчитать тесто. Проверьте позиции и техкарты.")
 			return
 		}
-		reports = append(reports, monitorReportResponse{Code: code, Report: report})
+		reports = append(reports, contract.MonitorReport{Code: code, Report: report})
 	}
-	httpx.WriteJSON(w, http.StatusOK, calcResponse{Reports: reports})
+	httpx.WriteJSON(w, http.StatusOK, contract.DoughCalcResponse{Reports: reports})
 }

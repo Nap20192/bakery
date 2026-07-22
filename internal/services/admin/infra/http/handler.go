@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"bakery/internal/inbound/api/contract"
 	"bakery/internal/inbound/api/httpx"
 	adminuc "bakery/internal/services/admin/usecase/admin"
 )
@@ -30,32 +31,6 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, auth *httpx.Authenticator) 
 	mux.Handle("PATCH /users/{id}", auth.RequireAdmin(http.HandlerFunc(h.handleUpdateUser)))
 	mux.Handle("DELETE /users/{id}", auth.RequireAdmin(http.HandlerFunc(h.handleDeleteUser)))
 	mux.Handle("GET /admin/departments", auth.RequireAdmin(http.HandlerFunc(h.handleAdminDepartments)))
-}
-
-type userResponse struct {
-	ID               int64  `json:"id"`
-	Username         string `json:"username"`
-	TelegramUsername string `json:"telegram_username"`
-	TelegramID       *int64 `json:"telegram_id"`
-	Role             string `json:"role"`
-	DepartmentID     *int64 `json:"department_id"`
-	CreatedAt        string `json:"created_at"`
-	UpdatedAt        string `json:"updated_at"`
-}
-
-type createUserRequest struct {
-	Username         string `json:"username"`
-	Password         string `json:"password"`
-	TelegramUsername string `json:"telegram_username"`
-	Role             string `json:"role"`
-	DepartmentCode   string `json:"department_code"`
-}
-
-type updateUserRequest struct {
-	Username       *string `json:"username"`
-	Role           *string `json:"role"`
-	DepartmentCode *string `json:"department_code"`
-	Password       *string `json:"password"`
 }
 
 func (h *Handler) handleAdminDepartments(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +54,7 @@ func (h *Handler) handleListUsers(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, http.StatusInternalServerError, "Не удалось получить пользователей.")
 		return
 	}
-	out := make([]userResponse, 0, len(users))
+	out := make([]contract.User, 0, len(users))
 	for _, u := range users {
 		out = append(out, toUserResponse(u))
 	}
@@ -87,7 +62,7 @@ func (h *Handler) handleListUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleCreateUser(w http.ResponseWriter, r *http.Request) {
-	var req createUserRequest
+	var req contract.UserCreate
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httpx.WriteError(w, http.StatusBadRequest, "Некорректные данные.")
 		return
@@ -117,7 +92,7 @@ func (h *Handler) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, http.StatusBadRequest, "Некорректный id пользователя.")
 		return
 	}
-	var req updateUserRequest
+	var req contract.UserUpdate
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httpx.WriteError(w, http.StatusBadRequest, "Некорректные данные.")
 		return
@@ -184,8 +159,8 @@ func (h *Handler) writeUserError(w http.ResponseWriter, r *http.Request, err err
 	httpx.WriteAppError(w, r, err, fallback)
 }
 
-func toUserResponse(u adminuc.User) userResponse {
-	resp := userResponse{
+func toUserResponse(u adminuc.User) contract.User {
+	resp := contract.User{
 		ID:               u.ID,
 		Username:         u.Username,
 		TelegramUsername: u.TelegramUsername,

@@ -15,20 +15,21 @@ make sqlc       # sqlc generate  — run after editing queries/
 # Run a single test
 go test ./internal/services/order/... -run TestFoo
 
-# Frontend (cd frontend first)
-npm run lint
-npm run build
-npm run dev
+# Frontend
+go test ./frontend/...
+go vet ./frontend/...
+FRONTEND_ADDR=:5173 BACKEND_URL=http://127.0.0.1:8080 go run ./frontend
 ```
 
 After editing any `.sql` file in `queries/`, run `make sqlc` before building.
 
 ## Architecture
 
-**Modular monolith** with clean architecture and dependency inversion. Two binaries share one codebase:
+**Modular monolith** with clean architecture and dependency inversion. Three binaries share one Go module:
 
 - `cmd/worker` — HTTP API + iiko sync + order cleanup; applies DB migrations on startup, creates admin user
 - `cmd/bot` — Telegram bot + RabbitMQ order-event consumer
+- `frontend` — Go HTML/HTMX BFF; calls the worker API and never the database
 
 **Dependency direction is strictly inward:**
 
@@ -121,7 +122,9 @@ Keep cycle protection and recursion-depth limits.
 
 ## Frontend
 
-React/Vite Telegram Mini App in `frontend/`. Deployed on Railway as a Node proxy server (`frontend/server.js`) that proxies `/api/*` to the backend over the private network.
+Go `html/template` + vendored HTMX + plain CSS/JavaScript in `frontend/`.
+Deployed on Railway as a separate Go BFF that calls the worker API over the
+private network. API credentials remain in `HttpOnly` cookies.
 
 Role-based UI: `shop` creates/edits orders; `baker`/`workshop` views orders and runs ingredient calculations; `admin` manages users. See `frontend/FRONTEND_BEHAVIOR.md` for full route and behavior spec.
 
@@ -129,7 +132,7 @@ Frontend validation (past-date guard) is a UX hint only — backend enforces all
 
 ## How to extend
 
-**Add an endpoint:** Add method to `UseCase` interface → implement in service + repo if needed → add handler method + route in `infra/http/handler.go` → describe it in `docs/api/openapi.yaml` (the route-sync test `internal/inbound/api/openapi_test.go` fails otherwise) → `make api-gen` to refresh the frontend's typed client.
+**Add an endpoint:** Add method to `UseCase` interface → implement in service + repo if needed → add handler method + route in `infra/http/handler.go` → describe it in `docs/api/openapi.yaml` (the route-sync test `internal/inbound/api/openapi_test.go` fails otherwise) → update `internal/inbound/api/contract`, the frontend backend adapter and its Query/Command port → run `make frontend-check`.
 
 **Add a service:** domain → usecase (interfaces + impl) → infra/repo → infra/http → app/app.go → wire in `internal/deps` → add handler to `api.NewServer` if it has HTTP routes.
 
