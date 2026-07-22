@@ -1,0 +1,11 @@
+{{define "me"}}
+<section class="page narrow-page">
+  <header class="page-heading">{{template "page-title" (dict "Eyebrow" "Учётная запись" "Title" "Профиль")}}</header>
+  <dl class="profile-list">
+    <div><dt>Роль</dt><dd>{{roleName .Viewer.Role}}</dd></div>
+    <div><dt>Telegram</dt><dd>{{if .Viewer.TelegramUsername}}@{{.Viewer.TelegramUsername}}{{else}}Не привязан{{end}}</dd></div>
+    <div><dt>Подразделение</dt><dd>{{if .Viewer.DepartmentName}}{{.Viewer.DepartmentName}}{{else}}Не назначено{{end}}</dd></div>
+  </dl>
+  <form action="/session/logout" method="post">{{template "csrf" .CSRF}}<button class="button button-danger" type="submit">Выйти</button></form>
+</section>
+{{end}}

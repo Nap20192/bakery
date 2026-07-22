@@ -1,0 +1,17 @@
+{{/* Category badge and the radio picker shared by the order editor and the calculator. */}}
+
+{{/* category-badge takes a *Category; nil renders the "no type" badge. */}}
+{{define "category-badge"}}
+  {{if .}}<span class="category category-{{categoryTone .}}"><span aria-hidden="true"></span>{{.Name}}</span>{{else}}<span class="category category-stone"><span aria-hidden="true"></span>Без типа</span>{{end}}
+{{end}}
+
+{{/* category-picker: Categories, Selected int64, Locked (category is fixed after
+     creation, so the radios are disabled and the value is carried in a hidden
+     input), Compact */}}
+{{define "category-picker"}}
+{{- $selected := .Selected}}{{$locked := .Locked}}
+<div class="category-picker{{if .Compact}} compact{{end}}" role="radiogroup" aria-label="Тип заявки">
+  {{range .Categories}}<label class="category-choice category-choice-{{categoryTone .}}{{if eq .ID $selected}} is-selected{{end}}"><input type="radio" name="category_id" value="{{.ID}}" {{if eq .ID $selected}}checked{{end}} {{if $locked}}disabled{{end}} required><span class="choice-letter">{{.Letter}}</span><span>{{.Name}}</span></label>{{end}}
+  {{if $locked}}<input type="hidden" name="category_id" value="{{$selected}}">{{end}}
+</div>
+{{end}}

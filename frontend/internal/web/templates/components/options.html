@@ -1,0 +1,15 @@
+{{/* <option> lists. The placeholder option ("Все", "Не назначено", …) stays at
+     the call site because its label differs per form. */}}
+
+{{/* id-options: Items (anything with ID and Name), Selected int64.
+     Serves categories, shops and departments alike. */}}
+{{define "id-options"}}{{$selected := .Selected}}{{range .Items}}<option value="{{.ID}}" {{if eq .ID $selected}}selected{{end}}>{{.Name}}</option>{{end}}{{end}}
+
+{{/* code-options: Items (anything with Code and Name), Selected string */}}
+{{define "code-options"}}{{$selected := .Selected}}{{range .Items}}<option value="{{.Code}}" {{if eq .Code $selected}}selected{{end}}>{{.Name}}</option>{{end}}{{end}}
+
+{{/* role-options takes the selected role. */}}
+{{define "role-options"}}<option value="shop" {{if eq . "shop"}}selected{{end}}>Магазин</option><option value="baker" {{if eq . "baker"}}selected{{end}}>Пекарь</option><option value="admin" {{if eq . "admin"}}selected{{end}}>Администратор</option>{{end}}
+
+{{/* color-options takes the selected category color slug. */}}
+{{define "color-options"}}<option value="amber" {{if eq . "amber"}}selected{{end}}>Янтарный</option><option value="sky" {{if eq . "sky"}}selected{{end}}>Голубой</option><option value="violet" {{if eq . "violet"}}selected{{end}}>Фиолетовый</option><option value="emerald" {{if eq . "emerald"}}selected{{end}}>Зелёный</option><option value="rose" {{if eq . "rose"}}selected{{end}}>Розовый</option><option value="stone" {{if eq . "stone"}}selected{{end}}>Нейтральный</option>{{end}}

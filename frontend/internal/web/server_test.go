@@ -2,6 +2,7 @@ package web
 
 import (
 	"io"
+	"io/fs"
 	"log/slog"
 	"net/http/httptest"
 	"regexp"
@@ -17,26 +18,29 @@ import (
 func TestFragmentRequestsOverrideShellSelection(t *testing.T) {
 	t.Parallel()
 	fragmentRequest := regexp.MustCompile(`<[^>]+hx-get="/fragments/[^>]+>`)
-	paths := []string{
-		"templates/order_detail.html",
-		"templates/orders.html",
-		"templates/production.html",
-	}
+	found := 0
 
-	for _, path := range paths {
+	err := fs.WalkDir(frontendFiles, "templates", func(path string, entry fs.DirEntry, err error) error {
+		if err != nil || entry.IsDir() {
+			return err
+		}
 		source, err := frontendFiles.ReadFile(path)
 		if err != nil {
-			t.Fatalf("read %s: %v", path, err)
+			return err
 		}
-		matches := fragmentRequest.FindAllString(string(source), -1)
-		if len(matches) == 0 {
-			t.Fatalf("%s: fragment request not found", path)
-		}
-		for _, match := range matches {
+		for _, match := range fragmentRequest.FindAllString(string(source), -1) {
+			found++
 			if !strings.Contains(match, `hx-select="unset"`) {
 				t.Errorf("%s: fragment request inherits shell hx-select: %s", path, match)
 			}
 		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walk templates: %v", err)
+	}
+	if found == 0 {
+		t.Fatal("no fragment requests found in templates")
 	}
 }
 

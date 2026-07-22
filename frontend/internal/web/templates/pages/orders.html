@@ -1,20 +1,22 @@
 {{define "orders"}}
 {{$data := .Data}}
+{{$eyebrow := "Магазин"}}{{$lede := "Создание и контроль заявок в цех."}}
+{{if canUseProduction .Viewer}}{{$eyebrow = "Цех"}}{{$lede = "Заявки по датам выполнения и магазинам."}}{{end}}
 <section class="page orders-page">
   <header class="page-heading">
-    <div><p class="eyebrow">{{if canUseProduction .Viewer}}Цех{{else}}Магазин{{end}}</p><h1>Заказы</h1><p class="lede">{{if canUseProduction .Viewer}}Заявки по датам выполнения и магазинам.{{else}}Создание и контроль заявок в цех.{{end}}</p></div>
+    {{template "page-title" (dict "Eyebrow" $eyebrow "Title" "Заказы" "Lede" $lede)}}
     {{if canManageOrders .Viewer}}<a class="button button-primary" href="/orders/new">Новая заявка</a>{{end}}
   </header>
 
   <form class="filters" action="/orders" method="get" aria-label="Фильтры заказов">
     {{if not (canUseProduction .Viewer)}}
-      <label class="field compact"><span>Магазин</span><select name="from_department_id"><option value="">Все</option>{{range $data.Shops}}<option value="{{.ID}}" {{if eq .ID $data.Filters.FromDepartmentID}}selected{{end}}>{{.Name}}</option>{{end}}</select></label>
+      <label class="field compact"><span>Магазин</span><select name="from_department_id"><option value="">Все</option>{{template "id-options" (dict "Items" $data.Shops "Selected" $data.Filters.FromDepartmentID)}}</select></label>
       <label class="field compact"><span>Дата</span><input type="date" name="fulfillment_date" value="{{$data.Filters.FulfillmentDate}}"></label>
     {{else}}
       <input type="hidden" name="fulfillment_from" value="{{$data.Filters.FulfillmentFrom}}">
       <input type="hidden" name="fulfillment_to" value="{{$data.Filters.FulfillmentTo}}">
     {{end}}
-    <label class="field compact"><span>Тип заявки</span><select name="category_id"><option value="">Все типы</option>{{range $data.Categories}}<option value="{{.ID}}" {{if eq .ID $data.Filters.CategoryID}}selected{{end}}>{{.Name}}</option>{{end}}</select></label>
+    <label class="field compact"><span>Тип заявки</span><select name="category_id"><option value="">Все типы</option>{{template "id-options" (dict "Items" $data.Categories "Selected" $data.Filters.CategoryID)}}</select></label>
     <button class="button" type="submit">Применить</button>
     <a class="button button-ghost" href="/orders">Сбросить</a>
   </form>
@@ -38,7 +40,7 @@
           <tr><th class="matrix-axis"><strong>{{$row.Label}}</strong><small>{{formatDate $row.Date}}</small></th>
           {{range $cell := $row.Cells}}<td>
             <div class="matrix-cell">
-            {{range $order := $cell.Orders}}{{template "order-card" $order}}{{else}}<span class="empty-cell" aria-label="Нет заказов">·</span>{{end}}
+            {{range $order := $cell.Orders}}{{template "order-card" $order}}{{else}}{{template "empty-cell"}}{{end}}
             </div>
           </td>{{end}}
           </tr>
@@ -46,10 +48,10 @@
         </tbody>
       </table>
     </div>
-    {{else}}<div class="empty-state">На выбранные даты заказов нет.</div>{{end}}
+    {{else}}{{template "empty-state" (dict "Text" "На выбранные даты заказов нет.")}}{{end}}
   {{else}}
     <div class="shop-order-list">
-      {{range $data.Page.Items}}{{template "order-card" .}}{{else}}<div class="empty-state">Заказов пока нет. Создайте первую заявку.</div>{{end}}
+      {{range $data.Page.Items}}{{template "order-card" .}}{{else}}{{template "empty-state" (dict "Text" "Заказов пока нет. Создайте первую заявку.")}}{{end}}
     </div>
     {{if gt $data.Page.TotalPages 1}}<nav class="pagination" aria-label="Страницы заказов">
       {{if gt $data.Page.Page 1}}<a class="button" href="/orders?page={{sub $data.Page.Page 1}}&category_id={{$data.Filters.CategoryID}}">← Назад</a>{{end}}
@@ -58,15 +60,4 @@
     </nav>{{end}}
   {{end}}
 </section>
-{{end}}
-
-{{define "order-card"}}
-<article class="order-card category-border-{{categoryTone .Category}} {{if .Cancelled}}is-cancelled{{end}} {{if .ProductionSheetID}}{{sheetTone .ProductionSheetID}}{{end}}" data-select-order data-number="{{.Number}}" data-category="{{if .Category}}{{.Category.ID}}{{else}}0{{end}}" data-sheet="{{if .ProductionSheetID}}{{.ProductionSheetID}}{{end}}" data-cancelled="{{.Cancelled}}">
-  <a class="order-card-main" href="/orders/{{urlquery .Number}}">
-    <span class="order-card-top"><strong>{{.Number}}</strong>{{if .Favorite}}<span aria-label="Избранный">★</span>{{end}}</span>
-    <span class="order-card-meta">{{len .Items}} поз. · {{if .FromDepartment}}{{.FromDepartment.Name}}{{else}}{{.Location}}{{end}}</span>
-    <span class="order-card-state">{{if .Cancelled}}✕ Отменён{{else if .ProductionSheetID}}✓ Отработка №{{.ProductionSheetID}}{{else}}{{template "category-badge" .Category}}{{end}}</span>
-  </a>
-  <button class="order-preview-action" type="button" hx-get="/fragments/orders/{{urlquery .Number}}" hx-target="#preview-slot" hx-select="unset" hx-swap="innerHTML" aria-label="Обзор заказа {{.Number}}">Обзор</button>
-</article>
 {{end}}

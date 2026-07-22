@@ -1,0 +1,43 @@
+{{define "order-form"}}
+{{$data := .Data}}
+{{$update := eq $data.Mode "update"}}
+{{$eyebrow := "Новая заявка"}}{{$title := "Собрать заявку"}}{{$step := "Что заказываем"}}{{$submit := "Создать заказ"}}
+{{if $update}}{{$eyebrow = "Редактирование"}}{{$title = "Изменить заявку"}}{{$step = "Тип зафиксирован"}}{{$submit = "Сохранить изменения"}}{{end}}
+{{$back := "/orders"}}{{if $data.Order}}{{$back = printf "/orders/%s" (urlquery $data.Order.Number)}}{{end}}
+<section class="page order-editor" data-order-editor>
+  <header class="page-heading">
+    {{template "page-title" (dict "Eyebrow" $eyebrow "Title" $title "Lede" "Сначала выберите тип, затем заполните только нужные количества.")}}
+    <a class="button" href="{{$back}}">Закрыть</a>
+  </header>
+  <form class="editor-form" action="{{if $update}}/orders/{{urlquery $data.Order.Number}}/edit{{else}}/orders{{end}}" method="post" hx-disabled-elt="find button[type=submit]" hx-sync="this:replace">
+    {{template "csrf" .CSRF}}
+    <section class="editor-step">
+      {{template "section-heading" (dict "Step" "1" "Eyebrow" "Тип заявки" "Title" $step)}}
+      {{template "category-picker" (dict "Categories" $data.Categories "Selected" $data.CategoryID "Locked" $update)}}
+    </section>
+    <section class="editor-step">
+      {{template "section-heading" (dict "Step" "2" "Eyebrow" "Доставка" "Title" "Куда и когда")}}
+      <div class="form-grid two">
+        <label class="field"><span>Магазин</span><select name="from_department_id" required><option value="">Выберите магазин</option>{{template "id-options" (dict "Items" $data.Shops "Selected" $data.FromDepartmentID)}}</select></label>
+        <label class="field"><span>Дата выполнения</span><input type="date" name="fulfillment_date" value="{{$data.FulfillmentDate}}" min="{{.Today}}" required></label>
+      </div>
+    </section>
+    <section class="editor-step">
+      <div class="section-heading"><span class="step-number">3</span><div><p class="eyebrow">Количество</p><h2>Позиции</h2></div><output class="editor-summary" data-editor-summary>0 поз.</output></div>
+      <div class="catalog-groups">
+      {{range $group := $data.Groups}}<section class="catalog-group"><h3>{{$group.Name}}</h3><div class="catalog-list">
+        {{range $item := $group.Items}}<div class="catalog-row" data-catalog-row data-category="{{deref $item.Dish.CategoryID}}" data-name="{{$item.Dish.Name}}">
+          <input type="hidden" name="item_name" value="{{$item.Dish.Name}}">
+          <div class="catalog-name"><strong>{{$item.Dish.Name}}</strong><button class="text-action" type="button" data-comment-toggle>Комментарий</button></div>
+          <label><span>Заказ</span><input class="quantity-input" type="number" name="quantity" min="0" step="1" inputmode="numeric" value="{{inputQty $item.Quantity}}"></label>
+          <label><span>Резерв</span><input class="quantity-input" type="number" name="reserved_quantity" min="0" step="1" inputmode="numeric" value="{{inputQty $item.Reserved}}"></label>
+          <label class="item-comment" hidden><span>Комментарий к позиции</span><input name="item_comment" value="{{$item.Comment}}" maxlength="500"></label>
+        </div>{{end}}
+      </div></section>{{end}}
+      </div>
+    </section>
+    <section class="editor-step"><label class="field"><span>Общий комментарий</span><textarea name="general_comment" rows="3" maxlength="1000">{{$data.GeneralComment}}</textarea></label></section>
+    <div class="sticky-submit"><a class="button" href="{{$back}}">Отменить</a><button class="button button-primary" type="submit">{{$submit}}</button></div>
+  </form>
+</section>
+{{end}}

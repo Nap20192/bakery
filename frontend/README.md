@@ -7,7 +7,10 @@ main.go                         composition root and process lifecycle
 internal/application/          CQRS ports and Queries/Commands facades
 internal/backend/              worker HTTP API adapter
 internal/web/                  routes, middleware and view-model projection
-internal/web/templates/        full pages and HTMX fragments
+internal/web/templates.go      template set, FuncMap and component helpers
+internal/web/templates/        layout.html — the shell
+internal/web/templates/pages/  one template per page.View, named after it
+internal/web/templates/components/  partials shared between pages
 internal/web/static/app.css    design tokens and responsive UI
 internal/web/static/app.js     Telegram bridge and browser interactions
 internal/web/static/vendor/    vendored HTMX 2.0.4
