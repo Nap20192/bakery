@@ -1,13 +1,15 @@
 {{/* Order tiles. Both take an Order. */}}
 
 {{define "order-card"}}
-<article class="order-card category-border-{{categoryTone .Category}} {{if .Cancelled}}is-cancelled{{end}} {{if .ProductionSheetID}}{{sheetTone .ProductionSheetID}}{{end}}" data-select-order data-number="{{.Number}}" data-category="{{if .Category}}{{.Category.ID}}{{else}}0{{end}}" data-sheet="{{if .ProductionSheetID}}{{.ProductionSheetID}}{{end}}" data-cancelled="{{.Cancelled}}">
+<article class="order-card category-border-{{categoryTone .Category}}{{if .Cancelled}} is-cancelled{{end}}{{if .ProductionSheetID}} {{sheetTone .ProductionSheetID}}{{end}}" data-select-order data-number="{{.Number}}" data-category="{{if .Category}}{{.Category.ID}}{{else}}0{{end}}" data-sheet="{{if .ProductionSheetID}}{{.ProductionSheetID}}{{end}}" data-cancelled="{{.Cancelled}}">
   <a class="order-card-main" href="/orders/{{urlquery .Number}}">
-    <span class="order-card-top"><strong>{{.Number}}</strong>{{if .Favorite}}<span aria-label="Избранный">★</span>{{end}}</span>
-    <span class="order-card-meta">{{len .Items}} поз. · {{if .FromDepartment}}{{.FromDepartment.Name}}{{else}}{{.Location}}{{end}}</span>
-    <span class="order-card-state">{{if .Cancelled}}✕ Отменён{{else if .ProductionSheetID}}✓ Отработка №{{.ProductionSheetID}}{{else}}{{template "category-badge" .Category}}{{end}}</span>
+    <span class="order-card-top"><strong>{{.Number}}</strong>{{if .Favorite}}<span class="order-card-star" aria-label="Избранный">★</span>{{end}}</span>
+    <span class="order-card-meta"><strong>{{len .Items}} поз.</strong><span>@{{.CreatedByUsername}}</span><span>{{formatDate .CreatedAt}}</span></span>
   </a>
-  <button class="order-preview-action" type="button" hx-get="/fragments/orders/{{urlquery .Number}}" hx-target="#preview-slot" hx-select="unset" hx-swap="innerHTML" aria-label="Обзор заказа {{.Number}}">Обзор</button>
+  <div class="order-card-foot">
+    <span class="order-card-state">{{if .Cancelled}}✕ Отменён{{else if .ProductionSheetID}}✓ Отработка №{{.ProductionSheetID}}{{else}}{{template "category-badge" .Category}}{{end}}</span>
+    <button class="order-preview-action" type="button" hx-get="/fragments/orders/{{urlquery .Number}}" hx-target="#preview-slot" hx-select="unset" hx-swap="innerHTML" aria-label="Обзор заказа {{.Number}}">Обзор</button>
+  </div>
 </article>
 {{end}}
 
