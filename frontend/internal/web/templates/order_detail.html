@@ -37,7 +37,7 @@
       <section class="surface monitor-panel">
         <div class="section-heading"><div><p class="eyebrow">Технология</p><h2>Расчёт теста</h2></div></div>
         <div id="monitor-result"><p class="muted">Расчёт использует сохранённый факт отработки.</p></div>
-        <button class="button button-primary button-wide" hx-get="/fragments/monitor?order={{urlquery $order.Number}}" hx-target="#monitor-result" hx-swap="innerHTML" hx-disinherit="hx-select" hx-disabled-elt="this" hx-indicator="#global-progress">Рассчитать тесто</button>
+        <button class="button button-primary button-wide" hx-get="/fragments/monitor?order={{urlquery $order.Number}}" hx-target="#monitor-result" hx-select="unset" hx-swap="innerHTML" hx-disabled-elt="this" hx-indicator="#global-progress">Рассчитать тесто</button>
       </section>
       {{end}}
       {{if isAdmin $.Viewer}}<form class="surface compact-form" action="/orders/{{urlquery $order.Number}}/favorite" method="post"><input type="hidden" name="_csrf" value="{{$.CSRF}}"><input type="hidden" name="favorite" value="{{if $order.Favorite}}false{{else}}true{{end}}"><button class="button button-wide" type="submit">{{if $order.Favorite}}Убрать из избранного{{else}}Добавить в избранное{{end}}</button></form>{{end}}

@@ -4,6 +4,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http/httptest"
+	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -11,6 +13,32 @@ import (
 	"bakery/frontend/internal/backend"
 	"bakery/internal/inbound/api/contract"
 )
+
+func TestFragmentRequestsOverrideShellSelection(t *testing.T) {
+	t.Parallel()
+	fragmentRequest := regexp.MustCompile(`<[^>]+hx-get="/fragments/[^>]+>`)
+	paths := []string{
+		"templates/order_detail.html",
+		"templates/orders.html",
+		"templates/production.html",
+	}
+
+	for _, path := range paths {
+		source, err := frontendFiles.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		matches := fragmentRequest.FindAllString(string(source), -1)
+		if len(matches) == 0 {
+			t.Fatalf("%s: fragment request not found", path)
+		}
+		for _, match := range matches {
+			if !strings.Contains(match, `hx-select="unset"`) {
+				t.Errorf("%s: fragment request inherits shell hx-select: %s", path, match)
+			}
+		}
+	}
+}
 
 func TestTemplatesRenderEveryView(t *testing.T) {
 	t.Parallel()
