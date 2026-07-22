@@ -27,6 +27,10 @@ Dockerfile Path: /frontend/Dockerfile
 Config File: /frontend/railway.json
 ```
 
+The config pins the container start command to
+`/usr/local/bin/bakery-frontend`. Do not override it with `go run`: the final
+Alpine image contains only the compiled binary, not the Go toolchain.
+
 Generate a public domain only for `frontend`. Configure the worker with:
 
 ```env
