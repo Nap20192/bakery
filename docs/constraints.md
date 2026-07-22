@@ -20,13 +20,12 @@ enforced. При изменении поведения сверяйтесь с �
 видит в редакторе, — тихое расхождение опаснее лишнего клика.
 
 **Где enforced.**
-- `frontend/src/features/production/ProductionSheet.jsx` — dirty-состояние
-  (`onDirtyChange`) + кнопка «Отменить»;
-- `frontend/src/features/baker/BakerSelectionReview.jsx` — страница
-  выбранных заказов: блокировка кнопки расчёта, подсказка, скрытие
-  устаревшего результата; редактор перемонтируется после сохранения;
-- `frontend/src/features/production/ProductionJournal.jsx` — журнал: то же
-  для открытого листа.
+- `frontend/internal/web/templates/production.html` — новый лист не показывает активный
+  расчёт до первого сохранения;
+- `frontend/internal/web/static/app.js` — сравнивает текущую форму с сохранённым снимком,
+  блокирует кнопку расчёта и показывает подсказку;
+- `frontend/internal/web/production.go` — после сохранения делает канонический redirect на
+  сохранённый лист, поэтому расчёт всегда читает факт из API.
 
 Бэкенд-инвариант не требуется: API и так считает только по сохранённым
 данным — констрейнт защищает пользователя от рассинхрона на экране.
@@ -39,7 +38,8 @@ enforced. При изменении поведения сверяйтесь с �
 **Почему.** У каждого типа свои коды теста; сумма по разным наборам кодов
 бессмысленна.
 
-**Где enforced.** UI выбора (`toggleOrderSelection`), backend
+**Где enforced.** UI выбора (`initializeSelection` в
+`frontend/internal/web/static/app.js`), backend
 `GET /monitor/batch` (400 на смешанные типы).
 
 ## C3. Отработка не изменяет заказ

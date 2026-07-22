@@ -45,7 +45,7 @@ When Figma and the current Bakery UI differ:
 ## Color roles
 
 Map the supplied warm editorial palette through semantic CSS variables in
-`frontend/src/styles.css`; raw values only belong in the reference layer.
+`frontend/internal/web/static/app.css`; raw values only belong in the reference layer.
 Terracotta is exclusive to the primary consequential CTA. Category colors
 (`amber`, `sky`, `violet`, `emerald`, `rose`, `stone`) remain product data and
 are always accompanied by a name/dot/symbol, never used as the only status.
@@ -66,7 +66,8 @@ are always accompanied by a name/dot/symbol, never used as the only status.
 
 ## Component rules
 
-- Represent shared patterns in `frontend/src/ui` before creating a feature-local primitive.
+- Represent shared patterns as named templates and semantic CSS classes before
+  creating a page-local variant.
 - Generic badges are weighted inline text, not pills, and never the sole carrier of status.
 - Inputs must remain visibly distinct from their surface at rest.
 - Adjacent actions share height; button labels do not wrap.
@@ -76,9 +77,8 @@ are always accompanied by a name/dot/symbol, never used as the only status.
   feedback where applicable.
 - Icons clarify actions and always have visible text or an accessible name.
 
-## Styling migration
+## Implementation
 
-Tailwind is being removed incrementally according to
-`docs/frontend/tailwind-migration.md`. New reusable patterns use semantic CSS
-variables and component-prefixed plain CSS classes. Do not create a parallel
-token system during the migration.
+The frontend uses Go `html/template`, vendored HTMX, plain CSS, and plain
+JavaScript. `frontend/internal/web/static/app.css` is the only token system; do not add a
+utility framework or client component library for isolated screens.

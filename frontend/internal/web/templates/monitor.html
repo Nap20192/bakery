@@ -1,0 +1,11 @@
+{{define "monitor"}}
+{{if .Reports}}
+<div class="monitor-results">
+  {{range .Reports}}<article class="monitor-report"><div class="monitor-total"><span>{{.Report.Ingredient.ProductName}}</span><strong>{{formatQty .Report.Ingredient.Quantity}} {{.Report.Ingredient.Unit}}</strong></div>
+    {{if .Report.Components}}<details><summary>Состав</summary><ul class="ingredient-list">{{range .Report.Components}}<li><span>{{.ProductName}}</span><strong>{{formatQty .Quantity}} {{.Unit}}</strong></li>{{end}}</ul></details>{{end}}
+    {{if .Report.Breakdown}}<details><summary>Расшифровка</summary><ul class="ingredient-list">{{range .Report.Breakdown}}<li><span>{{.OrderItemName}} · {{formatQty .OrderItemQuantity}}</span><strong>{{formatQty .IngredientQuantity}}</strong></li>{{end}}</ul></details>{{end}}
+  </article>{{end}}
+</div>
+{{if gt (len .OrderReports) 1}}<details class="monitor-breakdown"><summary>По заказам</summary>{{range .OrderReports}}<section><h3>{{.Order.Number}}</h3>{{range .Reports}}<div class="monitor-total"><span>{{.Report.Ingredient.ProductName}}</span><strong>{{formatQty .Report.Ingredient.Quantity}} {{.Report.Ingredient.Unit}}</strong></div>{{end}}</section>{{end}}</details>{{end}}
+{{else}}<div class="empty-state compact">Расчёт пуст.</div>{{end}}
+{{end}}

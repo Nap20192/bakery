@@ -1,13 +1,13 @@
-# Bakery HTTP API — the contract between the Go backend and the Mini App.
+# Bakery HTTP API — the contract between the Go backend and the Go web BFF.
 #
 # Source of truth for both sides:
 #   - backend: internal/inbound/api/openapi_test.go checks every route
 #     registered in the mux appears here and vice versa;
-#   - frontend: `npm run api-gen` (openapi-typescript) generates
-#     frontend/src/api/schema.d.ts, which types the api/ modules.
+#   - frontend: `go test ./frontend/...` compiles and exercises the CQRS
+#     boundary and typed `frontend/internal/backend` adapter.
 #
 # Keep paths sorted the way handlers register them. After changing a handler
-# or DTO: update this file → run the backend tests → `npm run api-gen`.
+# or DTO: update this file → run the backend tests → `make frontend-check`.
 openapi: 3.0.3
 info:
   title: Bakery API
@@ -17,8 +17,6 @@ info:
     responses use the `{"error": "<safe message>"}` envelope.
   version: 1.0.0
 servers:
-  - url: /api
-    description: Behind the frontend proxy (frontend/server.js)
   - url: /
     description: Direct backend access
 

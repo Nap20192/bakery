@@ -54,21 +54,18 @@ an active layer selection in Figma Desktop.
 
 Node `7:19` defines `Anthropic Sans` for interface copy and `JetBrains Mono`
 for technical values. Bakery now follows `DESIGN.md`: serif headings,
-humanist sans body/UI and mono technical values. Inter and JetBrains Mono are
-bundled fallbacks; the supplied Anthropic Sans archive is not used because it
-does not cover Bakery's Russian UI safely.
+humanist sans body/UI and mono technical values. System fonts are used as
+local fallbacks; no font CDN is required.
 
 Node `467:21770` defines the border vocabulary: radius
 XS/SM/MD/LG/XL/Full and a regular border width. Shared components keep their
 radius values in semantic tokens, and use `Full` only for tags and compact
 status markers.
 
-Node `467:21815` contains separate desktop-web and mobile icon sets. Bakery
-keeps its existing semantic SVG names, but applies the kit's lighter outlined
-stroke as the default. A feature may request a heavier stroke only where the
-action needs explicit visual emphasis. The checked-in `frontend/icons.svg` file
-is the local reference sheet for these glyphs; app code still consumes icons
-through `frontend/src/ui/Icon.jsx` so features do not copy raw SVG.
+Node `467:21815` contains separate desktop-web and mobile icon sets. The
+server-rendered UI prefers labelled controls and familiar text symbols. When a
+new icon is necessary, add it once as an embedded static asset with an
+accessible label; do not copy ad-hoc SVG into page templates.
 
 ## Project-specific constraints
 

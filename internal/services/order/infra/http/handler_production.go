@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"bakery/internal/inbound/api/contract"
 	"bakery/internal/inbound/api/httpx"
 	authdomain "bakery/internal/services/auth/domain"
 	orderdomain "bakery/internal/services/order/domain"
@@ -17,44 +18,10 @@ import (
 // который можно открыть, изменить и удалить. Заявки магазинов при этом не
 // изменяются — факт проецируется на produced_quantity позиций.
 
-type productionRequest struct {
-	Orders []productionOrderRequest `json:"orders"`
-}
-
-type productionOrderRequest struct {
-	Number string                  `json:"number"`
-	Items  []productionItemRequest `json:"items"`
-}
-
-type productionItemRequest struct {
-	ProductName      string   `json:"product_name"`
-	LoadedQuantity   *float64 `json:"loaded_quantity"`
-	ProducedQuantity float64  `json:"produced_quantity"`
-	Reason           string   `json:"reason"`
-}
-
-type productionSheetResponse struct {
-	ID                int64                         `json:"id"`
-	CreatedByUsername string                        `json:"created_by_username"`
-	CreatedAt         string                        `json:"created_at"`
-	UpdatedAt         string                        `json:"updated_at"`
-	OrderNumbers      []string                      `json:"order_numbers"`
-	ItemCount         int64                         `json:"item_count"`
-	Items             []productionSheetItemResponse `json:"items,omitempty"`
-}
-
-type productionSheetItemResponse struct {
-	OrderNumber      string  `json:"order_number"`
-	ProductName      string  `json:"product_name"`
-	LoadedQuantity   float64 `json:"loaded_quantity"`
-	ProducedQuantity float64 `json:"produced_quantity"`
-	Reason           string  `json:"reason"`
-}
-
-func toProductionSheetResponse(sheet orderdomain.ProductionSheet) productionSheetResponse {
-	items := make([]productionSheetItemResponse, 0, len(sheet.Items))
+func toProductionSheetResponse(sheet orderdomain.ProductionSheet) contract.ProductionSheet {
+	items := make([]contract.ProductionSheetItem, 0, len(sheet.Items))
 	for _, item := range sheet.Items {
-		items = append(items, productionSheetItemResponse{
+		items = append(items, contract.ProductionSheetItem{
 			OrderNumber:      item.OrderNumber,
 			ProductName:      item.ProductName,
 			LoadedQuantity:   item.LoadedQuantity,
@@ -66,7 +33,7 @@ func toProductionSheetResponse(sheet orderdomain.ProductionSheet) productionShee
 	if orderNumbers == nil {
 		orderNumbers = []string{}
 	}
-	return productionSheetResponse{
+	return contract.ProductionSheet{
 		ID:                sheet.ID,
 		CreatedByUsername: sheet.CreatedByUsername,
 		CreatedAt:         sheet.CreatedAt.Format(time.RFC3339),
@@ -89,7 +56,7 @@ func (h *Handler) productionWriter(w http.ResponseWriter, r *http.Request) (http
 }
 
 func (h *Handler) decodeProductionRequest(w http.ResponseWriter, r *http.Request) (orderuc.RecordProductionInput, bool) {
-	var request productionRequest
+	var request contract.ProductionWrite
 	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&request); err != nil {
@@ -147,7 +114,7 @@ func (h *Handler) handleListProductionSheets(w http.ResponseWriter, r *http.Requ
 		httpx.WriteAppError(w, r, err, "Не удалось загрузить журнал отработок.")
 		return
 	}
-	responses := make([]productionSheetResponse, 0, len(sheets))
+	responses := make([]contract.ProductionSheet, 0, len(sheets))
 	for _, sheet := range sheets {
 		responses = append(responses, toProductionSheetResponse(sheet))
 	}

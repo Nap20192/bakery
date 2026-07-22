@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"bakery/internal/inbound/api/contract"
 	"bakery/internal/inbound/api/httpx"
 	monitoringdomain "bakery/internal/services/monitor/domain"
 	monitoruc "bakery/internal/services/monitor/usecase/monitor"
@@ -35,26 +36,6 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, auth *httpx.Authenticator) 
 	mux.Handle("GET /monitor/{id}/{product_id}", auth.RequireMiniAppAuth(http.HandlerFunc(h.handleMonitorByProduct)))
 }
 
-type monitorReportResponse struct {
-	Code   string                            `json:"code"`
-	Report monitoringdomain.IngredientReport `json:"report"`
-}
-
-type monitorResponse struct {
-	Reports []monitorReportResponse `json:"reports"`
-	Order   orderhttp.OrderResponse `json:"order"`
-}
-
-type batchMonitorOrderResponse struct {
-	Order   orderhttp.OrderResponse `json:"order"`
-	Reports []monitorReportResponse `json:"reports"`
-}
-
-type batchMonitorResponse struct {
-	Orders       []batchMonitorOrderResponse `json:"orders"`
-	TotalReports []monitorReportResponse     `json:"total_reports"`
-}
-
 func (h *Handler) handleMonitorDefault(w http.ResponseWriter, r *http.Request) {
 	if h.monitorSvc == nil || h.orderSvc == nil {
 		httpx.WriteError(w, http.StatusServiceUnavailable, "Сервис калькуляции временно недоступен.")
@@ -81,7 +62,7 @@ func (h *Handler) handleMonitorDefault(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	reports := make([]monitorReportResponse, 0, len(codes))
+	reports := make([]contract.MonitorReport, 0, len(codes))
 	for _, code := range codes {
 		report, err := h.monitorSvc.GetIngredientsByCode(r.Context(), code, order)
 		if err != nil {
@@ -89,7 +70,7 @@ func (h *Handler) handleMonitorDefault(w http.ResponseWriter, r *http.Request) {
 			httpx.WriteError(w, http.StatusBadRequest, "Не удалось посчитать калькуляцию. Проверьте заказ и техкарты.")
 			return
 		}
-		reports = append(reports, monitorReportResponse{Code: code, Report: report})
+		reports = append(reports, contract.MonitorReport{Code: code, Report: report})
 	}
 
 	httpx.WriteJSON(w, http.StatusOK, h.buildMonitorResponse(r.Context(), order, reports))
@@ -140,7 +121,7 @@ func (h *Handler) handleMonitorByProduct(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	httpx.WriteJSON(w, http.StatusOK, h.buildMonitorResponse(r.Context(), order, []monitorReportResponse{
+	httpx.WriteJSON(w, http.StatusOK, h.buildMonitorResponse(r.Context(), order, []contract.MonitorReport{
 		{Code: productCode, Report: report},
 	}))
 }
@@ -204,8 +185,8 @@ func categoryIDOf(order orderdomain.Order) int64 {
 	return *order.CategoryID
 }
 
-func (h *Handler) buildMonitorResponse(ctx context.Context, order orderdomain.Order, reports []monitorReportResponse) monitorResponse {
-	return monitorResponse{
+func (h *Handler) buildMonitorResponse(ctx context.Context, order orderdomain.Order, reports []contract.MonitorReport) contract.OrderMonitor {
+	return contract.OrderMonitor{
 		Reports: reports,
 		Order:   h.presenter.BuildOrderResponse(ctx, order),
 	}
@@ -216,7 +197,7 @@ func (h *Handler) buildBatchMonitorResponse(
 	orders []orderdomain.Order,
 	codes []string,
 	report monitoringdomain.BatchMonitoringReport,
-) batchMonitorResponse {
+) contract.BatchMonitor {
 	orderByNumber := make(map[string]orderdomain.Order, len(orders))
 	for _, order := range orders {
 		orderByNumber[order.Number] = order
@@ -229,26 +210,26 @@ func (h *Handler) buildBatchMonitorResponse(
 		return ""
 	}
 
-	response := batchMonitorResponse{
-		Orders:       make([]batchMonitorOrderResponse, 0, len(report.Orders)),
-		TotalReports: make([]monitorReportResponse, 0, len(report.TotalReports)),
+	response := contract.BatchMonitor{
+		Orders:       make([]contract.BatchOrderMonitor, 0, len(report.Orders)),
+		TotalReports: make([]contract.MonitorReport, 0, len(report.TotalReports)),
 	}
 	for i, total := range report.TotalReports {
-		response.TotalReports = append(response.TotalReports, monitorReportResponse{
+		response.TotalReports = append(response.TotalReports, contract.MonitorReport{
 			Code:   codeAt(i),
 			Report: total,
 		})
 	}
 	for _, orderReport := range report.Orders {
 		order := orderByNumber[orderReport.OrderNumber]
-		reports := make([]monitorReportResponse, 0, len(orderReport.Reports))
+		reports := make([]contract.MonitorReport, 0, len(orderReport.Reports))
 		for i, item := range orderReport.Reports {
-			reports = append(reports, monitorReportResponse{
+			reports = append(reports, contract.MonitorReport{
 				Code:   codeAt(i),
 				Report: item,
 			})
 		}
-		response.Orders = append(response.Orders, batchMonitorOrderResponse{
+		response.Orders = append(response.Orders, contract.BatchOrderMonitor{
 			Order:   h.presenter.BuildOrderResponse(ctx, order),
 			Reports: reports,
 		})

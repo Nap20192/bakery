@@ -1,6 +1,6 @@
 ---
 name: bakery-frontend-workflow
-description: End-to-end workflow for implementing, reviewing, or refining Bakery React frontend changes. Use for any task that edits frontend/src, frontend behavior, UI components, routes, OpenAPI-facing frontend code, responsive layout, accessibility, or browser interactions. Enforces repository research, design intent, incremental delivery, real-browser verification, accessibility checks, validation commands, and focused diff review.
+description: End-to-end workflow for implementing, reviewing, or refining the Bakery Go/HTMX frontend. Use for tasks that edit frontend/, HTML behavior, handlers, templates, CSS, JavaScript, OpenAPI-facing client code, responsive layout, accessibility, or browser interactions.
 ---
 
 # Bakery Frontend Workflow
@@ -10,8 +10,8 @@ Follow `AGENTS.md` and read `docs/frontend/development-workflow.md` before editi
 ## 1. Brief and research
 
 Restate goal, context, constraints, and done criteria. Inspect the relevant
-feature, `src/ui`, tokens in `src/styles.css`, API facade, route, behavior spec,
-and similar UI. Do not add a component before searching for an equivalent.
+handler, template, tokens in `static/app.css`, API client, route, behavior
+spec, and similar UI. Do not add a pattern before searching for an equivalent.
 
 Ask one concise guiding question only when the answer materially changes
 business rules, persistence/API shape, destructive behavior, or visual
@@ -21,34 +21,37 @@ direction. Otherwise state the smallest repo-consistent assumption.
 
 For visible UI changes use `interface-design`, then `typeui-fundamentals`.
 State user, task, feel, hierarchy, responsive behavior, and accessibility.
-Preserve Golos Text, flour/crust tokens, category/date semantics, and UI-kit.
+Preserve the editorial serif/sans hierarchy, flour/crust tokens,
+category/date semantics, and UI-kit.
 Do not create a parallel design system or generic SaaS card layout.
 
 ## 3. Plan and implement
 
-List files to modify. Deliver one complete vertical flow at a time. Keep API
-calls in `src/api`, transformations in colocated pure modules, stateful logic in
-feature hooks, reusable primitives in `src/ui`, and business rules on backend.
-Update OpenAPI and generated schema whenever the contract changes.
+List files to modify. Deliver one complete vertical flow at a time. Keep reads
+and writes behind `frontend/internal/application` Queries and Commands, worker
+HTTP calls in `frontend/internal/backend`, projection in web handlers/view
+models, reusable markup in named templates, tokens in `static/app.css`, and
+business rules on the worker backend. Shared JSON DTO changes belong in
+`internal/inbound/api/contract` together with the OpenAPI update.
 
 ## 4. Static validation
 
 Run the checks relevant to the diff:
 
 ```bash
-cd frontend
-npm run lint
-npm run typecheck
-npm run build
+gofmt -w frontend/main.go frontend/internal
+go test ./frontend/...
+go vet ./frontend/...
+go build -o /tmp/bakery-frontend ./frontend
 ```
 
 For contract/backend changes also run `make sqlc` when needed,
-`go test ./internal/inbound/api`, `make api-gen`, and relevant Go tests.
+`go test ./internal/inbound/api`, `make frontend-check`, and relevant Go tests.
 
 ## 5. Browser loop
 
 Use `playwright-interactive` for exploratory verification and `playwright` for
-repeatable tests. Start worker and Vite, then test the complete flow at 375×812,
+repeatable tests. Start worker and the Go frontend, then test the complete flow at 375×812,
 768×1024, 1280×800, and 1440×900. Check keyboard focus, overflow, sticky/fixed
 elements, long Russian content, loading/empty/error/success states, console
 errors, and failed requests. Capture screenshots for visible changes. Fix issues

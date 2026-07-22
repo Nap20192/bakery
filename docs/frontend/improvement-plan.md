@@ -1,111 +1,24 @@
-# Frontend improvement TODO
+# Frontend Improvement TODO
 
-Живой, приоритизированный backlog для Telegram Mini App. Он дополняет
-`development-workflow.md`: каждый пункт начинается с исследования конкретного
-сценария, заканчивается browser QA на 375×812, 768×1024, 1280×800 и
-1440×900, accessibility-проверкой и focused diff review.
+The July 2026 rewrite replaced the React/Vite/Tailwind SPA with a Go BFF,
+server-rendered templates, vendored HTMX, plain CSS, and plain JavaScript.
 
-## Результат аудита — 12 июля 2026
+## Completed in the rewrite
 
-Проверены архитектура `frontend/src`, дизайн-токены, маршрутизация, основные
-рабочие экраны и dirty worktree. Интерфейс уже последовательно использует
-Golos Text, тёплую taupe-палитру и общие primitives из `src/ui`; данные идут
-через фасады `src/api`. Главные риски — не визуальный стиль, а плотность
-рабочих экранов на телефоне, неполная обратная связь при асинхронных действиях
-и крупные компоненты с несколькими обязанностями.
+- [x] Removed Node, Vite, React, Tailwind, Radix, openapi-fetch, and generated
+  TypeScript schema from the runtime and build.
+- [x] Moved API credentials out of browser storage into an `HttpOnly` cookie.
+- [x] Added CSRF protection, CSP, safe redirects, request logging, and graceful
+  shutdown to the frontend service.
+- [x] Preserved role-specific routes, the baker matrix, summary table,
+  production journal/editor, dough calculator, and admin workflows.
+- [x] Kept load-bearing tables as tables with sticky axes on phones.
+- [x] Added typed template smoke tests for every view.
 
-### Сделано в первом срезе
+## Next checks
 
-- [x] Добавлен единый `Button.loading`: spinner, `aria-busy` и защита от
-  повторного нажатия. Применён к входу, расчёту теста, сохранению заказа и
-  отработки, созданию пользователя.
-- [x] На 320–359 px в нижней навигации остаются подписанные для скринридера
-  иконки вместо обрезанных названий; с 360 px подписи видимы.
-- [x] Добавлен `viewport-fit=cover`; нижняя навигация уже учитывает
-  `safe-area-inset-bottom`.
-
-## P0 — следующий рабочий цикл
-
-### Мобильная матрица заказов (M)
-
-На 375 px три колонки магазинов конкурируют за ширину и затрудняют чтение
-количества и статуса. Нужен горизонтальный scroll-snap колонок с заметным
-индикатором прокрутки и липкой полосой даты; не превращать матрицу в набор
-карточек. Проверить длинные названия магазинов, 0/много позиций и уже
-отработанные заказы.
-
-Файлы: `features/baker/BakerOrdersView.jsx`, `BakerOrderCard.jsx`,
-`orderMatrix.js`.
-
-### Понятная обратная связь успешного сохранения (M)
-
-Сейчас пользователь видит загрузку, но после успеха не всегда получает
-явное подтверждение. Сделать лёгкий `ui/Toast` поверх Radix и использовать
-его для создания/редактирования заказа, листа отработки и админ-правок.
-Ошибки оставлять рядом с контекстом через `ErrorBanner`.
-
-Файлы: новый `ui/Toast.jsx`, `OrdersPage.jsx`, `ProductionJournal.jsx`,
-`AdminUsers.jsx`, `AdminDishes.jsx`.
-
-## P1 — после P0
-
-### Админские таблицы на телефоне (M)
-
-В `AdminUsers` и `AdminDishes` прокрутка широкой таблицы уводит ключевое имя
-пользователя/блюда. Использовать липкую первую колонку и шапку, либо
-переключать на карточный вид ниже `sm`. Решение выбрать после скриншотного
-сравнения с `/orders/table`.
-
-### Защита несохранённых изменений (M)
-
-`OrderEditor` и `ProductionSheet` должны предупреждать перед навигацией, если
-есть отличия от исходных данных. Хранить dirty-state в feature hook, а диалог
-строить на существующем `ConfirmDialog`; не перехватывать browser back без
-отдельной проверки.
-
-### Skeleton и action-oriented empty states (M)
-
-Вместо пустого экрана во время загрузки показать структуру матрицы, таблицы,
-журнала и деталей. У `EmptyState` добавить action-slot: «Создать заказ» или
-«Открыть матрицу» там, где действие разрешено ролью.
-
-### Контраст и читабельность данных (S)
-
-Убрать `text-[10px]` из данных, поднять фактический текст с `stone-400` до
-`stone-500/600`, заменить `truncate` для номеров заказов и блюд переносом.
-Отдельно заменить inline-hex из `OrderDetails.jsx` семантическими классами.
-
-## P2 — архитектура и качество
-
-### Разделить крупные компоненты (M)
-
-`OrdersPage` (~550 строк) остаётся оркестратором маршрутов, загрузки,
-выбора, мониторинга и отработки. По мере P0/P1 выделить `useOrdersData`,
-`useOrderSelection`, `useMonitor`; UI-ветки оставить композиционными.
-`AdminDishes` (~560 строк) разделить на каталог, редактор блюда и категории.
-Не делать массовый рефакторинг без пользовательского улучшения в том же diff.
-
-### Память безопасных фильтров (S)
-
-Сохранять в `localStorage` только фильтры категории и окно дат через ключи
-`bakery.ui.*`, с восстановлением после reload и кнопкой «Сегодня».
-
-### Accessibility regression coverage (M)
-
-После подключения browser-зависимостей добавить `@axe-core/playwright`,
-smoke-сценарии login, матрицы, таблицы и листа отработки. Автоматический axe
-не заменяет ручную проверку клавиатуры, фокуса и long-content.
-
-## Не делать без отдельного решения
-
-- тёмную тему до завершения миграции feature-экранов на семантические токены;
-- виртуализацию до измеримого роста списка;
-- новую state-management или component-library dependency;
-- переписывание роутинга на React Router.
-
-## Порядок выполнения
-
-1. P0: мобильная матрица → toast.
-2. P1: админские таблицы → dirty guard → loading/empty states.
-3. P2: разносить крупные компоненты только рядом с изменяемым сценарием и
-   добавить e2e/a11y coverage после установки project dependencies.
+- [ ] Add repeatable Playwright + axe scenarios for shop, baker, and admin.
+- [ ] Add screenshot baselines for 375x812, 768x1024, 1280x800, and 1440x900.
+- [ ] Add API-client contract fixtures for representative OpenAPI responses.
+- [ ] Profile production-journal request fan-out; batch API endpoints are
+  preferable if the number of sheets makes first-order category lookup slow.
