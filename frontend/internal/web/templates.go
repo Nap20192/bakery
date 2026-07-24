@@ -37,9 +37,9 @@ func parseTemplates() (*template.Template, error) {
 		"isset":            isset,
 		"join":             strings.Join,
 		"list":             func(values ...any) []any { return values },
+		"pageOffset":       func(page, offset int32) int32 { return page + offset },
 		"roleName":         roleName,
 		"sheetTone":        sheetTone,
-		"sub":              func(a, b int) int { return a - b },
 		"urlquery":         url.QueryEscape,
 		// view renders a template chosen at run time, which {{template}} cannot do
 		// because it only accepts a constant name. The layout uses it to dispatch
