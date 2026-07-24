@@ -3,24 +3,24 @@
 <section class="page orders-page">
   <header class="page-heading">
     {{template "page-title" (dict "Title" "Заказы")}}
-    {{if canManageOrders .Viewer}}<a class="button button-primary" href="/orders/new">Новая заявка</a>{{end}}
   </header>
 
+  <nav class="category-tabs" aria-label="Тип заявки">
+    {{range $data.Categories}}<a class="category-tab category-tab-{{categoryTone .}} {{if eq .ID $data.Filters.CategoryID}}is-active{{end}}" href="/orders?category_id={{.ID}}{{if canUseProduction $.Viewer}}&fulfillment_from={{$data.Filters.FulfillmentFrom}}&fulfillment_to={{$data.Filters.FulfillmentTo}}{{else}}&from_department_id={{$data.Filters.FromDepartmentID}}&fulfillment_date={{$data.Filters.FulfillmentDate}}{{end}}" {{if eq .ID $data.Filters.CategoryID}}aria-current="page"{{end}}>{{.Name}}</a>{{end}}
+  </nav>
+
+  {{if not (canUseProduction .Viewer)}}
   <form class="filters" action="/orders" method="get" aria-label="Фильтры заказов">
-    {{if not (canUseProduction .Viewer)}}
-      <label class="field compact"><span>Магазин</span><select name="from_department_id"><option value="">Все</option>{{template "id-options" (dict "Items" $data.Shops "Selected" $data.Filters.FromDepartmentID)}}</select></label>
-      <label class="field compact"><span>Дата</span><input type="date" name="fulfillment_date" value="{{$data.Filters.FulfillmentDate}}"></label>
-    {{else}}
-      <input type="hidden" name="fulfillment_from" value="{{$data.Filters.FulfillmentFrom}}">
-      <input type="hidden" name="fulfillment_to" value="{{$data.Filters.FulfillmentTo}}">
-    {{end}}
-    <label class="field compact"><span>Тип заявки</span><select name="category_id"><option value="">Все типы</option>{{template "id-options" (dict "Items" $data.Categories "Selected" $data.Filters.CategoryID)}}</select></label>
+    <input type="hidden" name="category_id" value="{{$data.Filters.CategoryID}}">
+    <label class="field compact"><span>Магазин</span><select name="from_department_id"><option value="">Все</option>{{template "id-options" (dict "Items" $data.Shops "Selected" $data.Filters.FromDepartmentID)}}</select></label>
+    <label class="field compact"><span>Дата</span><input type="date" name="fulfillment_date" value="{{$data.Filters.FulfillmentDate}}"></label>
     <button class="button" type="submit">Применить</button>
-    <a class="button button-ghost" href="/orders">Сбросить</a>
+    <a class="button button-ghost" href="/orders?category_id={{$data.Filters.CategoryID}}">Сбросить</a>
   </form>
+  {{end}}
 
   {{if canUseProduction .Viewer}}
-    {{template "view-switch" .}}
+    {{template "view-switch" (dict "CurrentPath" .CurrentPath "CategoryID" $data.Filters.CategoryID)}}
     <div class="matrix-toolbar" data-selection-toolbar>
       <div class="window-nav">
         <a class="button" href="/orders?fulfillment_from={{$data.PrevFrom}}&fulfillment_to={{$data.PrevTo}}&category_id={{$data.Filters.CategoryID}}">← Раньше</a>

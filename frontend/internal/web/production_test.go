@@ -1,8 +1,10 @@
 package web
 
 import (
+	"bytes"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"bakery/internal/inbound/api/contract"
@@ -40,6 +42,10 @@ func TestProductionBatchUsesProductTotals(t *testing.T) {
 	if savedBaguette.LoadedQuantity != 27 || savedBaguette.ProducedQuantity != 24 || savedBaguette.Reason != "Подгорело" {
 		t.Fatalf("saved baguette row = %#v", savedBaguette)
 	}
+	saved[1].Reason = "Упало"
+	if conflict := buildProductionRows(orders, saved)[0]; !conflict.ReasonConflict || conflict.Reason != "" {
+		t.Fatalf("conflicting reasons were flattened silently: %#v", conflict)
+	}
 
 	request := httptest.NewRequest("POST", "/production", nil)
 	request.Form = url.Values{
@@ -64,6 +70,29 @@ func TestProductionBatchUsesProductTotals(t *testing.T) {
 	rounded := distributeProductionQuantity(1, []float64{1, 1, 1})
 	if rounded[0] != 0.3 || rounded[1] != 0.3 || rounded[2] != 0.4 {
 		t.Fatalf("rounded distribution = %v, want [0.3 0.3 0.4]", rounded)
+	}
+}
+
+func TestProductionCommentsStartCollapsed(t *testing.T) {
+	t.Parallel()
+	templates, err := parseTemplates()
+	if err != nil {
+		t.Fatalf("parseTemplates: %v", err)
+	}
+	rows := []productionEditorRow{
+		{ProductName: "Батон"},
+		{ProductName: "Багет", Reason: "Подгорело"},
+		{ProductName: "Булка", ReasonConflict: true},
+	}
+	var output bytes.Buffer
+	if err := templates.ExecuteTemplate(&output, "production-rows", rows); err != nil {
+		t.Fatalf("render production rows: %v", err)
+	}
+	html := output.String()
+	if strings.Count(html, `class="field item-comment" hidden`) != 2 ||
+		strings.Count(html, `aria-expanded="false"`) != 2 ||
+		strings.Count(html, `aria-expanded="true"`) != 1 {
+		t.Fatalf("unexpected comment disclosure states: %s", html)
 	}
 }
 

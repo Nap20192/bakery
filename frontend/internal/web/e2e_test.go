@@ -29,6 +29,8 @@ type fakeBackend struct {
 	createdOrder contract.Order
 	orders       map[string]contract.Order
 	sheets       []contract.ProductionSheet
+	categories   []contract.Category
+	orderFilters application.OrderFilters
 }
 
 func (f *fakeBackend) Health(context.Context) error { return nil }
@@ -47,9 +49,13 @@ func (f *fakeBackend) Catalog(context.Context, application.Credentials) ([]contr
 	return []contract.Dish{{Code: "dish", Name: "Багет", Theme: "Хлеб"}}, nil
 }
 func (f *fakeBackend) Categories(context.Context, application.Credentials) ([]contract.Category, error) {
+	if f.categories != nil {
+		return f.categories, nil
+	}
 	return []contract.Category{{ID: 1, Name: "Хлеб", Letter: "Х", Color: "amber"}}, nil
 }
-func (f *fakeBackend) Orders(context.Context, application.Credentials, application.OrderFilters) (contract.OrdersPage, error) {
+func (f *fakeBackend) Orders(_ context.Context, _ application.Credentials, filters application.OrderFilters) (contract.OrdersPage, error) {
+	f.orderFilters = filters
 	return contract.OrdersPage{Items: nil, Total: 0}, nil
 }
 func (f *fakeBackend) Order(_ context.Context, _ application.Credentials, number string) (contract.Order, error) {
@@ -230,6 +236,31 @@ func TestE2ELoginThenOrders(t *testing.T) {
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("orders status = %d, want 200", resp.StatusCode)
+	}
+}
+
+func TestE2EOrdersDefaultToOneDynamicCategory(t *testing.T) {
+	t.Parallel()
+	back := shopBackend()
+	back.categories = []contract.Category{
+		{ID: 4, Name: "Хлеб", Letter: "Х", Color: "amber"},
+		{ID: 8, Name: "Булочки", Letter: "Б", Color: "sky"},
+	}
+	srv, client := newE2E(t, back)
+	login(t, client, srv.URL, "shopuser")
+
+	resp, err := client.Get(srv.URL + "/orders")
+	if err != nil {
+		t.Fatalf("get orders: %v", err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	html := string(body)
+	if back.orderFilters.CategoryID != 4 {
+		t.Fatalf("category filter = %d, want first dynamic category 4", back.orderFilters.CategoryID)
+	}
+	if !strings.Contains(html, "Булочки") || strings.Contains(html, "Все типы") {
+		t.Fatalf("dynamic category tabs were not rendered: %s", html)
 	}
 }
 

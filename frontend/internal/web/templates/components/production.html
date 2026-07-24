@@ -11,8 +11,8 @@
 
 {{/* production-rows takes the row slice. */}}
 {{define "production-rows"}}
-<div class="scroll-frame"><div class="production-table-wrap"><table class="production-table"><thead><tr><th>Позиция</th><th>Заказано</th><th>Закладка</th><th>Выход</th><th>Общая причина</th></tr></thead><tbody>
-{{range .}}<tr data-production-row data-linked="{{.Linked}}" data-initial-linked="{{.Linked}}">
+<div class="scroll-frame"><div class="production-table-wrap"><table class="production-table"><thead><tr><th>Позиция</th><th>Заказано</th><th>Закладка</th><th>Выход</th><th>Комментарий</th></tr></thead><tbody>
+{{range $index, $_ := .}}<tr data-production-row data-linked="{{.Linked}}" data-initial-linked="{{.Linked}}">
   <td>
     <input type="hidden" name="product_name" value="{{.ProductName}}">
     <input type="hidden" name="share_count" value="{{len .Shares}}">
@@ -23,7 +23,10 @@
   <td class="ordered" data-ordered="{{.OrderedQuantity}}">{{formatQty .OrderedQuantity}}</td>
   <td><input class="quantity-input" type="number" name="loaded_quantity" min="0" step="0.1" inputmode="decimal" value="{{formatQty .LoadedQuantity}}" aria-label="Общая закладка: {{.ProductName}}" required></td>
   <td><input class="quantity-input" type="number" name="produced_quantity" min="0" step="0.1" inputmode="decimal" value="{{formatQty .ProducedQuantity}}" aria-label="Общий выход: {{.ProductName}}" required></td>
-  <td><input name="reason" value="{{.Reason}}" maxlength="200" aria-label="Общая причина отклонения: {{.ProductName}}" placeholder="{{if .ReasonConflict}}Укажите одну общую причину{{else}}Если есть отклонение{{end}}" {{if .ReasonConflict}}required{{end}}>{{if .ReasonConflict}}<small>Раньше причины различались — выберите одну общую.</small>{{end}}</td>
+  <td>
+    <button class="text-action" type="button" data-comment-toggle aria-expanded="{{if .ReasonConflict}}true{{else}}false{{end}}" aria-controls="production-reason-{{$index}}">Комментарий</button>
+    <label class="field item-comment" {{if not .ReasonConflict}}hidden{{end}}><span>Комментарий к позиции</span><input id="production-reason-{{$index}}" name="reason" value="{{.Reason}}" maxlength="200" placeholder="{{if .ReasonConflict}}Укажите одну общую причину{{else}}Если есть отклонение{{end}}" {{if .ReasonConflict}}required{{end}}>{{if .ReasonConflict}}<small>Раньше причины различались — выберите одну общую.</small>{{end}}</label>
+  </td>
 </tr>{{end}}
 </tbody></table></div></div>
 {{end}}
