@@ -19,6 +19,7 @@ import (
 type stubQueries struct {
 	application.Queries
 	orders map[string]contract.Order
+	errs   map[string]error
 }
 
 func (s stubQueries) Me(context.Context, application.Credentials) (contract.Me, error) {
@@ -26,6 +27,9 @@ func (s stubQueries) Me(context.Context, application.Credentials) (contract.Me, 
 }
 
 func (s stubQueries) Order(_ context.Context, _ application.Credentials, number string) (contract.Order, error) {
+	if err := s.errs[number]; err != nil {
+		return contract.Order{}, err
+	}
 	return s.orders[number], nil
 }
 
@@ -39,12 +43,17 @@ func TestSelectionPageDropsOrdersThatCannotJoinABatch(t *testing.T) {
 		"cancelled": {Number: "cancelled", Category: &category, Cancelled: true},
 	}
 
-	srv, err := newServer(stubQueries{orders: orders}, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	srv, err := newServer(stubQueries{
+		orders: orders,
+		errs: map[string]error{
+			"missing": &application.Error{Status: http.StatusNotFound, Message: "заказ не найден"},
+		},
+	}, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err != nil {
 		t.Fatalf("newServer: %v", err)
 	}
 
-	request := httptest.NewRequest("GET", "/orders/selection?order=free&order=produced&order=cancelled", nil)
+	request := httptest.NewRequest("GET", "/orders/selection?order=free&order=produced&order=cancelled&order=missing", nil)
 	request.AddCookie(&http.Cookie{Name: sessionCookie, Value: base64.RawURLEncoding.EncodeToString([]byte("Bearer token"))})
 	response := httptest.NewRecorder()
 	srv.orderSelectionPage(response, request)
@@ -53,7 +62,7 @@ func TestSelectionPageDropsOrdersThatCannotJoinABatch(t *testing.T) {
 		t.Fatalf("status = %d, want 200", response.Code)
 	}
 	body := response.Body.String()
-	for _, number := range []string{"produced", "cancelled"} {
+	for _, number := range []string{"produced", "cancelled", "missing"} {
 		if strings.Contains(body, `<strong>`+number+`</strong>`) {
 			t.Errorf("%s reached the batch; it already has a sheet or is cancelled", number)
 		}
@@ -63,5 +72,8 @@ func TestSelectionPageDropsOrdersThatCannotJoinABatch(t *testing.T) {
 	}
 	if !strings.Contains(body, "Не вошли в партию") {
 		t.Error("dropped orders were not reported to the user")
+	}
+	if !strings.Contains(body, `data-selection-category="1"`) {
+		t.Error("selection page does not expose the category needed to resume the batch")
 	}
 }

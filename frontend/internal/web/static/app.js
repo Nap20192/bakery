@@ -50,14 +50,23 @@
   }
 
   function initializeSelectionRemoval(root) {
-    const buttons = [...root.querySelectorAll('[data-selection-remove]')];
-    buttons.filter((button) => button.dataset.ready !== 'true').forEach((button) => {
-      button.dataset.ready = 'true';
-      button.addEventListener('click', () => {
-        const stored = selection();
-        const current = stored.length ? stored : buttons.map((item) => ({ number: item.dataset.selectionRemove, category: '' }));
+    const page = root.querySelector('[data-selection-page]');
+    if (!page || page.dataset.ready === 'true') return;
+    page.dataset.ready = 'true';
+    const buttons = [...page.querySelectorAll('[data-selection-remove]')];
+    const current = buttons.map((button) => ({
+      number: button.dataset.selectionRemove,
+      category: button.dataset.selectionCategory,
+      categoryName: button.dataset.selectionCategoryName || '',
+    }));
+    storeSelection(current);
+    storeSelectionMode(current.length > 0);
+    buttons.forEach((button) => {
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
         const remaining = current.filter((item) => item.number !== button.dataset.selectionRemove);
-        sessionStorage.setItem(selectionKey, JSON.stringify(remaining));
+        storeSelection(remaining);
+        storeSelectionMode(remaining.length > 0);
         const params = new URLSearchParams();
         remaining.forEach((item) => params.append('order', item.number));
         window.location.assign(remaining.length ? `/orders/selection?${params}` : '/orders');
@@ -136,22 +145,46 @@
   }
 
   function selection() {
-    try { return JSON.parse(sessionStorage.getItem(selectionKey) || '[]'); } catch { return []; }
+    try {
+      const value = JSON.parse(sessionStorage.getItem(selectionKey) || '[]');
+      if (!Array.isArray(value)) return [];
+      const seen = new Set();
+      return value.flatMap((item) => {
+        const number = String(item?.number || '').trim();
+        const category = String(item?.category ?? '').trim();
+        if (!number || !category || seen.has(number)) return [];
+        seen.add(number);
+        return [{ number, category, categoryName: String(item.categoryName || '') }];
+      });
+    } catch {
+      return [];
+    }
+  }
+
+  function storeSelection(value) {
+    try { sessionStorage.setItem(selectionKey, JSON.stringify(value)); } catch { /* selection still works until navigation */ }
+  }
+
+  function selectionMode() {
+    try { return sessionStorage.getItem(selectionModeKey) === 'true'; } catch { return false; }
+  }
+
+  function storeSelectionMode(value) {
+    try { sessionStorage.setItem(selectionModeKey, String(value)); } catch { /* selection still works until navigation */ }
   }
 
   function initializeSelection(root) {
     const toggle = root.querySelector('[data-selection-toggle]');
     const cards = [...root.querySelectorAll('[data-select-order]')];
-    if (!toggle || !cards.length) return;
+    if (!toggle) return;
     if (toggle.dataset.ready === 'true') return;
     toggle.dataset.ready = 'true';
 
-    let mode = sessionStorage.getItem(selectionModeKey) === 'true';
     let selected = selection();
-    const clear = root.querySelector('[data-selection-clear]');
+    let mode = selectionMode() || selected.length > 0;
+    const page = toggle.closest('.orders-page');
     const open = root.querySelector('[data-selection-open]');
     const count = root.querySelector('[data-selection-count]');
-    const store = () => sessionStorage.setItem(selectionKey, JSON.stringify(selected));
     const blocked = (card) => card.dataset.cancelled === 'true' || Boolean(card.dataset.sheet);
 
     const render = () => {
@@ -161,11 +194,11 @@
       const stale = new Set(cards.filter(blocked).map((card) => card.dataset.number));
       if (selected.some((item) => stale.has(item.number))) {
         selected = selected.filter((item) => !stale.has(item.number));
-        store();
+        storeSelection(selected);
       }
-      document.body.classList.toggle('selection-active', mode);
+      page?.classList.toggle('selection-active', mode);
       toggle.setAttribute('aria-pressed', String(mode));
-      toggle.textContent = mode ? 'Готово' : 'Выбор партии';
+      toggle.textContent = mode ? 'Отмена' : 'Выбрать заказы';
       cards.forEach((card) => {
         const picked = selected.some((item) => item.number === card.dataset.number);
         card.classList.toggle('is-selected', picked);
@@ -182,9 +215,8 @@
         }
       });
       if (count) count.textContent = String(selected.length);
-      if (clear) clear.hidden = !mode || selected.length === 0;
       if (open) {
-        open.hidden = selected.length === 0;
+        open.hidden = !mode || selected.length === 0;
         const params = new URLSearchParams();
         selected.forEach((item) => params.append('order', item.number));
         open.href = `/orders/selection?${params}`;
@@ -211,18 +243,15 @@
       } else {
         selected.push({ number, category: card.dataset.category, categoryName: card.dataset.categoryName || '' });
       }
-      store();
+      storeSelection(selected);
       render();
     };
 
     toggle.addEventListener('click', () => {
+      if (mode) selected = [];
       mode = !mode;
-      sessionStorage.setItem(selectionModeKey, String(mode));
-      render();
-    });
-    clear?.addEventListener('click', () => {
-      selected = [];
-      store();
+      storeSelection(selected);
+      storeSelectionMode(mode);
       render();
     });
 
@@ -237,7 +266,7 @@
         pick(card);
       }, true);
       card.addEventListener('keydown', (event) => {
-        if (!mode || (event.key !== 'Enter' && event.key !== ' ')) return;
+        if (!mode || event.target !== card || (event.key !== 'Enter' && event.key !== ' ')) return;
         event.preventDefault();
         pick(card);
       });
