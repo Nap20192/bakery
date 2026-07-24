@@ -20,26 +20,26 @@
     {{template "login" .}}
   {{else}}
   <div id="app-shell" class="app-shell" hx-boost="true" hx-target="#app-shell" hx-select="#app-shell" hx-swap="outerHTML show:window:top" hx-indicator="#global-progress">
+    {{template "nav-icons"}}
     <header class="topbar">
       <a class="brand" href="/orders" aria-label="Bakery, заказы">
         <span class="brand-mark" aria-hidden="true">B</span>
         <span><strong>Bakery</strong><small>Производственный журнал</small></span>
       </a>
       {{if .Viewer}}
-      <button class="menu-toggle" type="button" data-menu-toggle aria-expanded="false" aria-controls="main-nav">Меню</button>
       <nav id="main-nav" class="main-nav" aria-label="Основная навигация">
-        {{if ne .Viewer.Role "admin"}}<a href="/orders" {{if active .CurrentPath "/orders"}}aria-current="page"{{end}}>Заказы</a>{{end}}
+        {{if ne .Viewer.Role "admin"}}<a href="/orders" {{if active .CurrentPath "/orders"}}aria-current="page"{{end}}>{{template "navicon" "grid"}}<span class="nav-label">Заказы</span></a>{{end}}
         {{if canUseProduction .Viewer}}
-          <a href="/orders" {{if eq .CurrentPath "/orders"}}aria-current="page"{{end}}>Матрица</a>
-          <a href="/orders/table" {{if active .CurrentPath "/orders/table"}}aria-current="page"{{end}}>Таблица</a>
-          <a href="/production" {{if active .CurrentPath "/production"}}aria-current="page"{{end}}>Отработки</a>
-          <a href="/calculator" {{if active .CurrentPath "/calculator"}}aria-current="page"{{end}}>Тесто</a>
+          <a href="/orders" {{if eq .CurrentPath "/orders"}}aria-current="page"{{end}}>{{template "navicon" "grid"}}<span class="nav-label">Матрица</span></a>
+          <a href="/orders/table" {{if active .CurrentPath "/orders/table"}}aria-current="page"{{end}}>{{template "navicon" "table"}}<span class="nav-label">Таблица</span></a>
+          <a href="/production" {{if active .CurrentPath "/production"}}aria-current="page"{{end}}>{{template "navicon" "sheet"}}<span class="nav-label">Отработки</span></a>
+          <a href="/calculator" {{if active .CurrentPath "/calculator"}}aria-current="page"{{end}}>{{template "navicon" "bowl"}}<span class="nav-label">Тесто</span></a>
         {{end}}
         {{if isAdmin .Viewer}}
-          <a href="/admin/users" {{if active .CurrentPath "/admin/users"}}aria-current="page"{{end}}>Пользователи</a>
-          <a href="/admin/dishes" {{if active .CurrentPath "/admin/dishes"}}aria-current="page"{{end}}>Каталог</a>
+          <a href="/admin/users" {{if active .CurrentPath "/admin/users"}}aria-current="page"{{end}}>{{template "navicon" "users"}}<span class="nav-label">Пользователи</span></a>
+          <a href="/admin/dishes" {{if active .CurrentPath "/admin/dishes"}}aria-current="page"{{end}}>{{template "navicon" "book"}}<span class="nav-label">Каталог</span></a>
         {{end}}
-        <a href="/me" {{if active .CurrentPath "/me"}}aria-current="page"{{end}}>Профиль</a>
+        <a href="/me" {{if active .CurrentPath "/me"}}aria-current="page"{{end}}>{{template "navicon" "user"}}<span class="nav-label">Профиль</span></a>
       </nav>
       {{end}}
     </header>

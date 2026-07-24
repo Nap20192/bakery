@@ -57,7 +57,11 @@ small { display: block; color: var(--ink-muted); font-size: 0.78rem; }
 .main-nav a::after { position: absolute; right: 0; bottom: 5px; left: 0; height: 2px; background: var(--crust); content: ""; opacity: 0; transform: scaleX(0); transition: opacity 140ms ease, transform 140ms ease; }
 .main-nav a:hover::after, .main-nav a[aria-current="page"]::after { opacity: 1; transform: scaleX(1); }
 .main-nav a[aria-current="page"] { color: var(--ink); }
-.menu-toggle { display: none; min-height: 44px; margin-left: auto; border: 1px solid var(--line); border-radius: var(--radius-control); background: transparent; }
+.nav-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+/* Shown only in the mobile bottom bar; desktop nav is text-only. box-sizing so
+   the padding insets the 24-viewBox glyph inside the active pill. */
+.nav-ico { display: none; box-sizing: border-box; width: 44px; height: 30px; padding: 4px 11px; border-radius: 9px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.nav-label { line-height: 1; }
 
 .page { width: min(100%, calc(var(--max) + 40px)); margin: 0 auto; padding: 32px 20px 64px; }
 .narrow-page { width: min(100%, 720px); }
@@ -282,11 +286,24 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .preview-items { display: grid; gap: 7px; max-height: 42vh; margin: 16px 0; padding: 0; overflow: auto; list-style: none; }.preview-items li { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 7px; border-bottom: 1px solid var(--line-soft); }
 
 @media (max-width: 900px) {
+  :root { --bottom-bar: 62px; }
+  /* Safety net: clip (not hidden) never makes a scroll container, so top-sticky
+     headers and the tables' own overflow:auto scrollers keep working, but a
+     stray over-wide element can't drag the whole page sideways. */
+  html { overflow-x: clip; }
   .topbar { padding-inline: 16px; }
-  .menu-toggle { display: inline-flex; align-items: center; padding: 0 13px; }
-  .main-nav { position: absolute; top: calc(100% + 1px); right: 12px; left: 12px; display: none; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; padding: 8px; border: 1px solid var(--line); border-radius: var(--radius-surface); background: var(--surface); box-shadow: 0 8px 24px rgba(25, 24, 23, 0.08); }
-  .main-nav.is-open { display: grid; }
-  .main-nav a { padding-inline: 12px; }
+  /* Nav leaves the header and becomes a fixed bottom tab bar in the thumb zone. */
+  .main-nav { position: fixed; z-index: 90; right: 0; bottom: 0; left: 0; display: flex; justify-content: space-around; gap: 2px; margin: 0; padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: rgba(251, 250, 246, 0.94); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+  .main-nav a { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; min-height: 52px; padding: 4px 2px; color: var(--ink-muted); font-size: 0.66rem; font-weight: 600; }
+  .main-nav a::after { display: none; }
+  .main-nav a[aria-current="page"] { color: var(--ink); }
+  .nav-ico { display: block; }
+  .main-nav a[aria-current="page"] .nav-ico { color: #fffaf4; background: var(--crust); }
+  .nav-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Clear the fixed bar. */
+  .page { padding-bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom) + 24px); }
+  .sticky-submit { bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom) + 8px); }
+  .toast-region { bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom) + 12px); }
   /* minmax(0, …), not 1fr: plain 1fr floors the column at min-content, and the
      wide item/production tables inside would stretch the whole page instead of
      scrolling within their own wrapper. */
@@ -346,7 +363,7 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .category-choice { min-height: 58px; padding: 8px; }
   .catalog-row { grid-template-columns: minmax(130px, 1fr) 76px 76px; gap: 6px; }
   .catalog-row input { padding-inline: 4px; }
-  .sticky-submit { right: 0; bottom: max(8px, env(safe-area-inset-bottom)); left: 0; }
+  .sticky-submit { right: 0; bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom)); left: 0; }
   .sticky-submit > * { flex: 1; }
   .batch-order summary { align-items: flex-start; flex-direction: column; gap: 4px; }
   .production-table { min-width: 680px; }
