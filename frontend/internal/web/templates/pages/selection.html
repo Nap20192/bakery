@@ -1,6 +1,6 @@
 {{define "selection"}}
 {{$data := .Data}}
-<section class="page selection-page">
+<section class="page selection-page" data-selection-page>
   <header class="page-heading">
     {{template "page-title" (dict "Title" "Новая отработка")}}
     <a class="button" href="/orders">К матрице</a>
@@ -8,7 +8,7 @@
   {{if $data.Orders}}
   <section class="batch-orders">
     {{template "section-heading" (dict "Title" "Заказы партии" "Count" (len $data.Orders))}}
-    {{range $data.Orders}}<details class="batch-order"><summary><span><strong>{{.Number}}</strong>{{template "category-badge" .Category}}</span><span>{{len .Items}} поз. · @{{.CreatedByUsername}} <button class="text-action" type="button" data-selection-remove="{{.Number}}">Убрать</button></span></summary><ul>{{range .Items}}<li><span>{{.ProductName}}</span><strong>{{formatQty .ProductionQuantity}}</strong></li>{{end}}</ul></details>{{end}}
+    {{range $data.Orders}}<details class="batch-order"><summary><span><strong>{{.Number}}</strong>{{template "category-badge" .Category}}</span><span>{{len .Items}} поз. · @{{.CreatedByUsername}} <button class="text-action" type="button" data-selection-remove="{{.Number}}" data-selection-category="{{if .Category}}{{.Category.ID}}{{else}}0{{end}}" data-selection-category-name="{{if .Category}}{{.Category.Name}}{{else}}Без типа{{end}}">Убрать</button></span></summary><ul>{{range .Items}}<li><span>{{.ProductName}}</span><strong>{{formatQty .ProductionQuantity}}</strong></li>{{end}}</ul></details>{{end}}
   </section>
   <div class="production-layout">
     <section class="surface">

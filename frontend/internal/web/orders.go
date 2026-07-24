@@ -314,6 +314,10 @@ func (s *server) orderSelectionPage(w http.ResponseWriter, r *http.Request) {
 	for _, number := range numbers {
 		order, err := s.queries.Order(r.Context(), cred, number)
 		if err != nil {
+			if application.StatusOf(err) == http.StatusNotFound {
+				skipped = append(skipped, number)
+				continue
+			}
 			s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить выбранные заказы."))
 			return
 		}
@@ -336,7 +340,7 @@ func (s *server) orderSelectionPage(w http.ResponseWriter, r *http.Request) {
 	}
 	notice := ""
 	if len(skipped) > 0 {
-		notice = "Не вошли в партию (уже отработаны или отменены): " + strings.Join(skipped, ", ") + "."
+		notice = "Не вошли в партию (недоступны, уже отработаны или отменены): " + strings.Join(skipped, ", ") + "."
 	}
 	batch := make([]string, 0, len(orders))
 	for _, order := range orders {
