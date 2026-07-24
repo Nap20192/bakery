@@ -81,6 +81,16 @@ The two binaries select different option sets. Dependency order matters: declare
 
 **Never expose raw DB/iiko errors to users.** Log the technical cause; return a safe message.
 
+## Documentation
+
+**Docs are the source of truth for behavior — read them before coding, update them after.** The specs describe how the system must behave; the code must match them, not the other way around.
+
+- `docs/api/openapi.yaml` — HTTP contract. Route-sync test `internal/inbound/api/openapi_test.go` fails if a route is missing here.
+- `frontend/FRONTEND_BEHAVIOR.md` — full route + behavior spec for the BFF.
+- `CLAUDE.md` (this file) — architecture, conventions, domain rules.
+
+Every behavior change updates the relevant doc **in the same change** as the code. If a doc and the code disagree, treat it as a bug: fix whichever is wrong and reconcile them — never leave them drifted. Use the `sdd` skill for spec-first work (write/adjust the spec, then the code) and to audit a spec against the implementation.
+
 ## Authentication
 
 Every request authenticates via `Authorization` header:

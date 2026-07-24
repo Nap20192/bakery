@@ -266,6 +266,18 @@
         updateSummary(editor);
       };
       radios.forEach((radio) => radio.addEventListener('change', updateRows));
+      // The radio is visually hidden (opacity:0), so the browser can't anchor its
+      // "please select" bubble to it — submit is blocked with no feedback and the
+      // dish rows stay hidden until a type is picked. Surface the invalid state so
+      // the form doesn't look broken. `invalid` still fires on the hidden control.
+      let warnedAt = 0;
+      radios.forEach((radio) => radio.addEventListener('invalid', () => {
+        // Every radio in the group reports invalid on the same submit; toast once.
+        if (Date.now() - warnedAt < 300) return;
+        warnedAt = Date.now();
+        showToast('Выберите тип заявки — без него не видны позиции и заказ не сохранится.');
+        editor.querySelector('.category-picker')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }));
       search?.addEventListener('input', updateRows);
       editor.querySelectorAll('.quantity-input').forEach((input) => input.addEventListener('input', () => updateSummary(editor)));
       editor.querySelectorAll('[data-comment-toggle]').forEach((button) => button.addEventListener('click', () => {
