@@ -1,12 +1,10 @@
 {{/* Order tiles. Both take an Order. */}}
 
 {{define "order-card"}}
-<article class="order-card{{if .Cancelled}} is-cancelled{{end}}{{if .ProductionSheetID}} {{sheetTone .ProductionSheetID}}{{end}}" data-select-order data-number="{{.Number}}" data-category="{{if .Category}}{{.Category.ID}}{{else}}0{{end}}" data-category-name="{{if .Category}}{{.Category.Name}}{{else}}Без типа{{end}}" data-sheet="{{if .ProductionSheetID}}{{.ProductionSheetID}}{{end}}" data-cancelled="{{.Cancelled}}">
-  <a class="order-card-main" href="/orders/{{urlquery .Number}}">
-    <span class="order-stamp category-border-{{categoryTone .Category}}" aria-hidden="true">{{if .Category}}{{.Category.Letter}}{{else}}—{{end}}</span>
+<article class="order-card category-border-{{categoryTone .Category}}{{if .Cancelled}} is-cancelled{{end}}{{if .ProductionSheetID}} {{sheetTone .ProductionSheetID}}{{end}}" data-select-order data-number="{{.Number}}" data-category="{{if .Category}}{{.Category.ID}}{{else}}0{{end}}" data-category-name="{{if .Category}}{{.Category.Name}}{{else}}Без типа{{end}}" data-sheet="{{if .ProductionSheetID}}{{.ProductionSheetID}}{{end}}" data-cancelled="{{.Cancelled}}">
+  <a class="order-card-main" href="/orders/{{urlquery .Number}}" aria-label="{{if .Category}}{{.Category.Name}}{{else}}Без типа{{end}}, заказ {{.Number}}">
     <span class="order-card-head">
-      <strong class="order-card-title">{{if .Category}}{{.Category.Name}}{{else}}Без типа{{end}}{{if .Favorite}} <span class="order-card-star" aria-label="Избранный">★</span>{{end}}</strong>
-      <span class="order-card-number">{{.Number}}</span>
+      <strong class="order-card-title">{{.Number}}{{if .Favorite}} <span class="order-card-star" aria-label="Избранный">★</span>{{end}}</strong>
     </span>
     <span class="order-card-count"><strong>{{len .Items}}</strong> поз.</span>
   </a>
