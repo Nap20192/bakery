@@ -56,9 +56,9 @@
       {{range $data.Page.Items}}{{template "order-card" .}}{{else}}{{template "empty-state" (dict "Text" "Заказов пока нет. Создайте первую заявку.")}}{{end}}
     </div>
     {{if gt $data.Page.TotalPages 1}}<nav class="pagination" aria-label="Страницы заказов">
-      {{if gt $data.Page.Page 1}}<a class="button" href="/orders?page={{sub $data.Page.Page 1}}&category_id={{$data.Filters.CategoryID}}">← Назад</a>{{end}}
+      {{if gt $data.Page.Page 1}}<a class="button" href="/orders?page={{pageOffset $data.Page.Page -1}}&category_id={{$data.Filters.CategoryID}}">← Назад</a>{{end}}
       <span>Страница {{$data.Page.Page}} из {{$data.Page.TotalPages}}</span>
-      {{if lt $data.Page.Page $data.Page.TotalPages}}<a class="button" href="/orders?page={{add $data.Page.Page 1}}&category_id={{$data.Filters.CategoryID}}">Дальше →</a>{{end}}
+      {{if lt $data.Page.Page $data.Page.TotalPages}}<a class="button" href="/orders?page={{pageOffset $data.Page.Page 1}}&category_id={{$data.Filters.CategoryID}}">Дальше →</a>{{end}}
     </nav>{{end}}
   {{end}}
 </section>

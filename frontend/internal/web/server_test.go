@@ -62,12 +62,13 @@ func TestTemplatesRenderEveryView(t *testing.T) {
 	}
 	sheet := contract.ProductionSheet{ID: sheetID, CreatedAt: time.Now().Format(time.RFC3339), CreatedByUsername: "tester", OrderNumbers: []string{order.Number}}
 	viewer := &contract.Me{Role: "admin", TelegramUsername: "tester"}
+	shopViewer := &contract.Me{Role: "shop", TelegramUsername: "tester"}
 
 	tests := []page{
 		{View: "login", Data: loginData{Next: "/orders"}},
 		{View: "error", Viewer: viewer, Error: "Ошибка"},
 		{View: "me", Viewer: viewer},
-		{View: "orders", Viewer: viewer, Data: ordersData{Page: contract.OrdersPage{Items: []contract.Order{order}}, Categories: []contract.Category{category}}},
+		{View: "orders", Viewer: shopViewer, Data: ordersData{Page: contract.OrdersPage{Items: []contract.Order{order}, Page: 2, TotalPages: 3}, Categories: []contract.Category{category}}},
 		{View: "order-detail", Viewer: viewer, Data: orderDetailData{Order: order, Groups: []orderItemGroup{{Name: "Хлеб", Items: order.Items}}}},
 		{View: "order-form", Viewer: viewer, Data: orderFormData{Mode: "create", Categories: []contract.Category{category}, Groups: []editorGroup{{Name: "Хлеб", Items: []editorItem{{Dish: dish}}}}}},
 		{View: "selection", Viewer: viewer, Data: selectionData{Orders: []contract.Order{order}, Rows: buildProductionRows([]contract.Order{order}, nil)}},
