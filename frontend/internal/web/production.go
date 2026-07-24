@@ -2,6 +2,7 @@ package web
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
 	"sort"
@@ -12,14 +13,20 @@ import (
 	"bakery/internal/inbound/api/contract"
 )
 
+type productionEditorShare struct {
+	OrderNumber     string
+	OrderedQuantity float64
+}
+
 type productionEditorRow struct {
-	OrderNumber      string
 	ProductName      string
 	OrderedQuantity  float64
 	LoadedQuantity   float64
 	ProducedQuantity float64
 	Reason           string
+	ReasonConflict   bool
 	Linked           bool
+	Shares           []productionEditorShare
 }
 
 type productionEditorData struct {
@@ -211,71 +218,164 @@ func (s *server) loadOrders(r *http.Request, cred application.Credentials, numbe
 func buildProductionRows(orders []contract.Order, saved []contract.ProductionSheetItem) []productionEditorRow {
 	byKey := make(map[string]contract.ProductionSheetItem, len(saved))
 	for _, item := range saved {
-		byKey[item.OrderNumber+"\x00"+item.ProductName] = item
+		byKey[productionItemKey(item.OrderNumber, item.ProductName)] = item
 	}
-	rows := make([]productionEditorRow, 0)
+	type rowBuilder struct {
+		row     productionEditorRow
+		reasons map[string]struct{}
+	}
+	builders := make([]rowBuilder, 0)
+	byProduct := make(map[string]int)
 	for _, order := range orders {
 		for _, item := range order.Items {
+			productKey := strings.ToLower(strings.TrimSpace(item.ProductName))
+			index, ok := byProduct[productKey]
+			if !ok {
+				index = len(builders)
+				byProduct[productKey] = index
+				builders = append(builders, rowBuilder{
+					row:     productionEditorRow{ProductName: item.ProductName, Linked: true},
+					reasons: make(map[string]struct{}),
+				})
+			}
+
 			ordered := item.ProductionQuantity
-			row := productionEditorRow{
-				OrderNumber: order.Number, ProductName: item.ProductName, OrderedQuantity: ordered,
-				LoadedQuantity: ordered, ProducedQuantity: effectiveQuantity(item), Reason: item.ProducedReason, Linked: item.ProducedQuantity == nil,
+			loaded := ordered
+			produced := effectiveQuantity(item)
+			reason := item.ProducedReason
+			if value, exists := byKey[productionItemKey(order.Number, item.ProductName)]; exists {
+				loaded = value.LoadedQuantity
+				produced = value.ProducedQuantity
+				reason = value.Reason
 			}
-			if value, ok := byKey[order.Number+"\x00"+item.ProductName]; ok {
-				row.LoadedQuantity = value.LoadedQuantity
-				row.ProducedQuantity = value.ProducedQuantity
-				row.Reason = value.Reason
-				row.Linked = value.LoadedQuantity == ordered && value.ProducedQuantity == ordered
+
+			builder := &builders[index]
+			builder.row.OrderedQuantity += ordered
+			builder.row.LoadedQuantity += loaded
+			builder.row.ProducedQuantity += produced
+			builder.row.Linked = builder.row.Linked && loaded == ordered && produced == ordered
+			builder.row.Shares = append(builder.row.Shares, productionEditorShare{
+				OrderNumber: order.Number, OrderedQuantity: ordered,
+			})
+			if produced != ordered {
+				builder.reasons[strings.TrimSpace(reason)] = struct{}{}
 			}
-			rows = append(rows, row)
 		}
 	}
+
+	rows := make([]productionEditorRow, 0, len(builders))
+	for _, builder := range builders {
+		if len(builder.reasons) == 1 {
+			for reason := range builder.reasons {
+				builder.row.Reason = reason
+			}
+		} else if len(builder.reasons) > 1 {
+			builder.row.ReasonConflict = true
+		}
+		rows = append(rows, builder.row)
+	}
 	return rows
+}
+
+func productionItemKey(orderNumber, productName string) string {
+	return strings.TrimSpace(orderNumber) + "\x00" + strings.ToLower(strings.TrimSpace(productName))
 }
 
 func parseProductionWrite(r *http.Request) (contract.ProductionWrite, error) {
 	if err := r.ParseForm(); err != nil {
 		return contract.ProductionWrite{}, fmt.Errorf("не удалось прочитать форму")
 	}
-	numbers := r.Form["order_number"]
 	names := r.Form["product_name"]
 	loaded := r.Form["loaded_quantity"]
 	produced := r.Form["produced_quantity"]
 	reasons := r.Form["reason"]
-	if len(numbers) == 0 || len(names) != len(numbers) {
+	shareCounts := r.Form["share_count"]
+	numbers := r.Form["order_number"]
+	ordered := r.Form["ordered_quantity"]
+	if len(names) == 0 || len(loaded) != len(names) || len(produced) != len(names) ||
+		len(reasons) != len(names) || len(shareCounts) != len(names) || len(numbers) != len(ordered) {
 		return contract.ProductionWrite{}, fmt.Errorf("в партии нет позиций")
 	}
 	orderIndexes := make(map[string]int)
 	body := contract.ProductionWrite{}
-	for index, number := range numbers {
-		number = strings.TrimSpace(number)
-		name := strings.TrimSpace(valueAt(names, index))
-		loadedQuantity := valueAtFloat(loaded, index)
-		producedQuantity := valueAtFloat(produced, index)
+	shareOffset := 0
+	for index, nameValue := range names {
+		name := strings.TrimSpace(nameValue)
+		loadedTotal := valueAtFloat(loaded, index)
+		producedTotal := valueAtFloat(produced, index)
 		reason := strings.TrimSpace(valueAt(reasons, index))
-		if number == "" || name == "" {
-			continue
+		shareCount, err := strconv.Atoi(strings.TrimSpace(shareCounts[index]))
+		if err != nil || name == "" || shareCount <= 0 || shareOffset+shareCount > len(numbers) {
+			return body, fmt.Errorf("проверьте состав партии")
 		}
-		if loadedQuantity < 0 || producedQuantity < 0 {
+		if loadedTotal < 0 || producedTotal < 0 ||
+			math.IsNaN(loadedTotal) || math.IsInf(loadedTotal, 0) ||
+			math.IsNaN(producedTotal) || math.IsInf(producedTotal, 0) {
 			return body, fmt.Errorf("закладка и выход не могут быть отрицательными")
 		}
 		if len([]rune(reason)) > 200 {
 			return body, fmt.Errorf("обоснование должно быть не длиннее 200 символов")
 		}
-		orderIndex, ok := orderIndexes[number]
-		if !ok {
-			orderIndex = len(body.Orders)
-			orderIndexes[number] = orderIndex
-			body.Orders = append(body.Orders, contract.ProductionOrderWrite{Number: number})
+
+		rowNumbers := numbers[shareOffset : shareOffset+shareCount]
+		rowOrdered := make([]float64, shareCount)
+		for shareIndex := range rowOrdered {
+			rowNumbers[shareIndex] = strings.TrimSpace(rowNumbers[shareIndex])
+			rowOrdered[shareIndex] = valueAtFloat(ordered, shareOffset+shareIndex)
+			if rowNumbers[shareIndex] == "" || rowOrdered[shareIndex] <= 0 ||
+				math.IsNaN(rowOrdered[shareIndex]) || math.IsInf(rowOrdered[shareIndex], 0) {
+				return body, fmt.Errorf("проверьте количество по заявкам для позиции %q", name)
+			}
 		}
-		body.Orders[orderIndex].Items = append(body.Orders[orderIndex].Items, contract.ProductionItemWrite{
-			ProductName: name, LoadedQuantity: &loadedQuantity, ProducedQuantity: producedQuantity, Reason: reason,
-		})
+		loadedShares := distributeProductionQuantity(loadedTotal, rowOrdered)
+		producedShares := distributeProductionQuantity(producedTotal, rowOrdered)
+		for shareIndex, number := range rowNumbers {
+			orderIndex, ok := orderIndexes[number]
+			if !ok {
+				orderIndex = len(body.Orders)
+				orderIndexes[number] = orderIndex
+				body.Orders = append(body.Orders, contract.ProductionOrderWrite{Number: number})
+			}
+			loadedQuantity := loadedShares[shareIndex]
+			body.Orders[orderIndex].Items = append(body.Orders[orderIndex].Items, contract.ProductionItemWrite{
+				ProductName: name, LoadedQuantity: &loadedQuantity, ProducedQuantity: producedShares[shareIndex], Reason: reason,
+			})
+		}
+		shareOffset += shareCount
+	}
+	if shareOffset != len(numbers) {
+		return body, fmt.Errorf("проверьте состав партии")
 	}
 	if len(body.Orders) == 0 {
 		return body, fmt.Errorf("выберите хотя бы один заказ")
 	}
 	return body, nil
+}
+
+func distributeProductionQuantity(total float64, ordered []float64) []float64 {
+	result := make([]float64, len(ordered))
+	var orderedTotal float64
+	for _, quantity := range ordered {
+		orderedTotal += quantity
+	}
+	var allocated float64
+	for index := range ordered {
+		if index == len(ordered)-1 {
+			result[index] = roundProductionQuantity(total - allocated)
+			break
+		}
+		result[index] = roundProductionQuantity(total * ordered[index] / orderedTotal)
+		allocated += result[index]
+	}
+	return result
+}
+
+func roundProductionQuantity(value float64) float64 {
+	value = math.Round(value*10) / 10
+	if math.Abs(value) < 0.000001 {
+		return 0
+	}
+	return value
 }
 
 func parseInt64(value string) int64 {

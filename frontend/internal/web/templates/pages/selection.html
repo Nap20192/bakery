@@ -12,7 +12,8 @@
   </section>
   <div class="production-layout">
     <section class="surface">
-      {{template "section-heading" (dict "Title" "Факт выпечки")}}
+      {{template "section-heading" (dict "Title" "Итого по партии")}}
+      <p class="muted production-note">Одинаковые позиции объединены. Закладка и выход распределятся по заказам автоматически.</p>
       {{template "production-form" (dict "Action" "/production" "CSRF" .CSRF "Rows" $data.Rows "Submit" "Сохранить отработку")}}
     </section>
     {{template "monitor-panel" (dict
