@@ -23,7 +23,6 @@
   });
 
   function initialize(root) {
-    initializeMenu(root);
     initializeConfirmations(root);
     initializeDialogs(root);
     initializeSelection(root);
@@ -95,18 +94,6 @@
       window.location.assign(response.headers.get('HX-Location') || '/orders');
     }).catch((error) => {
       if (status) status.textContent = error.message || 'Не удалось войти через Telegram.';
-    });
-  }
-
-  function initializeMenu(root) {
-    root.querySelectorAll('[data-menu-toggle]:not([data-ready])').forEach((button) => {
-      button.dataset.ready = 'true';
-      button.addEventListener('click', () => {
-        const nav = document.getElementById(button.getAttribute('aria-controls'));
-        const open = !nav?.classList.contains('is-open');
-        nav?.classList.toggle('is-open', open);
-        button.setAttribute('aria-expanded', String(open));
-      });
     });
   }
 
