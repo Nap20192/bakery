@@ -13,7 +13,8 @@
   <div class="batch-links">{{range $sheet.OrderNumbers}}<a href="/orders/{{urlquery .}}">{{.}}</a>{{end}}</div>
   <div class="production-layout">
     <section class="surface">
-      {{template "section-heading" (dict "Title" "Факт выпечки")}}
+      {{template "section-heading" (dict "Title" "Итого по партии")}}
+      <p class="muted production-note">Одинаковые позиции объединены. Изменения распределятся по заказам автоматически.</p>
       {{template "production-form" (dict "Action" (printf "/production/%d" $sheet.ID) "CSRF" .CSRF "Rows" $data.Rows "Submit" "Сохранить изменения")}}
     </section>
     {{template "monitor-panel" (dict

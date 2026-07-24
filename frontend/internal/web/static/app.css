@@ -226,8 +226,12 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .batch-order ul { display: grid; gap: 5px; margin: 0 0 14px; padding: 0 12px; list-style: none; }
 .batch-order li { display: flex; justify-content: space-between; gap: 12px; }
 .production-layout, .calculator-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.7fr); gap: 18px; align-items: start; }
-.production-table { min-width: 760px; }
+.production-note { margin: -4px 0 14px; }
+.production-table { min-width: 700px; }
 .production-table td:first-child strong, .production-table td:first-child small { display: block; }
+.production-sources { max-width: 260px; margin-top: 3px; color: var(--ink-muted); font-family: var(--font-mono); line-height: 1.45; white-space: normal; }
+.production-table td:last-child { min-width: 210px; }
+.production-table td:last-child small { display: block; margin-top: 4px; color: var(--warning); line-height: 1.35; }
 .production-table input { background: var(--surface); }
 .production-table .quantity-input { width: 72px; min-width: 72px; max-width: 72px; padding-inline: 6px; }
 .production-form .form-actions { justify-content: flex-end; margin-top: 16px; }
@@ -379,7 +383,7 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .sticky-submit { right: 0; bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom)); left: 0; }
   .sticky-submit > * { flex: 1; }
   .batch-order summary { align-items: flex-start; flex-direction: column; gap: 4px; }
-  .production-table { min-width: 680px; }
+  .production-table { min-width: 660px; }
   .journal-table .journal-axis, .summary-table .summary-axis { min-width: 112px; max-width: 130px; }
   .summary-table th, .summary-table td, .journal-table th, .journal-table td { min-width: 104px; padding: 7px; }
   .journal-table th:not(.journal-axis), .journal-table td { min-width: 180px; }
