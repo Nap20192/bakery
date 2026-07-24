@@ -5,11 +5,10 @@
   <a class="order-card-main" href="/orders/{{urlquery .Number}}">
     <span class="order-stamp category-border-{{categoryTone .Category}}" aria-hidden="true">{{if .Category}}{{.Category.Letter}}{{else}}—{{end}}</span>
     <span class="order-card-head">
-      <strong class="order-card-number">{{.Number}}</strong>
-      <span class="order-card-cat">{{if .Category}}{{.Category.Name}}{{else}}Без типа{{end}}</span>
+      <strong class="order-card-title">{{if .Category}}{{.Category.Name}}{{else}}Без типа{{end}}{{if .Favorite}} <span class="order-card-star" aria-label="Избранный">★</span>{{end}}</strong>
+      <span class="order-card-number">{{.Number}}</span>
     </span>
-    <span class="order-card-count"><strong>{{len .Items}}</strong>поз.</span>
-    {{if .Favorite}}<span class="order-card-star" aria-label="Избранный">★</span>{{end}}
+    <span class="order-card-count"><strong>{{len .Items}}</strong> поз.</span>
   </a>
   <div class="order-card-foot">
     <span class="order-card-meta">@{{.CreatedByUsername}} · {{formatDate .CreatedAt}}</span>
