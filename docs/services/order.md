@@ -6,8 +6,8 @@ production sheets (отработка), order history, and all order domain even
 
 ## Responsibilities
 
-- Shop → workshop order lifecycle: create, edit, cancel, restore.
-- Order numbering with per-shop/per-category/per-day counters.
+- Shop/workshop → workshop order lifecycle: create, edit, cancel, restore.
+- Order numbering with per-source/per-category/per-day counters.
 - Dynamic order-category dictionary (letter, color, dough monitor codes).
 - Dish catalog + text templates for bulk order entry; startup seeding.
 - Production sheets: the baker's record of what was actually baked.
@@ -37,8 +37,8 @@ Key fields (see `domain/model.go`):
 | Field | Notes |
 |---|---|
 | `Number` | Human-facing ID and aggregate identity, e.g. `Г.Х.08.07.26.001`. |
-| `Location` | Shop display name, denormalized at creation. |
-| `FromDepartmentID` / `ToDepartmentID` | Shop → workshop. |
+| `Location` | Source display name, denormalized at creation. |
+| `FromDepartmentID` / `ToDepartmentID` | Shop or workshop → workshop. Baker-created orders use «Цех Пекари» as the source. |
 | `CategoryID` / `Category` | Order category. Required on create, **immutable on edit**. Nil on legacy orders only. |
 | `CreatedByUsername` | Telegram username of the author; never overwritten by editors. |
 | `Items` | Order lines. |
@@ -71,15 +71,16 @@ Derived quantities:
 Built by `OrderService.BuildOrderNumber`:
 
 ```
-<shop letter>.<category letter>.<DD.MM.YY>.<NNN>
+<source letter>.<category letter>.<DD.MM.YY>.<NNN>
 Г.Х.08.07.26.001
 ```
 
-- Shop letter from code: `gagarina`→Г, `sholokhova`→Ш, `saryarka`→С; falls
-  back to name matching, then to the first letter of the shop name.
+- Source letter from code/name: `gagarina`→Г, `sholokhova`→Ш,
+  `saryarka`→С, `Цех Пекари`→Ц; unknown sources fall back to the first
+  letter of their name.
 - Category letter comes from the order category; an empty letter keeps the
   legacy format without that segment.
-- `NNN` is a per **shop + category + day** counter (`order_counters`,
+- `NNN` is a per **source department + category + day** counter (`order_counters`,
   day key `DDMMYYYY` from the created-at date). Counters are transactional —
   concurrent creates cannot produce duplicate numbers.
 
@@ -181,14 +182,13 @@ All routes are registered in `infra/http`. Errors follow the
 | `GET /catalog` | any role | Dish catalog grouped for the editor. |
 | `GET /categories` | any role | Order categories (id, code, letter, name, color, monitor codes). |
 | `GET /orders` | shop sees own; baker/admin see all | Query params: `limit` (≤100, default 10), `page`, `from_department_id`, `category_id`, `fulfillment_date`, `fulfillment_from`, `fulfillment_to` (inclusive range — the baker matrix loads windows of days). |
-| `POST /orders` | shop, admin | Body: `{items: [{product_name, quantity, reserved_quantity}], fulfillment_date, from_department_id, category_id, comments: {general, items: [{product_name, comment}]}}`. `category_id` required. |
+| `POST /orders` | shop, baker, admin | Body: `{items: [{product_name, quantity, reserved_quantity}], fulfillment_date, from_department_id, category_id, comments: {general, items: [{product_name, comment}]}}`. `category_id` required; for baker the source is always «Цех Пекари» and the supplied `from_department_id` is ignored. |
 | `GET /orders/{id}` | creator's shop, baker, admin | `{id}` is the order number. |
-| `PUT /orders/{id}` | shop, admin | Same body as create **minus** `category_id` (category never changes). |
-| `POST /orders/{id}/cancel` | shop, admin | Idempotent — cancelling a cancelled order returns it unchanged. |
-| `POST /orders/{id}/restore` | shop, admin | Idempotent for active orders. |
+| `PUT /orders/{id}` | shop, baker, admin | Same body as create **minus** `category_id` (category never changes). |
+| `POST /orders/{id}/cancel` | shop, baker, admin | Idempotent — cancelling a cancelled order returns it unchanged. |
+| `POST /orders/{id}/restore` | shop, baker, admin | Idempotent for active orders. |
 
-Non-shop roles get `403 «Только магазин может создавать и изменять заказы.»`
-on write routes.
+Roles outside `shop`/`baker`/`admin` get `403` on write routes.
 
 ### Production (RequireMiniAppAuth + baker/admin guard)
 

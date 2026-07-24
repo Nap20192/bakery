@@ -50,7 +50,7 @@ func (h *Handler) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, http.StatusServiceUnavailable, "Сервис заказов временно недоступен.")
 		return
 	}
-	user, ok := h.shopOrderWriter(w, r)
+	user, ok := h.orderWriter(w, r)
 	if !ok {
 		return
 	}
@@ -63,7 +63,12 @@ func (h *Handler) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	fromDepartmentID, ok := h.resolveShopDepartmentID(w, r, input.fromDepartmentID)
+	var fromDepartmentID int64
+	if enum.NormalizeRole(user.Auth.Role) == enum.RoleBaker {
+		fromDepartmentID = toDepartmentID
+	} else {
+		fromDepartmentID, ok = h.resolveOrderSourceDepartmentID(w, r, input.fromDepartmentID, false)
+	}
 	if !ok {
 		return
 	}
@@ -89,7 +94,7 @@ func (h *Handler) handleUpdateOrder(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, http.StatusServiceUnavailable, "Сервис заказов временно недоступен.")
 		return
 	}
-	user, ok := h.shopOrderWriter(w, r)
+	user, ok := h.orderWriter(w, r)
 	if !ok {
 		return
 	}
@@ -110,7 +115,13 @@ func (h *Handler) handleUpdateOrder(w http.ResponseWriter, r *http.Request) {
 
 	fromDepartmentID := existing.FromDepartmentID
 	if input.fromDepartmentID != nil {
-		resolved, ok := h.resolveShopDepartmentID(w, r, input.fromDepartmentID)
+		role := enum.NormalizeRole(user.Auth.Role)
+		resolved, ok := h.resolveOrderSourceDepartmentID(
+			w,
+			r,
+			input.fromDepartmentID,
+			role == enum.RoleBaker || role == enum.RoleAdmin,
+		)
 		if !ok {
 			return
 		}
@@ -141,14 +152,14 @@ func (h *Handler) handleRestoreOrder(w http.ResponseWriter, r *http.Request) {
 	h.changeOrderCancellation(w, r, false)
 }
 
-// changeOrderCancellation cancels or restores an order. Both are shop/admin
-// actions guarded by shopOrderWriter; the actor is recorded on cancel.
+// changeOrderCancellation cancels or restores an order. Both are order-writer
+// actions guarded by orderWriter; the actor is recorded on cancel.
 func (h *Handler) changeOrderCancellation(w http.ResponseWriter, r *http.Request, cancel bool) {
 	if h.orderSvc == nil {
 		httpx.WriteError(w, http.StatusServiceUnavailable, "Сервис заказов временно недоступен.")
 		return
 	}
-	user, ok := h.shopOrderWriter(w, r)
+	user, ok := h.orderWriter(w, r)
 	if !ok {
 		return
 	}
@@ -260,29 +271,37 @@ func validOrderQuantity(quantity float64) bool {
 		quantity == math.Trunc(quantity)
 }
 
-func (h *Handler) shopOrderWriter(w http.ResponseWriter, r *http.Request) (httpx.MiniAppUser, bool) {
+func (h *Handler) orderWriter(w http.ResponseWriter, r *http.Request) (httpx.MiniAppUser, bool) {
 	user, ok := httpx.MiniAppUserFromContext(r.Context())
-	if !ok || !httpx.IsShopUser(user) {
-		httpx.WriteError(w, http.StatusForbidden, "Только магазин может создавать и изменять заказы.")
+	if !ok || !httpx.CanWriteOrders(user) {
+		httpx.WriteError(w, http.StatusForbidden, "Недостаточно прав для изменения заказов.")
 		return httpx.MiniAppUser{}, false
 	}
 	return user, true
 }
 
-// resolveShopDepartmentID validates the shop the order is sent from: the caller
-// picks it at order time (users are no longer bound to a department).
-func (h *Handler) resolveShopDepartmentID(w http.ResponseWriter, r *http.Request, id *int64) (int64, bool) {
+// resolveOrderSourceDepartmentID validates the department the order is sent
+// from. Shop orders keep their existing picker; baker/admin edits may also
+// preserve or select the workshop source.
+func (h *Handler) resolveOrderSourceDepartmentID(
+	w http.ResponseWriter,
+	r *http.Request,
+	id *int64,
+	allowWorkshop bool,
+) (int64, bool) {
 	if id == nil || *id <= 0 {
-		httpx.WriteError(w, http.StatusBadRequest, "Выберите магазин, из которого отправляется заказ.")
+		httpx.WriteError(w, http.StatusBadRequest, "Выберите отправителя заказа.")
 		return 0, false
 	}
 	department, err := h.departmentSvc.GetByID(r.Context(), *id)
 	if err != nil {
-		httpx.WriteError(w, http.StatusBadRequest, "Выбранный магазин не найден.")
+		httpx.WriteError(w, http.StatusBadRequest, "Выбранный отправитель не найден.")
 		return 0, false
 	}
-	if !strings.EqualFold(strings.TrimSpace(department.Type), string(enum.DepartmentTypeShop)) {
-		httpx.WriteError(w, http.StatusBadRequest, "Заказ можно отправить только из магазина.")
+	departmentType := enum.DepartmentType(strings.ToLower(strings.TrimSpace(department.Type)))
+	if departmentType != enum.DepartmentTypeShop &&
+		(!allowWorkshop || departmentType != enum.DepartmentTypeWorkshop) {
+		httpx.WriteError(w, http.StatusBadRequest, "Недопустимый отправитель заказа.")
 		return 0, false
 	}
 	return department.ID, true

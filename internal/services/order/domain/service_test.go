@@ -114,6 +114,7 @@ func TestOrderServiceOrderNumberRules(t *testing.T) {
 		{code: "sholokhova", name: "Магазин Шолохова", letter: "Б", want: "Ш.Б.08.05.26.012"},
 		{code: "saryarka", name: "Магазин Сарыарка", letter: "", want: "С.08.05.26.012"},
 		{code: "", name: "Магазин Гагарина", letter: " ", want: "Г.08.05.26.012"},
+		{code: "pekari", name: "Цех Пекари", letter: "Х", want: "Ц.Х.08.05.26.012"},
 	}
 	for _, tt := range tests {
 		if got := svc.BuildOrderNumber(tt.code, tt.name, tt.letter, createdAt, 12); got != tt.want {

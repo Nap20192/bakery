@@ -72,6 +72,7 @@ type orderFormData struct {
 	Order            *contract.Order
 	Categories       []contract.Category
 	Shops            []contract.Department
+	WorkshopSource   bool
 	Groups           []editorGroup
 	CategoryID       int64
 	FromDepartmentID int64
@@ -126,9 +127,13 @@ func (s *server) ordersPage(w http.ResponseWriter, r *http.Request) {
 		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить типы заявок."))
 		return
 	}
-	shops, err := s.queries.Departments(r.Context(), cred, "shop")
+	departmentType := "shop"
+	if application.CanUseProduction(viewer) {
+		departmentType = ""
+	}
+	shops, err := s.queries.Departments(r.Context(), cred, departmentType)
 	if err != nil {
-		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить магазины."))
+		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить отправителей."))
 		return
 	}
 	if application.CanUseProduction(viewer) {
@@ -167,7 +172,7 @@ func (s *server) orderNewPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !application.CanManageOrders(viewer) {
-		s.renderError(w, r, http.StatusForbidden, "Создавать заказы может только магазин или администратор.")
+		s.renderError(w, r, http.StatusForbidden, "Недостаточно прав для создания заказов.")
 		return
 	}
 	var source *contract.Order
@@ -188,7 +193,7 @@ func (s *server) orderEditPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !application.CanManageOrders(viewer) {
-		s.renderError(w, r, http.StatusForbidden, "Редактировать заказ может только магазин или администратор.")
+		s.renderError(w, r, http.StatusForbidden, "Недостаточно прав для редактирования заказа.")
 		return
 	}
 	order, err := s.queries.Order(r.Context(), cred, r.PathValue("number"))
@@ -205,7 +210,7 @@ func (s *server) orderCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !application.CanManageOrders(viewer) {
-		s.renderError(w, r, http.StatusForbidden, "Создавать заказы может только магазин или администратор.")
+		s.renderError(w, r, http.StatusForbidden, "Недостаточно прав для создания заказов.")
 		return
 	}
 	body, err := parseOrderWrite(r)
@@ -227,7 +232,7 @@ func (s *server) orderUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !application.CanManageOrders(viewer) {
-		s.renderError(w, r, http.StatusForbidden, "Редактировать заказ может только магазин или администратор.")
+		s.renderError(w, r, http.StatusForbidden, "Недостаточно прав для редактирования заказа.")
 		return
 	}
 	number := r.PathValue("number")
@@ -417,9 +422,13 @@ func (s *server) renderOrderFormFromWrite(w http.ResponseWriter, r *http.Request
 		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить типы заявок."))
 		return
 	}
-	shops, err := s.queries.Departments(r.Context(), cred, "shop")
+	departmentType := "shop"
+	if mode == "update" && application.CanUseProduction(viewer) {
+		departmentType = ""
+	}
+	shops, err := s.queries.Departments(r.Context(), cred, departmentType)
 	if err != nil {
-		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить магазины."))
+		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить отправителей."))
 		return
 	}
 	categoryID := body.CategoryID
@@ -439,6 +448,7 @@ func (s *server) renderOrderFormFromWrite(w http.ResponseWriter, r *http.Request
 		Order:            order,
 		Categories:       categories,
 		Shops:            shops,
+		WorkshopSource:   mode == "create" && viewer.Role == "baker",
 		Groups:           buildEditorGroups(catalog, body),
 		CategoryID:       categoryID,
 		FromDepartmentID: fromDepartmentID,

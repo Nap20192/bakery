@@ -14,7 +14,7 @@
 
   <dl class="meta-grid">
     <div><dt>Выполнить</dt><dd>{{formatDate $order.FulfillmentDate}}</dd></div>
-    <div><dt>Магазин</dt><dd>{{if $order.FromDepartment}}{{$order.FromDepartment.Name}}{{else}}{{$order.Location}}{{end}}</dd></div>
+    <div><dt>Отправитель</dt><dd>{{if $order.FromDepartment}}{{$order.FromDepartment.Name}}{{else}}{{$order.Location}}{{end}}</dd></div>
     <div><dt>Автор</dt><dd>@{{$order.CreatedByUsername}}</dd></div>
     <div><dt>Создан</dt><dd>{{formatDateTime $order.CreatedAt}}</dd></div>
   </dl>

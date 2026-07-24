@@ -70,15 +70,15 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, input orderuc.CreateO
 }
 
 func (r *OrderRepository) createOrderWithQueries(ctx context.Context, q sqlc.Querier, input orderuc.CreateOrderRepositoryInput) (orderdomain.Order, error) {
-	if err := q.CreateOrderCounterDay(ctx, sqlc.CreateOrderCounterDayParams{Day: input.CounterDay, DepartmentID: input.Shop.ID, CategoryID: input.Category.ID}); err != nil {
+	if err := q.CreateOrderCounterDay(ctx, sqlc.CreateOrderCounterDayParams{Day: input.CounterDay, DepartmentID: input.Source.ID, CategoryID: input.Category.ID}); err != nil {
 		return orderdomain.Order{}, fmt.Errorf("init order counter: %w", err)
 	}
-	counter, err := q.NextOrderCounter(ctx, sqlc.NextOrderCounterParams{Day: input.CounterDay, DepartmentID: input.Shop.ID, CategoryID: input.Category.ID})
+	counter, err := q.NextOrderCounter(ctx, sqlc.NextOrderCounterParams{Day: input.CounterDay, DepartmentID: input.Source.ID, CategoryID: input.Category.ID})
 	if err != nil {
 		return orderdomain.Order{}, fmt.Errorf("increment order counter: %w", err)
 	}
 
-	number := r.domain.BuildOrderNumber(input.Shop.Code, input.Shop.Name, input.Category.Letter, input.CreatedAt, counter)
+	number := r.domain.BuildOrderNumber(input.Source.Code, input.Source.Name, input.Category.Letter, input.CreatedAt, counter)
 	row, err := q.CreateOrder(ctx, sqlc.CreateOrderParams{
 		Number:            number,
 		Location:          input.Input.Location,

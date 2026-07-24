@@ -213,10 +213,10 @@ func MiniAppUserFromContext(ctx context.Context) (MiniAppUser, bool) {
 	return user, ok
 }
 
-// IsShopUser reports whether the viewer may create/edit orders (shop or admin).
-func IsShopUser(user MiniAppUser) bool {
+// CanWriteOrders reports whether the viewer may create, edit and cancel orders.
+func CanWriteOrders(user MiniAppUser) bool {
 	role := authdomain.NormalizeRole(user.Auth.Role)
-	return role == authdomain.RoleShop || role == authdomain.RoleAdmin
+	return role == authdomain.RoleShop || role == authdomain.RoleBaker || role == authdomain.RoleAdmin
 }
 
 // TelegramUsernameOf returns the trimmed telegram username, or "".

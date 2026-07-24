@@ -16,7 +16,7 @@ worker on startup).
 
 | Query | Kind | What it does |
 |---|---|---|
-| `CreateOrderCounterDay` | exec | Inserts a zero counter row for **day + shop + category** (`ON CONFLICT DO NOTHING`). Always called before `NextOrderCounter` so the increment has a row to hit. |
+| `CreateOrderCounterDay` | exec | Inserts a zero counter row for **day + source department + category** (`ON CONFLICT DO NOTHING`). Always called before `NextOrderCounter` so the increment has a row to hit. |
 | `NextOrderCounter` | one | `UPDATE … SET counter = counter + 1 … RETURNING counter` — atomically claims the next order sequence number. Runs inside the create-order transaction, so concurrent creates can't duplicate numbers. |
 | `CreateOrder` | one | Inserts the order header (number, location, departments, category, dates, author, comments JSON). |
 | `CreateOrderItem` | one | Inserts one line: product name, optional iiko product id, quantity, reserved quantity. |

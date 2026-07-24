@@ -101,7 +101,7 @@ type DishCatalogItem struct {
 // a new order in a single transaction (counter, number, header, items).
 type CreateOrderRepositoryInput struct {
 	Input           orderdomain.CreateOrderInput
-	Shop            Department
+	Source          Department
 	Category        orderdomain.OrderCategory
 	CreatedAt       time.Time
 	FulfillmentDate time.Time

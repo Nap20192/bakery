@@ -191,25 +191,25 @@ func TestServiceCreateOrderRejectsPastFulfillmentDate(t *testing.T) {
 	}
 }
 
-func TestServiceCreateOrderAllowsTodayFulfillmentDate(t *testing.T) {
+func TestServiceCreateOrderAllowsWorkshopSource(t *testing.T) {
 	repo := &fakeRepo{
 		departmentByID: map[int64]Department{
-			10: {ID: 10, Code: "gagarina", Name: "Магазин Гагарина", Type: "shop"},
+			10: {ID: 10, Code: "pekari", Name: "Цех Пекари", Type: "workshop"},
 		},
 		categoryByID: map[int64]orderdomain.OrderCategory{
 			1: {ID: 1, Code: "buns", Letter: "Б", Name: "Булочки", Color: "sky"},
 		},
 	}
 	svc := NewService(repo)
-	shopID := int64(10)
+	workshopID := int64(10)
 	now := time.Date(2026, 6, 18, 10, 0, 0, 0, time.UTC)
 
 	_, err := svc.CreateOrder(context.Background(), orderdomain.CreateOrderInput{
 		Date:              now,
 		FulfillmentDate:   now,
-		FromDepartmentID:  &shopID,
+		FromDepartmentID:  &workshopID,
 		CategoryID:        1,
-		CreatedByUsername: "shop",
+		CreatedByUsername: "baker",
 		Items: []orderdomain.OrderItem{{
 			Code:        "15635",
 			ProductName: "Пирожок",
@@ -221,7 +221,7 @@ func TestServiceCreateOrderAllowsTodayFulfillmentDate(t *testing.T) {
 		t.Fatalf("CreateOrder returned error: %v", err)
 	}
 	if !repo.createCalled {
-		t.Fatal("CreateOrder should persist order with today's fulfillment date")
+		t.Fatal("CreateOrder should persist an order from the workshop")
 	}
 }
 

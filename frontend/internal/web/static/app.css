@@ -228,17 +228,25 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .production-layout, .calculator-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.7fr); gap: 18px; align-items: start; }
 .production-table { min-width: 760px; }
 .production-table td:first-child strong, .production-table td:first-child small { display: block; }
-.production-table input { min-width: 98px; background: var(--surface); }
+.production-table input { background: var(--surface); }
+.production-table .quantity-input { width: 72px; min-width: 72px; max-width: 72px; padding-inline: 6px; }
 .production-form .form-actions { justify-content: flex-end; margin-top: 16px; }
 .dirty-warning { padding: 10px 12px; border: 1px solid; border-radius: var(--radius-control); font-size: 0.8rem; }
 .batch-links { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: -10px 0 22px; font-family: var(--font-mono); font-size: 0.78rem; }
 
-.journal-table, .summary-table { width: 100%; min-width: 760px; border-collapse: separate; border-spacing: 0; }
+.journal-table, .summary-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.journal-table { min-width: 560px; }
+.summary-table { min-width: 760px; }
 .journal-table th, .journal-table td, .summary-table th, .summary-table td { min-width: 126px; padding: 8px; border-right: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); background: var(--surface); vertical-align: top; }
 .journal-table thead th, .summary-table thead th { position: sticky; z-index: 20; top: 0; background: var(--paper-deep); text-align: center; }
 .journal-table .journal-axis, .summary-table .summary-axis { position: sticky; z-index: 30; left: 0; min-width: 150px; max-width: 190px; background: var(--paper); text-align: left; }
-.sheet-link { display: grid; gap: 2px; margin-bottom: 6px; padding: 9px; border: 1px solid var(--line-soft); border-radius: var(--radius-control); text-decoration: none; }
-.sheet-link span { font-size: 0.75rem; }.sheet-link small { color: var(--ink-soft); }
+.sheet-link { display: grid; gap: 8px; margin-bottom: 8px; padding: 12px; border: 0; border-radius: var(--radius-surface); color: var(--ink); text-decoration: none; }
+.sheet-link:last-child { margin-bottom: 0; }
+.sheet-link:hover { box-shadow: inset 0 0 0 1px var(--line); }
+.sheet-link-head, .sheet-link-facts { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.sheet-link-head strong { font-family: var(--font-mono); font-size: 0.92rem; }
+.sheet-link-author { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sheet-link-author, .sheet-link-facts { color: var(--ink-soft); font-size: 0.72rem; }
 .category-tabs { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 14px; padding: 3px; }
 .category-tab { display: inline-flex; min-height: 42px; align-items: center; padding: 8px 12px; border-bottom: 2px solid transparent; color: var(--ink-soft); font-weight: 700; text-decoration: none; white-space: nowrap; }
 .category-tab.is-active { border-color: currentColor; color: var(--ink); }
@@ -325,6 +333,7 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   h2 { font-size: 1.42rem; }
   .page { padding: 22px 12px 52px; }
   .page-heading { display: grid; gap: 16px; margin-bottom: 20px; }
+  .page-heading > .count { justify-self: start; }
   .page-heading .actions { width: 100%; }
   .page-heading .actions > * { flex: 1; }
   .button { min-height: 44px; }
@@ -373,6 +382,10 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .production-table { min-width: 680px; }
   .journal-table .journal-axis, .summary-table .summary-axis { min-width: 112px; max-width: 130px; }
   .summary-table th, .summary-table td, .journal-table th, .journal-table td { min-width: 104px; padding: 7px; }
+  .journal-table th:not(.journal-axis), .journal-table td { min-width: 180px; }
+  .sheet-link-head { display: grid; gap: 2px; }
+  .sheet-link-author { max-width: 18ch; }
+  .sheet-link-facts { display: grid; justify-content: start; gap: 2px; }
   .calculator-catalog { max-height: none; }
   .admin-row > summary { grid-template-columns: 1fr; }
   .available-row { grid-template-columns: 1fr; }

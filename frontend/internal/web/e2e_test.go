@@ -27,6 +27,8 @@ type fakeBackend struct {
 	loginToken   string
 	loginErr     error
 	createdOrder contract.Order
+	orders       map[string]contract.Order
+	sheets       []contract.ProductionSheet
 }
 
 func (f *fakeBackend) Health(context.Context) error { return nil }
@@ -50,11 +52,11 @@ func (f *fakeBackend) Categories(context.Context, application.Credentials) ([]co
 func (f *fakeBackend) Orders(context.Context, application.Credentials, application.OrderFilters) (contract.OrdersPage, error) {
 	return contract.OrdersPage{Items: nil, Total: 0}, nil
 }
-func (f *fakeBackend) Order(context.Context, application.Credentials, string) (contract.Order, error) {
-	return contract.Order{}, nil
+func (f *fakeBackend) Order(_ context.Context, _ application.Credentials, number string) (contract.Order, error) {
+	return f.orders[number], nil
 }
 func (f *fakeBackend) ProductionSheets(context.Context, application.Credentials) ([]contract.ProductionSheet, error) {
-	return nil, nil
+	return f.sheets, nil
 }
 func (f *fakeBackend) ProductionSheet(context.Context, application.Credentials, int64) (contract.ProductionSheet, error) {
 	return contract.ProductionSheet{}, nil
@@ -290,6 +292,16 @@ func TestE2ERBACBakerReachesProductionNotAdmin(t *testing.T) {
 		t.Fatalf("production status = %d, want 200", resp.StatusCode)
 	}
 
+	resp, err = client.Get(srv.URL + "/orders/new")
+	if err != nil {
+		t.Fatalf("get new order: %v", err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK || !strings.Contains(string(body), "Цех Пекари") {
+		t.Fatalf("new order page = %d, workshop source missing", resp.StatusCode)
+	}
+
 	resp, err = client.Get(srv.URL + "/admin/users")
 	if err != nil {
 		t.Fatalf("get admin: %v", err)
@@ -297,6 +309,41 @@ func TestE2ERBACBakerReachesProductionNotAdmin(t *testing.T) {
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("admin status = %d, want 403", resp.StatusCode)
+	}
+}
+
+func TestE2EProductionJournalOmitsSheetsWithoutCategory(t *testing.T) {
+	t.Parallel()
+	category := contract.Category{ID: 1, Name: "Хлеб", Letter: "Х", Color: "amber"}
+	back := &fakeBackend{
+		loginToken: "baker-token",
+		viewers: map[application.Credentials]contract.Me{
+			"Bearer baker-token": {Role: "baker", TelegramUsername: "bakeruser"},
+		},
+		orders: map[string]contract.Order{
+			"typed":  {Number: "typed", Category: &category},
+			"legacy": {Number: "legacy"},
+		},
+		sheets: []contract.ProductionSheet{
+			{ID: 1, CreatedAt: "2026-07-24T08:00:00Z", CreatedByUsername: "bakeruser", OrderNumbers: []string{"typed"}},
+			{ID: 2, CreatedAt: "2026-07-24T09:00:00Z", CreatedByUsername: "bakeruser", OrderNumbers: []string{"legacy"}},
+		},
+	}
+	srv, client := newE2E(t, back)
+	login(t, client, srv.URL, "bakeruser")
+
+	resp, err := client.Get(srv.URL + "/production")
+	if err != nil {
+		t.Fatalf("get production: %v", err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	html := string(body)
+	if resp.StatusCode != http.StatusOK || !strings.Contains(html, "№1") {
+		t.Fatalf("production journal = %d, categorized sheet missing", resp.StatusCode)
+	}
+	if strings.Contains(html, "№2") || strings.Contains(html, "Без типа") {
+		t.Fatal("uncategorized production sheet reached the journal")
 	}
 }
 
