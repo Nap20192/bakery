@@ -244,6 +244,10 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .category-tabs { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 14px; padding: 3px; }
 .category-tab { display: inline-flex; min-height: 42px; align-items: center; padding: 8px 12px; border-bottom: 2px solid transparent; color: var(--ink-soft); font-weight: 700; text-decoration: none; white-space: nowrap; }
 .category-tab.is-active { border-color: currentColor; color: var(--ink); }
+.view-switch { display: inline-flex; gap: 4px; margin-bottom: 14px; padding: 4px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--surface); }
+.view-switch .view-tab { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: calc(var(--radius-control) - 4px); color: var(--ink-soft); font-weight: 700; text-decoration: none; }
+.view-switch .view-tab .nav-ico { display: block; width: 20px; height: 20px; padding: 0; }
+.view-switch .view-tab[aria-selected="true"] { color: #fffaf4; background: var(--crust); }
 .summary-table th a { display: grid; text-decoration: none; }
 .summary-table thead small { font-weight: 400; }
 .summary-table td { text-align: center; font-family: var(--font-mono); }
@@ -340,20 +344,22 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .window-nav { display: grid; grid-template-columns: auto 1fr auto; text-align: center; }
   .window-nav span { align-self: center; font-size: 0.7rem; }
   .order-matrix { min-width: 420px; }
-  /* Wider than the old 104px: the card has to fit an order number plus two meta
-     lines, and the matrix scrolls horizontally anyway. */
-  .order-matrix th, .order-matrix td { width: 148px; }
-  .order-matrix .matrix-axis { width: 68px; }
+  .order-matrix th, .order-matrix td { width: 176px; }
+  .order-matrix .matrix-axis { width: 60px; }
   .matrix-cell { gap: 6px; min-height: 126px; padding: 6px; }
-  .matrix-cell .order-card { gap: 8px; min-height: 112px; padding: 8px; }
-  /* Tighter stamp + number so the header row survives the 148px column. */
-  .matrix-cell .order-card-main { gap: 8px; }
-  .matrix-cell .order-stamp { width: 34px; height: 34px; font-size: 1.2rem; }
-  .matrix-cell .order-card-title { font-size: 0.78rem; }
-  .matrix-cell .order-card-number { font-size: 0.63rem; }
-  .matrix-cell .order-card-count strong { font-size: 0.9rem; }
+  .matrix-cell .order-card { gap: 7px; min-height: 0; padding: 9px; }
+  /* Narrow column can't hold a side-by-side card, so stack it: stamp + name on
+     top, count on its own row. Frees the full cell width for the name and number
+     so neither shatters character-by-character. */
+  .matrix-cell .order-card-main { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "stamp head" "count count"; align-items: start; gap: 4px 9px; }
+  .matrix-cell .order-stamp { grid-area: stamp; width: 32px; height: 32px; font-size: 1.15rem; }
+  .matrix-cell .order-card-head { grid-area: head; align-self: center; }
+  .matrix-cell .order-card-count { grid-area: count; margin-top: 2px; }
+  .matrix-cell .order-card-title { font-size: 0.8rem; overflow-wrap: normal; word-break: normal; }
+  .matrix-cell .order-card-number { font-size: 0.64rem; }
+  .matrix-cell .order-card-count strong { font-size: 0.92rem; }
   .matrix-cell .order-card-meta, .matrix-cell .order-preview-action { font-size: 0.68rem; }
-  .matrix-cell .order-card-foot { align-items: flex-start; flex-direction: column; gap: 2px; }
+  .matrix-cell .order-card-foot { align-items: flex-start; flex-direction: column; gap: 3px; }
   .shop-order-list { grid-template-columns: 1fr; }
   .meta-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .detail-aside { grid-template-columns: minmax(0, 1fr); }

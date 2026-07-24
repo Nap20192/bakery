@@ -28,10 +28,8 @@
       </a>
       {{if .Viewer}}
       <nav id="main-nav" class="main-nav" aria-label="Основная навигация">
-        {{if ne .Viewer.Role "admin"}}<a href="/orders" {{if active .CurrentPath "/orders"}}aria-current="page"{{end}}>{{template "navicon" "grid"}}<span class="nav-label">Заказы</span></a>{{end}}
+        <a href="/orders" {{if or (active .CurrentPath "/orders") (eq .CurrentPath "/orders/table")}}aria-current="page"{{end}}>{{template "navicon" "grid"}}<span class="nav-label">Заказы</span></a>
         {{if canUseProduction .Viewer}}
-          <a href="/orders" {{if eq .CurrentPath "/orders"}}aria-current="page"{{end}}>{{template "navicon" "grid"}}<span class="nav-label">Матрица</span></a>
-          <a href="/orders/table" {{if active .CurrentPath "/orders/table"}}aria-current="page"{{end}}>{{template "navicon" "table"}}<span class="nav-label">Таблица</span></a>
           <a href="/production" {{if active .CurrentPath "/production"}}aria-current="page"{{end}}>{{template "navicon" "sheet"}}<span class="nav-label">Отработки</span></a>
           <a href="/calculator" {{if active .CurrentPath "/calculator"}}aria-current="page"{{end}}>{{template "navicon" "bowl"}}<span class="nav-label">Тесто</span></a>
         {{end}}

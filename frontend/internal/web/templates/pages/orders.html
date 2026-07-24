@@ -20,6 +20,7 @@
   </form>
 
   {{if canUseProduction .Viewer}}
+    {{template "view-switch" .}}
     <div class="matrix-toolbar" data-selection-toolbar>
       <div class="window-nav">
         <a class="button" href="/orders?fulfillment_from={{$data.PrevFrom}}&fulfillment_to={{$data.PrevTo}}&category_id={{$data.Filters.CategoryID}}">← Раньше</a>

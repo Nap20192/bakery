@@ -2,6 +2,15 @@
 
 {{define "navicon"}}<svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-{{.}}"></use></svg>{{end}}
 
+{{/* view-switch: matrix ↔ table toggle for one merged «Заказы» tab. Takes the
+     page value so it can read .CurrentPath. */}}
+{{define "view-switch"}}
+<div class="view-switch" role="tablist" aria-label="Вид заказов">
+  <a class="view-tab" role="tab" href="/orders" {{if ne .CurrentPath "/orders/table"}}aria-selected="true"{{end}}>{{template "navicon" "grid"}}<span>Матрица</span></a>
+  <a class="view-tab" role="tab" href="/orders/table" {{if eq .CurrentPath "/orders/table"}}aria-selected="true"{{end}}>{{template "navicon" "table"}}<span>Таблица</span></a>
+</div>
+{{end}}
+
 {{define "nav-icons"}}
 <svg class="nav-sprite" aria-hidden="true" focusable="false" width="0" height="0">
   <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></symbol>
