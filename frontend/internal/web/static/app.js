@@ -28,6 +28,7 @@
     initializeSelection(root);
     initializeSelectionRemoval(root);
     initializeCatalog(root);
+    initializeCommentToggles(root);
     initializeProduction(root);
     initializeScrollHints(root);
   }
@@ -291,6 +292,9 @@
           row.hidden = !visible;
           row.querySelectorAll('input').forEach((input) => { input.disabled = !categoryMatch; });
         });
+        editor.querySelectorAll('.catalog-group').forEach((group) => {
+          group.hidden = !group.querySelector('[data-catalog-row]:not([hidden])');
+        });
         editor.querySelectorAll('.category-choice').forEach((choice) => choice.classList.toggle('is-selected', Boolean(choice.querySelector('input:checked'))));
         updateSummary(editor);
       };
@@ -309,13 +313,21 @@
       }));
       search?.addEventListener('input', updateRows);
       editor.querySelectorAll('.quantity-input').forEach((input) => input.addEventListener('input', () => updateSummary(editor)));
-      editor.querySelectorAll('[data-comment-toggle]').forEach((button) => button.addEventListener('click', () => {
-        const label = button.closest('[data-catalog-row]')?.querySelector('.item-comment');
-        if (!label) return;
-        label.hidden = !label.hidden;
-        if (!label.hidden) label.querySelector('input')?.focus();
-      }));
       updateRows();
+    });
+  }
+
+  function initializeCommentToggles(root) {
+    root.querySelectorAll('[data-comment-toggle]:not([data-ready])').forEach((button) => {
+      button.dataset.ready = 'true';
+      const label = button.closest('[data-catalog-row], [data-production-row]')?.querySelector('.item-comment');
+      if (!label) return;
+      button.setAttribute('aria-expanded', String(!label.hidden));
+      button.addEventListener('click', () => {
+        label.hidden = !label.hidden;
+        button.setAttribute('aria-expanded', String(!label.hidden));
+        if (!label.hidden) label.querySelector('input')?.focus();
+      });
     });
   }
 

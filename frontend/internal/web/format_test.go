@@ -30,3 +30,13 @@ func TestFormatQuantityRoundsToTwoDecimals(t *testing.T) {
 		})
 	}
 }
+
+func TestActivePathSeparatesNewOrderFromOrders(t *testing.T) {
+	t.Parallel()
+	if activePath("/orders/new", "/orders") {
+		t.Fatal("orders tab is active on the separate new-order page")
+	}
+	if !activePath("/orders/new", "/orders/new") {
+		t.Fatal("new-order tab is not active")
+	}
+}

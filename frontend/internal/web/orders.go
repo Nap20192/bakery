@@ -99,6 +99,14 @@ func (s *server) ordersPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	filters := parseOrderFilters(r)
+	categories, err := s.queries.Categories(r.Context(), cred)
+	if err != nil {
+		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить типы заявок."))
+		return
+	}
+	if filters.CategoryID == 0 && len(categories) > 0 {
+		filters.CategoryID = categories[0].ID
+	}
 	apiFilters := application.OrderFilters{
 		Page:             filters.Page,
 		Limit:            20,
@@ -120,11 +128,6 @@ func (s *server) ordersPage(w http.ResponseWriter, r *http.Request) {
 	ordersPage, err := s.queries.Orders(r.Context(), cred, apiFilters)
 	if err != nil {
 		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить заказы."))
-		return
-	}
-	categories, err := s.queries.Categories(r.Context(), cred)
-	if err != nil {
-		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить типы заявок."))
 		return
 	}
 	departmentType := "shop"

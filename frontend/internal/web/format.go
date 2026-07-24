@@ -94,7 +94,7 @@ func roleName(role string) string {
 
 func activePath(current, target string) bool {
 	if target == "/orders" {
-		return current == target || (strings.HasPrefix(current, "/orders/") && current != "/orders/table")
+		return current == target || (strings.HasPrefix(current, "/orders/") && current != "/orders/new" && current != "/orders/table")
 	}
 	return current == target || strings.HasPrefix(current, target+"/")
 }

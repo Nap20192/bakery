@@ -1,7 +1,7 @@
 {{define "orders-table"}}
 {{$data := .Data}}
 <section class="page table-page">
-  {{template "view-switch" .}}
+  {{template "view-switch" (dict "CurrentPath" .CurrentPath "CategoryID" $data.ActiveCategoryID)}}
   <header class="page-heading">
     {{template "page-title" (dict "Title" "Таблица" "Lede" "Клик по дате открывает отработку.")}}
     <div class="window-nav">
