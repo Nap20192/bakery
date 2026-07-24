@@ -169,7 +169,7 @@ paths:
         "401": { $ref: "#/components/responses/Error" }
     post:
       tags: [orders]
-      summary: Create an order (shop/admin)
+      summary: Create an order (shop/baker/admin; baker source is the workshop)
       operationId: createOrder
       requestBody:
         required: true
@@ -201,7 +201,7 @@ paths:
         "404": { $ref: "#/components/responses/Error" }
     put:
       tags: [orders]
-      summary: Update an order (shop/admin; category never changes)
+      summary: Update an order (shop/baker/admin; category never changes)
       operationId: updateOrder
       parameters: [{ $ref: "#/components/parameters/OrderNumber" }]
       requestBody:

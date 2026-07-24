@@ -64,7 +64,7 @@ func (s *Service) CreateOrder(ctx context.Context, input orderdomain.CreateOrder
 	if err := validateFulfillmentDateNotPast(fulfillmentDate, createdAt); err != nil {
 		return orderdomain.Order{}, err
 	}
-	shop, err := s.orderShopDepartment(ctx, input.FromDepartmentID)
+	source, err := s.orderSourceDepartment(ctx, input.FromDepartmentID)
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
@@ -78,7 +78,7 @@ func (s *Service) CreateOrder(ctx context.Context, input orderdomain.CreateOrder
 
 	order, err := s.repo.CreateOrder(ctx, CreateOrderRepositoryInput{
 		Input:           input,
-		Shop:            shop,
+		Source:          source,
 		Category:        category,
 		CreatedAt:       createdAt,
 		FulfillmentDate: fulfillmentDate,
@@ -763,19 +763,20 @@ func (s *Service) RunCleanupTicker(ctx context.Context, interval, retention time
 	}
 }
 
-func (s *Service) orderShopDepartment(ctx context.Context, departmentID *int64) (Department, error) {
+func (s *Service) orderSourceDepartment(ctx context.Context, departmentID *int64) (Department, error) {
 	if departmentID == nil {
-		return Department{}, fmt.Errorf("order shop department is required")
+		return Department{}, fmt.Errorf("order source department is required")
 	}
 	department, err := s.repo.GetDepartmentByID(ctx, *departmentID)
 	if err != nil {
-		return Department{}, fmt.Errorf("get order shop department: %w", err)
+		return Department{}, fmt.Errorf("get order source department: %w", err)
 	}
-	if !strings.EqualFold(strings.TrimSpace(department.Type), string(enum.DepartmentTypeShop)) {
-		return Department{}, fmt.Errorf("order can be created only from shop department")
+	departmentType := enum.DepartmentType(strings.ToLower(strings.TrimSpace(department.Type)))
+	if departmentType != enum.DepartmentTypeShop && departmentType != enum.DepartmentTypeWorkshop {
+		return Department{}, fmt.Errorf("order source must be a shop or workshop department")
 	}
 	if strings.TrimSpace(department.Code) == "" && strings.TrimSpace(department.Name) == "" {
-		return Department{}, fmt.Errorf("order shop department code or name is required")
+		return Department{}, fmt.Errorf("order source department code or name is required")
 	}
 	return department, nil
 }

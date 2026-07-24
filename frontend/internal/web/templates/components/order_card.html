@@ -22,7 +22,7 @@
 <dialog class="preview-dialog" data-auto-dialog aria-labelledby="preview-title">
   <div class="preview-header"><div><h2 id="preview-title">{{.Number}}</h2></div><form method="dialog"><button class="button button-icon" aria-label="Закрыть">×</button></form></div>
   <div class="heading-badges">{{template "category-badge" .Category}}{{if .ProductionSheetID}}<span class="status {{sheetTone .ProductionSheetID}}">✓ Отработка №{{.ProductionSheetID}}</span>{{end}}</div>
-  <dl class="preview-meta"><div><dt>Выполнить</dt><dd>{{formatDate .FulfillmentDate}}</dd></div><div><dt>Магазин</dt><dd>{{if .FromDepartment}}{{.FromDepartment.Name}}{{else}}{{.Location}}{{end}}</dd></div></dl>
+  <dl class="preview-meta"><div><dt>Выполнить</dt><dd>{{formatDate .FulfillmentDate}}</dd></div><div><dt>Отправитель</dt><dd>{{if .FromDepartment}}{{.FromDepartment.Name}}{{else}}{{.Location}}{{end}}</dd></div></dl>
   <ul class="preview-items">{{range .Items}}<li><span>{{.ProductName}}</span><strong>{{formatQty .ProductionQuantity}}</strong></li>{{end}}</ul>
   <div class="form-actions"><form method="dialog"><button class="button">Закрыть</button></form><a class="button button-primary" href="/orders/{{urlquery .Number}}">Открыть заказ</a></div>
 </dialog>

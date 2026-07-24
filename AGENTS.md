@@ -1,8 +1,8 @@
 # Bakery — Agent Instructions
 
-Telegram-first ordering system for a bakery: shops place orders to the workshop,
-bakers see all orders and ingredient calculations, admins manage users and the
-iiko ERP sync. Two surfaces — a Telegram bot and a Telegram Mini App / web
+Telegram-first ordering system for a bakery: shops and bakers place orders to
+the workshop, bakers manage production and ingredient calculations, admins
+manage users and the iiko ERP sync. Two surfaces — a Telegram bot and a Telegram Mini App / web
 frontend — talk to the same backend.
 
 This document describes the architecture and how to maintain and extend it.
@@ -237,8 +237,9 @@ Three middlewares:
 - `RequireAuth` — any logged-in user (e.g. `GET /me`).
 - `RequireAdmin` — admin role required.
 
-Finer rules (only shop writes orders, only baker/admin writes production)
-live in the handlers on top of these.
+Finer rules (shop/baker/admin write orders; baker-created orders use the
+workshop as their source; only baker/admin write production) live in the
+handlers on top of these.
 
 ---
 
@@ -298,8 +299,9 @@ summary:
 - Types: `shop` and `workshop` (`internal/pkg/enum`).
 - Default departments: `Магазин Гагарина`, `Магазин Сарыарка`,
   `Магазин Шолохова`, `Цех Пекари`.
-- Orders go shop → workshop: `from_department_id` = the shop that created it,
-  `to_department_id` = `Цех Пекари` (code `pekari`).
+- Orders go shop/workshop → workshop: `from_department_id` is the selected
+  shop, or `Цех Пекари` for a baker-created order; `to_department_id` is
+  `Цех Пекари` (code `pekari`).
 
 ### Order categories (типы заявок)
 
@@ -310,7 +312,7 @@ summary:
   — no arbitrary hex.
 - Every new order requires `category_id`; the category letter goes into the
   order number: `<магазин>.<буква типа>.<дата>.<счётчик>` («Г.Х.08.07.26.001»).
-  Counters are per shop **per category** per day. Category never changes on
+  Counters are per source department **per category** per day. Category never changes on
   edit. Legacy orders keep numbers without the letter.
 - Dish catalog entries carry `category_id`; the shop picks the category first
   and sees only its dishes (uncategorized dishes stay visible everywhere).
@@ -367,9 +369,9 @@ summary:
   заказы в таблицу не попадают. Роут `/orders/selection`: заказы партии —
   свёрнутые строки (раскрытие по клику), разделы «Заказы партии /
   Отработка / Расчёт теста».
-- A shop user only sees/edits its own orders; a workshop user sees all but
-  cannot create shop orders. Enforced in `orderhttp.UserCanReadOrder` and the
-  write handlers.
+- Shop, baker and admin users may create, edit, cancel and restore orders.
+  Baker-created orders always use `Цех Пекари` as their source. Enforced in
+  `orderhttp.UserCanReadOrder` and the write handlers.
 
 ### Roles
 

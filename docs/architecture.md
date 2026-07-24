@@ -171,9 +171,9 @@ Three middlewares gate the routes:
 | `RequireAuth` | Any logged-in user (used by `GET /me`). |
 | `RequireAdmin` | The `admin` role. |
 
-Finer-grained rules (e.g. "only shop creates orders", "only baker/admin
-writes production sheets") are enforced inside the handlers on top of these
-middlewares.
+Finer-grained rules (shop/baker/admin write orders; baker-created orders use
+the workshop as their source; only baker/admin write production sheets) are
+enforced inside the handlers on top of these middlewares.
 
 The frontend BFF receives Telegram initData or a web password once, validates
 it through the worker, and stores the resulting API credential in an

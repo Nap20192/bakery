@@ -31,8 +31,8 @@ Default departments are seeded by migration 00003: «Магазин Гагари
 ## Behavior and consumers
 
 - `ListByType(shop|workshop)`, `GetByCode`, `GetByID`.
-- **Order flow** depends on types: orders go shop → workshop; the shop's
-  code/name feed the order-number prefix (Г/С/Ш — see
+- **Order flow** depends on types: orders go shop/workshop → workshop; the
+  source code/name feeds the order-number prefix (Г/С/Ш/Ц — see
   [order.md](order.md#order-number)).
 - **Auth middleware** resolves the viewer's optional department for display
   and for shop-scoped order filtering.

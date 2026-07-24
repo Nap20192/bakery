@@ -51,7 +51,7 @@ Defined in `internal/pkg/enum` (never hardcode the strings):
 |---|---|
 | `admin` | Everything: user management, catalog/category admin, sync, all orders, production, monitoring. |
 | `shop` | Creates/edits orders; sees only its own shop's orders. |
-| `baker` | Sees all orders, runs monitoring, writes production sheets. Cannot create shop orders. |
+| `baker` | Full order CRUD, creates new orders from «Цех Пекари», runs monitoring and writes production sheets. |
 | `user` | Default for a fresh record; no app access until the admin assigns a real role. |
 
 `NormalizeRole` lowercases/trims before comparison; `IsValidRole` gates role

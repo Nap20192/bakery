@@ -1,6 +1,6 @@
 # Bakery
 
-Telegram-first ordering system for a bakery. Shops place orders to the workshop, bakers see all orders and ingredient calculations, admins manage users and the iiko ERP sync.
+Telegram-first ordering system for a bakery. Shops and bakers place orders to the workshop, bakers manage production and ingredient calculations, and admins manage users and the iiko ERP sync.
 
 Two surfaces — a **Telegram bot** and a **Telegram Mini App / web frontend** — talk to the same backend.
 

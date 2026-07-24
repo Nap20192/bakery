@@ -53,5 +53,5 @@ func CanUseProduction(viewer *contract.Me) bool {
 }
 
 func CanManageOrders(viewer *contract.Me) bool {
-	return viewer != nil && (viewer.Role == "admin" || viewer.Role == "shop")
+	return viewer != nil && (viewer.Role == "admin" || viewer.Role == "shop" || viewer.Role == "baker")
 }

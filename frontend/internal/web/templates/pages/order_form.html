@@ -18,7 +18,11 @@
     <section class="editor-step">
       {{template "section-heading" (dict "Step" "2" "Title" "Куда и когда")}}
       <div class="form-grid two">
-        <label class="field"><span>Магазин</span><select name="from_department_id" required><option value="">Выберите магазин</option>{{template "id-options" (dict "Items" $data.Shops "Selected" $data.FromDepartmentID)}}</select></label>
+        {{if $data.WorkshopSource}}
+          <label class="field"><span>Отправитель</span><input value="Цех Пекари" readonly></label>
+        {{else}}
+          <label class="field"><span>Отправитель</span><select name="from_department_id" required><option value="">Выберите отправителя</option>{{template "id-options" (dict "Items" $data.Shops "Selected" $data.FromDepartmentID)}}</select></label>
+        {{end}}
         <label class="field"><span>Дата выполнения</span><input type="date" name="fulfillment_date" value="{{$data.FulfillmentDate}}" min="{{.Today}}" required></label>
       </div>
     </section>

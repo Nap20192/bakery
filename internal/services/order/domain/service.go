@@ -69,18 +69,18 @@ func (s *OrderService) OrderCounterDay(t time.Time) string {
 }
 
 // BuildOrderNumber composes the human-facing order number:
-// <буква магазина>.<буква категории>.<дата>.<счётчик>, e.g. «Г.Х.08.07.26.001».
+// <буква отправителя>.<буква категории>.<дата>.<счётчик>, e.g. «Г.Х.08.07.26.001».
 // An empty category letter keeps the legacy format without the extra segment.
-func (s *OrderService) BuildOrderNumber(shopCode string, shopName string, categoryLetter string, createdAt time.Time, counter int64) string {
-	prefix := shopOrderPrefix(shopCode, shopName)
+func (s *OrderService) BuildOrderNumber(sourceCode string, sourceName string, categoryLetter string, createdAt time.Time, counter int64) string {
+	prefix := orderSourcePrefix(sourceCode, sourceName)
 	if letter := strings.TrimSpace(categoryLetter); letter != "" {
 		prefix += "." + letter
 	}
 	return fmt.Sprintf("%s.%s.%03d", prefix, s.NormalizeCreatedAt(createdAt).Format("02.01.06"), counter)
 }
 
-func shopOrderPrefix(shopCode string, shopName string) string {
-	switch strings.ToLower(strings.TrimSpace(shopCode)) {
+func orderSourcePrefix(sourceCode string, sourceName string) string {
+	switch strings.ToLower(strings.TrimSpace(sourceCode)) {
 	case "gagarina":
 		return "Г"
 	case "sholokhova":
@@ -89,7 +89,7 @@ func shopOrderPrefix(shopCode string, shopName string) string {
 		return "С"
 	}
 
-	normalizedName := strings.ToLower(strings.TrimSpace(shopName))
+	normalizedName := strings.ToLower(strings.TrimSpace(sourceName))
 	switch {
 	case strings.Contains(normalizedName, "гагарина"):
 		return "Г"
@@ -99,7 +99,7 @@ func shopOrderPrefix(shopCode string, shopName string) string {
 		return "С"
 	}
 
-	for _, r := range strings.TrimSpace(shopName) {
+	for _, r := range strings.TrimSpace(sourceName) {
 		if unicode.IsSpace(r) {
 			continue
 		}

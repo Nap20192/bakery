@@ -8,14 +8,15 @@ point to the service pages with implementation detail.
 
 ### Numbering & counters
 
-- The counter key is **shop + category + day** (`DDMMYYYY` of the creation
-  date). Two shops, or two categories in one shop, never share a sequence.
+- The counter key is **source department + category + day** (`DDMMYYYY` of the
+  creation date). Two sources, or two categories at one source, never share a
+  sequence.
 - Counter increment and order insert happen in one transaction — concurrent
   creates can't mint duplicate numbers.
 - The order **number is the aggregate identity** (URLs, events, history);
   it never changes after creation.
-- Shops without a known code letter fall back to the first letter of their
-  name — a new shop still gets a stable prefix without code changes.
+- Sources without a known code letter fall back to the first letter of their
+  name — workshop orders therefore receive the `Ц` prefix.
 
 ### Categories (типы заявок)
 
@@ -65,8 +66,8 @@ point to the service pages with implementation detail.
 
 ### Visibility (RBAC)
 
-- `shop` sees/edits **only its own shop's** orders; `baker` sees all but
-  cannot create/edit shop orders; `admin` can do everything.
+- `shop`, `baker` and `admin` may create, edit, cancel and restore orders.
+  A baker-created order always uses «Цех Пекари» as its source.
 - Visibility failures on reads answer **404, not 403** — the API doesn't
   reveal that a foreign order number exists.
 - The author (`created_by_username`) is never overwritten by later editors;

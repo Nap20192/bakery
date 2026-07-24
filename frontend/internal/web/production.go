@@ -59,8 +59,13 @@ func (s *server) productionPage(w http.ResponseWriter, r *http.Request) {
 		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить типы заявок."))
 		return
 	}
-	data := productionJournalData{Categories: append(categories, contract.Category{Name: "Без типа", Color: "stone"}), Count: len(sheets)}
+	data := productionJournalData{Categories: categories}
 	data.Rows = s.buildProductionJournal(r, cred, sheets, data.Categories)
+	for _, row := range data.Rows {
+		for _, cell := range row.Cells {
+			data.Count += len(cell)
+		}
+	}
 	s.render(w, r, http.StatusOK, page{Title: "Отработки", View: "production", Viewer: viewer, Success: queryMessage(r, "success"), Data: data})
 }
 
@@ -157,14 +162,16 @@ func (s *server) buildProductionJournal(r *http.Request, cred application.Creden
 		categoryIndex[category.ID] = index
 	}
 	for _, sheet := range sheets {
-		categoryID := int64(0)
-		var category *contract.Category
-		if len(sheet.OrderNumbers) > 0 {
-			order, err := s.queries.Order(r.Context(), cred, sheet.OrderNumbers[0])
-			if err == nil && order.Category != nil {
-				categoryID = order.Category.ID
-				category = order.Category
-			}
+		if len(sheet.OrderNumbers) == 0 {
+			continue
+		}
+		order, err := s.queries.Order(r.Context(), cred, sheet.OrderNumbers[0])
+		if err != nil || order.Category == nil {
+			continue
+		}
+		index, exists := categoryIndex[order.Category.ID]
+		if !exists {
+			continue
 		}
 		date := sheet.CreatedAt
 		if len(date) >= 10 {
@@ -175,11 +182,7 @@ func (s *server) buildProductionJournal(r *http.Request, cred application.Creden
 			row = &rowBuilder{date: date, cells: make([][]productionSheetView, len(categories))}
 			rows[date] = row
 		}
-		index, exists := categoryIndex[categoryID]
-		if !exists {
-			index = len(categories) - 1
-		}
-		row.cells[index] = append(row.cells[index], productionSheetView{Sheet: sheet, Category: category})
+		row.cells[index] = append(row.cells[index], productionSheetView{Sheet: sheet, Category: order.Category})
 	}
 	dates := make([]string, 0, len(rows))
 	for date := range rows {
