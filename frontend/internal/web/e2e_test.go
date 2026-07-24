@@ -1,0 +1,383 @@
+package web
+
+import (
+	"context"
+	"io"
+	"log/slog"
+	"net/http"
+	"net/http/cookiejar"
+	"net/http/httptest"
+	"net/url"
+	"strings"
+	"testing"
+
+	"bakery/frontend/internal/application"
+	"bakery/internal/inbound/api/contract"
+)
+
+// fakeBackend implements application.Queries and application.Commands in memory,
+// so the E2E tests exercise the real router, middlewares, session and CSRF
+// handling end to end without a live worker API. Only the methods the flows
+// touch return meaningful data; the rest return zero values.
+type fakeBackend struct {
+	// viewers maps an Authorization credential to the resolved viewer.
+	// After login the credential is "Bearer <token>".
+	viewers map[application.Credentials]contract.Me
+	// loginToken is handed out by Login for the recognised username.
+	loginToken   string
+	loginErr     error
+	createdOrder contract.Order
+}
+
+func (f *fakeBackend) Health(context.Context) error { return nil }
+
+func (f *fakeBackend) Me(_ context.Context, cred application.Credentials) (contract.Me, error) {
+	if me, ok := f.viewers[cred]; ok {
+		return me, nil
+	}
+	return contract.Me{}, &application.Error{Status: http.StatusUnauthorized, Message: "нет доступа"}
+}
+
+func (f *fakeBackend) Departments(context.Context, application.Credentials, string) ([]contract.Department, error) {
+	return []contract.Department{{ID: 1, Code: "shop-1", Name: "Магазин 1", Type: "shop"}}, nil
+}
+func (f *fakeBackend) Catalog(context.Context, application.Credentials) ([]contract.Dish, error) {
+	return []contract.Dish{{Code: "dish", Name: "Багет", Theme: "Хлеб"}}, nil
+}
+func (f *fakeBackend) Categories(context.Context, application.Credentials) ([]contract.Category, error) {
+	return []contract.Category{{ID: 1, Name: "Хлеб", Letter: "Х", Color: "amber"}}, nil
+}
+func (f *fakeBackend) Orders(context.Context, application.Credentials, application.OrderFilters) (contract.OrdersPage, error) {
+	return contract.OrdersPage{Items: nil, Total: 0}, nil
+}
+func (f *fakeBackend) Order(context.Context, application.Credentials, string) (contract.Order, error) {
+	return contract.Order{}, nil
+}
+func (f *fakeBackend) ProductionSheets(context.Context, application.Credentials) ([]contract.ProductionSheet, error) {
+	return nil, nil
+}
+func (f *fakeBackend) ProductionSheet(context.Context, application.Credentials, int64) (contract.ProductionSheet, error) {
+	return contract.ProductionSheet{}, nil
+}
+func (f *fakeBackend) OrderMonitor(context.Context, application.Credentials, string) (contract.OrderMonitor, error) {
+	return contract.OrderMonitor{}, nil
+}
+func (f *fakeBackend) BatchMonitor(context.Context, application.Credentials, []string) (contract.BatchMonitor, error) {
+	return contract.BatchMonitor{}, nil
+}
+func (f *fakeBackend) Users(context.Context, application.Credentials) ([]contract.User, error) {
+	return []contract.User{{ID: 1, Username: "admin", Role: "admin"}}, nil
+}
+func (f *fakeBackend) AdminDepartments(context.Context, application.Credentials) ([]contract.Department, error) {
+	return nil, nil
+}
+func (f *fakeBackend) Dishes(context.Context, application.Credentials) ([]contract.Dish, error) {
+	return nil, nil
+}
+func (f *fakeBackend) AvailableDishes(context.Context, application.Credentials, string) ([]contract.AvailableDish, error) {
+	return nil, nil
+}
+
+func (f *fakeBackend) Login(_ context.Context, username, _ string) (contract.LoginResponse, error) {
+	if f.loginErr != nil {
+		return contract.LoginResponse{}, f.loginErr
+	}
+	return contract.LoginResponse{Token: f.loginToken, ExpiresAt: 1 << 40}, nil
+}
+func (f *fakeBackend) CreateOrder(context.Context, application.Credentials, contract.OrderWrite) (contract.Order, error) {
+	return f.createdOrder, nil
+}
+func (f *fakeBackend) UpdateOrder(context.Context, application.Credentials, string, contract.OrderWrite) (contract.Order, error) {
+	return contract.Order{}, nil
+}
+func (f *fakeBackend) CancelOrder(context.Context, application.Credentials, string) (contract.Order, error) {
+	return contract.Order{}, nil
+}
+func (f *fakeBackend) RestoreOrder(context.Context, application.Credentials, string) (contract.Order, error) {
+	return contract.Order{}, nil
+}
+func (f *fakeBackend) SetOrderFavorite(context.Context, application.Credentials, string, bool) (contract.Order, error) {
+	return contract.Order{}, nil
+}
+func (f *fakeBackend) CreateProductionSheet(context.Context, application.Credentials, contract.ProductionWrite) (contract.ProductionSheet, error) {
+	return contract.ProductionSheet{}, nil
+}
+func (f *fakeBackend) UpdateProductionSheet(context.Context, application.Credentials, int64, contract.ProductionWrite) (contract.ProductionSheet, error) {
+	return contract.ProductionSheet{}, nil
+}
+func (f *fakeBackend) DeleteProductionSheet(context.Context, application.Credentials, int64) error {
+	return nil
+}
+func (f *fakeBackend) CalculateDough(context.Context, application.Credentials, contract.DoughCalcRequest) ([]contract.MonitorReport, error) {
+	return nil, nil
+}
+func (f *fakeBackend) CreateUser(context.Context, application.Credentials, contract.UserCreate) (contract.User, error) {
+	return contract.User{}, nil
+}
+func (f *fakeBackend) UpdateUser(context.Context, application.Credentials, int64, contract.UserUpdate) (contract.User, error) {
+	return contract.User{}, nil
+}
+func (f *fakeBackend) DeleteUser(context.Context, application.Credentials, int64) error { return nil }
+func (f *fakeBackend) CreateDish(context.Context, application.Credentials, contract.DishWrite) (contract.Dish, error) {
+	return contract.Dish{}, nil
+}
+func (f *fakeBackend) UpdateDish(context.Context, application.Credentials, string, contract.DishWrite) (contract.Dish, error) {
+	return contract.Dish{}, nil
+}
+func (f *fakeBackend) DeleteDish(context.Context, application.Credentials, string) error { return nil }
+func (f *fakeBackend) ReorderDishes(context.Context, application.Credentials, []string) error {
+	return nil
+}
+func (f *fakeBackend) CreateCategory(context.Context, application.Credentials, contract.CategoryWrite) (contract.Category, error) {
+	return contract.Category{}, nil
+}
+func (f *fakeBackend) UpdateCategory(context.Context, application.Credentials, int64, contract.CategoryWrite) (contract.Category, error) {
+	return contract.Category{}, nil
+}
+func (f *fakeBackend) DeleteCategory(context.Context, application.Credentials, int64) error {
+	return nil
+}
+
+// newE2E starts the real handler over httptest and returns a client whose
+// cookie jar carries session + CSRF cookies between requests, and does not
+// auto-follow redirects so tests can assert on 303/HX responses.
+func newE2E(t *testing.T, back *fakeBackend) (*httptest.Server, *http.Client) {
+	t.Helper()
+	handler, err := New(back, back, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	srv := httptest.NewServer(handler)
+	t.Cleanup(srv.Close)
+
+	jar, _ := cookiejar.New(nil)
+	client := &http.Client{
+		Jar: jar,
+		CheckRedirect: func(*http.Request, []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	return srv, client
+}
+
+// csrfToken reads the CSRF cookie the server set on the jar for this host.
+func csrfToken(t *testing.T, client *http.Client, base string) string {
+	t.Helper()
+	u, _ := url.Parse(base)
+	for _, c := range client.Jar.Cookies(u) {
+		if c.Name == csrfCookie {
+			return c.Value
+		}
+	}
+	t.Fatal("csrf cookie not set")
+	return ""
+}
+
+func shopBackend() *fakeBackend {
+	return &fakeBackend{
+		loginToken: "shop-token",
+		viewers: map[application.Credentials]contract.Me{
+			"Bearer shop-token": {Role: "shop", TelegramUsername: "shopuser", DepartmentID: 1, DepartmentType: "shop"},
+		},
+	}
+}
+
+func login(t *testing.T, client *http.Client, base, username string) {
+	t.Helper()
+	resp, err := client.PostForm(base+"/session/login", url.Values{
+		"username": {username}, "password": {"secret"}, "next": {"/orders"},
+	})
+	if err != nil {
+		t.Fatalf("login: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("login status = %d, want 303", resp.StatusCode)
+	}
+	if got := resp.Header.Get("Location"); got != "/orders" {
+		t.Fatalf("login redirect = %q, want /orders", got)
+	}
+}
+
+func TestE2EUnauthenticatedOrdersShowsLogin(t *testing.T) {
+	t.Parallel()
+	srv, client := newE2E(t, shopBackend())
+	resp, err := client.Get(srv.URL + "/orders")
+	if err != nil {
+		t.Fatalf("get: %v", err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want 401", resp.StatusCode)
+	}
+	if !strings.Contains(string(body), "Войти") {
+		t.Fatal("login form not rendered for anonymous /orders")
+	}
+}
+
+func TestE2ELoginThenOrders(t *testing.T) {
+	t.Parallel()
+	srv, client := newE2E(t, shopBackend())
+	login(t, client, srv.URL, "shopuser")
+
+	resp, err := client.Get(srv.URL + "/orders")
+	if err != nil {
+		t.Fatalf("get orders: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("orders status = %d, want 200", resp.StatusCode)
+	}
+}
+
+func TestE2EInvalidLoginRejected(t *testing.T) {
+	t.Parallel()
+	back := shopBackend()
+	back.loginErr = &application.Error{Status: http.StatusUnauthorized, Message: "неверный пароль"}
+	srv, client := newE2E(t, back)
+
+	resp, err := client.PostForm(srv.URL+"/session/login", url.Values{
+		"username": {"shopuser"}, "password": {"wrong"}, "next": {"/orders"},
+	})
+	if err != nil {
+		t.Fatalf("post: %v", err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want 401", resp.StatusCode)
+	}
+	if !strings.Contains(string(body), "неверный пароль") {
+		t.Fatal("backend error message not surfaced on login")
+	}
+}
+
+func TestE2ERBACShopBlockedFromAdminAndProduction(t *testing.T) {
+	t.Parallel()
+	srv, client := newE2E(t, shopBackend())
+	login(t, client, srv.URL, "shopuser")
+
+	for _, path := range []string{"/admin/users", "/production"} {
+		resp, err := client.Get(srv.URL + path)
+		if err != nil {
+			t.Fatalf("get %s: %v", path, err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusForbidden {
+			t.Errorf("%s status = %d, want 403", path, resp.StatusCode)
+		}
+	}
+}
+
+func TestE2ERBACBakerReachesProductionNotAdmin(t *testing.T) {
+	t.Parallel()
+	back := &fakeBackend{
+		loginToken: "baker-token",
+		viewers: map[application.Credentials]contract.Me{
+			"Bearer baker-token": {Role: "baker", TelegramUsername: "bakeruser"},
+		},
+	}
+	srv, client := newE2E(t, back)
+	login(t, client, srv.URL, "bakeruser")
+
+	resp, err := client.Get(srv.URL + "/production")
+	if err != nil {
+		t.Fatalf("get production: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("production status = %d, want 200", resp.StatusCode)
+	}
+
+	resp, err = client.Get(srv.URL + "/admin/users")
+	if err != nil {
+		t.Fatalf("get admin: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("admin status = %d, want 403", resp.StatusCode)
+	}
+}
+
+func TestE2ECreateOrderRequiresCSRF(t *testing.T) {
+	t.Parallel()
+	srv, client := newE2E(t, shopBackend())
+	login(t, client, srv.URL, "shopuser")
+
+	form := url.Values{
+		"category_id": {"1"}, "fulfillment_date": {"2026-08-01"},
+		"product_name": {"Багет"}, "quantity": {"3"},
+	}
+
+	// Without a CSRF token the middleware rejects the write.
+	resp, err := client.PostForm(srv.URL+"/orders", form)
+	if err != nil {
+		t.Fatalf("post no-csrf: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("no-csrf status = %d, want 403", resp.StatusCode)
+	}
+
+	// GET a page so the server issues the CSRF cookie, then replay with it.
+	warm, err := client.Get(srv.URL + "/orders/new")
+	if err != nil {
+		t.Fatalf("warm: %v", err)
+	}
+	warm.Body.Close()
+	form.Set("_csrf", csrfToken(t, client, srv.URL))
+
+	resp, err = client.PostForm(srv.URL+"/orders", form)
+	if err != nil {
+		t.Fatalf("post csrf: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode == http.StatusForbidden {
+		t.Fatalf("valid CSRF still rejected: %d", resp.StatusCode)
+	}
+}
+
+func TestE2ELogoutClearsSession(t *testing.T) {
+	t.Parallel()
+	srv, client := newE2E(t, shopBackend())
+	login(t, client, srv.URL, "shopuser")
+	form := url.Values{"_csrf": {""}}
+
+	warm, _ := client.Get(srv.URL + "/orders")
+	warm.Body.Close()
+	form.Set("_csrf", csrfToken(t, client, srv.URL))
+
+	resp, err := client.PostForm(srv.URL+"/session/logout", form)
+	if err != nil {
+		t.Fatalf("logout: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("logout status = %d, want 303", resp.StatusCode)
+	}
+
+	// Session gone: /orders falls back to the login page.
+	after, err := client.Get(srv.URL + "/orders")
+	if err != nil {
+		t.Fatalf("get after logout: %v", err)
+	}
+	after.Body.Close()
+	if after.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("post-logout /orders = %d, want 401", after.StatusCode)
+	}
+}
+
+func TestE2EHealthOK(t *testing.T) {
+	t.Parallel()
+	srv, client := newE2E(t, shopBackend())
+	resp, err := client.Get(srv.URL + "/health")
+	if err != nil {
+		t.Fatalf("health: %v", err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK || !strings.Contains(string(body), `"status":"ok"`) {
+		t.Fatalf("health = %d %s", resp.StatusCode, body)
+	}
+}
