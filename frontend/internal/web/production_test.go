@@ -94,6 +94,14 @@ func TestProductionCommentsStartCollapsed(t *testing.T) {
 		strings.Count(html, `aria-expanded="true"`) != 1 {
 		t.Fatalf("unexpected comment disclosure states: %s", html)
 	}
+	for _, heading := range []string{"Название", "Заказ", "Закладка", "Испечено"} {
+		if !strings.Contains(html, "<th>"+heading+"</th>") {
+			t.Errorf("production table is missing %q column", heading)
+		}
+	}
+	if strings.Contains(html, "production-sources") {
+		t.Error("production table exposes per-order allocation details")
+	}
 }
 
 func assertProductionItem(t *testing.T, order contract.ProductionOrderWrite, number string, loaded, produced float64) {

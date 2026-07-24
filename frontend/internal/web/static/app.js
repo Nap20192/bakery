@@ -55,6 +55,14 @@
     if (!page || page.dataset.ready === 'true') return;
     page.dataset.ready = 'true';
     const buttons = [...page.querySelectorAll('[data-selection-remove]')];
+    const query = new URLSearchParams(window.location.search);
+    if (buttons.length === 0 && !query.has('order') && !query.has('orders')) {
+      const saved = selection();
+      if (saved.length > 0) {
+        window.location.replace(selectionURL(saved));
+        return;
+      }
+    }
     const current = buttons.map((button) => ({
       number: button.dataset.selectionRemove,
       category: button.dataset.selectionCategory,
@@ -68,9 +76,7 @@
         const remaining = current.filter((item) => item.number !== button.dataset.selectionRemove);
         storeSelection(remaining);
         storeSelectionMode(remaining.length > 0);
-        const params = new URLSearchParams();
-        remaining.forEach((item) => params.append('order', item.number));
-        window.location.assign(remaining.length ? `/orders/selection?${params}` : '/orders');
+        window.location.assign(remaining.length ? selectionURL(remaining) : '/orders');
       });
     });
   }
@@ -166,6 +172,12 @@
     try { sessionStorage.setItem(selectionKey, JSON.stringify(value)); } catch { /* selection still works until navigation */ }
   }
 
+  function selectionURL(value) {
+    const params = new URLSearchParams();
+    value.forEach((item) => params.append('order', item.number));
+    return `/orders/selection?${params}`;
+  }
+
   function selectionMode() {
     try { return sessionStorage.getItem(selectionModeKey) === 'true'; } catch { return false; }
   }
@@ -218,9 +230,7 @@
       if (count) count.textContent = String(selected.length);
       if (open) {
         open.hidden = !mode || selected.length === 0;
-        const params = new URLSearchParams();
-        selected.forEach((item) => params.append('order', item.number));
-        open.href = `/orders/selection?${params}`;
+        open.href = selectionURL(selected);
       }
     };
 
