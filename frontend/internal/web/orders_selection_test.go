@@ -77,3 +77,17 @@ func TestSelectionPageDropsOrdersThatCannotJoinABatch(t *testing.T) {
 		t.Error("selection page does not expose the category needed to resume the batch")
 	}
 }
+
+func TestSelectionScriptRestoresSavedOrdersBeforeClearingThem(t *testing.T) {
+	t.Parallel()
+	source, err := frontendFiles.ReadFile("static/app.js")
+	if err != nil {
+		t.Fatalf("read app.js: %v", err)
+	}
+	script := string(source)
+	restore := strings.Index(script, "window.location.replace(selectionURL(saved))")
+	clear := strings.Index(script, "storeSelection(current)")
+	if restore < 0 || clear < 0 || restore > clear {
+		t.Fatal("empty selection page clears saved orders before restoring its missing query")
+	}
+}

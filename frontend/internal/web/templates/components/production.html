@@ -11,22 +11,23 @@
 
 {{/* production-rows takes the row slice. */}}
 {{define "production-rows"}}
-<div class="scroll-frame"><div class="production-table-wrap"><table class="production-table"><thead><tr><th>Позиция</th><th>Заказано</th><th>Закладка</th><th>Выход</th><th>Комментарий</th></tr></thead><tbody>
-{{range $index, $_ := .}}<tr data-production-row data-linked="{{.Linked}}" data-initial-linked="{{.Linked}}">
+<table class="production-table">
+<colgroup><col><col class="production-quantity-column"><col class="production-quantity-column"><col class="production-quantity-column"></colgroup>
+<thead><tr><th>Название</th><th>Заказ</th><th>Закладка</th><th>Испечено</th></tr></thead>
+{{range $index, $_ := .}}<tbody data-production-row data-linked="{{.Linked}}" data-initial-linked="{{.Linked}}">
+<tr>
   <td>
     <input type="hidden" name="product_name" value="{{.ProductName}}">
     <input type="hidden" name="share_count" value="{{len .Shares}}">
     {{range .Shares}}<input type="hidden" name="order_number" value="{{.OrderNumber}}"><input type="hidden" name="ordered_quantity" value="{{formatQty .OrderedQuantity}}">{{end}}
     <strong>{{.ProductName}}</strong>
-    <small class="production-sources">{{len .Shares}} зак.{{range .Shares}} · {{.OrderNumber}}: {{formatQty .OrderedQuantity}}{{end}}</small>
+    <button class="text-action production-comment-toggle" type="button" data-comment-toggle aria-expanded="{{if .ReasonConflict}}true{{else}}false{{end}}" aria-controls="production-reason-{{$index}}">Комментарий</button>
   </td>
   <td class="ordered" data-ordered="{{.OrderedQuantity}}">{{formatQty .OrderedQuantity}}</td>
   <td><input class="quantity-input" type="number" name="loaded_quantity" min="0" step="0.1" inputmode="decimal" value="{{formatQty .LoadedQuantity}}" aria-label="Общая закладка: {{.ProductName}}" required></td>
   <td><input class="quantity-input" type="number" name="produced_quantity" min="0" step="0.1" inputmode="decimal" value="{{formatQty .ProducedQuantity}}" aria-label="Общий выход: {{.ProductName}}" required></td>
-  <td>
-    <button class="text-action" type="button" data-comment-toggle aria-expanded="{{if .ReasonConflict}}true{{else}}false{{end}}" aria-controls="production-reason-{{$index}}">Комментарий</button>
-    <label class="field item-comment" {{if not .ReasonConflict}}hidden{{end}}><span>Комментарий к позиции</span><input id="production-reason-{{$index}}" name="reason" value="{{.Reason}}" maxlength="200" placeholder="{{if .ReasonConflict}}Укажите одну общую причину{{else}}Если есть отклонение{{end}}" {{if .ReasonConflict}}required{{end}}>{{if .ReasonConflict}}<small>Раньше причины различались — выберите одну общую.</small>{{end}}</label>
-  </td>
-</tr>{{end}}
-</tbody></table></div></div>
+</tr>
+<tr class="production-comment-row"><td colspan="4"><label class="field item-comment" {{if not .ReasonConflict}}hidden{{end}}><span>Комментарий к позиции</span><input id="production-reason-{{$index}}" name="reason" value="{{.Reason}}" maxlength="200" placeholder="{{if .ReasonConflict}}Укажите одну общую причину{{else}}Если есть отклонение{{end}}" {{if .ReasonConflict}}required{{end}}>{{if .ReasonConflict}}<small>Раньше причины различались — выберите одну общую.</small>{{end}}</label></td></tr>
+</tbody>{{end}}
+</table>
 {{end}}
