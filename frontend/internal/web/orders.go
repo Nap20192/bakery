@@ -387,7 +387,7 @@ func (s *server) monitorFragment(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) orderPreviewFragment(w http.ResponseWriter, r *http.Request) {
-	_, cred, ok := s.requireViewer(w, r)
+	viewer, cred, ok := s.requireViewer(w, r)
 	if !ok {
 		return
 	}
@@ -399,7 +399,8 @@ func (s *server) orderPreviewFragment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := s.templates.ExecuteTemplate(w, "order-preview", order); err != nil {
+	preview := map[string]any{"Order": order, "LinkSheet": application.CanUseProduction(viewer)}
+	if err := s.templates.ExecuteTemplate(w, "order-preview", preview); err != nil {
 		s.logger.Error("render order preview", "error", err)
 	}
 }

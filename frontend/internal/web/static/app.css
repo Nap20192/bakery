@@ -330,6 +330,10 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .shop-order-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .category-admin-grid { grid-template-columns: 1fr; }
   .available-row { grid-template-columns: minmax(180px, 1fr) 1fr; }
+  /* Tablet: shrink the matrix so more day columns fit before it has to scroll. */
+  .order-matrix th, .order-matrix td { width: 200px; }
+  .order-matrix .matrix-axis { width: 78px; }
+  .matrix-cell { min-height: 134px; }
 }
 
 @media (max-width: 640px) {

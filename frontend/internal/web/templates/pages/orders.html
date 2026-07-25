@@ -41,7 +41,7 @@
           <tr><th class="matrix-axis {{if $row.Tone}}tone-{{$row.Tone}}{{end}}"><strong>{{$row.Label}}</strong><small>{{formatDayMonth $row.Date}}</small></th>
           {{range $cell := $row.Cells}}<td>
             <div class="matrix-cell">
-            {{range $order := $cell.Orders}}{{template "order-card" $order}}{{else}}{{template "empty-cell"}}{{end}}
+            {{range $order := $cell.Orders}}{{template "order-card" (dict "Order" $order "LinkSheet" true)}}{{else}}{{template "empty-cell"}}{{end}}
             </div>
           </td>{{end}}
           </tr>
@@ -52,7 +52,7 @@
     {{else}}{{template "empty-state" (dict "Text" "На выбранные даты заказов нет.")}}{{end}}
   {{else}}
     <div class="shop-order-list">
-      {{range $data.Page.Items}}{{template "order-card" .}}{{else}}{{template "empty-state" (dict "Text" "Заказов пока нет. Создайте первую заявку.")}}{{end}}
+      {{range $data.Page.Items}}{{template "order-card" (dict "Order" . "LinkSheet" false)}}{{else}}{{template "empty-state" (dict "Text" "Заказов пока нет. Создайте первую заявку.")}}{{end}}
     </div>
     {{if gt $data.Page.TotalPages 1}}<nav class="pagination" aria-label="Страницы заказов">
       {{if gt $data.Page.Page 1}}<a class="button" href="/orders?page={{pageOffset $data.Page.Page -1}}&category_id={{$data.Filters.CategoryID}}">← Назад</a>{{end}}
