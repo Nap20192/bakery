@@ -14,8 +14,9 @@ import (
 )
 
 type productionEditorShare struct {
-	OrderNumber     string
-	OrderedQuantity float64
+	OrderNumber      string
+	OrderedQuantity  float64
+	ProducedQuantity float64
 }
 
 type productionEditorRow struct {
@@ -30,52 +31,75 @@ type productionEditorRow struct {
 }
 
 type productionEditorData struct {
-	Sheet  *contract.ProductionSheet
-	Orders []contract.Order
-	Rows   []productionEditorRow
+	Sheet    *contract.ProductionSheet
+	Orders   []contract.Order
+	Rows     []productionEditorRow
+	Overview productionOverview
 }
 
 // productionOverview is the read-only «Обзор»: a pivot with dishes down the side,
-// orders across the top, and a trailing «Итого» column per dish. The footer row
-// carries per-order totals and the grand total.
+// orders across the top, and a trailing «Итого» column per dish. Each cell carries
+// the produced fact and its deviation from the order (+/-), so the table shows what
+// the отработка actually made. The footer row carries per-order and grand totals.
+type productionPivotCell struct {
+	Produced float64 // факт (выпечено)
+	Delta    float64 // produced − ordered; 0 when the fact matched the order
+}
+
 type productionPivotRow struct {
 	Name  string
-	Cells []float64 // aligned with OrderNumbers
-	Total float64   // итого по позиции
+	Cells []productionPivotCell // aligned with OrderNumbers
+	Total productionPivotCell   // итого по позиции
 }
 
 type productionOverview struct {
-	OrderNumbers []string             // column headers, in batch order
-	Rows         []productionPivotRow // one per dish
-	ColumnTotals []float64            // итого по заказу, aligned with OrderNumbers
-	GrandTotal   float64
+	OrderNumbers []string              // column headers, in batch order
+	Rows         []productionPivotRow  // one per dish
+	ColumnTotals []productionPivotCell // итого по заказу, aligned with OrderNumbers
+	GrandTotal   productionPivotCell
 }
 
 // buildProductionOverview pivots the batch: each editor row is a dish, its Shares
-// place quantities under the matching order column, and the row/column/grand
-// totals close the table.
+// place the produced fact under the matching order column, and every cell/total
+// keeps the deviation from the order so «Итого» shows the +/- result of the sheet.
 func buildProductionOverview(orders []contract.Order, rows []productionEditorRow) productionOverview {
 	overview := productionOverview{
 		OrderNumbers: make([]string, len(orders)),
 		Rows:         make([]productionPivotRow, 0, len(rows)),
-		ColumnTotals: make([]float64, len(orders)),
+		ColumnTotals: make([]productionPivotCell, len(orders)),
 	}
 	columnOf := make(map[string]int, len(orders))
 	for index, order := range orders {
 		overview.OrderNumbers[index] = order.Number
 		columnOf[order.Number] = index
 	}
+	columnOrdered := make([]float64, len(orders))
+	columnProduced := make([]float64, len(orders))
+	var grandOrdered, grandProduced float64
 	for _, row := range rows {
-		pivot := productionPivotRow{Name: row.ProductName, Cells: make([]float64, len(orders)), Total: row.OrderedQuantity}
+		pivot := productionPivotRow{Name: row.ProductName, Cells: make([]productionPivotCell, len(orders))}
+		cellOrdered := make([]float64, len(orders))
+		cellProduced := make([]float64, len(orders))
 		for _, share := range row.Shares {
 			if column, ok := columnOf[share.OrderNumber]; ok {
-				pivot.Cells[column] += share.OrderedQuantity
-				overview.ColumnTotals[column] += share.OrderedQuantity
+				cellOrdered[column] += share.OrderedQuantity
+				cellProduced[column] += share.ProducedQuantity
 			}
 		}
-		overview.GrandTotal += row.OrderedQuantity
+		for column := range orders {
+			pivot.Cells[column] = productionPivotCell{Produced: cellProduced[column], Delta: cellProduced[column] - cellOrdered[column]}
+			columnOrdered[column] += cellOrdered[column]
+			columnProduced[column] += cellProduced[column]
+		}
+		pivot.Total = productionPivotCell{Produced: row.ProducedQuantity, Delta: row.ProducedQuantity - row.OrderedQuantity}
+		grandOrdered += row.OrderedQuantity
+		grandProduced += row.ProducedQuantity
 		overview.Rows = append(overview.Rows, pivot)
 	}
+	for column := range orders {
+		overview.ColumnTotals[column] = productionPivotCell{Produced: columnProduced[column], Delta: columnProduced[column] - columnOrdered[column]}
+	}
+	overview.GrandTotal = productionPivotCell{Produced: grandProduced, Delta: grandProduced - grandOrdered}
 	return overview
 }
 
@@ -140,7 +164,8 @@ func (s *server) productionDetailPage(w http.ResponseWriter, r *http.Request) {
 		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить заказы партии."))
 		return
 	}
-	data := productionEditorData{Sheet: &sheet, Orders: orders, Rows: buildProductionRows(orders, sheet.Items)}
+	rows := buildProductionRows(orders, sheet.Items)
+	data := productionEditorData{Sheet: &sheet, Orders: orders, Rows: rows, Overview: buildProductionOverview(orders, rows)}
 	s.render(w, r, http.StatusOK, page{Title: fmt.Sprintf("Отработка №%d", sheet.ID), View: "production-detail", Viewer: viewer, Success: queryMessage(r, "success"), Data: data})
 }
 
@@ -299,7 +324,7 @@ func buildProductionRows(orders []contract.Order, saved []contract.ProductionShe
 			builder.row.ProducedQuantity += produced
 			builder.row.Linked = builder.row.Linked && loaded == ordered && produced == ordered
 			builder.row.Shares = append(builder.row.Shares, productionEditorShare{
-				OrderNumber: order.Number, OrderedQuantity: ordered,
+				OrderNumber: order.Number, OrderedQuantity: ordered, ProducedQuantity: produced,
 			})
 			if produced != ordered {
 				builder.reasons[strings.TrimSpace(reason)] = struct{}{}

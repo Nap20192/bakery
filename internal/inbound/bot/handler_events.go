@@ -66,10 +66,10 @@ func (b *OrderBot) handleOrderEvent(ctx context.Context, body []byte) error {
 		message = response.OrderCancelled(order, fromName, toName)
 	case orderdomain.EventOrderRestored:
 		message = response.OrderRestored(order, fromName, toName)
-	case orderdomain.EventOrderProduced:
-		message = response.OrderProduced(order, payload.ProducedByUsername)
-	case orderdomain.EventOrderProductionCleared:
-		message = response.OrderProductionCleared(order, payload.ProducedByUsername)
+	case orderdomain.EventOrderProduced, orderdomain.EventOrderProductionCleared:
+		// Отработка (produced/cleared) намеренно не уведомляет — уведомления
+		// только на создание, обновление и удаление/отмену заказа.
+		return nil
 	default:
 		slog.WarnContext(ctx, "unknown order event type", "type", env.Type)
 		return nil
