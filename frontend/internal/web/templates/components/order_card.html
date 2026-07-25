@@ -12,10 +12,10 @@
     <span class="order-card-count"><strong>{{len $o.Items}}</strong> поз.</span>
   </a>
   <div class="order-card-foot">
-    <span class="order-card-meta">@{{$o.CreatedByUsername}} · {{formatDate $o.CreatedAt}}</span>
+    <span class="order-card-meta">@{{$o.CreatedByUsername}}</span>
     {{if $o.Cancelled}}<span class="status status-danger">✕ Отменён</span>
     {{else if $o.ProductionSheetID}}{{template "sheet-stamp" (dict "ID" $o.ProductionSheetID "Link" .LinkSheet)}}{{end}}
-    <button class="order-preview-action" type="button" hx-get="/fragments/orders/{{urlquery $o.Number}}" hx-target="#preview-slot" hx-select="unset" hx-swap="innerHTML" aria-label="Обзор заказа {{$o.Number}}">Обзор</button>
+    <button class="order-preview-action" type="button" hx-get="/fragments/orders/{{urlquery $o.Number}}" hx-target="#preview-slot" hx-select="unset" hx-swap="innerHTML" aria-label="Обзор заказа {{$o.Number}}" title="Обзор">{{template "navicon" "eye"}}</button>
   </div>
 </article>
 {{end}}
