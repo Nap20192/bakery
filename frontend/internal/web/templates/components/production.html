@@ -9,6 +9,20 @@
 </form>
 {{end}}
 
+{{/* production-overview: read-only pivot — dishes down the side, orders across the
+     top, «Итого» column per dish and a totals footer. Takes a productionOverview. */}}
+{{define "production-overview"}}
+<div class="scroll-frame"><div class="summary-scroll overview-scroll" role="region" aria-label="Обзор партии" tabindex="0">
+  <table class="summary-table overview-pivot">
+    <thead><tr><th class="summary-axis">Позиция</th>{{range .OrderNumbers}}<th>{{.}}</th>{{end}}<th class="overview-total-col">Итого</th></tr></thead>
+    <tbody>
+      {{range .Rows}}<tr><th class="summary-axis">{{.Name}}</th>{{range .Cells}}<td>{{if .}}{{formatQty .}}{{else}}·{{end}}</td>{{end}}<td class="overview-total-col"><strong>{{formatQty .Total}}</strong></td></tr>{{end}}
+    </tbody>
+    <tfoot><tr><th class="summary-axis">Итого</th>{{range .ColumnTotals}}<td><strong>{{formatQty .}}</strong></td>{{end}}<td class="overview-total-col"><strong>{{formatQty .GrandTotal}}</strong></td></tr></tfoot>
+  </table>
+</div></div>
+{{end}}
+
 {{/* production-rows takes the row slice. */}}
 {{define "production-rows"}}
 <table class="production-table">
@@ -24,8 +38,8 @@
     <button class="text-action production-comment-toggle" type="button" data-comment-toggle aria-expanded="{{if .ReasonConflict}}true{{else}}false{{end}}" aria-controls="production-reason-{{$index}}">Комментарий</button>
   </td>
   <td class="ordered" data-ordered="{{.OrderedQuantity}}">{{formatQty .OrderedQuantity}}</td>
-  <td><input class="quantity-input" type="number" name="loaded_quantity" min="0" step="0.1" inputmode="decimal" value="{{formatQty .LoadedQuantity}}" aria-label="Общая закладка: {{.ProductName}}" required></td>
-  <td><input class="quantity-input" type="number" name="produced_quantity" min="0" step="0.1" inputmode="decimal" value="{{formatQty .ProducedQuantity}}" aria-label="Общий выход: {{.ProductName}}" required></td>
+  <td><input class="quantity-input" type="number" name="loaded_quantity" min="0" step="1" inputmode="numeric" value="{{formatQty .LoadedQuantity}}" aria-label="Общая закладка: {{.ProductName}}" required></td>
+  <td><input class="quantity-input" type="number" name="produced_quantity" min="0" step="1" inputmode="numeric" value="{{formatQty .ProducedQuantity}}" aria-label="Общий выход: {{.ProductName}}" required></td>
 </tr>
 <tr class="production-comment-row"><td colspan="4"><label class="field item-comment" {{if not .ReasonConflict}}hidden{{end}}><span>Комментарий к позиции</span><input id="production-reason-{{$index}}" name="reason" value="{{.Reason}}" maxlength="200" placeholder="{{if .ReasonConflict}}Укажите одну общую причину{{else}}Если есть отклонение{{end}}" {{if .ReasonConflict}}required{{end}}>{{if .ReasonConflict}}<small>Раньше причины различались — выберите одну общую.</small>{{end}}</label></td></tr>
 </tbody>{{end}}

@@ -151,14 +151,21 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .order-card.is-cancelled .order-card-title { text-decoration: line-through; }
 .order-card.is-cancelled { border-left-color: var(--ink-muted) !important; }
 /* Inset, because an outline on a matrix card is clipped by the scroll container. */
-/* Selection mode reads at a glance: selectable cards lift on hover, the picked
-   ones get an accent ring, a tinted fill and a bold ✓ badge. */
-.selection-active .order-card { cursor: pointer; user-select: none; transition: box-shadow 120ms ease, background 120ms ease; }
-.selection-active .order-card:hover:not(.is-selected) { box-shadow: inset 0 0 0 2px var(--line); }
-.order-card.is-selected { border-color: var(--crust); box-shadow: inset 0 0 0 3px var(--crust); background: #f7ece7; }
-.order-card.is-selected::after { position: absolute; top: 6px; right: 7px; display: grid; width: 22px; height: 22px; border-radius: 50%; background: var(--crust); color: #fffaf4; box-shadow: 0 0 0 2px var(--surface); content: "✓"; font-size: 0.72rem; font-weight: 700; line-height: 1; place-items: center; }
-.order-card.is-selected .order-card-count, .order-card.is-selected .order-card-star { display: none; }
-.selection-active .order-card[data-cancelled="true"], .selection-active .order-card[data-sheet]:not([data-sheet=""]) { cursor: not-allowed; opacity: 0.4; }
+/* Selection mode is unmistakable: every selectable card wears a checkbox (the
+   count steps aside for it), and picking one fills the box and rings the whole
+   card in the accent colour — the category stripe included, so the outline stays
+   square instead of lopsided. */
+.selection-active .order-card { cursor: pointer; user-select: none; padding-right: 34px; transition: box-shadow 120ms ease, background 120ms ease; }
+.selection-active .order-card-count { display: none; }
+.selection-active .order-card::after { position: absolute; top: 8px; right: 9px; display: grid; width: 20px; height: 20px; border: 2px solid var(--line); border-radius: 50%; background: var(--surface); color: transparent; content: "✓"; font-size: 0.68rem; font-weight: 700; line-height: 1; place-items: center; transition: background 120ms ease, border-color 120ms ease, color 120ms ease; }
+.selection-active .order-card:hover::after { border-color: var(--crust); }
+.order-card.is-selected { border-color: var(--crust) !important; box-shadow: inset 0 0 0 2px var(--crust); background: #f7ece7; }
+.order-card.is-selected::after { border-color: var(--crust); background: var(--crust); color: #fffaf4; }
+.order-card.is-selected .order-card-star { display: none; }
+.selection-active .order-card[data-cancelled="true"], .selection-active .order-card[data-sheet]:not([data-sheet=""]) { cursor: not-allowed; opacity: 0.45; }
+.selection-active .order-card[data-cancelled="true"]::after, .selection-active .order-card[data-sheet]:not([data-sheet=""])::after { display: none; }
+/* The toggle itself flips to an active look so the mode is obvious from the bar. */
+[data-selection-toggle][aria-pressed="true"] { border-color: var(--crust); color: var(--crust); background: #f7ece7; }
 .sheet-olive { background-color: #e9eddc !important; }.sheet-copper { background-color: #f1e3d8 !important; }.sheet-blue { background-color: #e2eaf0 !important; }.sheet-plum { background-color: #ece2ec !important; }.sheet-moss { background-color: #e3ebe2 !important; }.sheet-clay { background-color: #eee2dc !important; }
 .selection-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; }
 .table-hint { margin: -6px 0 14px; color: var(--ink-soft); font-size: 0.85rem; }
@@ -244,6 +251,19 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .production-comment-row small { display: block; margin-top: 4px; color: var(--warning); line-height: 1.35; }
 .production-table input { background: var(--surface); }
 .production-table .quantity-input { width: 56px; min-width: 56px; max-width: 56px; padding-inline: 4px; }
+/* Отработка ↔ Обзор: a CSS-only toggle (hidden radios drive both the pill and the
+   panels), so switching views needs no script. */
+.sheet-view-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.sheet-switch { display: inline-flex; gap: 4px; margin-bottom: 16px; padding: 4px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--paper-deep); }
+.sheet-tab { padding: 7px 16px; border-radius: calc(var(--radius-control) - 4px); color: var(--ink-soft); font-weight: 700; cursor: pointer; }
+#view-sheet:checked ~ .sheet-switch label[for="view-sheet"], #view-overview:checked ~ .sheet-switch label[for="view-overview"] { color: #fffaf4; background: var(--crust); }
+.sheet-view-input:focus-visible ~ .sheet-switch label[for="view-sheet"] { outline: 2px solid var(--crust); outline-offset: 2px; }
+.sheet-panel { display: none; }
+#view-sheet:checked ~ .sheet-panels .sheet-panel[data-panel="sheet"], #view-overview:checked ~ .sheet-panels .sheet-panel[data-panel="overview"] { display: block; }
+/* «Обзор» pivot: the trailing/footer «Итого» stands out from the order columns. */
+.overview-pivot { min-width: 0; }
+.overview-pivot .overview-total-col { background: var(--paper-deep); }
+.overview-pivot tfoot .overview-total-col { background: var(--surface-inset); }
 .production-form .form-actions { justify-content: flex-end; margin-top: 16px; }
 .dirty-warning { padding: 10px 12px; border: 1px solid; border-radius: var(--radius-control); font-size: 0.8rem; }
 .batch-links { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: -10px 0 22px; font-family: var(--font-mono); font-size: 0.78rem; }
