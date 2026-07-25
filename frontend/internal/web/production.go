@@ -38,9 +38,9 @@ type productionEditorData struct {
 }
 
 // productionOverview is the read-only «Обзор»: a pivot with dishes down the side,
-// orders across the top, and a trailing «Итого» column per dish. Each cell carries
-// the produced fact and its deviation from the order (+/-), so the table shows what
-// the отработка actually made. The footer row carries per-order and grand totals.
+// orders across the top. The order columns show the plain заявка (ordered) — the
+// produced fact is NOT split back across orders. Only «Итого» (per dish and grand)
+// carries the produced fact with its +/- deviation.
 type productionPivotCell struct {
 	Produced float64 // факт (выпечено)
 	Delta    float64 // produced − ordered; 0 when the fact matched the order
@@ -48,56 +48,44 @@ type productionPivotCell struct {
 
 type productionPivotRow struct {
 	Name  string
-	Cells []productionPivotCell // aligned with OrderNumbers
-	Total productionPivotCell   // итого по позиции
+	Cells []float64           // заявка по заказу, aligned with OrderNumbers
+	Total productionPivotCell // итого по позиции: факт + отклонение
 }
 
 type productionOverview struct {
-	OrderNumbers []string              // column headers, in batch order
-	Rows         []productionPivotRow  // one per dish
-	ColumnTotals []productionPivotCell // итого по заказу, aligned with OrderNumbers
-	GrandTotal   productionPivotCell
+	OrderNumbers []string             // column headers, in batch order
+	Rows         []productionPivotRow // one per dish
+	ColumnTotals []float64            // сумма заявки по заказу, aligned with OrderNumbers
+	GrandTotal   productionPivotCell  // итог: факт + отклонение
 }
 
 // buildProductionOverview pivots the batch: each editor row is a dish, its Shares
-// place the produced fact under the matching order column, and every cell/total
-// keeps the deviation from the order so «Итого» shows the +/- result of the sheet.
+// place the заявка under the matching order column. The produced fact only lands in
+// «Итого» (per dish and grand), so no fact ever gets re-apportioned across orders.
 func buildProductionOverview(orders []contract.Order, rows []productionEditorRow) productionOverview {
 	overview := productionOverview{
 		OrderNumbers: make([]string, len(orders)),
 		Rows:         make([]productionPivotRow, 0, len(rows)),
-		ColumnTotals: make([]productionPivotCell, len(orders)),
+		ColumnTotals: make([]float64, len(orders)),
 	}
 	columnOf := make(map[string]int, len(orders))
 	for index, order := range orders {
 		overview.OrderNumbers[index] = order.Number
 		columnOf[order.Number] = index
 	}
-	columnOrdered := make([]float64, len(orders))
-	columnProduced := make([]float64, len(orders))
 	var grandOrdered, grandProduced float64
 	for _, row := range rows {
-		pivot := productionPivotRow{Name: row.ProductName, Cells: make([]productionPivotCell, len(orders))}
-		cellOrdered := make([]float64, len(orders))
-		cellProduced := make([]float64, len(orders))
+		pivot := productionPivotRow{Name: row.ProductName, Cells: make([]float64, len(orders))}
 		for _, share := range row.Shares {
 			if column, ok := columnOf[share.OrderNumber]; ok {
-				cellOrdered[column] += share.OrderedQuantity
-				cellProduced[column] += share.ProducedQuantity
+				pivot.Cells[column] += share.OrderedQuantity
+				overview.ColumnTotals[column] += share.OrderedQuantity
 			}
-		}
-		for column := range orders {
-			pivot.Cells[column] = productionPivotCell{Produced: cellProduced[column], Delta: cellProduced[column] - cellOrdered[column]}
-			columnOrdered[column] += cellOrdered[column]
-			columnProduced[column] += cellProduced[column]
 		}
 		pivot.Total = productionPivotCell{Produced: row.ProducedQuantity, Delta: row.ProducedQuantity - row.OrderedQuantity}
 		grandOrdered += row.OrderedQuantity
 		grandProduced += row.ProducedQuantity
 		overview.Rows = append(overview.Rows, pivot)
-	}
-	for column := range orders {
-		overview.ColumnTotals[column] = productionPivotCell{Produced: columnProduced[column], Delta: columnProduced[column] - columnOrdered[column]}
 	}
 	overview.GrandTotal = productionPivotCell{Produced: grandProduced, Delta: grandProduced - grandOrdered}
 	return overview
