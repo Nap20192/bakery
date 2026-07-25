@@ -266,6 +266,16 @@
       render();
     });
 
+    if (open) {
+      // Continuing commits the batch — its orders travel in the link URL. Drop the
+      // stored picks and mode so returning to the matrix doesn't reopen selection
+      // with stale highlights.
+      open.addEventListener('click', () => {
+        storeSelection([]);
+        storeSelectionMode(false);
+      });
+    }
+
     cards.forEach((card) => {
       // Capture phase: hx-boost binds its own handler to the card link, and on the
       // bubble path that runs before this one, so the boosted navigation would win.
