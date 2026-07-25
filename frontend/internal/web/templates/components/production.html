@@ -21,9 +21,9 @@
   <table class="summary-table overview-pivot">
     <thead><tr><th class="summary-axis">Позиция</th>{{range .OrderNumbers}}<th>{{.}}</th>{{end}}<th class="overview-total-col">Итого</th></tr></thead>
     <tbody>
-      {{range .Rows}}<tr><th class="summary-axis">{{.Name}}</th>{{range .Cells}}<td>{{if .Produced}}{{formatQty .Produced}}{{else}}·{{end}}</td>{{end}}<td class="overview-total-col"><strong>{{template "overview-cell" .Total}}</strong></td></tr>{{end}}
+      {{range .Rows}}<tr><th class="summary-axis">{{.Name}}</th>{{range .Cells}}<td>{{if .}}{{formatQty .}}{{else}}·{{end}}</td>{{end}}<td class="overview-total-col"><strong>{{template "overview-cell" .Total}}</strong></td></tr>{{end}}
     </tbody>
-    <tfoot><tr><th class="summary-axis">Итого</th>{{range .ColumnTotals}}<td><strong>{{template "overview-cell" .}}</strong></td>{{end}}<td class="overview-total-col"><strong>{{template "overview-cell" .GrandTotal}}</strong></td></tr></tfoot>
+    <tfoot><tr><th class="summary-axis">Итого</th>{{range .ColumnTotals}}<td><strong>{{if .}}{{formatQty .}}{{else}}·{{end}}</strong></td>{{end}}<td class="overview-total-col"><strong>{{template "overview-cell" .GrandTotal}}</strong></td></tr></tfoot>
   </table>
 </div></div>
 {{end}}
