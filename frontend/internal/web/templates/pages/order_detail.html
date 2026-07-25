@@ -24,8 +24,8 @@
       {{template "section-heading" (dict "Title" "Позиции" "Count" (len $order.Items))}}
       {{range $group := .Data.Groups}}
       <div class="item-group"><h3>{{$group.Name}}</h3>
-        <div class="item-table-wrap"><table class="item-table"><thead><tr><th>Блюдо</th><th>Заказ</th><th>Резерв</th>{{if canUseProduction $.Viewer}}<th>Испечено</th>{{end}}</tr></thead><tbody>
-          {{range $item := $group.Items}}<tr><td><strong>{{$item.ProductName}}</strong>{{with commentFor $item.ProductName $order.Comments.Items}}<small>{{.}}</small>{{end}}</td><td>{{formatQty $item.Quantity}}</td><td>{{formatQty $item.ReservedQuantity}}</td>{{if canUseProduction $.Viewer}}<td class="{{if $item.ProducedQuantity}}production-fact{{end}}">{{if $item.ProducedQuantity}}{{formatQty $item.ProducedQuantity}}{{else}}—{{end}}{{if $item.ProducedReason}}<small>{{$item.ProducedReason}}</small>{{end}}</td>{{end}}</tr>{{end}}
+        <div class="item-table-wrap"><table class="item-table"><thead><tr><th>Блюдо</th><th>Заказ</th><th>Резерв</th></tr></thead><tbody>
+          {{range $item := $group.Items}}<tr><td><strong>{{$item.ProductName}}</strong>{{with commentFor $item.ProductName $order.Comments.Items}}<small>{{.}}</small>{{end}}</td><td>{{formatQty $item.Quantity}}</td><td>{{formatQty $item.ReservedQuantity}}</td></tr>{{end}}
         </tbody></table></div>
       </div>
       {{end}}

@@ -84,8 +84,9 @@ type selectionData struct {
 	Orders []contract.Order
 	// Numbers feeds the monitor panel, which builds its request from plain
 	// order numbers the same way the saved-sheet page does.
-	Numbers []string
-	Rows    []productionEditorRow
+	Numbers  []string
+	Rows     []productionEditorRow
+	Overview productionOverview
 }
 
 type monitorData struct {
@@ -349,7 +350,8 @@ func (s *server) orderSelectionPage(w http.ResponseWriter, r *http.Request) {
 	for _, order := range orders {
 		batch = append(batch, order.Number)
 	}
-	s.render(w, r, http.StatusOK, page{Title: "Партия", View: "selection", Viewer: viewer, Error: notice, Data: selectionData{Orders: orders, Numbers: batch, Rows: buildProductionRows(orders, nil)}})
+	rows := buildProductionRows(orders, nil)
+	s.render(w, r, http.StatusOK, page{Title: "Партия", View: "selection", Viewer: viewer, Error: notice, Data: selectionData{Orders: orders, Numbers: batch, Rows: rows, Overview: buildProductionOverview(orders, rows)}})
 }
 
 func (s *server) monitorFragment(w http.ResponseWriter, r *http.Request) {

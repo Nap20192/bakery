@@ -24,6 +24,9 @@ type calculatorData struct {
 	Groups     []calculatorGroup
 	CategoryID int64
 	Reports    []contract.MonitorReport
+	// OrderReports keeps the shared monitor template happy — the calculator is a
+	// draft with no per-order breakdown, so it stays nil and the block is skipped.
+	OrderReports []contract.BatchOrderMonitor
 }
 
 func (s *server) calculatorPage(w http.ResponseWriter, r *http.Request) {

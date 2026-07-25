@@ -35,6 +35,50 @@ type productionEditorData struct {
 	Rows   []productionEditorRow
 }
 
+// productionOverview is the read-only «Обзор»: a pivot with dishes down the side,
+// orders across the top, and a trailing «Итого» column per dish. The footer row
+// carries per-order totals and the grand total.
+type productionPivotRow struct {
+	Name  string
+	Cells []float64 // aligned with OrderNumbers
+	Total float64   // итого по позиции
+}
+
+type productionOverview struct {
+	OrderNumbers []string             // column headers, in batch order
+	Rows         []productionPivotRow // one per dish
+	ColumnTotals []float64            // итого по заказу, aligned with OrderNumbers
+	GrandTotal   float64
+}
+
+// buildProductionOverview pivots the batch: each editor row is a dish, its Shares
+// place quantities under the matching order column, and the row/column/grand
+// totals close the table.
+func buildProductionOverview(orders []contract.Order, rows []productionEditorRow) productionOverview {
+	overview := productionOverview{
+		OrderNumbers: make([]string, len(orders)),
+		Rows:         make([]productionPivotRow, 0, len(rows)),
+		ColumnTotals: make([]float64, len(orders)),
+	}
+	columnOf := make(map[string]int, len(orders))
+	for index, order := range orders {
+		overview.OrderNumbers[index] = order.Number
+		columnOf[order.Number] = index
+	}
+	for _, row := range rows {
+		pivot := productionPivotRow{Name: row.ProductName, Cells: make([]float64, len(orders)), Total: row.OrderedQuantity}
+		for _, share := range row.Shares {
+			if column, ok := columnOf[share.OrderNumber]; ok {
+				pivot.Cells[column] += share.OrderedQuantity
+				overview.ColumnTotals[column] += share.OrderedQuantity
+			}
+		}
+		overview.GrandTotal += row.OrderedQuantity
+		overview.Rows = append(overview.Rows, pivot)
+	}
+	return overview
+}
+
 type productionSheetView struct {
 	Sheet    contract.ProductionSheet
 	Category *contract.Category
