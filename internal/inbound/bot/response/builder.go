@@ -11,14 +11,14 @@ import (
 
 func OrderSummary(order orderdomain.Order, fromDepartment string, toDepartment string) string {
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "<b>Заказ <code>%s</code> отправлен</b>\n\n", html.EscapeString(order.Number))
+	fmt.Fprintf(&sb, "<b>🆕 🆕 🆕 Заказ <code>%s</code> отправлен</b>\n\n", html.EscapeString(order.Number))
 	writeOrderDetails(&sb, order, fromDepartment, toDepartment)
 	return sb.String()
 }
 
 func OrderUpdated(order orderdomain.Order, fromDepartment string, toDepartment string) string {
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "<b>Заказ <code>%s</code> обновлен</b>\n\n", html.EscapeString(order.Number))
+	fmt.Fprintf(&sb, "<b>🔄 🔄 🔄 Заказ <code>%s</code> обновлён</b>\n\n", html.EscapeString(order.Number))
 	writeOrderDetails(&sb, order, fromDepartment, toDepartment)
 	writeOrderChanges(&sb, order.History)
 	return sb.String()
@@ -26,7 +26,7 @@ func OrderUpdated(order orderdomain.Order, fromDepartment string, toDepartment s
 
 func OrderCancelled(order orderdomain.Order, fromDepartment string, toDepartment string) string {
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "<b>❌ Заказ <code>%s</code> отменён</b>\n\n", html.EscapeString(order.Number))
+	fmt.Fprintf(&sb, "<b>❌ ❌ ❌ Заказ <code>%s</code> отменён</b>\n\n", html.EscapeString(order.Number))
 	writeOrderDetails(&sb, order, fromDepartment, toDepartment)
 	if actor := strings.TrimPrefix(strings.TrimSpace(order.CancelledByUsername), "@"); actor != "" {
 		fmt.Fprintf(&sb, "\nОтменил: @%s\n", html.EscapeString(actor))
@@ -36,7 +36,7 @@ func OrderCancelled(order orderdomain.Order, fromDepartment string, toDepartment
 
 func OrderRestored(order orderdomain.Order, fromDepartment string, toDepartment string) string {
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "<b>♻️ Заказ <code>%s</code> восстановлен</b>\n\n", html.EscapeString(order.Number))
+	fmt.Fprintf(&sb, "<b>♻️ ♻️ ♻️ Заказ <code>%s</code> восстановлен</b>\n\n", html.EscapeString(order.Number))
 	writeOrderDetails(&sb, order, fromDepartment, toDepartment)
 	return sb.String()
 }
@@ -45,7 +45,7 @@ func OrderRestored(order orderdomain.Order, fromDepartment string, toDepartment 
 // каждой позиции в сравнении с заявкой.
 func OrderProduced(order orderdomain.Order, byUsername string) string {
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "<b>🥖 Отработка по заказу <code>%s</code></b>\n\n", html.EscapeString(order.Number))
+	fmt.Fprintf(&sb, "<b>🥖 🥖 🥖 Отработка по заказу <code>%s</code></b>\n\n", html.EscapeString(order.Number))
 	if actor := strings.TrimPrefix(strings.TrimSpace(byUsername), "@"); actor != "" {
 		fmt.Fprintf(&sb, "Внёс: @%s\n", html.EscapeString(actor))
 	}
@@ -80,7 +80,7 @@ func OrderProduced(order orderdomain.Order, byUsername string) string {
 // OrderProductionCleared — уведомление о снятии отработки.
 func OrderProductionCleared(order orderdomain.Order, byUsername string) string {
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "<b>↩️ Отработка по заказу <code>%s</code> снята</b>\n", html.EscapeString(order.Number))
+	fmt.Fprintf(&sb, "<b>↩️ ↩️ ↩️ Отработка по заказу <code>%s</code> снята</b>\n", html.EscapeString(order.Number))
 	if actor := strings.TrimPrefix(strings.TrimSpace(byUsername), "@"); actor != "" {
 		fmt.Fprintf(&sb, "Снял: @%s\n", html.EscapeString(actor))
 	}
