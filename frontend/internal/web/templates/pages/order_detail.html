@@ -2,7 +2,7 @@
 {{$order := .Data.Order}}
 <section class="page order-detail-page">
   <header class="page-heading">
-    <div><h1>{{$order.Number}}</h1><div class="heading-badges">{{template "category-badge" $order.Category}}{{if $order.Cancelled}}<span class="status status-danger">✕ Отменён</span>{{end}}{{if $order.ProductionSheetID}}<a class="status {{sheetTone $order.ProductionSheetID}}" href="/production/{{$order.ProductionSheetID}}">✓ Отработка №{{$order.ProductionSheetID}}</a>{{end}}</div></div>
+    <div><h1>{{$order.Number}}</h1><div class="heading-badges">{{template "category-badge" $order.Category}}{{if $order.Cancelled}}<span class="status status-danger">✕ Отменён</span>{{end}}{{if $order.ProductionSheetID}}<a class="status {{sheetTone $order.ProductionSheetID}}" href="/production/{{$order.ProductionSheetID}}">✓ Отр. №{{$order.ProductionSheetID}}</a>{{end}}</div></div>
     <div class="actions">
       {{if canManageOrders $.Viewer}}
         <a class="button button-primary" href="/orders/{{urlquery $order.Number}}/edit">Изменить</a>
