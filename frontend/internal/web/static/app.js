@@ -158,25 +158,38 @@
     dialog.showModal();
   }
 
+  // Every hx-boost navigation replaces #app-shell and re-runs initializeSelection,
+  // which used to re-read sessionStorage from scratch each time. In WebViews that
+  // block storage writes (Telegram in-app browser, private mode, strict partition
+  // policies) that re-read silently comes back empty, wiping an in-progress pick
+  // on the very next navigation. The in-memory cache below is the source of truth
+  // for the life of the document; sessionStorage is only a best-effort way to
+  // survive an actual full reload, and a failure to persist there no longer loses
+  // anything for the current tab.
+  let selectionCache = null;
+  let selectionModeCache = null;
+
   function selection() {
+    if (selectionCache) return selectionCache;
+    let value = [];
     try {
-      const value = JSON.parse(sessionStorage.getItem(selectionKey) || '[]');
-      if (!Array.isArray(value)) return [];
-      const seen = new Set();
-      return value.flatMap((item) => {
-        const number = String(item?.number || '').trim();
-        const category = String(item?.category ?? '').trim();
-        if (!number || !category || seen.has(number)) return [];
-        seen.add(number);
-        return [{ number, category, categoryName: String(item.categoryName || '') }];
-      });
-    } catch {
-      return [];
-    }
+      const parsed = JSON.parse(sessionStorage.getItem(selectionKey) || '[]');
+      if (Array.isArray(parsed)) value = parsed;
+    } catch { /* fall back to an empty starting selection */ }
+    const seen = new Set();
+    selectionCache = value.flatMap((item) => {
+      const number = String(item?.number || '').trim();
+      const category = String(item?.category ?? '').trim();
+      if (!number || !category || seen.has(number)) return [];
+      seen.add(number);
+      return [{ number, category, categoryName: String(item.categoryName || '') }];
+    });
+    return selectionCache;
   }
 
   function storeSelection(value) {
-    try { sessionStorage.setItem(selectionKey, JSON.stringify(value)); } catch { /* selection still works until navigation */ }
+    selectionCache = value;
+    try { sessionStorage.setItem(selectionKey, JSON.stringify(value)); } catch { /* still works for this tab via selectionCache */ }
   }
 
   function selectionURL(value) {
@@ -186,11 +199,14 @@
   }
 
   function selectionMode() {
-    try { return sessionStorage.getItem(selectionModeKey) === 'true'; } catch { return false; }
+    if (selectionModeCache !== null) return selectionModeCache;
+    try { selectionModeCache = sessionStorage.getItem(selectionModeKey) === 'true'; } catch { selectionModeCache = false; }
+    return selectionModeCache;
   }
 
   function storeSelectionMode(value) {
-    try { sessionStorage.setItem(selectionModeKey, String(value)); } catch { /* selection still works until navigation */ }
+    selectionModeCache = value;
+    try { sessionStorage.setItem(selectionModeKey, String(value)); } catch { /* still works for this tab via selectionModeCache */ }
   }
 
   function initializeSelection(root) {
