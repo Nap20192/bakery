@@ -49,7 +49,7 @@ small { display: block; color: var(--ink-muted); font-size: 0.78rem; }
 .progress.htmx-request { inset-right: 18%; opacity: 1; }
 .htmx-request .progress { inset-right: 18%; opacity: 1; }
 .app-shell { min-height: 100dvh; }
-.topbar { position: sticky; z-index: 80; top: 0; display: flex; align-items: center; gap: 32px; min-height: 68px; padding: 10px max(20px, calc((100vw - var(--max)) / 2)); border-bottom: 1px solid var(--line-soft); background: rgba(245, 240, 232, 0.96); }
+.topbar { display: flex; align-items: center; gap: 32px; min-height: 68px; padding: 10px max(20px, calc((100vw - var(--max)) / 2)); border-bottom: 1px solid var(--line-soft); background: rgba(245, 240, 232, 0.96); }
 .brand { display: inline-flex; align-items: center; gap: 10px; min-width: max-content; color: var(--ink); text-decoration: none; }
 .brand strong { display: block; font-family: var(--font-serif); font-size: 1.1rem; font-weight: 600; line-height: 1.05; }
 .brand small { font-size: 0.66rem; }
@@ -232,7 +232,7 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .choice-letter { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 50%; color: white; background: var(--ink-soft); font-family: var(--font-serif); font-size: 1.1rem; }
 .category-choice-amber .choice-letter { background: #a76b1f; }.category-choice-sky .choice-letter { background: #39718d; }.category-choice-violet .choice-letter { background: #74558b; }.category-choice-emerald .choice-letter { background: #477a62; }.category-choice-rose .choice-letter { background: #995565; }
 .catalog-groups { display: grid; gap: 18px; }
-.catalog-group h3 { position: sticky; z-index: 5; top: 68px; padding: 8px 0; color: var(--ink-soft); background: var(--paper); font-family: var(--font-mono); text-transform: uppercase; }
+.catalog-group h3 { position: sticky; z-index: 5; top: 0; padding: 8px 0; color: var(--ink-soft); background: var(--paper); font-family: var(--font-mono); text-transform: uppercase; }
 .catalog-list { border-top: 1px solid var(--line); }
 .catalog-row { display: grid; grid-template-columns: minmax(160px, 1fr) 92px 92px; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line-soft); }
 .catalog-row > label { display: grid; gap: 3px; }
