@@ -117,7 +117,7 @@ func (s *server) ordersPage(w http.ResponseWriter, r *http.Request) {
 	}
 	if application.CanUseProduction(viewer) {
 		if filters.FulfillmentFrom == "" || filters.FulfillmentTo == "" {
-			from := startOfDay(time.Now()).AddDate(0, 0, -1)
+			from := startOfDay(time.Now())
 			filters.FulfillmentFrom = from.Format(time.DateOnly)
 			filters.FulfillmentTo = from.AddDate(0, 0, 4).Format(time.DateOnly)
 		}
@@ -626,18 +626,8 @@ func buildOrderMatrix(orders []contract.Order, shops []contract.Department, from
 		}
 		byDateShop[order.FulfillmentDate][shopID] = append(byDateShop[order.FulfillmentDate][shopID], order)
 	}
-	today := startOfDay(time.Now())
-	var futureDays, pastDays []time.Time
+	rows := make([]matrixRow, 0, 5)
 	for day := from; !day.After(to); day = day.AddDate(0, 0, 1) {
-		if day.Before(today) {
-			pastDays = append(pastDays, day)
-		} else {
-			futureDays = append(futureDays, day)
-		}
-	}
-	days := append(futureDays, pastDays...)
-	rows := make([]matrixRow, 0, len(days))
-	for _, day := range days {
 		key := day.Format(time.DateOnly)
 		row := matrixRow{Date: key, Label: weekdayLabel(day), Tone: dayTone(day)}
 		for _, shop := range shops {
