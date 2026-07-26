@@ -626,8 +626,18 @@ func buildOrderMatrix(orders []contract.Order, shops []contract.Department, from
 		}
 		byDateShop[order.FulfillmentDate][shopID] = append(byDateShop[order.FulfillmentDate][shopID], order)
 	}
-	rows := make([]matrixRow, 0, 5)
-	for day := to; !day.Before(from); day = day.AddDate(0, 0, -1) {
+	today := startOfDay(time.Now())
+	var futureDays, pastDays []time.Time
+	for day := from; !day.After(to); day = day.AddDate(0, 0, 1) {
+		if day.Before(today) {
+			pastDays = append(pastDays, day)
+		} else {
+			futureDays = append(futureDays, day)
+		}
+	}
+	days := append(futureDays, pastDays...)
+	rows := make([]matrixRow, 0, len(days))
+	for _, day := range days {
 		key := day.Format(time.DateOnly)
 		row := matrixRow{Date: key, Label: weekdayLabel(day), Tone: dayTone(day)}
 		for _, shop := range shops {
