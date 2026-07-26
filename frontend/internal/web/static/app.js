@@ -17,6 +17,13 @@
   });
 
   document.addEventListener('htmx:afterSwap', () => initialize(document));
+  document.addEventListener('htmx:historyRestore', () => {
+    // htmx's own back/forward cache swaps in a stringified DOM snapshot: listeners
+    // are gone but data-ready attributes baked into that snapshot survive, so the
+    // usual :not([data-ready]) guards would skip re-wiring everything silently.
+    document.querySelectorAll('[data-ready]').forEach((el) => el.removeAttribute('data-ready'));
+    initialize(document);
+  });
   document.addEventListener('DOMContentLoaded', () => {
     initialize(document);
     initializeTelegram();
