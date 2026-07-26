@@ -21,7 +21,7 @@
     </nav>
     <div class="selection-actions" data-selection-toolbar>
       <button class="button" type="button" data-selection-toggle aria-pressed="false">Выбрать заказы</button>
-      <a class="button button-primary" href="/orders/selection" data-selection-open hidden>Продолжить · <span data-selection-count>0</span></a>
+      <a class="button button-primary" href="/orders/selection" data-selection-open hx-boost="false" hidden>Продолжить · <span data-selection-count>0</span></a>
     </div>
   </div>
   {{if $data.Matrix}}
