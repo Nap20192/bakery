@@ -2,23 +2,27 @@
 {{$data := .Data}}
 <section class="page orders-page">
 {{if canUseProduction .Viewer}}
-  {{/* Shared chrome (toggle → title+window-nav → tabs) is laid out identically
-       to orders-table so switching views doesn't shift anything. */}}
-  {{template "view-switch" (dict "CurrentPath" .CurrentPath "CategoryID" $data.Filters.CategoryID)}}
+  {{/* Shared chrome (title → toggle+window-nav → tabs+actions) is laid out
+       identically to orders-table so switching views doesn't shift anything. */}}
   <header class="page-heading">
     {{template "page-title" (dict "Title" "Заказы")}}
+  </header>
+  <div class="page-toolbar">
+    {{template "view-switch" (dict "CurrentPath" .CurrentPath "CategoryID" $data.Filters.CategoryID)}}
     <div class="window-nav">
       <a class="button" href="/orders?fulfillment_from={{$data.PrevFrom}}&fulfillment_to={{$data.PrevTo}}&category_id={{$data.Filters.CategoryID}}">← Раньше</a>
       <span>{{$data.Filters.FulfillmentFrom}} — {{$data.Filters.FulfillmentTo}}</span>
       <a class="button" href="/orders?fulfillment_from={{$data.NextFrom}}&fulfillment_to={{$data.NextTo}}&category_id={{$data.Filters.CategoryID}}">Позже →</a>
     </div>
-  </header>
-  <nav class="category-tabs" aria-label="Тип заявки">
-    {{range $data.Categories}}<a class="category-tab category-tab-{{categoryTone .}} {{if eq .ID $data.Filters.CategoryID}}is-active{{end}}" href="/orders?category_id={{.ID}}&fulfillment_from={{$data.Filters.FulfillmentFrom}}&fulfillment_to={{$data.Filters.FulfillmentTo}}" {{if eq .ID $data.Filters.CategoryID}}aria-current="page"{{end}}>{{.Name}}</a>{{end}}
-  </nav>
-  <div class="selection-actions" data-selection-toolbar>
-    <button class="button" type="button" data-selection-toggle aria-pressed="false">Выбрать заказы</button>
-    <a class="button button-primary" href="/orders/selection" data-selection-open hidden>Продолжить · <span data-selection-count>0</span></a>
+  </div>
+  <div class="page-toolbar">
+    <nav class="category-tabs" aria-label="Тип заявки">
+      {{range $data.Categories}}<a class="category-tab category-tab-{{categoryTone .}} {{if eq .ID $data.Filters.CategoryID}}is-active{{end}}" href="/orders?category_id={{.ID}}&fulfillment_from={{$data.Filters.FulfillmentFrom}}&fulfillment_to={{$data.Filters.FulfillmentTo}}" {{if eq .ID $data.Filters.CategoryID}}aria-current="page"{{end}}>{{.Name}}</a>{{end}}
+    </nav>
+    <div class="selection-actions" data-selection-toolbar>
+      <button class="button" type="button" data-selection-toggle aria-pressed="false">Выбрать заказы</button>
+      <a class="button button-primary" href="/orders/selection" data-selection-open hidden>Продолжить · <span data-selection-count>0</span></a>
+    </div>
   </div>
   {{if $data.Matrix}}
   <div class="scroll-frame"><div class="matrix-scroll" role="region" aria-label="Матрица заказов" tabindex="0">

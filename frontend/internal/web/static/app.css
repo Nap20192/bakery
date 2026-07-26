@@ -125,7 +125,7 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .category-border-amber { --cat: #c69139; border-left-color: #c69139 !important; }.category-border-sky { --cat: #5d9ab7; border-left-color: #5d9ab7 !important; }.category-border-violet { --cat: #8a6ca2; border-left-color: #8a6ca2 !important; }.category-border-emerald { --cat: #5e9077; border-left-color: #5e9077 !important; }.category-border-rose { --cat: #b66b79; border-left-color: #b66b79 !important; }.category-border-stone { --cat: #948d84; border-left-color: #948d84 !important; }
 
 .shop-order-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.order-card { position: relative; display: grid; align-content: start; gap: 6px; padding: 9px 11px; border: 1px solid var(--line-soft); border-left: 6px solid var(--cat, var(--line-soft)); border-radius: var(--radius-surface); background: var(--surface); cursor: pointer; }
+.order-card { position: relative; display: grid; align-content: start; gap: 5px; padding: 8px 9px; border: 1px solid var(--line-soft); border-left: 6px solid var(--cat, var(--line-soft)); border-radius: var(--radius-surface); background: var(--surface); cursor: pointer; }
 .order-card:hover { border-color: var(--line); border-left-color: var(--cat, var(--line)); }
 /* Stretched link: the whole card navigates to the order. The main link's overlay
    covers the card; only the foot's own controls (preview, sheet link) sit above. */
@@ -133,17 +133,21 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .order-card-foot a[href], .order-preview-action { position: relative; z-index: 2; }
 /* In selection mode the whole card toggles the pick — controls must not steal clicks. */
 .selection-active .order-card-foot a[href], .selection-active .order-preview-action { pointer-events: none; }
-/* stamp | name over number | count. Name is the human label; the number stays a
-   quiet reference line; the stamp carries the category colour + letter. */
-.order-card-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; color: inherit; text-decoration: none; }
+/* Number stacked over count, always — one column, never side-by-side. That's
+   what lets the matrix column itself run narrow: the row only ever has to fit
+   the number's width, not the number plus the count next to it. */
+.order-card-main { display: grid; gap: 3px; color: inherit; text-decoration: none; }
 .order-card-head { display: grid; gap: 1px; min-width: 0; }
-.order-card-title { font-family: var(--font-mono); font-size: 0.9rem; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
-.order-card-count { display: inline-flex; align-items: baseline; gap: 4px; color: var(--ink-muted); font-size: 0.72rem; white-space: nowrap; }
-.order-card-count strong { color: var(--ink); font-family: var(--font-mono); font-size: 1.02rem; font-weight: 700; }
+.order-card-title { font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+.order-card-count { display: inline-flex; align-items: baseline; gap: 4px; color: var(--ink-muted); font-size: 0.7rem; white-space: nowrap; }
+.order-card-count strong { color: var(--ink); font-family: var(--font-mono); font-size: 0.92rem; font-weight: 700; }
 .order-card-star { color: #c69139; font-size: 0.8rem; }
 /* Hairline ledger divider — separates the meta strip and fills the old empty gap. */
-.order-card-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding-top: 6px; border-top: 1px solid var(--line-soft); }
-.order-card-meta { flex: 1 1 auto; color: var(--ink-muted); font-size: 0.74rem; }
+/* Two rows: name + eye always share the top line; the status/sheet stamp (when
+   present) gets its own line below, so the eye never gets pushed off by wrap. */
+.order-card-foot { display: grid; gap: 4px; padding-top: 6px; border-top: 1px solid var(--line-soft); }
+.order-card-foot-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.order-card-meta { flex: 1 1 auto; min-width: 0; overflow: hidden; color: var(--ink-muted); font-size: 0.74rem; text-overflow: ellipsis; white-space: nowrap; }
 .status-done { color: var(--success); background: var(--success-soft); }
 .order-preview-action { display: inline-grid; width: 30px; height: 30px; min-height: 30px; padding: 0; border: 0; border-radius: var(--radius-control); color: var(--ink-soft); background: transparent; place-items: center; }
 .order-preview-action .nav-ico { display: block; width: 18px; height: 18px; padding: 0; }
@@ -152,12 +156,12 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .order-card.is-cancelled .order-card-title { text-decoration: line-through; }
 .order-card.is-cancelled { border-left-color: var(--ink-muted) !important; }
 /* Inset, because an outline on a matrix card is clipped by the scroll container. */
-/* Selection mode is unmistakable: every selectable card wears a checkbox (the
-   count steps aside for it), and picking one fills the box and rings the whole
-   card in the accent colour — the category stripe included, so the outline stays
-   square instead of lopsided. */
+/* Selection mode is unmistakable: every selectable card wears a checkbox, and
+   picking one fills the box and rings the whole card in the accent colour —
+   the category stripe included, so the outline stays square instead of lopsided. */
 .selection-active .order-card { cursor: pointer; user-select: none; padding-right: 34px; transition: box-shadow 120ms ease, background 120ms ease; }
-.selection-active .order-card-count { display: none; }
+/* visibility, not display: none — keeps the count's box (and thus card height,
+   even stacked on mobile) so entering selection mode never reflows the grid. */
 .selection-active .order-card::after { position: absolute; top: 8px; right: 9px; display: grid; width: 20px; height: 20px; border: 2px solid var(--line); border-radius: 50%; background: var(--surface); color: transparent; content: "✓"; font-size: 0.68rem; font-weight: 700; line-height: 1; place-items: center; transition: background 120ms ease, border-color 120ms ease, color 120ms ease; }
 .selection-active .order-card:hover::after { border-color: var(--crust); }
 .order-card.is-selected { border-color: var(--crust) !important; box-shadow: inset 0 0 0 2px var(--crust); background: #f6e5db; }
@@ -168,9 +172,12 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 /* The toggle itself flips to an active look so the mode is obvious from the bar. */
 [data-selection-toggle][aria-pressed="true"] { border-color: var(--crust); color: var(--crust); background: #f6e5db; }
 .sheet-olive { background-color: #e9eddc !important; }.sheet-copper { background-color: #f1e3d8 !important; }.sheet-blue { background-color: #e2eaf0 !important; }.sheet-plum { background-color: #ece2ec !important; }.sheet-moss { background-color: #e3ebe2 !important; }.sheet-clay { background-color: #eee2dc !important; }
-.selection-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; }
-.table-hint { margin: -6px 0 14px; color: var(--ink-soft); font-size: 0.85rem; }
+.selection-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.table-hint { color: var(--ink-soft); font-size: 0.85rem; }
 .window-nav { color: var(--ink-soft); font-size: 0.8rem; }
+/* Pairs the view-switch with the date nav, and the category tabs with whatever
+   sits opposite them — one line each instead of four stacked, full-width rows. */
+.page-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
 .matrix-scroll, .summary-scroll, .journal-scroll, .item-table-wrap { overflow: auto; overscroll-behavior-inline: contain; }
 /* Fade on the right edge of a table that can still be dragged sideways. It has
    to overlay the scroller from outside: table cells are opaque and would paint
@@ -178,13 +185,13 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .scroll-frame { position: relative; }
 .scroll-frame::after { position: absolute; top: 0; right: 0; bottom: 0; width: 30px; background: linear-gradient(to left, rgba(20, 20, 19, 0.16), transparent); content: ""; opacity: 0; pointer-events: none; transition: opacity 140ms ease; }
 .scroll-frame[data-scroll-more="true"]::after { opacity: 1; }
-.order-matrix { width: 100%; min-width: 780px; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
-.order-matrix th, .order-matrix td { width: 220px; border-right: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+.order-matrix { width: 100%; min-width: 560px; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+.order-matrix th, .order-matrix td { width: 168px; border-right: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); vertical-align: top; }
 .order-matrix thead th { position: sticky; z-index: 20; top: 0; padding: 10px 12px; color: var(--ink-soft); background: var(--paper); font-size: 0.75rem; text-align: left; }
 .order-matrix .matrix-axis { position: sticky; z-index: 30; left: 0; width: 92px; padding: 12px 10px; background: var(--paper); }
 .matrix-axis strong, .matrix-axis small { display: block; }
-.matrix-cell { display: grid; gap: 7px; min-height: 108px; padding: 7px; }
-.matrix-cell .order-card { min-height: 0; padding: 8px 10px; }
+.matrix-cell { display: grid; gap: 6px; min-height: 100px; padding: 6px; }
+.matrix-cell .order-card { min-height: 0; padding: 7px 8px; }
 .pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 24px; color: var(--ink-soft); }
 
 .meta-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; overflow: hidden; margin: 0 0 24px; border-radius: var(--radius-surface); background: var(--line); }
@@ -272,10 +279,10 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .selection-orders li { display: inline-flex; align-items: center; gap: 4px; }
 .selection-orders .text-action { width: 44px; min-height: 44px; font-size: 1rem; }
 
-.journal-table, .summary-table { width: 100%; border-collapse: separate; border-spacing: 0; }
-.journal-table { min-width: 560px; }
-.summary-table { min-width: 760px; }
-.journal-table th, .journal-table td, .summary-table th, .summary-table td { min-width: 126px; padding: 8px; border-right: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); background: var(--surface); vertical-align: top; }
+.journal-table, .summary-table { border-collapse: separate; border-spacing: 0; }
+.summary-table { width: 100%; min-width: 760px; }
+.journal-table th, .journal-table td, .summary-table th, .summary-table td { padding: 8px; border-right: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); background: var(--surface); vertical-align: top; }
+.summary-table th, .summary-table td { min-width: 126px; }
 .journal-table thead th, .summary-table thead th { position: sticky; z-index: 20; top: 0; background: var(--paper-deep); text-align: center; }
 .journal-table .journal-axis, .summary-table .summary-axis { position: sticky; z-index: 30; left: 0; min-width: 150px; max-width: 190px; background: var(--paper); text-align: left; }
 .sheet-link { display: grid; gap: 8px; margin-bottom: 8px; padding: 12px; border: 0; border-radius: var(--radius-surface); color: var(--ink); text-decoration: none; }
@@ -288,7 +295,8 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .category-tabs { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 14px; padding: 3px; }
 .category-tab { display: inline-flex; min-height: 44px; align-items: center; padding: 8px 12px; border-bottom: 2px solid transparent; color: var(--ink-soft); font-weight: 700; text-decoration: none; white-space: nowrap; }
 .category-tab.is-active { border-color: currentColor; color: var(--ink); }
-.view-switch { display: inline-flex; gap: 4px; margin-bottom: 14px; padding: 4px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--surface); }
+.view-switch { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--surface); }
+.page-toolbar .category-tabs { margin-bottom: 0; }
 .view-switch .view-tab { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: calc(var(--radius-control) - 4px); color: var(--ink-soft); font-weight: 700; text-decoration: none; }
 .view-switch .view-tab .nav-ico { display: block; width: 20px; height: 20px; padding: 0; }
 .view-switch .view-tab[aria-selected="true"] { color: #ffffff; background: var(--crust); }
@@ -362,10 +370,8 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .shop-order-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .category-admin-grid { grid-template-columns: 1fr; }
   .available-row { grid-template-columns: minmax(180px, 1fr) 1fr; }
-  /* Tablet: shrink the matrix so more day columns fit before it has to scroll. */
-  .order-matrix th, .order-matrix td { width: 200px; }
+  /* Tablet: shrink the day-label column so more days fit before it scrolls. */
   .order-matrix .matrix-axis { width: 78px; }
-  .matrix-cell { min-height: 134px; }
 }
 
 @media (max-width: 640px) {
@@ -391,21 +397,10 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .brand small { display: none; }
   .window-nav { display: grid; grid-template-columns: auto 1fr auto; text-align: center; }
   .window-nav span { align-self: center; font-size: 0.7rem; }
-  .order-matrix { min-width: 420px; }
-  .order-matrix th, .order-matrix td { width: 176px; }
+  .order-matrix { min-width: 400px; }
   .order-matrix .matrix-axis { width: 60px; }
-  .matrix-cell { gap: 6px; min-height: 126px; padding: 6px; }
-  .matrix-cell .order-card { gap: 7px; min-height: 0; padding: 9px; }
-  /* Narrow column can't hold a side-by-side card, so stack it: stamp + name on
-     top, count on its own row. Frees the full cell width for the name and number
-     so neither shatters character-by-character. */
-  .matrix-cell .order-card-main { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "count"; align-items: start; gap: 4px; }
-  .matrix-cell .order-card-head { grid-area: head; }
-  .matrix-cell .order-card-count { grid-area: count; }
-  .matrix-cell .order-card-title { font-size: 0.72rem; overflow-wrap: normal; word-break: normal; }
-  .matrix-cell .order-card-count strong { font-size: 0.92rem; }
+  .matrix-cell .order-card-title { overflow-wrap: normal; word-break: normal; }
   .matrix-cell .order-card-meta, .matrix-cell .order-preview-action { font-size: 0.68rem; }
-  .matrix-cell .order-card-foot { align-items: flex-start; flex-direction: column; gap: 3px; }
   .shop-order-list { grid-template-columns: 1fr; }
   .meta-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .detail-aside { grid-template-columns: minmax(0, 1fr); }
@@ -420,8 +415,8 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .sticky-submit { right: 0; bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom)); left: 0; }
   .sticky-submit > * { flex: 1; }
   .journal-table .journal-axis, .summary-table .summary-axis { min-width: 112px; max-width: 130px; }
-  .summary-table th, .summary-table td, .journal-table th, .journal-table td { min-width: 104px; padding: 7px; }
-  .journal-table th:not(.journal-axis), .journal-table td { min-width: 180px; }
+  .summary-table th, .summary-table td, .journal-table th, .journal-table td { padding: 7px; }
+  .summary-table th, .summary-table td { min-width: 104px; }
   .sheet-link-head { display: grid; gap: 2px; }
   .sheet-link-author { max-width: 18ch; }
   .sheet-link-facts { display: grid; justify-content: start; gap: 2px; }
