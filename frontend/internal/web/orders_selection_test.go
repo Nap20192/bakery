@@ -91,3 +91,16 @@ func TestSelectionScriptRestoresSavedOrdersBeforeClearingThem(t *testing.T) {
 		t.Fatal("empty selection page clears saved orders before restoring its missing query")
 	}
 }
+
+func TestSelectionLinksBypassHTMXBoost(t *testing.T) {
+	t.Parallel()
+	for _, path := range []string{"templates/pages/orders.html", "templates/pages/orders_table.html"} {
+		source, err := frontendFiles.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		if !strings.Contains(string(source), `hx-boost="false"`) {
+			t.Errorf("%s lets HTMX drop repeated order parameters", path)
+		}
+	}
+}
