@@ -71,6 +71,7 @@ func TestTemplatesRenderEveryView(t *testing.T) {
 		{View: "orders", Viewer: shopViewer, Data: ordersData{Page: contract.OrdersPage{Items: []contract.Order{order}, Page: 2, TotalPages: 3}, Categories: []contract.Category{category}}},
 		{View: "order-detail", Viewer: viewer, Data: orderDetailData{Order: order, Groups: []orderItemGroup{{Name: "Хлеб", Items: order.Items}}}},
 		{View: "order-form", Viewer: viewer, Data: orderFormData{Mode: "create", Categories: []contract.Category{category}, Groups: []editorGroup{{Name: "Хлеб", Items: []editorItem{{Dish: dish}}}}}},
+		{View: "drafts", Viewer: shopViewer, Data: draftsData{Drafts: []draftView{{Draft: contract.OrderDraft{Write: contract.OrderWrite{CategoryID: categoryID}, UpdatedAt: time.Now().Format(time.RFC3339)}, Category: &category}}}},
 		{View: "selection", Viewer: viewer, Data: selectionData{Orders: []contract.Order{order}, Rows: buildProductionRows([]contract.Order{order}, nil)}},
 		{View: "orders-table", Viewer: viewer, Data: buildOrdersTable([]contract.Order{order}, []contract.Dish{dish}, []contract.Category{category}, categoryID, time.Now(), time.Now())},
 		{View: "production", Viewer: viewer, Data: productionJournalData{Categories: []contract.Category{category}, Rows: []productionJournalRow{{Date: "2026-07-22", Cells: [][]productionSheetView{{{Sheet: sheet, Category: &category}}}}}, Count: 1}},

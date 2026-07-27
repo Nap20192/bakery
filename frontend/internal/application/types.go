@@ -48,6 +48,10 @@ type OrderFilters struct {
 
 func IsAdmin(viewer *contract.Me) bool { return viewer != nil && viewer.Role == "admin" }
 
+// IsShop reports whether the viewer is a shop user — drafts are a shop-only
+// convenience on the order-creation form.
+func IsShop(viewer *contract.Me) bool { return viewer != nil && viewer.Role == "shop" }
+
 func CanUseProduction(viewer *contract.Me) bool {
 	return viewer != nil && (viewer.Role == "admin" || viewer.Role == "baker")
 }

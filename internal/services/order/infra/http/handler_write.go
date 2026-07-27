@@ -86,6 +86,9 @@ func (h *Handler) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteAppError(w, r, err, "Не удалось создать заказ. Проверьте позиции и количества.")
 		return
 	}
+	// The order is now real — consume the draft it may have come from. A
+	// missing draft is not a failure.
+	_ = h.orderSvc.DeleteOrderDraft(r.Context(), miniAppOrderAuthor(user), input.categoryID)
 	httpx.WriteJSON(w, http.StatusCreated, h.presenter.BuildOrderResponse(r.Context(), order))
 }
 

@@ -34,6 +34,7 @@ func parseTemplates() (*template.Template, error) {
 		"formatQty":        formatQuantity,
 		"inputQty":         inputQuantity,
 		"isAdmin":          application.IsAdmin,
+		"isShop":           application.IsShop,
 		"isset":            isset,
 		"join":             strings.Join,
 		"list":             func(values ...any) []any { return values },

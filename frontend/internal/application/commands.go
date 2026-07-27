@@ -13,6 +13,8 @@ type Commands interface {
 	CancelOrder(ctx context.Context, credentials Credentials, number string) (contract.Order, error)
 	RestoreOrder(ctx context.Context, credentials Credentials, number string) (contract.Order, error)
 	SetOrderFavorite(ctx context.Context, credentials Credentials, number string, favorite bool) (contract.Order, error)
+	SaveOrderDraft(ctx context.Context, credentials Credentials, input contract.OrderWrite) (contract.OrderDraft, error)
+	DeleteOrderDraft(ctx context.Context, credentials Credentials, categoryID int64) error
 	CreateProductionSheet(ctx context.Context, credentials Credentials, input contract.ProductionWrite) (contract.ProductionSheet, error)
 	UpdateProductionSheet(ctx context.Context, credentials Credentials, id int64, input contract.ProductionWrite) (contract.ProductionSheet, error)
 	DeleteProductionSheet(ctx context.Context, credentials Credentials, id int64) error
