@@ -31,8 +31,8 @@
 {{/* production-rows takes the row slice. */}}
 {{define "production-rows"}}
 <table class="production-table">
-<colgroup><col><col class="production-quantity-column"><col class="production-quantity-column"><col class="production-quantity-column"></colgroup>
-<thead><tr><th>Название</th><th>Заказ</th><th>Закладка</th><th>Испечено</th></tr></thead>
+<colgroup><col><col class="production-quantity-column"><col class="production-quantity-column"></colgroup>
+<thead><tr><th>Название</th><th>Заявка</th><th>Закладка</th></tr></thead>
 {{range $index, $_ := .}}<tbody data-production-row data-linked="{{.Linked}}" data-initial-linked="{{.Linked}}">
 <tr>
   <td>
@@ -44,9 +44,9 @@
   </td>
   <td class="ordered" data-ordered="{{.OrderedQuantity}}">{{formatQty .OrderedQuantity}}</td>
   <td><input class="quantity-input" type="number" name="loaded_quantity" min="0" step="1" inputmode="numeric" value="{{formatQty .LoadedQuantity}}" aria-label="Общая закладка: {{.ProductName}}" required></td>
-  <td><input class="quantity-input" type="number" name="produced_quantity" min="0" step="1" inputmode="numeric" value="{{formatQty .ProducedQuantity}}" aria-label="Общий выход: {{.ProductName}}" required></td>
+  <td><input type="hidden" name="produced_quantity" value="{{formatQty .ProducedQuantity}}"></td>
 </tr>
-<tr class="production-comment-row"><td colspan="4"><label class="field item-comment" {{if not .ReasonConflict}}hidden{{end}}><span>Комментарий к позиции</span><input id="production-reason-{{$index}}" name="reason" value="{{.Reason}}" maxlength="200" placeholder="{{if .ReasonConflict}}Укажите одну общую причину{{else}}Если есть отклонение{{end}}" {{if .ReasonConflict}}required{{end}}>{{if .ReasonConflict}}<small>Раньше причины различались — выберите одну общую.</small>{{end}}</label></td></tr>
+<tr class="production-comment-row"><td colspan="3"><label class="field item-comment" {{if not .ReasonConflict}}hidden{{end}}><span>Комментарий к позиции</span><input id="production-reason-{{$index}}" name="reason" value="{{.Reason}}" maxlength="200" placeholder="{{if .ReasonConflict}}Укажите одну общую причину{{else}}Если есть отклонение{{end}}" {{if .ReasonConflict}}required{{end}}>{{if .ReasonConflict}}<small>Раньше причины различались — выберите одну общую.</small>{{end}}</label></td></tr>
 </tbody>{{end}}
 </table>
 {{end}}
