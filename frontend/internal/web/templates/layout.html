@@ -30,6 +30,7 @@
         <a href="/orders" {{if or (active .CurrentPath "/orders") (eq .CurrentPath "/orders/table")}}aria-current="page"{{end}}>{{template "navicon" "grid"}}<span class="nav-label">Заказы</span></a>
         {{if canUseProduction .Viewer}}<a href="/production" {{if active .CurrentPath "/production"}}aria-current="page"{{end}}>{{template "navicon" "sheet"}}<span class="nav-label">Отработки</span></a>{{end}}
         {{if canManageOrders .Viewer}}<a href="/orders/new" {{if active .CurrentPath "/orders/new"}}aria-current="page"{{end}}>{{template "navicon" "plus"}}<span class="nav-label">Новая заявка</span></a>{{end}}
+        {{if isShop .Viewer}}<a href="/drafts" {{if active .CurrentPath "/drafts"}}aria-current="page"{{end}}>{{template "navicon" "draft"}}<span class="nav-label">Черновики</span></a>{{end}}
         {{if canUseProduction .Viewer}}<a href="/calculator" {{if active .CurrentPath "/calculator"}}aria-current="page"{{end}}>{{template "navicon" "bowl"}}<span class="nav-label">Тесто</span></a>{{end}}
         {{if isAdmin .Viewer}}
           <a href="/admin/users" {{if active .CurrentPath "/admin/users"}}aria-current="page"{{end}}>{{template "navicon" "users"}}<span class="nav-label">Пользователи</span></a>

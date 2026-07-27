@@ -46,6 +46,10 @@ type UseCase interface {
 	EnsureDefaultOrderTemplates(ctx context.Context, seeds ...CatalogSeed) (EnsureDefaultTemplatesResult, error)
 	RunCleanupTicker(ctx context.Context, interval, retention time.Duration) error
 	DeleteOrdersOlderThan(ctx context.Context, now time.Time, retention time.Duration) (int64, error)
+	SaveOrderDraft(ctx context.Context, input SaveOrderDraftInput) (orderdomain.OrderDraft, error)
+	GetOrderDraft(ctx context.Context, username string, categoryID int64) (orderdomain.OrderDraft, error)
+	ListOrderDrafts(ctx context.Context, username string) ([]orderdomain.OrderDraft, error)
+	DeleteOrderDraft(ctx context.Context, username string, categoryID int64) error
 }
 
 // Repository is the persistence port. The infra/repo adapter implements it over
@@ -78,6 +82,11 @@ type Repository interface {
 	SetDishCatalogSortOrder(ctx context.Context, code string, sortOrder int64) error
 	DeleteDishCatalogItem(ctx context.Context, code string) error
 	DeleteOrdersOlderThan(ctx context.Context, cutoff time.Time) (int64, error)
+	SaveOrderDraft(ctx context.Context, input SaveOrderDraftRepositoryInput) (orderdomain.OrderDraft, error)
+	GetOrderDraft(ctx context.Context, username string, categoryID int64) (orderdomain.OrderDraft, error)
+	ListOrderDrafts(ctx context.Context, username string) ([]orderdomain.OrderDraft, error)
+	DeleteOrderDraft(ctx context.Context, username string, categoryID int64) error
+	DeleteOrderDraftsOlderThan(ctx context.Context, cutoff time.Time) (int64, error)
 }
 
 // Department is the persistence view of a department needed to create an order.
@@ -148,6 +157,29 @@ type UpdateOrderInput struct {
 	FromDepartmentID  *int64
 	ToDepartmentID    *int64
 	CreatedByUsername string
+	FulfillmentDate   time.Time
+	Comments          orderdomain.OrderComments
+}
+
+// SaveOrderDraftInput is the raw, not-yet-validated form of a draft — it goes
+// through the same validation as CreateOrder (item resolution, fulfillment
+// date, source department, category) before being persisted.
+type SaveOrderDraftInput struct {
+	CreatedByUsername string
+	CategoryID        int64
+	FromDepartmentID  *int64
+	Items             []orderdomain.OrderItem
+	FulfillmentDate   time.Time
+	Comments          orderdomain.OrderComments
+}
+
+// SaveOrderDraftRepositoryInput carries an already-validated draft for the
+// repository to upsert (one row per created_by_username + category_id).
+type SaveOrderDraftRepositoryInput struct {
+	CreatedByUsername string
+	CategoryID        int64
+	FromDepartmentID  int64
+	Items             []orderdomain.OrderItem
 	FulfillmentDate   time.Time
 	Comments          orderdomain.OrderComments
 }

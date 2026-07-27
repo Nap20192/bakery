@@ -157,6 +157,17 @@ type OrderCounter struct {
 	CategoryID   int64  `json:"category_id"`
 }
 
+type OrderDraft struct {
+	ID                int64              `json:"id"`
+	CreatedByUsername string             `json:"created_by_username"`
+	CategoryID        int64              `json:"category_id"`
+	FromDepartmentID  *int64             `json:"from_department_id"`
+	FulfillmentDate   pgtype.Date        `json:"fulfillment_date"`
+	Comments          []byte             `json:"comments"`
+	Items             []byte             `json:"items"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+}
+
 type OrderHistory struct {
 	ID                int64              `json:"id"`
 	OrderID           int64              `json:"order_id"`

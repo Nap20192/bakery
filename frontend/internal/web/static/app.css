@@ -220,6 +220,13 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .monitor-breakdown { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }.monitor-breakdown > summary { cursor: pointer; font-weight: 700; }.monitor-breakdown section { margin-top: 12px; }.monitor-breakdown h3 { margin-bottom: 6px; }
 .ingredient-list { display: grid; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; font-size: 0.8rem; }
 
+.drafts-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.draft-card { display: grid; align-content: start; gap: 8px; padding: 10px 12px; border: 1px solid var(--line-soft); border-left: 6px solid var(--cat, var(--line-soft)); border-radius: var(--radius-surface); background: var(--surface); }
+.draft-card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.draft-card-updated { color: var(--ink-muted); font-size: 0.72rem; white-space: nowrap; }
+.draft-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 6px; border-top: 1px solid var(--line-soft); }
+.draft-card-foot form { display: inline; }
+
 .editor-form { display: grid; gap: 20px; }
 .editor-step { padding: 22px 0; border-top: 1px solid var(--line); }
 .step-number { display: grid; min-width: 32px; height: 32px; place-items: center; border-radius: 50%; color: var(--paper); background: var(--ink); font-family: var(--font-mono); }
@@ -369,6 +376,7 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .detail-aside { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .monitor-panel { grid-column: 1 / -1; }
   .shop-order-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .drafts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .category-admin-grid { grid-template-columns: 1fr; }
   .available-row { grid-template-columns: minmax(180px, 1fr) 1fr; }
   /* Tablet: shrink the day-label column so more days fit before it scrolls. */
@@ -403,6 +411,7 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .matrix-cell .order-card-title { overflow-wrap: normal; word-break: normal; }
   .matrix-cell .order-card-meta, .matrix-cell .order-preview-action { font-size: 0.68rem; }
   .shop-order-list { grid-template-columns: 1fr; }
+  .drafts-grid { grid-template-columns: 1fr; }
   .meta-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .detail-aside { grid-template-columns: minmax(0, 1fr); }
   /* Quantities are the point of this page, so the table compresses to fit

@@ -186,6 +186,64 @@ paths:
         "403": { $ref: "#/components/responses/Error" }
         "409": { $ref: "#/components/responses/Error" }
 
+  /orders/draft:
+    post:
+      tags: [orders]
+      summary: Save (upsert) the caller's draft for a category (shop only)
+      description: One draft per user per category; saving again for the same category overwrites it.
+      operationId: saveOrderDraft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OrderWrite" }
+      responses:
+        "200":
+          description: Saved draft
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderDraft" }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /orders/drafts:
+    get:
+      tags: [orders]
+      summary: List the caller's drafts, one per category (shop only)
+      operationId: listOrderDrafts
+      responses:
+        "200":
+          description: Drafts
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/OrderDraft" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /orders/draft/{categoryId}:
+    get:
+      tags: [orders]
+      summary: Get the caller's draft for a category (shop only)
+      operationId: getOrderDraft
+      parameters: [{ $ref: "#/components/parameters/DraftCategoryID" }]
+      responses:
+        "200":
+          description: The draft
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderDraft" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+    delete:
+      tags: [orders]
+      summary: Delete the caller's draft for a category (shop only)
+      operationId: deleteOrderDraft
+      parameters: [{ $ref: "#/components/parameters/DraftCategoryID" }]
+      responses:
+        "204": { description: Deleted }
+        "403": { $ref: "#/components/responses/Error" }
+
   /orders/{id}:
     get:
       tags: [orders]
@@ -699,6 +757,11 @@ components:
       in: path
       required: true
       schema: { type: integer, format: int64 }
+    DraftCategoryID:
+      name: categoryId
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
 
   responses:
     Error:
@@ -879,6 +942,13 @@ components:
           format: int64
           description: Required on create; ignored on update (category is immutable)
         comments: { $ref: "#/components/schemas/Comments" }
+
+    OrderDraft:
+      type: object
+      required: [write, updated_at]
+      properties:
+        write: { $ref: "#/components/schemas/OrderWrite" }
+        updated_at: { type: string, format: date-time }
 
     DishCatalogItem:
       type: object

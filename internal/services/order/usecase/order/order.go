@@ -46,42 +46,78 @@ func NewService(repo Repository) *Service {
 	}
 }
 
+// validatedOrderWrite is the outcome of validateOrderWrite: resolved items
+// plus everything CreateOrder and SaveOrderDraft both need to persist their
+// write (source department, category, normalized fulfillment date).
+type validatedOrderWrite struct {
+	Items           []orderdomain.OrderItem
+	FulfillmentDate time.Time
+	Source          Department
+	Category        orderdomain.OrderCategory
+}
+
+// validateOrderWrite runs the validation shared by CreateOrder and
+// SaveOrderDraft: resolve items against the dish catalog, drop zero-quantity
+// lines, reject a past fulfillment date, and check the source department and
+// category both exist. now is the reference point for "not in the past" —
+// CreateOrder passes the order's createdAt, SaveOrderDraft passes time.Now().
+func (s *Service) validateOrderWrite(
+	ctx context.Context,
+	items []orderdomain.OrderItem,
+	categoryID int64,
+	fromDepartmentID *int64,
+	rawFulfillmentDate time.Time,
+	now time.Time,
+) (validatedOrderWrite, error) {
+	resolvedItems, err := s.resolveOrderItems(ctx, items)
+	if err != nil {
+		return validatedOrderWrite{}, err
+	}
+	resolvedItems = positiveOrderItems(resolvedItems)
+	if len(resolvedItems) == 0 {
+		return validatedOrderWrite{}, fmt.Errorf("order must contain items")
+	}
+
+	fulfillmentDate := s.domain.NormalizeFulfillmentDate(rawFulfillmentDate, now)
+	if err := validateFulfillmentDateNotPast(fulfillmentDate, now); err != nil {
+		return validatedOrderWrite{}, err
+	}
+	source, err := s.orderSourceDepartment(ctx, fromDepartmentID)
+	if err != nil {
+		return validatedOrderWrite{}, err
+	}
+	if categoryID <= 0 {
+		return validatedOrderWrite{}, ErrCategoryRequired
+	}
+	category, err := s.repo.GetOrderCategoryByID(ctx, categoryID)
+	if err != nil {
+		return validatedOrderWrite{}, ErrCategoryNotFound
+	}
+	return validatedOrderWrite{
+		Items:           resolvedItems,
+		FulfillmentDate: fulfillmentDate,
+		Source:          source,
+		Category:        category,
+	}, nil
+}
+
 func (s *Service) CreateOrder(ctx context.Context, input orderdomain.CreateOrderInput) (orderdomain.Order, error) {
 	if s.repo == nil {
 		return orderdomain.Order{}, fmt.Errorf("missing order repository")
 	}
-	resolvedItems, err := s.resolveOrderItems(ctx, input.Items)
-	if err != nil {
-		return orderdomain.Order{}, err
-	}
-	input.Items = positiveOrderItems(resolvedItems)
-	if len(input.Items) == 0 {
-		return orderdomain.Order{}, fmt.Errorf("order must contain items")
-	}
-
 	createdAt := s.domain.NormalizeCreatedAt(input.Date)
-	fulfillmentDate := s.domain.NormalizeFulfillmentDate(input.FulfillmentDate, createdAt)
-	if err := validateFulfillmentDateNotPast(fulfillmentDate, createdAt); err != nil {
-		return orderdomain.Order{}, err
-	}
-	source, err := s.orderSourceDepartment(ctx, input.FromDepartmentID)
+	validated, err := s.validateOrderWrite(ctx, input.Items, input.CategoryID, input.FromDepartmentID, input.FulfillmentDate, createdAt)
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
-	if input.CategoryID <= 0 {
-		return orderdomain.Order{}, ErrCategoryRequired
-	}
-	category, err := s.repo.GetOrderCategoryByID(ctx, input.CategoryID)
-	if err != nil {
-		return orderdomain.Order{}, ErrCategoryNotFound
-	}
+	input.Items = validated.Items
 
 	order, err := s.repo.CreateOrder(ctx, CreateOrderRepositoryInput{
 		Input:           input,
-		Source:          source,
-		Category:        category,
+		Source:          validated.Source,
+		Category:        validated.Category,
 		CreatedAt:       createdAt,
-		FulfillmentDate: fulfillmentDate,
+		FulfillmentDate: validated.FulfillmentDate,
 		CounterDay:      s.domain.OrderCounterDay(createdAt),
 	})
 	if err != nil {
@@ -732,6 +768,49 @@ func (s *Service) DeleteOrdersOlderThan(ctx context.Context, now time.Time, rete
 	return count, nil
 }
 
+func (s *Service) SaveOrderDraft(ctx context.Context, input SaveOrderDraftInput) (orderdomain.OrderDraft, error) {
+	if s.repo == nil {
+		return orderdomain.OrderDraft{}, fmt.Errorf("missing order repository")
+	}
+	validated, err := s.validateOrderWrite(ctx, input.Items, input.CategoryID, input.FromDepartmentID, input.FulfillmentDate, time.Now().UTC())
+	if err != nil {
+		return orderdomain.OrderDraft{}, err
+	}
+	draft, err := s.repo.SaveOrderDraft(ctx, SaveOrderDraftRepositoryInput{
+		CreatedByUsername: input.CreatedByUsername,
+		CategoryID:        validated.Category.ID,
+		FromDepartmentID:  validated.Source.ID,
+		Items:             validated.Items,
+		FulfillmentDate:   validated.FulfillmentDate,
+		Comments:          input.Comments,
+	})
+	if err != nil {
+		return orderdomain.OrderDraft{}, err
+	}
+	return draft, nil
+}
+
+func (s *Service) GetOrderDraft(ctx context.Context, username string, categoryID int64) (orderdomain.OrderDraft, error) {
+	if s.repo == nil {
+		return orderdomain.OrderDraft{}, fmt.Errorf("missing order repository")
+	}
+	return s.repo.GetOrderDraft(ctx, strings.TrimSpace(username), categoryID)
+}
+
+func (s *Service) ListOrderDrafts(ctx context.Context, username string) ([]orderdomain.OrderDraft, error) {
+	if s.repo == nil {
+		return nil, fmt.Errorf("missing order repository")
+	}
+	return s.repo.ListOrderDrafts(ctx, strings.TrimSpace(username))
+}
+
+func (s *Service) DeleteOrderDraft(ctx context.Context, username string, categoryID int64) error {
+	if s.repo == nil {
+		return fmt.Errorf("missing order repository")
+	}
+	return s.repo.DeleteOrderDraft(ctx, strings.TrimSpace(username), categoryID)
+}
+
 func (s *Service) RunCleanupTicker(ctx context.Context, interval, retention time.Duration) error {
 	if interval <= 0 {
 		interval = 24 * time.Hour
@@ -744,9 +823,16 @@ func (s *Service) RunCleanupTicker(ctx context.Context, interval, retention time
 		deleted, err := s.DeleteOrdersOlderThan(ctx, time.Now(), retention)
 		if err != nil {
 			slog.ErrorContext(ctx, "old orders cleanup failed", "error", err)
+		} else {
+			slog.InfoContext(ctx, "old orders cleanup finished", "deleted", deleted, "retention", retention.String())
+		}
+		cutoff := time.Now().UTC().Add(-retention)
+		draftsDeleted, err := s.repo.DeleteOrderDraftsOlderThan(ctx, cutoff)
+		if err != nil {
+			slog.ErrorContext(ctx, "old order drafts cleanup failed", "error", err)
 			return
 		}
-		slog.InfoContext(ctx, "old orders cleanup finished", "deleted", deleted, "retention", retention.String())
+		slog.InfoContext(ctx, "old order drafts cleanup finished", "deleted", draftsDeleted, "retention", retention.String())
 	}
 
 	run()

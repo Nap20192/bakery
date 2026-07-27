@@ -97,6 +97,28 @@ func (c *Client) SetOrderFavorite(ctx context.Context, cred application.Credenti
 	return c.orderAction(ctx, cred, number, "/favorite", http.MethodPatch, contract.FavoriteUpdate{Favorite: favorite})
 }
 
+func (c *Client) SaveOrderDraft(ctx context.Context, cred application.Credentials, body contract.OrderWrite) (contract.OrderDraft, error) {
+	var out contract.OrderDraft
+	err := c.do(ctx, cred, request{method: http.MethodPost, path: "/orders/draft", body: body, out: &out})
+	return out, err
+}
+
+func (c *Client) OrderDraft(ctx context.Context, cred application.Credentials, categoryID int64) (contract.OrderDraft, error) {
+	var out contract.OrderDraft
+	err := c.do(ctx, cred, request{method: http.MethodGet, path: idPath("/orders/draft/", categoryID), out: &out})
+	return out, err
+}
+
+func (c *Client) OrderDrafts(ctx context.Context, cred application.Credentials) ([]contract.OrderDraft, error) {
+	var out []contract.OrderDraft
+	err := c.do(ctx, cred, request{method: http.MethodGet, path: "/orders/drafts", out: &out})
+	return out, err
+}
+
+func (c *Client) DeleteOrderDraft(ctx context.Context, cred application.Credentials, categoryID int64) error {
+	return c.do(ctx, cred, request{method: http.MethodDelete, path: idPath("/orders/draft/", categoryID)})
+}
+
 func (c *Client) orderAction(ctx context.Context, cred application.Credentials, number, suffix, method string, body any) (contract.Order, error) {
 	var out contract.Order
 	err := c.do(ctx, cred, request{method: method, path: resourcePath("/orders/", number) + suffix, body: body, out: &out})

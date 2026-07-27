@@ -140,6 +140,21 @@ type CreateOrderInput struct {
 	Comments          OrderComments
 }
 
+// OrderDraft — черновик заявки: один на пользователя на тип заявки (категорию),
+// повторное сохранение перезаписывает предыдущий. Не участвует в нумерации
+// заказов и не имеет своих доменных событий — это временная заготовка,
+// удаляемая при создании реального заказа из неё же или сборщиком мусора по
+// возрасту (см. RunCleanupTicker).
+type OrderDraft struct {
+	CreatedByUsername string
+	CategoryID        int64
+	FromDepartmentID  *int64
+	Items             []OrderItem
+	FulfillmentDate   time.Time
+	Comments          OrderComments
+	UpdatedAt         time.Time
+}
+
 // CategoryColors — допустимые слаги цвета типа заявки. Фронтенд сопоставляет
 // слаг с палитрой; хранение произвольного HEX не поддерживается сознательно,
 // чтобы карточки оставались в едином стиле.

@@ -160,6 +160,12 @@ type OrderWrite struct {
 	Comments         Comments         `json:"comments"`
 }
 
+// OrderDraft is a saved, unfinished OrderWrite — one per user per category.
+type OrderDraft struct {
+	Write     OrderWrite `json:"write"`
+	UpdatedAt string     `json:"updated_at"`
+}
+
 type FavoriteUpdate struct {
 	Favorite bool `json:"favorite"`
 }

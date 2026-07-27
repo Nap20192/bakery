@@ -80,6 +80,34 @@ type orderFormData struct {
 	GeneralComment   string
 }
 
+// draftsData backs the standalone /drafts page (shop only).
+type draftsData struct {
+	Drafts []draftView
+}
+
+// draftView pairs a draft with its resolved category (for the badge/name),
+// since contract.OrderDraft only carries the category ID.
+type draftView struct {
+	Draft    contract.OrderDraft
+	Category *contract.Category
+}
+
+func buildDraftViews(drafts []contract.OrderDraft, categories []contract.Category) []draftView {
+	byID := make(map[int64]contract.Category, len(categories))
+	for _, category := range categories {
+		byID[category.ID] = category
+	}
+	views := make([]draftView, 0, len(drafts))
+	for _, draft := range drafts {
+		view := draftView{Draft: draft}
+		if category, ok := byID[draft.Write.CategoryID]; ok {
+			view.Category = &category
+		}
+		views = append(views, view)
+	}
+	return views
+}
+
 type selectionData struct {
 	Orders []contract.Order
 	// Numbers feeds the monitor panel, which builds its request from plain
@@ -188,7 +216,79 @@ func (s *server) orderNewPage(w http.ResponseWriter, r *http.Request) {
 		}
 		source = &order
 	}
+	if categoryID, err := strconv.ParseInt(r.URL.Query().Get("draft_category_id"), 10, 64); err == nil && categoryID > 0 && application.IsShop(viewer) {
+		draft, err := s.queries.OrderDraft(r.Context(), cred, categoryID)
+		if err == nil {
+			s.renderOrderFormFromWrite(w, r, viewer, cred, http.StatusOK, "create", nil, draft.Write, "")
+			return
+		}
+	}
 	s.renderOrderForm(w, r, viewer, cred, http.StatusOK, "create", source, "")
+}
+
+func (s *server) orderSaveDraft(w http.ResponseWriter, r *http.Request) {
+	viewer, cred, ok := s.requireViewer(w, r)
+	if !ok {
+		return
+	}
+	if !application.IsShop(viewer) {
+		s.renderError(w, r, http.StatusForbidden, "Черновики доступны только магазину.")
+		return
+	}
+	body, err := parseOrderWrite(r)
+	if err != nil {
+		s.renderOrderFormFromWrite(w, r, viewer, cred, http.StatusUnprocessableEntity, "create", nil, body, err.Error())
+		return
+	}
+	if _, err := s.commands.SaveOrderDraft(r.Context(), cred, body); err != nil {
+		s.renderOrderFormFromWrite(w, r, viewer, cred, statusOr(err, http.StatusBadGateway), "create", nil, body, application.MessageOf(err, "Не удалось сохранить черновик."))
+		return
+	}
+	s.redirect(w, r, "/orders/new?draft_category_id="+strconv.FormatInt(body.CategoryID, 10)+"&success="+url.QueryEscape("Черновик сохранён."))
+}
+
+func (s *server) orderDeleteDraft(w http.ResponseWriter, r *http.Request) {
+	viewer, cred, ok := s.requireViewer(w, r)
+	if !ok {
+		return
+	}
+	if !application.IsShop(viewer) {
+		s.renderError(w, r, http.StatusForbidden, "Черновики доступны только магазину.")
+		return
+	}
+	categoryID, err := strconv.ParseInt(r.PathValue("categoryId"), 10, 64)
+	if err != nil || categoryID <= 0 {
+		s.renderError(w, r, http.StatusBadRequest, "Некорректный тип заявки.")
+		return
+	}
+	if err := s.commands.DeleteOrderDraft(r.Context(), cred, categoryID); err != nil {
+		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось удалить черновик."))
+		return
+	}
+	s.redirect(w, r, "/drafts?success="+url.QueryEscape("Черновик удалён."))
+}
+
+func (s *server) draftsPage(w http.ResponseWriter, r *http.Request) {
+	viewer, cred, ok := s.requireViewer(w, r)
+	if !ok {
+		return
+	}
+	if !application.IsShop(viewer) {
+		s.renderError(w, r, http.StatusForbidden, "Черновики доступны только магазину.")
+		return
+	}
+	categories, err := s.queries.Categories(r.Context(), cred)
+	if err != nil {
+		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить типы заявок."))
+		return
+	}
+	raw, err := s.queries.OrderDrafts(r.Context(), cred)
+	if err != nil {
+		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить черновики."))
+		return
+	}
+	data := draftsData{Drafts: buildDraftViews(raw, categories)}
+	s.render(w, r, http.StatusOK, page{Title: "Черновики", View: "drafts", Viewer: viewer, Success: queryMessage(r, "success"), Data: data})
 }
 
 func (s *server) orderEditPage(w http.ResponseWriter, r *http.Request) {
@@ -226,6 +326,9 @@ func (s *server) orderCreate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		s.renderOrderFormFromWrite(w, r, viewer, cred, statusOr(err, http.StatusBadGateway), "create", nil, body, application.MessageOf(err, "Не удалось сохранить заказ."))
 		return
+	}
+	if application.IsShop(viewer) {
+		_ = s.commands.DeleteOrderDraft(r.Context(), cred, body.CategoryID)
 	}
 	s.redirect(w, r, "/orders/"+url.PathEscape(created.Number)+"?success="+url.QueryEscape("Заказ создан."))
 }

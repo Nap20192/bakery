@@ -31,6 +31,7 @@ type fakeBackend struct {
 	sheets       []contract.ProductionSheet
 	categories   []contract.Category
 	orderFilters application.OrderFilters
+	drafts       []contract.OrderDraft
 }
 
 func (f *fakeBackend) Health(context.Context) error { return nil }
@@ -106,6 +107,18 @@ func (f *fakeBackend) RestoreOrder(context.Context, application.Credentials, str
 }
 func (f *fakeBackend) SetOrderFavorite(context.Context, application.Credentials, string, bool) (contract.Order, error) {
 	return contract.Order{}, nil
+}
+func (f *fakeBackend) SaveOrderDraft(context.Context, application.Credentials, contract.OrderWrite) (contract.OrderDraft, error) {
+	return contract.OrderDraft{}, nil
+}
+func (f *fakeBackend) DeleteOrderDraft(context.Context, application.Credentials, int64) error {
+	return nil
+}
+func (f *fakeBackend) OrderDraft(context.Context, application.Credentials, int64) (contract.OrderDraft, error) {
+	return contract.OrderDraft{}, &application.Error{Status: http.StatusNotFound, Message: "черновик не найден"}
+}
+func (f *fakeBackend) OrderDrafts(context.Context, application.Credentials) ([]contract.OrderDraft, error) {
+	return f.drafts, nil
 }
 func (f *fakeBackend) CreateProductionSheet(context.Context, application.Credentials, contract.ProductionWrite) (contract.ProductionSheet, error) {
 	return contract.ProductionSheet{}, nil
@@ -261,6 +274,93 @@ func TestE2EOrdersDefaultToOneDynamicCategory(t *testing.T) {
 	}
 	if !strings.Contains(html, "Булочки") || strings.Contains(html, "Все типы") {
 		t.Fatalf("dynamic category tabs were not rendered: %s", html)
+	}
+}
+
+func TestE2EOrderNewShowsSaveDraftButtonForShop(t *testing.T) {
+	t.Parallel()
+	back := shopBackend()
+	back.categories = []contract.Category{{ID: 4, Name: "Хлеб", Letter: "Х", Color: "amber"}}
+	srv, client := newE2E(t, back)
+	login(t, client, srv.URL, "shopuser")
+
+	resp, err := client.Get(srv.URL + "/orders/new")
+	if err != nil {
+		t.Fatalf("get orders/new: %v", err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	html := string(body)
+	if !strings.Contains(html, `formaction="/orders/draft"`) {
+		t.Fatalf("shop create form should offer a save-draft button: %s", html)
+	}
+	if !strings.Contains(html, `href="/drafts"`) {
+		t.Fatalf("shop nav should link to /drafts: %s", html)
+	}
+}
+
+func TestE2EOrderNewHidesDraftUIForBaker(t *testing.T) {
+	t.Parallel()
+	back := shopBackend()
+	back.viewers["Bearer shop-token"] = contract.Me{Role: "baker", TelegramUsername: "baker"}
+	back.categories = []contract.Category{{ID: 4, Name: "Хлеб", Letter: "Х", Color: "amber"}}
+	srv, client := newE2E(t, back)
+	login(t, client, srv.URL, "baker")
+
+	resp, err := client.Get(srv.URL + "/orders/new")
+	if err != nil {
+		t.Fatalf("get orders/new: %v", err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	html := string(body)
+	if strings.Contains(html, `formaction="/orders/draft"`) {
+		t.Fatalf("baker create form must not offer a save-draft button: %s", html)
+	}
+	if strings.Contains(html, `href="/drafts"`) {
+		t.Fatalf("baker nav must not link to /drafts: %s", html)
+	}
+}
+
+func TestE2EDraftsPageListsDraftsForShop(t *testing.T) {
+	t.Parallel()
+	back := shopBackend()
+	back.categories = []contract.Category{{ID: 4, Name: "Хлеб", Letter: "Х", Color: "amber"}}
+	back.drafts = []contract.OrderDraft{
+		{Write: contract.OrderWrite{CategoryID: 4}, UpdatedAt: "2026-07-20T10:00:00Z"},
+	}
+	srv, client := newE2E(t, back)
+	login(t, client, srv.URL, "shopuser")
+
+	resp, err := client.Get(srv.URL + "/drafts")
+	if err != nil {
+		t.Fatalf("get drafts: %v", err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("drafts status = %d, want 200", resp.StatusCode)
+	}
+	html := string(body)
+	if !strings.Contains(html, "draft-card") || !strings.Contains(html, "Хлеб") {
+		t.Fatalf("drafts page should list the draft: %s", html)
+	}
+}
+
+func TestE2EDraftsPageForbiddenForBaker(t *testing.T) {
+	t.Parallel()
+	back := shopBackend()
+	back.viewers["Bearer shop-token"] = contract.Me{Role: "baker", TelegramUsername: "baker"}
+	srv, client := newE2E(t, back)
+	login(t, client, srv.URL, "baker")
+
+	resp, err := client.Get(srv.URL + "/drafts")
+	if err != nil {
+		t.Fatalf("get drafts: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("drafts status = %d, want 403", resp.StatusCode)
 	}
 }
 

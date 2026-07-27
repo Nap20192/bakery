@@ -30,6 +30,8 @@ type Querier interface {
 	DeleteIikoAssemblyChartItemsByChartID(ctx context.Context, chartID string) error
 	DeleteIikoPreparedChartItemsByChartID(ctx context.Context, preparedChartID string) error
 	DeleteOrderCategory(ctx context.Context, id int64) error
+	DeleteOrderDraft(ctx context.Context, arg DeleteOrderDraftParams) error
+	DeleteOrderDraftsOlderThan(ctx context.Context, updatedAtBefore pgtype.Timestamptz) (int64, error)
 	DeleteOrderItemsByOrderID(ctx context.Context, orderID int64) error
 	DeleteOrdersCreatedBefore(ctx context.Context, createdAtBefore pgtype.Timestamptz) (int64, error)
 	DeleteProductionSheet(ctx context.Context, id int64) error
@@ -52,6 +54,7 @@ type Querier interface {
 	GetOrderByID(ctx context.Context, id int64) (Order, error)
 	GetOrderByNumber(ctx context.Context, number string) (Order, error)
 	GetOrderCategoryByID(ctx context.Context, id int64) (OrderCategory, error)
+	GetOrderDraft(ctx context.Context, arg GetOrderDraftParams) (OrderDraft, error)
 	// Позиции хранят только заявку. Факт отработки живёт в журнале и
 	// декорируется при чтении (GetOrderProductionFacts + мердж в репозитории).
 	GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]GetOrderItemsByOrderIDRow, error)
@@ -78,6 +81,7 @@ type Querier interface {
 	ListDishCatalogItems(ctx context.Context) ([]DishCatalog, error)
 	ListDishCatalogItemsByName(ctx context.Context, name string) ([]DishCatalog, error)
 	ListOrderCategories(ctx context.Context) ([]OrderCategory, error)
+	ListOrderDrafts(ctx context.Context, createdByUsername string) ([]OrderDraft, error)
 	ListOrderHistoryByOrderID(ctx context.Context, orderID int64) ([]OrderHistory, error)
 	ListOrderHistoryItemsByHistoryID(ctx context.Context, historyID int64) ([]OrderHistoryItem, error)
 	// Пакетная версия для списка заказов: матрица должна видеть принадлежность
@@ -113,6 +117,7 @@ type Querier interface {
 	UpsertIikoAssemblyChart(ctx context.Context, arg UpsertIikoAssemblyChartParams) error
 	UpsertIikoPreparedChart(ctx context.Context, arg UpsertIikoPreparedChartParams) error
 	UpsertIikoProduct(ctx context.Context, arg UpsertIikoProductParams) error
+	UpsertOrderDraft(ctx context.Context, arg UpsertOrderDraftParams) (OrderDraft, error)
 }
 
 var _ Querier = (*Queries)(nil)

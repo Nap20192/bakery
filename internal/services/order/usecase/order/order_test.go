@@ -3,6 +3,7 @@ package orderuc
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -222,6 +223,131 @@ func TestServiceCreateOrderAllowsWorkshopSource(t *testing.T) {
 	}
 	if !repo.createCalled {
 		t.Fatal("CreateOrder should persist an order from the workshop")
+	}
+}
+
+func draftFixtureRepo() *fakeRepo {
+	return &fakeRepo{
+		departmentByID: map[int64]Department{
+			10: {ID: 10, Code: "shop-1", Name: "Магазин 1", Type: "shop"},
+		},
+		categoryByID: map[int64]orderdomain.OrderCategory{
+			1: {ID: 1, Code: "bread", Letter: "Х", Name: "Хлеб", Color: "amber"},
+			2: {ID: 2, Code: "buns", Letter: "Б", Name: "Булочки", Color: "sky"},
+		},
+	}
+}
+
+func draftInput(shopID int64, categoryID int64, now time.Time) SaveOrderDraftInput {
+	return SaveOrderDraftInput{
+		CreatedByUsername: "shop",
+		CategoryID:        categoryID,
+		FromDepartmentID:  &shopID,
+		FulfillmentDate:   now,
+		Items: []orderdomain.OrderItem{{
+			Code:        "15635",
+			ProductName: "Пирожок",
+			Quantity:    1,
+		}},
+	}
+}
+
+func TestServiceSaveOrderDraftCreatesOnePerCategory(t *testing.T) {
+	repo := draftFixtureRepo()
+	svc := NewService(repo)
+	shopID := int64(10)
+	now := time.Now().UTC()
+
+	if _, err := svc.SaveOrderDraft(context.Background(), draftInput(shopID, 1, now)); err != nil {
+		t.Fatalf("SaveOrderDraft (bread) returned error: %v", err)
+	}
+	if _, err := svc.SaveOrderDraft(context.Background(), draftInput(shopID, 2, now)); err != nil {
+		t.Fatalf("SaveOrderDraft (buns) returned error: %v", err)
+	}
+
+	drafts, err := svc.ListOrderDrafts(context.Background(), "shop")
+	if err != nil {
+		t.Fatalf("ListOrderDrafts returned error: %v", err)
+	}
+	if len(drafts) != 2 {
+		t.Fatalf("drafts = %d, want 2 (one per category): %#v", len(drafts), drafts)
+	}
+}
+
+func TestServiceSaveOrderDraftOverwritesSameCategory(t *testing.T) {
+	repo := draftFixtureRepo()
+	svc := NewService(repo)
+	shopID := int64(10)
+	now := time.Now().UTC()
+
+	if _, err := svc.SaveOrderDraft(context.Background(), draftInput(shopID, 1, now)); err != nil {
+		t.Fatalf("first SaveOrderDraft returned error: %v", err)
+	}
+	second := draftInput(shopID, 1, now)
+	second.Items[0].Quantity = 5
+	if _, err := svc.SaveOrderDraft(context.Background(), second); err != nil {
+		t.Fatalf("second SaveOrderDraft returned error: %v", err)
+	}
+
+	drafts, err := svc.ListOrderDrafts(context.Background(), "shop")
+	if err != nil {
+		t.Fatalf("ListOrderDrafts returned error: %v", err)
+	}
+	if len(drafts) != 1 {
+		t.Fatalf("drafts = %d, want 1 (overwritten, not duplicated): %#v", len(drafts), drafts)
+	}
+	if drafts[0].Items[0].Quantity != 5 {
+		t.Fatalf("draft quantity = %v, want 5 (latest save wins)", drafts[0].Items[0].Quantity)
+	}
+}
+
+func TestServiceSaveOrderDraftRejectsPastFulfillmentDate(t *testing.T) {
+	repo := draftFixtureRepo()
+	svc := NewService(repo)
+	shopID := int64(10)
+	now := time.Now().UTC()
+
+	input := draftInput(shopID, 1, now)
+	input.FulfillmentDate = now.AddDate(0, 0, -1)
+	if _, err := svc.SaveOrderDraft(context.Background(), input); !errors.Is(err, ErrFulfillmentDateInPast) {
+		t.Fatalf("SaveOrderDraft error = %v, want ErrFulfillmentDateInPast", err)
+	}
+}
+
+func TestServiceDeleteOrderDraft(t *testing.T) {
+	repo := draftFixtureRepo()
+	svc := NewService(repo)
+	shopID := int64(10)
+	now := time.Now().UTC()
+
+	if _, err := svc.SaveOrderDraft(context.Background(), draftInput(shopID, 1, now)); err != nil {
+		t.Fatalf("SaveOrderDraft returned error: %v", err)
+	}
+	if err := svc.DeleteOrderDraft(context.Background(), "shop", 1); err != nil {
+		t.Fatalf("DeleteOrderDraft returned error: %v", err)
+	}
+	if _, err := svc.GetOrderDraft(context.Background(), "shop", 1); err == nil {
+		t.Fatal("GetOrderDraft should fail after delete")
+	}
+}
+
+func TestRunCleanupTickerPurgesStaleDrafts(t *testing.T) {
+	repo := draftFixtureRepo()
+	repo.drafts = map[string]orderdomain.OrderDraft{
+		draftKey("shop", 1): {CreatedByUsername: "shop", CategoryID: 1, UpdatedAt: time.Now().Add(-60 * 24 * time.Hour)},
+	}
+	svc := NewService(repo)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- svc.RunCleanupTicker(ctx, time.Hour, 31*24*time.Hour) }()
+	cancel()
+	if err := <-done; err != nil {
+		t.Fatalf("RunCleanupTicker returned error: %v", err)
+	}
+
+	if len(repo.drafts) != 0 {
+		t.Fatalf("stale draft should have been purged by the cleanup ticker: %#v", repo.drafts)
 	}
 }
 
@@ -468,6 +594,64 @@ type fakeRepo struct {
 	productionInputs  []SaveProductionSheetInput
 	productionDeleted []int64
 	upserted          []DishCatalogItem
+	drafts            map[string]orderdomain.OrderDraft
+	draftDeleteCutoff time.Time
+}
+
+func draftKey(username string, categoryID int64) string {
+	return fmt.Sprintf("%s\x00%d", username, categoryID)
+}
+
+func (f *fakeRepo) SaveOrderDraft(_ context.Context, input SaveOrderDraftRepositoryInput) (orderdomain.OrderDraft, error) {
+	if f.drafts == nil {
+		f.drafts = make(map[string]orderdomain.OrderDraft)
+	}
+	fromDepartmentID := input.FromDepartmentID
+	draft := orderdomain.OrderDraft{
+		CreatedByUsername: input.CreatedByUsername,
+		CategoryID:        input.CategoryID,
+		FromDepartmentID:  &fromDepartmentID,
+		Items:             input.Items,
+		FulfillmentDate:   input.FulfillmentDate,
+		Comments:          input.Comments,
+		UpdatedAt:         time.Now().UTC(),
+	}
+	f.drafts[draftKey(input.CreatedByUsername, input.CategoryID)] = draft
+	return draft, nil
+}
+
+func (f *fakeRepo) GetOrderDraft(_ context.Context, username string, categoryID int64) (orderdomain.OrderDraft, error) {
+	if draft, ok := f.drafts[draftKey(username, categoryID)]; ok {
+		return draft, nil
+	}
+	return orderdomain.OrderDraft{}, fmt.Errorf("draft not found")
+}
+
+func (f *fakeRepo) ListOrderDrafts(_ context.Context, username string) ([]orderdomain.OrderDraft, error) {
+	out := make([]orderdomain.OrderDraft, 0)
+	for _, draft := range f.drafts {
+		if draft.CreatedByUsername == username {
+			out = append(out, draft)
+		}
+	}
+	return out, nil
+}
+
+func (f *fakeRepo) DeleteOrderDraft(_ context.Context, username string, categoryID int64) error {
+	delete(f.drafts, draftKey(username, categoryID))
+	return nil
+}
+
+func (f *fakeRepo) DeleteOrderDraftsOlderThan(_ context.Context, cutoff time.Time) (int64, error) {
+	f.draftDeleteCutoff = cutoff
+	var deleted int64
+	for key, draft := range f.drafts {
+		if draft.UpdatedAt.Before(cutoff) {
+			delete(f.drafts, key)
+			deleted++
+		}
+	}
+	return deleted, nil
 }
 
 var _ Repository = (*fakeRepo)(nil)
