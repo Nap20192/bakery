@@ -16,6 +16,40 @@
     }
   });
 
+  // htmx's own boost handler binds directly to each boosted form/link during
+  // htmx.process(), which runs on the FIRST DOMContentLoaded listener (its
+  // script loads before app.js). Our own per-form submit listener used to be
+  // registered second on the very same element, and same-element listeners
+  // fire in registration order regardless of capture — so htmx's boosted
+  // request already fired before our confirm dialog ever opened, and
+  // pressing "Отмена" in the dialog did nothing. Registering these gates in
+  // the capture phase on `document` instead always wins the race, because
+  // capture-phase listeners on an ancestor run before any listener on the
+  // target itself, no matter which one was attached first.
+  document.addEventListener('submit', (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || form.dataset.confirmed === 'true') return;
+    const message = event.submitter?.dataset.confirm || form.dataset.confirm;
+    if (!message) return;
+    event.preventDefault();
+    event.stopPropagation();
+    showConfirm(message, () => {
+      form.dataset.confirmed = 'true';
+      form.requestSubmit(event.submitter);
+    });
+  }, true);
+
+  document.addEventListener('click', (event) => {
+    const link = event.target.closest('a[data-confirm]');
+    if (!link || link.dataset.confirmed === 'true') return;
+    event.preventDefault();
+    event.stopPropagation();
+    showConfirm(link.dataset.confirm, () => {
+      link.dataset.confirmed = 'true';
+      link.click();
+    });
+  }, true);
+
   document.addEventListener('htmx:afterSwap', () => initialize(document));
   document.addEventListener('htmx:historyRestore', () => {
     // htmx's own back/forward cache swaps in a stringified DOM snapshot: listeners
@@ -30,7 +64,6 @@
   });
 
   function initialize(root) {
-    initializeConfirmations(root);
     initializeDialogs(root);
     initializeSelection(root);
     initializeSelectionRemoval(root);
@@ -117,31 +150,6 @@
       window.location.assign(response.headers.get('HX-Location') || '/orders');
     }).catch((error) => {
       if (status) status.textContent = error.message || 'Не удалось войти через Telegram.';
-    });
-  }
-
-  function initializeConfirmations(root) {
-    root.querySelectorAll('form[data-confirm]:not([data-ready])').forEach((form) => {
-      form.dataset.ready = 'true';
-      form.addEventListener('submit', (event) => {
-        if (form.dataset.confirmed === 'true') return;
-        event.preventDefault();
-        showConfirm(form.dataset.confirm, () => {
-          form.dataset.confirmed = 'true';
-          form.requestSubmit(event.submitter);
-        });
-      });
-    });
-    root.querySelectorAll('button[data-confirm]:not([data-ready])').forEach((button) => {
-      button.dataset.ready = 'true';
-      button.addEventListener('click', (event) => {
-        if (button.dataset.confirmed === 'true') return;
-        event.preventDefault();
-        showConfirm(button.dataset.confirm, () => {
-          button.dataset.confirmed = 'true';
-          button.form?.requestSubmit(button);
-        });
-      });
     });
   }
 

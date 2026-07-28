@@ -16,7 +16,7 @@
       </div>
       <div class="draft-card-foot">
         <a class="button" href="/orders/new?draft_category_id={{.Draft.Write.CategoryID}}">Загрузить</a>
-        <form method="post" action="/orders/draft/{{.Draft.Write.CategoryID}}/delete">{{template "csrf" $csrf}}<button class="text-action" type="submit">Удалить</button></form>
+        <form method="post" action="/orders/draft/{{.Draft.Write.CategoryID}}/delete" data-confirm="Удалить черновик?">{{template "csrf" $csrf}}<button class="text-action" type="submit">Удалить</button></form>
       </div>
     </article>
     {{end}}
