@@ -572,7 +572,7 @@ func (s *server) renderOrderFormFromWrite(w http.ResponseWriter, r *http.Request
 	if mode == "update" {
 		title = "Изменить заявку"
 	}
-	s.render(w, r, status, page{Title: title, View: "order-form", Viewer: viewer, Error: message, Data: data})
+	s.render(w, r, status, page{Title: title, View: "order-form", Viewer: viewer, Error: message, Success: queryMessage(r, "success"), Data: data})
 }
 
 func parseOrderFilters(r *http.Request) orderFiltersView {

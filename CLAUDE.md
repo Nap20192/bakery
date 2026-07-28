@@ -116,7 +116,7 @@ Order service records domain events (`order.created`, `order.updated`) on the ag
 
 ## Domain rules (do not regress)
 
-**Departments:** `shop` and `workshop` types. Orders flow shop → workshop. Shop users see/edit only their own orders; workshop sees all but cannot create.
+**Departments:** `shop` and `workshop` types. Orders flow shop → workshop. Shop users see/edit only their own orders; workshop (`baker`) sees all and can also create orders — the source is always resolved server-side to the real «Цех Пекари» department (`GetByCode(ctx, "pekari")`), any client-supplied `from_department_id` is ignored for that role. Own letter/counter sequence (`Ц`), no collision with shop counters.
 
 **Order categories (типы заявок):** dynamic `order_categories` dictionary (letter + color slug from `orderdomain.CategoryColors`). Every order requires a category; its letter is part of the order number (`Г.Х.08.07.26.001`), counters are per shop+category+day, category never changes on edit. Dish catalog entries carry `category_id`.
 
@@ -138,7 +138,7 @@ Go `html/template` + vendored HTMX + plain CSS/JavaScript in `frontend/`.
 Deployed on Railway as a separate Go BFF that calls the worker API over the
 private network. API credentials remain in `HttpOnly` cookies.
 
-Role-based UI: `shop` creates/edits orders; `baker`/`workshop` views orders and runs ingredient calculations; `admin` manages users. See `frontend/FRONTEND_BEHAVIOR.md` for full route and behavior spec.
+Role-based UI: `shop` creates/edits orders; `baker`/`workshop` also creates orders (self-sourced from «Цех Пекари», no draft support) plus views all orders and runs ingredient calculations; `admin` manages users. See `frontend/FRONTEND_BEHAVIOR.md` for full route and behavior spec.
 
 Frontend validation (past-date guard) is a UX hint only — backend enforces all rules.
 
