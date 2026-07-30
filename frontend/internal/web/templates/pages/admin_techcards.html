@@ -1,0 +1,18 @@
+{{define "admin-techcards"}}
+{{$data := .Data}}
+<section class="page admin-page">
+  <header class="page-heading">{{template "page-title" (dict "Title" "Тех.карты")}}</header>
+
+  {{range $category := $data.Categories}}
+  <section class="admin-section">
+    {{template "section-heading" (dict "Title" $category.Name "Count" (len $category.Dishes))}}
+    <div class="dish-admin-list">
+    {{range $dish := $category.Dishes}}<details class="admin-row">
+      <summary><span><strong>{{$dish.Name}}</strong><small>{{$dish.Code}}{{if $dish.Unit}} · {{$dish.Unit}}{{end}}</small></span>{{if $dish.Error}}<span class="status status-danger">{{$dish.Error}}</span>{{else}}<span class="count">{{len $dish.Ingredients}}</span>{{end}}</summary>
+      {{if $dish.Error}}<p class="lede">{{$dish.Error}}</p>{{else}}<ul class="techcard-ingredients">{{range $dish.Ingredients}}<li><span>{{.Name}}</span><span>{{formatQty .Amount}}{{if .Unit}} {{.Unit}}{{end}}</span></li>{{end}}</ul>{{end}}
+    </details>{{end}}
+    </div>
+  </section>
+  {{end}}
+</section>
+{{end}}

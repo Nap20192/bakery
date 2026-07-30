@@ -24,4 +24,5 @@ type Queries interface {
 	AdminDepartments(ctx context.Context, credentials Credentials) ([]contract.Department, error)
 	Dishes(ctx context.Context, credentials Credentials) ([]contract.Dish, error)
 	AvailableDishes(ctx context.Context, credentials Credentials, query string) ([]contract.AvailableDish, error)
+	DishTechCards(ctx context.Context, credentials Credentials) ([]contract.TechCardCategory, error)
 }
