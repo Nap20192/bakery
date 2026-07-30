@@ -13,17 +13,19 @@ import (
 	departmentuc "bakery/internal/services/department/usecase/department"
 	orderdomain "bakery/internal/services/order/domain"
 	orderuc "bakery/internal/services/order/usecase/order"
+	techcarduc "bakery/internal/services/techcard/usecase/techcard"
 )
 
 // Handler is the order service HTTP delivery adapter.
 type Handler struct {
 	orderSvc      orderuc.UseCase
 	departmentSvc departmentuc.UseCase
+	techcardSvc   techcarduc.UseCase
 	presenter     *OrderPresenter
 }
 
-func New(orderSvc orderuc.UseCase, departmentSvc departmentuc.UseCase, presenter *OrderPresenter) *Handler {
-	return &Handler{orderSvc: orderSvc, departmentSvc: departmentSvc, presenter: presenter}
+func New(orderSvc orderuc.UseCase, departmentSvc departmentuc.UseCase, techcardSvc techcarduc.UseCase, presenter *OrderPresenter) *Handler {
+	return &Handler{orderSvc: orderSvc, departmentSvc: departmentSvc, techcardSvc: techcardSvc, presenter: presenter}
 }
 
 // RegisterRoutes wires the order endpoints behind Mini App authentication.

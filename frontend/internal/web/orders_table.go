@@ -50,8 +50,19 @@ func (s *server) ordersTablePage(w http.ResponseWriter, r *http.Request) {
 		start = startOfDay(time.Now()).AddDate(0, 0, -1)
 	}
 	end := start.AddDate(0, 0, 7)
-	ordersPage, err := s.queries.Orders(r.Context(), cred, application.OrderFilters{
-		Page: 1, Limit: 100, FulfillmentFrom: start.Format(time.DateOnly), FulfillmentTo: end.Format(time.DateOnly),
+	categories, err := s.queries.Categories(r.Context(), cred)
+	if err != nil {
+		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить типы заявок."))
+		return
+	}
+	categories = append(categories, contract.Category{Name: "Без типа", Color: "stone"})
+	activeID := parseCategoryID(r.URL.Query().Get("category_id"))
+	if activeID == 0 && r.URL.Query().Get("category_id") == "" && len(categories) > 0 {
+		activeID = categories[0].ID
+	}
+	ordersPage, err := s.listAllOrders(r.Context(), cred, application.OrderFilters{
+		Page: 1, Limit: 100, CategoryID: activeID,
+		FulfillmentFrom: start.Format(time.DateOnly), FulfillmentTo: end.Format(time.DateOnly),
 	})
 	if err != nil {
 		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить сводную таблицу."))
@@ -61,21 +72,6 @@ func (s *server) ordersTablePage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить каталог."))
 		return
-	}
-	categories, err := s.queries.Categories(r.Context(), cred)
-	if err != nil {
-		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить типы заявок."))
-		return
-	}
-	for _, order := range ordersPage.Items {
-		if order.Category == nil {
-			categories = append(categories, contract.Category{Name: "Без типа", Color: "stone"})
-			break
-		}
-	}
-	activeID := parseCategoryID(r.URL.Query().Get("category_id"))
-	if activeID == 0 && len(categories) > 0 {
-		activeID = categories[0].ID
 	}
 	data := buildOrdersTable(ordersPage.Items, catalog, categories, activeID, start, end)
 	data.PrevStart = start.AddDate(0, 0, -8).Format(time.DateOnly)

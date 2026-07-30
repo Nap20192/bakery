@@ -41,7 +41,6 @@ linters:
     generated: lax
     paths:
       - vendor$
-      - frontend/.*
 
   settings:
     errcheck:

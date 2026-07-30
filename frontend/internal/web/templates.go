@@ -50,7 +50,8 @@ func parseTemplates() (*template.Template, error) {
 			if err := templates.ExecuteTemplate(&buffer, name, data); err != nil {
 				return "", fmt.Errorf("render view %q: %w", name, err)
 			}
-			return template.HTML(buffer.String()), nil
+			// The nested template was rendered by html/template, which already escaped its data.
+			return template.HTML(buffer.String()), nil //nolint:gosec
 		},
 	}
 

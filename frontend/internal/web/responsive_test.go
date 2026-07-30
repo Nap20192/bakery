@@ -2,7 +2,6 @@ package web
 
 import (
 	"bytes"
-	"io"
 	"log/slog"
 	"strings"
 	"testing"
@@ -20,7 +19,7 @@ import (
 func renderLayout(t *testing.T, value page) string {
 	t.Helper()
 	client := backend.New("http://127.0.0.1:1", time.Second)
-	srv, err := newServer(client, client, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	srv, err := newServer(client, client, slog.New(slog.DiscardHandler))
 	if err != nil {
 		t.Fatalf("newServer: %v", err)
 	}

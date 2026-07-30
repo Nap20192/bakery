@@ -1,0 +1,121 @@
+- generic [active] [ref=f1e1]:
+  - progressbar "Загрузка"
+  - generic [ref=f1e2]:
+    - banner [ref=f1e3]:
+      - link "Bakery, заказы" [ref=f1e4] [cursor=pointer]:
+        - /url: /orders
+        - generic [ref=f1e5]:
+          - strong [ref=f1e6]: Bakery
+          - generic [ref=f1e7]: Производственный журнал
+      - navigation "Основная навигация" [ref=f1e8]:
+        - link "Заказы" [ref=f1e9] [cursor=pointer]:
+          - /url: /orders
+        - link "Отработки" [ref=f1e10] [cursor=pointer]:
+          - /url: /production
+        - link "Новая заявка" [ref=f1e11] [cursor=pointer]:
+          - /url: /orders/new
+        - link "Тесто" [ref=f1e12] [cursor=pointer]:
+          - /url: /calculator
+        - link "Профиль" [ref=f1e13] [cursor=pointer]:
+          - /url: /me
+    - main [ref=f1e14]:
+      - generic [ref=f1e15]:
+        - heading "Таблица" [level=1] [ref=f1e18]
+        - generic [ref=f1e19]:
+          - tablist "Вид заказов" [ref=f1e20]:
+            - tab "Матрица" [ref=f1e21] [cursor=pointer]
+            - tab "Таблица" [selected] [ref=f1e25] [cursor=pointer]
+          - generic [ref=f1e29]:
+            - link "← Раньше" [ref=f1e30] [cursor=pointer]:
+              - /url: /orders/table?start=2026-07-21&category_id=4
+            - link "Сегодня" [ref=f1e31] [cursor=pointer]:
+              - /url: /orders/table?start=2026-07-28&category_id=4
+            - link "Позже →" [ref=f1e32] [cursor=pointer]:
+              - /url: /orders/table?start=2026-08-06&category_id=4
+        - generic [ref=f1e33]:
+          - navigation "Тип заявки" [ref=f1e34]:
+            - link "Хлеб" [ref=f1e35] [cursor=pointer]:
+              - /url: /orders/table?category_id=4
+            - link "Без типа" [ref=f1e36] [cursor=pointer]:
+              - /url: /orders/table?category_id=0
+          - paragraph [ref=f1e37]: Клик по дате открывает отработку.
+        - region "Сводка блюд по датам" [ref=f1e39]:
+          - table [ref=f1e40]:
+            - rowgroup [ref=f1e41]:
+              - row [ref=f1e42]:
+                - columnheader "Блюдо" [ref=f1e43]
+                - columnheader [ref=f1e44]:
+                  - link "Ср 29.07" [ref=f1e45] [cursor=pointer]:
+                    - /url: /orders/selection?order=%D0%93.%D0%A5.29.07.26.101
+                    - strong [ref=f1e46]: Ср
+                    - generic [ref=f1e47]: "29.07"
+                - columnheader "Чт 30.07" [ref=f1e48]:
+                  - strong [ref=f1e49]: Чт
+                  - generic [ref=f1e50]: "30.07"
+                - columnheader "Пт 31.07" [ref=f1e51]:
+                  - strong [ref=f1e52]: Пт
+                  - generic [ref=f1e53]: "31.07"
+                - columnheader "Сб 01.08" [ref=f1e54]:
+                  - strong [ref=f1e55]: Сб
+                  - generic [ref=f1e56]: "01.08"
+                - columnheader "Вс 02.08" [ref=f1e57]:
+                  - strong [ref=f1e58]: Вс
+                  - generic [ref=f1e59]: "02.08"
+                - columnheader "Пн 03.08" [ref=f1e60]:
+                  - strong [ref=f1e61]: Пн
+                  - generic [ref=f1e62]: "03.08"
+                - columnheader "Вт 04.08" [ref=f1e63]:
+                  - strong [ref=f1e64]: Вт
+                  - generic [ref=f1e65]: "04.08"
+                - columnheader "Ср 05.08" [ref=f1e66]:
+                  - strong [ref=f1e67]: Ср
+                  - generic [ref=f1e68]: "05.08"
+            - rowgroup [ref=f1e69]:
+              - row [ref=f1e70]:
+                - rowheader "Багет" [ref=f1e71]
+                - cell [ref=f1e72]:
+                  - strong [ref=f1e73]: "8"
+                  - superscript [ref=f1e74]: "-2"
+                - cell "Пусто" [ref=f1e75]:
+                  - generic "Пусто" [ref=f1e76]: ·
+                - cell "Пусто" [ref=f1e77]:
+                  - generic "Пусто" [ref=f1e78]: ·
+                - cell "Пусто" [ref=f1e79]:
+                  - generic "Пусто" [ref=f1e80]: ·
+                - cell "Пусто" [ref=f1e81]:
+                  - generic "Пусто" [ref=f1e82]: ·
+                - cell "Пусто" [ref=f1e83]:
+                  - generic "Пусто" [ref=f1e84]: ·
+                - cell "Пусто" [ref=f1e85]:
+                  - generic "Пусто" [ref=f1e86]: ·
+                - cell "Пусто" [ref=f1e87]:
+                  - generic "Пусто" [ref=f1e88]: ·
+              - row [ref=f1e89]:
+                - rowheader "Редкая позиция 101" [ref=f1e90]
+                - cell [ref=f1e91]:
+                  - strong [ref=f1e92]: "1"
+                - cell "Пусто" [ref=f1e93]:
+                  - generic "Пусто" [ref=f1e94]: ·
+                - cell "Пусто" [ref=f1e95]:
+                  - generic "Пусто" [ref=f1e96]: ·
+                - cell "Пусто" [ref=f1e97]:
+                  - generic "Пусто" [ref=f1e98]: ·
+                - cell "Пусто" [ref=f1e99]:
+                  - generic "Пусто" [ref=f1e100]: ·
+                - cell "Пусто" [ref=f1e101]:
+                  - generic "Пусто" [ref=f1e102]: ·
+                - cell "Пусто" [ref=f1e103]:
+                  - generic "Пусто" [ref=f1e104]: ·
+                - cell "Пусто" [ref=f1e105]:
+                  - generic "Пусто" [ref=f1e106]: ·
+            - rowgroup [ref=f1e107]:
+              - row [ref=f1e108]:
+                - rowheader "Итого" [ref=f1e109]
+                - cell "9" [ref=f1e110]
+                - cell "·" [ref=f1e111]
+                - cell "·" [ref=f1e112]
+                - cell "·" [ref=f1e113]
+                - cell "·" [ref=f1e114]
+                - cell "·" [ref=f1e115]
+                - cell "·" [ref=f1e116]
+                - cell "·" [ref=f1e117]

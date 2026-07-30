@@ -165,12 +165,13 @@ func (s *server) renderError(w http.ResponseWriter, r *http.Request, status int,
 }
 
 func (s *server) redirect(w http.ResponseWriter, r *http.Request, target string) {
+	target = safeNext(target)
 	if r.Header.Get("HX-Request") == "true" {
 		w.Header().Set("HX-Location", target)
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	http.Redirect(w, r, target, http.StatusSeeOther)
+	http.Redirect(w, r, target, http.StatusSeeOther) //nolint:gosec // safeNext restricts redirects to local paths.
 }
 
 func (s *server) viewer(r *http.Request) (*contract.Me, application.Credentials, error) {
@@ -285,19 +286,23 @@ func (s *server) ensureCSRF(w http.ResponseWriter, r *http.Request) string {
 		return ""
 	}
 	token := base64.RawURLEncoding.EncodeToString(buffer)
+	// Secure follows the actual request scheme so local HTTP development still works.
+	//nolint:gosec
 	http.SetCookie(w, &http.Cookie{
 		Name:     csrfCookie,
 		Value:    token,
 		Path:     "/",
 		MaxAge:   7 * 24 * 60 * 60,
 		Secure:   secureRequest(r),
-		HttpOnly: false,
+		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 	})
 	return token
 }
 
 func (s *server) setSession(w http.ResponseWriter, r *http.Request, cred application.Credentials, expires time.Time) {
+	// Secure follows the actual request scheme so local HTTP development still works.
+	//nolint:gosec
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookie,
 		Value:    base64.RawURLEncoding.EncodeToString([]byte(cred)),
@@ -311,6 +316,8 @@ func (s *server) setSession(w http.ResponseWriter, r *http.Request, cred applica
 }
 
 func (s *server) clearSession(w http.ResponseWriter, r *http.Request) {
+	// Secure follows the actual request scheme so local HTTP development still works.
+	//nolint:gosec
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookie,
 		Path:     "/",

@@ -46,7 +46,7 @@ func TestFragmentRequestsOverrideShellSelection(t *testing.T) {
 func TestTemplatesRenderEveryView(t *testing.T) {
 	t.Parallel()
 	client := backend.New("http://127.0.0.1:1", time.Second)
-	srv, err := newServer(client, client, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	srv, err := newServer(client, client, slog.New(slog.DiscardHandler))
 	if err != nil {
 		t.Fatalf("newServer: %v", err)
 	}
@@ -106,7 +106,7 @@ func TestSessionCookieRoundTrip(t *testing.T) {
 	srv.setSession(response, request, "Bearer signed-token", time.Now().Add(time.Hour))
 
 	result := response.Result()
-	defer result.Body.Close()
+	defer func() { _ = result.Body.Close() }()
 	cookies := result.Cookies()
 	if len(cookies) != 1 {
 		t.Fatalf("cookies = %d, want 1", len(cookies))
