@@ -9,7 +9,7 @@ import (
 
 // 127.0.0.1:1 refuses instantly, so each attempt fails on the ping rather than
 // on a dial timeout.
-const unreachableURL = "postgres://user:pass@127.0.0.1:1/bakery?sslmode=disable"
+const unreachableURL = "postgres://user:pass@127.0.0.1:1/bakery?sslmode=disable" //nolint:gosec // Test-only dummy URL.
 
 func TestOpenPostgresStopsWhenTheContextIsCancelled(t *testing.T) {
 	t.Parallel()

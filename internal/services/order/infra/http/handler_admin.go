@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
 	"bakery/internal/inbound/api/contract"
 	"bakery/internal/inbound/api/httpx"
@@ -40,6 +41,7 @@ func categoryWriteToDomain(req contract.CategoryWrite) orderdomain.OrderCategory
 // management and order pins.
 func (h *Handler) RegisterAdminRoutes(mux *http.ServeMux, auth *httpx.Authenticator) {
 	mux.Handle("GET /admin/dishes", auth.RequireAdmin(http.HandlerFunc(h.handleListDishes)))
+	mux.Handle("GET /admin/dishes/techcards", auth.RequireAdmin(http.HandlerFunc(h.handleListDishTechCards)))
 	mux.Handle("GET /admin/dishes/available", auth.RequireAdmin(http.HandlerFunc(h.handleListAvailableDishes)))
 	mux.Handle("POST /admin/dishes", auth.RequireAdmin(http.HandlerFunc(h.handleCreateDish)))
 	mux.Handle("PUT /admin/dishes/reorder", auth.RequireAdmin(http.HandlerFunc(h.handleReorderDishes)))
@@ -124,6 +126,78 @@ func (h *Handler) handleListDishes(w http.ResponseWriter, r *http.Request) {
 		out = append(out, toDishResponse(item))
 	}
 	httpx.WriteJSON(w, http.StatusOK, out)
+}
+
+// handleListDishTechCards returns every catalog dish's tech card
+// (ingredient list), grouped by order category, for admin review.
+func (h *Handler) handleListDishTechCards(w http.ResponseWriter, r *http.Request) {
+	dishes, err := h.orderSvc.ListDishCatalog(r.Context())
+	if err != nil {
+		slog.ErrorContext(r.Context(), "admin list dish techcards: list dishes failed", "error", err)
+		httpx.WriteError(w, http.StatusInternalServerError, "Не удалось получить блюда.")
+		return
+	}
+	categories, err := h.orderSvc.ListOrderCategories(r.Context())
+	if err != nil {
+		slog.ErrorContext(r.Context(), "admin list dish techcards: list categories failed", "error", err)
+		httpx.WriteError(w, http.StatusInternalServerError, "Не удалось получить типы заявок.")
+		return
+	}
+
+	byCategory := make(map[int64]*contract.TechCardCategory, len(categories))
+	out := make([]contract.TechCardCategory, len(categories))
+	for i, cat := range categories {
+		out[i] = contract.TechCardCategory{ID: cat.ID, Name: cat.Name, Dishes: []contract.TechCardDish{}}
+		byCategory[cat.ID] = &out[i]
+	}
+
+	now := time.Now()
+	for _, dish := range dishes {
+		if dish.CategoryID == nil {
+			continue
+		}
+		cat, ok := byCategory[*dish.CategoryID]
+		if !ok {
+			continue
+		}
+		cat.Dishes = append(cat.Dishes, h.buildDishTechCard(r, dish, now))
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, out)
+}
+
+func (h *Handler) buildDishTechCard(r *http.Request, dish orderdomain.DishCatalogItem, date time.Time) contract.TechCardDish {
+	out := contract.TechCardDish{Code: dish.Code, Name: dish.Name, Ingredients: []contract.TechCardIngredient{}}
+	if h.techcardSvc == nil {
+		out.Error = "техкарты недоступны"
+		return out
+	}
+	card, err := h.techcardSvc.GetByCode(r.Context(), dish.Code, date)
+	if err != nil {
+		out.Error = "техкарта не найдена"
+		return out
+	}
+	out.Unit = card.Unit
+
+	switch {
+	case card.Assembly != nil:
+		for _, item := range card.Assembly.Items {
+			product := card.Products[item.ProductID]
+			out.Ingredients = append(out.Ingredients, contract.TechCardIngredient{
+				Code: product.Code, Name: product.Name, Unit: product.Unit, Amount: item.AmountIn,
+			})
+		}
+	case card.Prepared != nil:
+		for _, item := range card.Prepared.Items {
+			product := card.Products[item.ProductID]
+			out.Ingredients = append(out.Ingredients, contract.TechCardIngredient{
+				Code: product.Code, Name: product.Name, Unit: product.Unit, Amount: item.Amount,
+			})
+		}
+	default:
+		out.Error = "техкарта пуста"
+	}
+	return out
 }
 
 func (h *Handler) handleListAvailableDishes(w http.ResponseWriter, r *http.Request) {

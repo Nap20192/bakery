@@ -130,10 +130,10 @@ func WithAPIServerConfig(infra *InfraDeps) appOption {
 		if infra == nil || infra.config == nil {
 			return fmt.Errorf("missing dependencies for APIServer config")
 		}
-		if deps.OrderService == nil || deps.MonitorService == nil || deps.DepartmentService == nil || deps.AuthService == nil || deps.AdminService == nil {
+		if deps.OrderService == nil || deps.MonitorService == nil || deps.DepartmentService == nil || deps.AuthService == nil || deps.AdminService == nil || deps.TechCardService == nil {
 			return fmt.Errorf("missing dependencies for APIServer")
 		}
-		deps.APIServer = api.NewServer(deps.OrderService, deps.MonitorService, deps.DepartmentService, deps.AuthService, deps.AdminService, api.ServerConfig{
+		deps.APIServer = api.NewServer(deps.OrderService, deps.MonitorService, deps.DepartmentService, deps.AuthService, deps.AdminService, deps.TechCardService, api.ServerConfig{
 			Addr:           infra.config.Server.Addr(),
 			AllowedOrigins: infra.config.Server.AllowedOrigins,
 			BotToken:       infra.config.Telegram.BotToken,

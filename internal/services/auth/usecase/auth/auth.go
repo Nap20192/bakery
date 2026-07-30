@@ -25,8 +25,10 @@ const (
 )
 
 var (
-	ErrAuthUserNotFound = apperr.NotFound("auth.user_not_found", "Пользователь не найден.")
-	ErrInvalidRole      = apperr.Invalid("auth.invalid_role", "Недопустимая роль.")
+	ErrAuthUserNotFound      = apperr.NotFound("auth.user_not_found", "Пользователь не найден.")
+	ErrInvalidRole           = apperr.Invalid("auth.invalid_role", "Недопустимая роль.")
+	ErrUsernameTaken         = apperr.Conflict("auth.username_taken", "Логин уже занят.")
+	ErrTelegramUsernameTaken = apperr.Conflict("auth.telegram_username_taken", "Telegram username уже занят.")
 )
 
 // Service is the auth use-case implementation. It depends only on the
@@ -97,6 +99,13 @@ func (s *Service) EnsureAdminUser(ctx context.Context, username, password string
 		Role:     accessdomain.RoleAdmin,
 	})
 	if err != nil {
+		if errors.Is(err, ErrUsernameTaken) {
+			user, _, getErr := s.repo.GetByUsername(ctx, username)
+			if getErr != nil {
+				return accessdomain.AuthUser{}, false, fmt.Errorf("get admin user after create conflict: %w", getErr)
+			}
+			return user, false, nil
+		}
 		return accessdomain.AuthUser{}, false, err
 	}
 	return created, true, nil

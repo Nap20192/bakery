@@ -2,8 +2,10 @@ package web
 
 import (
 	"bytes"
+	"math"
 	"net/http/httptest"
 	"net/url"
+	"slices"
 	"strings"
 	"testing"
 
@@ -66,10 +68,71 @@ func TestProductionBatchUsesProductTotals(t *testing.T) {
 	}
 	assertProductionItem(t, body.Orders[0], "A", 9, 8)
 	assertProductionItem(t, body.Orders[1], "B", 18, 16)
+}
 
-	rounded := distributeProductionQuantity(1, []float64{1, 1, 1})
-	if rounded[0] != 0.3 || rounded[1] != 0.3 || rounded[2] != 0.4 {
-		t.Fatalf("rounded distribution = %v, want [0.3 0.3 0.4]", rounded)
+func TestBuildProductionRowsTracksLoadedOutputLink(t *testing.T) {
+	t.Parallel()
+	order := contract.Order{
+		Number: "A",
+		Items:  []contract.OrderItem{{ProductName: "Багет", ProductionQuantity: 10}},
+	}
+	tests := []struct {
+		name     string
+		loaded   float64
+		produced float64
+		want     bool
+	}{
+		{name: "saved output follows saved load", loaded: 8, produced: 8, want: true},
+		{name: "legacy output differs from load", loaded: 8, produced: 7, want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			saved := []contract.ProductionSheetItem{{
+				OrderNumber:      "A",
+				ProductName:      "Багет",
+				LoadedQuantity:   tt.loaded,
+				ProducedQuantity: tt.produced,
+			}}
+			rows := buildProductionRows([]contract.Order{order}, saved)
+			if len(rows) != 1 || rows[0].Linked != tt.want {
+				t.Fatalf("rows = %#v, linked want %t", rows, tt.want)
+			}
+		})
+	}
+}
+
+func TestDistributeProductionQuantity(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name    string
+		total   float64
+		ordered []float64
+		want    []float64
+	}{
+		{name: "thirds keep the full total", total: 1, ordered: []float64{1, 1, 1}, want: []float64{0.3, 0.3, 0.4}},
+		{name: "more shares than tenths stay nonnegative", total: 1, ordered: []float64{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}},
+		{name: "zero total", total: 0, ordered: []float64{1, 2, 3}, want: []float64{0, 0, 0}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := distributeProductionQuantity(tt.total, tt.ordered)
+			if len(got) != len(tt.ordered) {
+				t.Fatalf("shares = %d, want %d", len(got), len(tt.ordered))
+			}
+			var totalTenths int64
+			for index, quantity := range got {
+				if quantity < 0 {
+					t.Fatalf("share %d = %v, want nonnegative distribution %v", index, quantity, got)
+				}
+				totalTenths += int64(math.Round(quantity * 10))
+			}
+			if want := int64(math.Round(tt.total * 10)); totalTenths != want {
+				t.Fatalf("distribution = %v, total tenths = %d, want %d", got, totalTenths, want)
+			}
+			if tt.want != nil && !slices.Equal(got, tt.want) {
+				t.Fatalf("distribution = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 

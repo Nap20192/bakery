@@ -63,13 +63,6 @@ INSERT INTO auth_users (
     $7,
     $8
 )
-ON CONFLICT(username) WHERE username <> '' DO UPDATE SET
-    department_id = excluded.department_id,
-    telegram_username = excluded.telegram_username,
-    password_hash = excluded.password_hash,
-    metadata_json = excluded.metadata_json,
-    role = excluded.role,
-    updated_at = excluded.updated_at
 RETURNING id, telegram_id, username, password_hash, metadata_json, role, created_at, updated_at, department_id, telegram_username
 `
 

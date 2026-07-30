@@ -310,7 +310,7 @@ func buildProductionRows(orders []contract.Order, saved []contract.ProductionShe
 			builder.row.OrderedQuantity += ordered
 			builder.row.LoadedQuantity += loaded
 			builder.row.ProducedQuantity += produced
-			builder.row.Linked = builder.row.Linked && loaded == ordered && produced == ordered
+			builder.row.Linked = builder.row.Linked && produced == loaded
 			builder.row.Shares = append(builder.row.Shares, productionEditorShare{
 				OrderNumber: order.Number, OrderedQuantity: ordered, ProducedQuantity: produced,
 			})
@@ -415,24 +415,36 @@ func distributeProductionQuantity(total float64, ordered []float64) []float64 {
 	for _, quantity := range ordered {
 		orderedTotal += quantity
 	}
-	var allocated float64
-	for index := range ordered {
-		if index == len(ordered)-1 {
-			result[index] = roundProductionQuantity(total - allocated)
-			break
+	totalTenths := int64(math.Round(total * 10))
+	if totalTenths <= 0 || orderedTotal <= 0 {
+		return result
+	}
+	type shareRemainder struct {
+		index     int
+		remainder float64
+	}
+	tenths := make([]int64, len(ordered))
+	remainders := make([]shareRemainder, len(ordered))
+	var allocated int64
+	for index, quantity := range ordered {
+		exact := float64(totalTenths) * quantity / orderedTotal
+		tenths[index] = int64(math.Floor(exact))
+		allocated += tenths[index]
+		remainders[index] = shareRemainder{index: index, remainder: exact - float64(tenths[index])}
+	}
+	sort.Slice(remainders, func(i, j int) bool {
+		if remainders[i].remainder == remainders[j].remainder {
+			return remainders[i].index > remainders[j].index
 		}
-		result[index] = roundProductionQuantity(total * ordered[index] / orderedTotal)
-		allocated += result[index]
+		return remainders[i].remainder > remainders[j].remainder
+	})
+	for remaining := totalTenths - allocated; remaining > 0; remaining-- {
+		tenths[remainders[remaining-1].index]++
+	}
+	for index, quantity := range tenths {
+		result[index] = float64(quantity) / 10
 	}
 	return result
-}
-
-func roundProductionQuantity(value float64) float64 {
-	value = math.Round(value*10) / 10
-	if math.Abs(value) < 0.000001 {
-		return 0
-	}
-	return value
 }
 
 func parseInt64(value string) int64 {

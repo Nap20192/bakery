@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -11,6 +12,8 @@ import (
 	"bakery/frontend/internal/application"
 	"bakery/internal/inbound/api/contract"
 )
+
+const matrixWindowDays = 5
 
 type orderFiltersView struct {
 	Page             int
@@ -144,17 +147,19 @@ func (s *server) ordersPage(w http.ResponseWriter, r *http.Request) {
 		FulfillmentDate:  filters.FulfillmentDate,
 	}
 	if application.CanUseProduction(viewer) {
-		if filters.FulfillmentFrom == "" || filters.FulfillmentTo == "" {
-			from := startOfDay(time.Now())
-			filters.FulfillmentFrom = from.Format(time.DateOnly)
-			filters.FulfillmentTo = from.AddDate(0, 0, 4).Format(time.DateOnly)
-		}
+		normalizeMatrixWindow(&filters, time.Now())
+		apiFilters.Page = 1
 		apiFilters.Limit = 100
 		apiFilters.FulfillmentFrom = filters.FulfillmentFrom
 		apiFilters.FulfillmentTo = filters.FulfillmentTo
 	}
 
-	ordersPage, err := s.queries.Orders(r.Context(), cred, apiFilters)
+	var ordersPage contract.OrdersPage
+	if application.CanUseProduction(viewer) {
+		ordersPage, err = s.listAllOrders(r.Context(), cred, apiFilters)
+	} else {
+		ordersPage, err = s.queries.Orders(r.Context(), cred, apiFilters)
+	}
 	if err != nil {
 		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить заказы."))
 		return
@@ -181,6 +186,36 @@ func (s *server) ordersPage(w http.ResponseWriter, r *http.Request) {
 		data.NextTo = from.AddDate(0, 0, 9).Format(time.DateOnly)
 	}
 	s.render(w, r, http.StatusOK, page{Title: "Заказы", View: "orders", Viewer: viewer, Success: queryMessage(r, "success"), Data: data})
+}
+
+func (s *server) listAllOrders(ctx context.Context, cred application.Credentials, filters application.OrderFilters) (contract.OrdersPage, error) {
+	filters.Page = 1
+	result, err := s.queries.Orders(ctx, cred, filters)
+	if err != nil {
+		return contract.OrdersPage{}, err
+	}
+	items := append([]contract.Order(nil), result.Items...)
+	for pageNumber := 2; pageNumber <= int(result.TotalPages); pageNumber++ {
+		filters.Page = pageNumber
+		next, err := s.queries.Orders(ctx, cred, filters)
+		if err != nil {
+			return contract.OrdersPage{}, err
+		}
+		items = append(items, next.Items...)
+	}
+	result.Items = items
+	return result, nil
+}
+
+func normalizeMatrixWindow(filters *orderFiltersView, now time.Time) {
+	from, fromErr := time.Parse(time.DateOnly, filters.FulfillmentFrom)
+	to, toErr := time.Parse(time.DateOnly, filters.FulfillmentTo)
+	if fromErr != nil || toErr != nil || !to.Equal(from.AddDate(0, 0, matrixWindowDays-1)) {
+		from = startOfDay(now)
+		to = from.AddDate(0, 0, matrixWindowDays-1)
+	}
+	filters.FulfillmentFrom = from.Format(time.DateOnly)
+	filters.FulfillmentTo = to.Format(time.DateOnly)
 }
 
 func (s *server) orderDetailPage(w http.ResponseWriter, r *http.Request) {

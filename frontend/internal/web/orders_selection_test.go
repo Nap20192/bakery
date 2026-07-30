@@ -3,7 +3,6 @@ package web
 import (
 	"context"
 	"encoding/base64"
-	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -48,13 +47,19 @@ func TestSelectionPageDropsOrdersThatCannotJoinABatch(t *testing.T) {
 		errs: map[string]error{
 			"missing": &application.Error{Status: http.StatusNotFound, Message: "заказ не найден"},
 		},
-	}, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	}, nil, slog.New(slog.DiscardHandler))
 	if err != nil {
 		t.Fatalf("newServer: %v", err)
 	}
 
 	request := httptest.NewRequest("GET", "/orders/selection?order=free&order=produced&order=cancelled&order=missing", nil)
-	request.AddCookie(&http.Cookie{Name: sessionCookie, Value: base64.RawURLEncoding.EncodeToString([]byte("Bearer token"))})
+	request.AddCookie(&http.Cookie{
+		Name:     sessionCookie,
+		Value:    base64.RawURLEncoding.EncodeToString([]byte("Bearer token")),
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
 	response := httptest.NewRecorder()
 	srv.orderSelectionPage(response, request)
 

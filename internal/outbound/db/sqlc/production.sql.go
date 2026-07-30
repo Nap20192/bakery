@@ -199,7 +199,6 @@ func (q *Queries) InsertProductionSheetLoad(ctx context.Context, arg InsertProdu
 const insertProductionSheetOrder = `-- name: InsertProductionSheetOrder :exec
 INSERT INTO production_sheet_orders (sheet_id, order_id)
 VALUES ($1, $2)
-ON CONFLICT DO NOTHING
 `
 
 type InsertProductionSheetOrderParams struct {

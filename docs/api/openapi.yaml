@@ -605,6 +605,21 @@ paths:
         "400": { $ref: "#/components/responses/Error" }
         "409": { $ref: "#/components/responses/Error" }
 
+  /admin/dishes/techcards:
+    get:
+      tags: [admin]
+      summary: Dish catalog tech cards, grouped by order category
+      operationId: listDishTechCards
+      responses:
+        "200":
+          description: Categories with each dish's tech card ingredients
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TechCardCategory" }
+        "403": { $ref: "#/components/responses/Error" }
+
   /admin/dishes/available:
     get:
       tags: [admin]
@@ -981,6 +996,34 @@ components:
         code: { type: string }
         name: { type: string }
         unit: { type: string }
+
+    TechCardIngredient:
+      type: object
+      properties:
+        code: { type: string }
+        name: { type: string }
+        unit: { type: string }
+        amount: { type: number }
+
+    TechCardDish:
+      type: object
+      properties:
+        code: { type: string }
+        name: { type: string }
+        unit: { type: string }
+        ingredients:
+          type: array
+          items: { $ref: "#/components/schemas/TechCardIngredient" }
+        error: { type: string, description: Set instead of ingredients when the tech card could not be loaded }
+
+    TechCardCategory:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        dishes:
+          type: array
+          items: { $ref: "#/components/schemas/TechCardDish" }
 
     ProductionItemWrite:
       type: object

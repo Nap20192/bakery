@@ -1,0 +1,110 @@
+- generic [active] [ref=f2e1]:
+  - progressbar "Загрузка"
+  - generic [ref=f2e2]:
+    - banner [ref=f2e3]:
+      - link "Bakery, заказы" [ref=f2e4] [cursor=pointer]:
+        - /url: /orders
+        - generic [ref=f2e5]:
+          - strong [ref=f2e6]: Bakery
+          - generic [ref=f2e7]: Производственный журнал
+      - navigation "Основная навигация" [ref=f2e8]:
+        - link "Заказы" [ref=f2e9] [cursor=pointer]:
+          - /url: /orders
+        - link "Отработки" [ref=f2e10] [cursor=pointer]:
+          - /url: /production
+        - link "Новая заявка" [ref=f2e11] [cursor=pointer]:
+          - /url: /orders/new
+        - link "Тесто" [ref=f2e12] [cursor=pointer]:
+          - /url: /calculator
+        - link "Профиль" [ref=f2e13] [cursor=pointer]:
+          - /url: /me
+    - main [ref=f2e14]:
+      - generic [ref=f2e15]:
+        - heading "Заказы" [level=1] [ref=f2e18]
+        - generic [ref=f2e19]:
+          - tablist "Вид заказов" [ref=f2e20]:
+            - tab "Матрица" [selected] [ref=f2e21] [cursor=pointer]
+            - tab "Таблица" [ref=f2e25] [cursor=pointer]
+          - generic [ref=f2e29]:
+            - link "← Раньше" [ref=f2e30] [cursor=pointer]:
+              - /url: /orders?fulfillment_from=2026-07-24&fulfillment_to=2026-07-28&category_id=4
+            - generic [ref=f2e31]: 2026-07-29 — 2026-08-02
+            - link "Позже →" [ref=f2e32] [cursor=pointer]:
+              - /url: /orders?fulfillment_from=2026-08-03&fulfillment_to=2026-08-07&category_id=4
+        - generic [ref=f2e33]:
+          - navigation "Тип заявки" [ref=f2e34]:
+            - link "Хлеб" [ref=f2e35] [cursor=pointer]:
+              - /url: /orders?category_id=4&fulfillment_from=2026-07-29&fulfillment_to=2026-08-02
+          - button "Выбрать заказы" [ref=f2e37] [cursor=pointer]
+        - region "Матрица заказов" [ref=f2e39]:
+          - table [ref=f2e40]:
+            - rowgroup [ref=f2e41]:
+              - row [ref=f2e42]:
+                - columnheader "Дата" [ref=f2e43]
+                - columnheader "Магазин Гагарина" [ref=f2e44]
+                - columnheader "Цех Пекари" [ref=f2e45]
+            - rowgroup [ref=f2e46]:
+              - row [ref=f2e47]:
+                - rowheader "Ср 29.07" [ref=f2e48]:
+                  - strong [ref=f2e49]: Ср
+                  - generic [ref=f2e50]: "29.07"
+                - cell [ref=f2e51]:
+                  - generic [ref=f2e52]:
+                    - article [ref=f2e53] [cursor=pointer]:
+                      - link "Хлеб, заказ Г.Х.29.07.26.001" [ref=f2e54]:
+                        - /url: /orders/%D0%93.%D0%A5.29.07.26.001
+                      - strong [ref=f2e56]: Г.Х.29.07.26.001
+                      - generic [ref=f2e57]:
+                        - generic [ref=f2e58]:
+                          - strong [ref=f2e59]: "1"
+                          - text: поз.
+                        - link "Отработка №5" [ref=f2e60]:
+                          - /url: /production/5
+                          - text: ✓
+                      - generic [ref=f2e61]:
+                        - generic [ref=f2e62]: "@baker"
+                        - button "Обзор заказа Г.Х.29.07.26.001" [ref=f2e63]
+                    - article [ref=f2e66] [cursor=pointer]:
+                      - link "Хлеб, заказ Г.Х.29.07.26.101" [ref=f2e67]:
+                        - /url: /orders/%D0%93.%D0%A5.29.07.26.101
+                      - strong [ref=f2e69]: Г.Х.29.07.26.101
+                      - generic [ref=f2e71]:
+                        - strong [ref=f2e72]: "1"
+                        - text: поз.
+                      - generic [ref=f2e73]:
+                        - generic [ref=f2e74]: "@baker"
+                        - button "Обзор заказа Г.Х.29.07.26.101" [ref=f2e75]
+                - cell "Пусто" [ref=f2e78]:
+                  - generic "Пусто" [ref=f2e80]: ·
+              - row [ref=f2e81]:
+                - rowheader "Чт 30.07" [ref=f2e82]:
+                  - strong [ref=f2e83]: Чт
+                  - generic [ref=f2e84]: "30.07"
+                - cell "Пусто" [ref=f2e85]:
+                  - generic "Пусто" [ref=f2e87]: ·
+                - cell "Пусто" [ref=f2e88]:
+                  - generic "Пусто" [ref=f2e90]: ·
+              - row [ref=f2e91]:
+                - rowheader "Пт 31.07" [ref=f2e92]:
+                  - strong [ref=f2e93]: Пт
+                  - generic [ref=f2e94]: "31.07"
+                - cell "Пусто" [ref=f2e95]:
+                  - generic "Пусто" [ref=f2e97]: ·
+                - cell "Пусто" [ref=f2e98]:
+                  - generic "Пусто" [ref=f2e100]: ·
+              - row [ref=f2e101]:
+                - rowheader "Сб 01.08" [ref=f2e102]:
+                  - strong [ref=f2e103]: Сб
+                  - generic [ref=f2e104]: "01.08"
+                - cell "Пусто" [ref=f2e105]:
+                  - generic "Пусто" [ref=f2e107]: ·
+                - cell "Пусто" [ref=f2e108]:
+                  - generic "Пусто" [ref=f2e110]: ·
+              - row [ref=f2e111]:
+                - rowheader "Вс 02.08" [ref=f2e112]:
+                  - strong [ref=f2e113]: Вс
+                  - generic [ref=f2e114]: "02.08"
+                - cell "Пусто" [ref=f2e115]:
+                  - generic "Пусто" [ref=f2e117]: ·
+                - cell "Пусто" [ref=f2e118]:
+                  - generic "Пусто" [ref=f2e120]: ·

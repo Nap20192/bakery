@@ -41,8 +41,7 @@ ORDER BY ps.id DESC;
 
 -- name: InsertProductionSheetOrder :exec
 INSERT INTO production_sheet_orders (sheet_id, order_id)
-VALUES (sqlc.arg(sheet_id), sqlc.arg(order_id))
-ON CONFLICT DO NOTHING;
+VALUES (sqlc.arg(sheet_id), sqlc.arg(order_id));
 
 -- name: DeleteProductionSheetOrders :exec
 DELETE FROM production_sheet_orders

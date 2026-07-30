@@ -12,7 +12,10 @@ import (
 	orderuc "bakery/internal/services/order/usecase/order"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
+
+const productionSheetOrderUniqueConstraint = "production_sheet_orders_order_id_key"
 
 // Журнал отработок — единственное место, где живёт факт выпечки. Лист
 // фиксирует партию: сохранённый выбор заказов (production_sheet_orders) плюс
@@ -91,7 +94,7 @@ func (r *OrderRepository) SaveProductionSheet(ctx context.Context, input orderuc
 				SheetID: sheetID,
 				OrderID: orderIDs[order.Number],
 			}); err != nil {
-				return fmt.Errorf("insert production sheet order: %w", err)
+				return productionSheetOrderInsertError(err, order.Number)
 			}
 			for _, item := range order.Items {
 				if err := q.InsertProductionSheetLoad(ctx, sqlc.InsertProductionSheetLoadParams{
@@ -123,6 +126,17 @@ func (r *OrderRepository) SaveProductionSheet(ctx context.Context, input orderuc
 		return orderdomain.ProductionSheet{}, err
 	}
 	return r.GetProductionSheet(ctx, sheetID)
+}
+
+func productionSheetOrderInsertError(err error, orderNumber string) error {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) &&
+		pgErr.Code == "23505" &&
+		pgErr.ConstraintName == productionSheetOrderUniqueConstraint {
+		return apperr.Conflict("order.production_exists",
+			fmt.Sprintf("По заказу %s уже есть отработка — измените её в журнале.", orderNumber))
+	}
+	return fmt.Errorf("insert production sheet order: %w", err)
 }
 
 func (r *OrderRepository) DeleteProductionSheet(ctx context.Context, id int64, byUsername string) error {

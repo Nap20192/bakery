@@ -31,6 +31,8 @@ type fakeBackend struct {
 	sheets       []contract.ProductionSheet
 	categories   []contract.Category
 	orderFilters application.OrderFilters
+	orderPages   map[int]contract.OrdersPage
+	orderCalls   []application.OrderFilters
 	drafts       []contract.OrderDraft
 }
 
@@ -57,6 +59,10 @@ func (f *fakeBackend) Categories(context.Context, application.Credentials) ([]co
 }
 func (f *fakeBackend) Orders(_ context.Context, _ application.Credentials, filters application.OrderFilters) (contract.OrdersPage, error) {
 	f.orderFilters = filters
+	f.orderCalls = append(f.orderCalls, filters)
+	if page, ok := f.orderPages[filters.Page]; ok {
+		return page, nil
+	}
 	return contract.OrdersPage{Items: nil, Total: 0}, nil
 }
 func (f *fakeBackend) Order(_ context.Context, _ application.Credentials, number string) (contract.Order, error) {
@@ -164,7 +170,7 @@ func (f *fakeBackend) DeleteCategory(context.Context, application.Credentials, i
 // auto-follow redirects so tests can assert on 303/HX responses.
 func newE2E(t *testing.T, back *fakeBackend) (*httptest.Server, *http.Client) {
 	t.Helper()
-	handler, err := New(back, back, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	handler, err := New(back, back, slog.New(slog.DiscardHandler))
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -211,7 +217,7 @@ func login(t *testing.T, client *http.Client, base, username string) {
 	if err != nil {
 		t.Fatalf("login: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusSeeOther {
 		t.Fatalf("login status = %d, want 303", resp.StatusCode)
 	}
@@ -228,7 +234,7 @@ func TestE2EUnauthenticatedOrdersShowsLogin(t *testing.T) {
 		t.Fatalf("get: %v", err)
 	}
 	body, _ := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("status = %d, want 401", resp.StatusCode)
 	}
@@ -246,7 +252,7 @@ func TestE2ELoginThenOrders(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get orders: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("orders status = %d, want 200", resp.StatusCode)
 	}
@@ -267,13 +273,106 @@ func TestE2EOrdersDefaultToOneDynamicCategory(t *testing.T) {
 		t.Fatalf("get orders: %v", err)
 	}
 	body, _ := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	html := string(body)
 	if back.orderFilters.CategoryID != 4 {
 		t.Fatalf("category filter = %d, want first dynamic category 4", back.orderFilters.CategoryID)
 	}
 	if !strings.Contains(html, "Булочки") || strings.Contains(html, "Все типы") {
 		t.Fatalf("dynamic category tabs were not rendered: %s", html)
+	}
+}
+
+func TestE2EBakerOrdersLoadsEveryPageInTheWindow(t *testing.T) {
+	t.Parallel()
+	back := shopBackend()
+	back.viewers["Bearer shop-token"] = contract.Me{Role: "baker", TelegramUsername: "baker"}
+	back.categories = []contract.Category{{ID: 4, Name: "Хлеб", Letter: "Х", Color: "amber"}}
+	back.orderPages = map[int]contract.OrdersPage{
+		1: {
+			Items: []contract.Order{{
+				Number:          "Г.Х.29.07.26.001",
+				Category:        &back.categories[0],
+				FulfillmentDate: "2026-07-29",
+			}},
+			Page: 1, Limit: 100, Total: 101, TotalPages: 2,
+		},
+		2: {
+			Items: []contract.Order{{
+				Number:          "Г.Х.29.07.26.101",
+				Category:        &back.categories[0],
+				FulfillmentDate: "2026-07-29",
+			}},
+			Page: 2, Limit: 100, Total: 101, TotalPages: 2,
+		},
+	}
+	srv, client := newE2E(t, back)
+	login(t, client, srv.URL, "baker")
+
+	resp, err := client.Get(srv.URL + "/orders?category_id=4&fulfillment_from=2026-07-29&fulfillment_to=2026-08-02")
+	if err != nil {
+		t.Fatalf("get orders: %v", err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("orders status = %d, want 200", resp.StatusCode)
+	}
+	html := string(body)
+	for _, number := range []string{"Г.Х.29.07.26.001", "Г.Х.29.07.26.101"} {
+		if !strings.Contains(html, number) {
+			t.Fatalf("orders page does not contain page item %q", number)
+		}
+	}
+	if len(back.orderCalls) != 2 || back.orderCalls[0].Page != 1 || back.orderCalls[1].Page != 2 ||
+		back.orderCalls[0].CategoryID != 4 || back.orderCalls[1].CategoryID != 4 {
+		t.Fatalf("order calls = %+v, want category 4 pages 1 and 2", back.orderCalls)
+	}
+}
+
+func TestE2EOrdersTableLoadsEveryPageInTheWindow(t *testing.T) {
+	t.Parallel()
+	back := shopBackend()
+	back.viewers["Bearer shop-token"] = contract.Me{Role: "baker", TelegramUsername: "baker"}
+	back.categories = []contract.Category{{ID: 4, Name: "Хлеб", Letter: "Х", Color: "amber"}}
+	back.orderPages = map[int]contract.OrdersPage{
+		1: {
+			Items: []contract.Order{{
+				Number:          "Г.Х.29.07.26.001",
+				Category:        &back.categories[0],
+				FulfillmentDate: "2026-07-29",
+				Items:           []contract.OrderItem{{ProductName: "Багет", ProductionQuantity: 1}},
+			}},
+			Page: 1, Limit: 100, Total: 101, TotalPages: 2,
+		},
+		2: {
+			Items: []contract.Order{{
+				Number:          "Г.Х.29.07.26.101",
+				Category:        &back.categories[0],
+				FulfillmentDate: "2026-07-29",
+				Items:           []contract.OrderItem{{ProductName: "Редкая позиция 101", ProductionQuantity: 1}},
+			}},
+			Page: 2, Limit: 100, Total: 101, TotalPages: 2,
+		},
+	}
+	srv, client := newE2E(t, back)
+	login(t, client, srv.URL, "baker")
+
+	resp, err := client.Get(srv.URL + "/orders/table?start=2026-07-29&category_id=4")
+	if err != nil {
+		t.Fatalf("get orders table: %v", err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("orders table status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(string(body), "Редкая позиция 101") {
+		t.Fatal("orders table does not contain an item from page 2")
+	}
+	if len(back.orderCalls) != 2 || back.orderCalls[0].Page != 1 || back.orderCalls[1].Page != 2 ||
+		back.orderCalls[0].CategoryID != 4 || back.orderCalls[1].CategoryID != 4 {
+		t.Fatalf("order calls = %+v, want category 4 pages 1 and 2", back.orderCalls)
 	}
 }
 
@@ -289,7 +388,7 @@ func TestE2EOrderNewShowsSaveDraftButtonForShop(t *testing.T) {
 		t.Fatalf("get orders/new: %v", err)
 	}
 	body, _ := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	html := string(body)
 	if !strings.Contains(html, `formaction="/orders/draft"`) {
 		t.Fatalf("shop create form should offer a save-draft button: %s", html)
@@ -312,7 +411,7 @@ func TestE2EOrderNewHidesDraftUIForBaker(t *testing.T) {
 		t.Fatalf("get orders/new: %v", err)
 	}
 	body, _ := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	html := string(body)
 	if strings.Contains(html, `formaction="/orders/draft"`) {
 		t.Fatalf("baker create form must not offer a save-draft button: %s", html)
@@ -337,7 +436,7 @@ func TestE2EDraftsPageListsDraftsForShop(t *testing.T) {
 		t.Fatalf("get drafts: %v", err)
 	}
 	body, _ := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("drafts status = %d, want 200", resp.StatusCode)
 	}
@@ -358,7 +457,7 @@ func TestE2EDraftsPageForbiddenForBaker(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get drafts: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("drafts status = %d, want 403", resp.StatusCode)
 	}
@@ -377,7 +476,7 @@ func TestE2EInvalidLoginRejected(t *testing.T) {
 		t.Fatalf("post: %v", err)
 	}
 	body, _ := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("status = %d, want 401", resp.StatusCode)
 	}
@@ -396,7 +495,7 @@ func TestE2ERBACShopBlockedFromAdminAndProduction(t *testing.T) {
 		if err != nil {
 			t.Fatalf("get %s: %v", path, err)
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		if resp.StatusCode != http.StatusForbidden {
 			t.Errorf("%s status = %d, want 403", path, resp.StatusCode)
 		}
@@ -418,7 +517,7 @@ func TestE2ERBACBakerReachesProductionNotAdmin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get production: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("production status = %d, want 200", resp.StatusCode)
 	}
@@ -428,7 +527,7 @@ func TestE2ERBACBakerReachesProductionNotAdmin(t *testing.T) {
 		t.Fatalf("get new order: %v", err)
 	}
 	body, _ := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusOK || !strings.Contains(string(body), "Цех Пекари") {
 		t.Fatalf("new order page = %d, workshop source missing", resp.StatusCode)
 	}
@@ -437,7 +536,7 @@ func TestE2ERBACBakerReachesProductionNotAdmin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get admin: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("admin status = %d, want 403", resp.StatusCode)
 	}
@@ -468,7 +567,7 @@ func TestE2EProductionJournalOmitsSheetsWithoutCategory(t *testing.T) {
 		t.Fatalf("get production: %v", err)
 	}
 	body, _ := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	html := string(body)
 	if resp.StatusCode != http.StatusOK || !strings.Contains(html, "№1") {
 		t.Fatalf("production journal = %d, categorized sheet missing", resp.StatusCode)
@@ -493,7 +592,7 @@ func TestE2ECreateOrderRequiresCSRF(t *testing.T) {
 	if err != nil {
 		t.Fatalf("post no-csrf: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("no-csrf status = %d, want 403", resp.StatusCode)
 	}
@@ -503,14 +602,14 @@ func TestE2ECreateOrderRequiresCSRF(t *testing.T) {
 	if err != nil {
 		t.Fatalf("warm: %v", err)
 	}
-	warm.Body.Close()
+	_ = warm.Body.Close()
 	form.Set("_csrf", csrfToken(t, client, srv.URL))
 
 	resp, err = client.PostForm(srv.URL+"/orders", form)
 	if err != nil {
 		t.Fatalf("post csrf: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if resp.StatusCode == http.StatusForbidden {
 		t.Fatalf("valid CSRF still rejected: %d", resp.StatusCode)
 	}
@@ -523,14 +622,14 @@ func TestE2ELogoutClearsSession(t *testing.T) {
 	form := url.Values{"_csrf": {""}}
 
 	warm, _ := client.Get(srv.URL + "/orders")
-	warm.Body.Close()
+	_ = warm.Body.Close()
 	form.Set("_csrf", csrfToken(t, client, srv.URL))
 
 	resp, err := client.PostForm(srv.URL+"/session/logout", form)
 	if err != nil {
 		t.Fatalf("logout: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusSeeOther {
 		t.Fatalf("logout status = %d, want 303", resp.StatusCode)
 	}
@@ -540,7 +639,7 @@ func TestE2ELogoutClearsSession(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get after logout: %v", err)
 	}
-	after.Body.Close()
+	_ = after.Body.Close()
 	if after.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("post-logout /orders = %d, want 401", after.StatusCode)
 	}
@@ -554,7 +653,7 @@ func TestE2EHealthOK(t *testing.T) {
 		t.Fatalf("health: %v", err)
 	}
 	body, _ := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusOK || !strings.Contains(string(body), `"status":"ok"`) {
 		t.Fatalf("health = %d %s", resp.StatusCode, body)
 	}

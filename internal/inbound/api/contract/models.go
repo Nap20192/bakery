@@ -186,6 +186,27 @@ type DishWrite struct {
 	SortOrder  int64  `json:"sort_order"`
 }
 
+type TechCardIngredient struct {
+	Code   string  `json:"code"`
+	Name   string  `json:"name"`
+	Unit   string  `json:"unit"`
+	Amount float64 `json:"amount"`
+}
+
+type TechCardDish struct {
+	Code        string               `json:"code"`
+	Name        string               `json:"name"`
+	Unit        string               `json:"unit"`
+	Ingredients []TechCardIngredient `json:"ingredients"`
+	Error       string               `json:"error,omitempty"`
+}
+
+type TechCardCategory struct {
+	ID     int64          `json:"id"`
+	Name   string         `json:"name"`
+	Dishes []TechCardDish `json:"dishes"`
+}
+
 type AvailableDish struct {
 	Code string `json:"code"`
 	Name string `json:"name"`
