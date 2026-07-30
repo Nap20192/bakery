@@ -92,6 +92,9 @@ func (f *fakeBackend) Dishes(context.Context, application.Credentials) ([]contra
 func (f *fakeBackend) AvailableDishes(context.Context, application.Credentials, string) ([]contract.AvailableDish, error) {
 	return nil, nil
 }
+func (f *fakeBackend) DishTechCards(context.Context, application.Credentials) ([]contract.TechCardCategory, error) {
+	return nil, nil
+}
 
 func (f *fakeBackend) Login(_ context.Context, username, _ string) (contract.LoginResponse, error) {
 	if f.loginErr != nil {

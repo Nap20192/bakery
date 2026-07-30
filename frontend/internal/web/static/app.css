@@ -339,6 +339,9 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .available-list, .dish-admin-list, .admin-list { display: grid; gap: 8px; }
 .available-row { display: grid; grid-template-columns: minmax(180px, 1fr) 180px 160px auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
 .reorder-actions { display: flex; gap: 6px; }
+.techcard-ingredients { display: grid; gap: 4px; margin: 8px 0 14px; }
+.techcard-ingredients li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); font-family: var(--font-mono); font-size: 0.85rem; }
+.techcard-ingredients li:last-child { border: 0; }
 .order-index { display: grid; min-width: 30px; height: 30px; place-items: center; border-radius: 50%; background: var(--paper-deep); font-family: var(--font-mono); font-size: 0.72rem; }
 .profile-list { display: grid; margin: 24px 0; border-block: 1px solid var(--line); }
 .profile-list div { display: grid; grid-template-columns: 160px 1fr; gap: 18px; padding: 14px 0; border-bottom: 1px solid var(--line-soft); }.profile-list div:last-child { border: 0; }.profile-list dt { color: var(--ink-muted); }.profile-list dd { margin: 0; font-weight: 700; }

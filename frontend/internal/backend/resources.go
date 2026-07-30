@@ -209,6 +209,12 @@ func (c *Client) Dishes(ctx context.Context, cred application.Credentials) ([]co
 	return out, err
 }
 
+func (c *Client) DishTechCards(ctx context.Context, cred application.Credentials) ([]contract.TechCardCategory, error) {
+	var out []contract.TechCardCategory
+	err := c.do(ctx, cred, request{method: http.MethodGet, path: "/admin/dishes/techcards", out: &out})
+	return out, err
+}
+
 func (c *Client) AvailableDishes(ctx context.Context, cred application.Credentials, queryText string) ([]contract.AvailableDish, error) {
 	query := url.Values{}
 	setString(query, "q", queryText)

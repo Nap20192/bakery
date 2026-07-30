@@ -28,6 +28,10 @@ type adminDishesData struct {
 	Search     string
 }
 
+type adminTechCardsData struct {
+	Categories []contract.TechCardCategory
+}
+
 func (s *server) adminUsersPage(w http.ResponseWriter, r *http.Request) {
 	viewer, cred, ok := s.requireAdmin(w, r)
 	if !ok {
@@ -280,6 +284,20 @@ func (s *server) renderAdminDishes(w http.ResponseWriter, r *http.Request, viewe
 	}
 	data := adminDishesData{Dishes: dishes, Categories: categories, Available: available, Search: search}
 	s.render(w, r, status, page{Title: "Каталог", View: "admin-dishes", Viewer: viewer, Error: message, Success: queryMessage(r, "success"), Data: data})
+}
+
+func (s *server) adminTechCardsPage(w http.ResponseWriter, r *http.Request) {
+	viewer, cred, ok := s.requireAdmin(w, r)
+	if !ok {
+		return
+	}
+	categories, err := s.queries.DishTechCards(r.Context(), cred)
+	if err != nil {
+		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить тех.карты."))
+		return
+	}
+	data := adminTechCardsData{Categories: categories}
+	s.render(w, r, http.StatusOK, page{Title: "Тех.карты", View: "admin-techcards", Viewer: viewer, Data: data})
 }
 
 func parseDishWrite(r *http.Request) contract.DishWrite {
