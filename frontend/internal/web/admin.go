@@ -21,11 +21,59 @@ type adminUsersData struct {
 	Departments []contract.Department
 }
 
+type themeGroup struct {
+	Name   string
+	Dishes []contract.Dish
+}
+
+type dishGroup struct {
+	Category contract.Category
+	Themes   []themeGroup
+	Count    int
+}
+
 type adminDishesData struct {
-	Dishes     []contract.Dish
-	Categories []contract.Category
-	Available  []contract.AvailableDish
-	Search     string
+	Dishes        []contract.Dish
+	Categories    []contract.Category
+	Groups        []dishGroup
+	Uncategorized []themeGroup
+	Available     []contract.AvailableDish
+	Search        string
+	ActiveTab     int64 // category id of the open tab; 0 = «Без типа»
+}
+
+// groupDishesByTheme buckets dishes by their Theme («группа»), preserving the
+// catalog order. Same grouping the order editor uses (buildEditorGroups).
+func groupDishesByTheme(dishes []contract.Dish) []themeGroup {
+	var themes []themeGroup
+	index := map[string]int{}
+	for _, dish := range dishes {
+		name := dish.Theme
+		if name == "" {
+			name = "Без группы"
+		}
+		i, ok := index[name]
+		if !ok {
+			i = len(themes)
+			index[name] = i
+			themes = append(themes, themeGroup{Name: name})
+		}
+		themes[i].Dishes = append(themes[i].Dishes, dish)
+	}
+	return themes
+}
+
+// dishesRedirect builds the post-mutation URL, keeping the active category tab
+// open and carrying an optional success flash.
+func dishesRedirect(tab int64, success string) string {
+	v := url.Values{}
+	if tab > 0 {
+		v.Set("tab", strconv.FormatInt(tab, 10))
+	}
+	if success != "" {
+		v.Set("success", success)
+	}
+	return "/admin/dishes?" + v.Encode()
 }
 
 type adminTechCardsData struct {
@@ -153,11 +201,15 @@ func (s *server) adminDishCreate(w http.ResponseWriter, r *http.Request) {
 		s.renderAdminDishes(w, r, viewer, cred, http.StatusUnprocessableEntity, "Код, название и группа блюда обязательны.")
 		return
 	}
+	if body.CategoryID == nil {
+		s.renderAdminDishes(w, r, viewer, cred, http.StatusUnprocessableEntity, "Выберите тип заявки для блюда.")
+		return
+	}
 	if _, err := s.commands.CreateDish(r.Context(), cred, body); err != nil {
 		s.renderAdminDishes(w, r, viewer, cred, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось добавить блюдо."))
 		return
 	}
-	s.redirect(w, r, "/admin/dishes?success="+url.QueryEscape("Блюдо добавлено."))
+	s.redirect(w, r, dishesRedirect(*body.CategoryID, "Блюдо добавлено."))
 }
 
 func (s *server) adminDishUpdate(w http.ResponseWriter, r *http.Request) {
@@ -167,11 +219,15 @@ func (s *server) adminDishUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 	body := parseDishWrite(r)
 	body.Code = r.PathValue("code")
+	if body.CategoryID == nil {
+		s.renderAdminDishes(w, r, viewer, cred, http.StatusUnprocessableEntity, "Выберите тип заявки для блюда.")
+		return
+	}
 	if _, err := s.commands.UpdateDish(r.Context(), cred, body.Code, body); err != nil {
 		s.renderAdminDishes(w, r, viewer, cred, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось обновить блюдо."))
 		return
 	}
-	s.redirect(w, r, "/admin/dishes?success="+url.QueryEscape("Блюдо обновлено."))
+	s.redirect(w, r, dishesRedirect(*body.CategoryID, "Блюдо обновлено."))
 }
 
 func (s *server) adminDishDelete(w http.ResponseWriter, r *http.Request) {
@@ -183,7 +239,7 @@ func (s *server) adminDishDelete(w http.ResponseWriter, r *http.Request) {
 		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось удалить блюдо."))
 		return
 	}
-	s.redirect(w, r, "/admin/dishes?success="+url.QueryEscape("Блюдо удалено."))
+	s.redirect(w, r, dishesRedirect(parseInt64(r.FormValue("tab")), "Блюдо удалено."))
 }
 
 func (s *server) adminDishReorder(w http.ResponseWriter, r *http.Request) {
@@ -191,36 +247,22 @@ func (s *server) adminDishReorder(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	dishes, err := s.queries.Dishes(r.Context(), cred)
-	if err != nil {
-		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить каталог."))
+	if err := r.ParseForm(); err != nil {
+		s.renderError(w, r, http.StatusBadRequest, "Не удалось прочитать порядок блюд.")
 		return
 	}
-	code := r.FormValue("code")
-	direction := r.FormValue("direction")
-	index := -1
-	for i, dish := range dishes {
-		if dish.Code == code {
-			index = i
-			break
-		}
-	}
-	target := index - 1
-	if direction == "down" {
-		target = index + 1
-	}
-	if index >= 0 && target >= 0 && target < len(dishes) {
-		dishes[index], dishes[target] = dishes[target], dishes[index]
-	}
-	codes := make([]string, len(dishes))
-	for i, dish := range dishes {
-		codes[i] = dish.Code
+	// Drag-and-drop posts the full catalogue order (every dish code, all tabs, in
+	// display order) via fetch; nothing to do without it.
+	codes := r.Form["codes"]
+	if len(codes) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
 	}
 	if err := s.commands.ReorderDishes(r.Context(), cred, codes); err != nil {
 		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось изменить порядок блюд."))
 		return
 	}
-	s.redirect(w, r, "/admin/dishes")
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *server) adminCategoryCreate(w http.ResponseWriter, r *http.Request) {
@@ -229,11 +271,12 @@ func (s *server) adminCategoryCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	body := parseCategoryWrite(r)
-	if _, err := s.commands.CreateCategory(r.Context(), cred, body); err != nil {
+	category, err := s.commands.CreateCategory(r.Context(), cred, body)
+	if err != nil {
 		s.renderAdminDishes(w, r, viewer, cred, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось создать тип заявки."))
 		return
 	}
-	s.redirect(w, r, "/admin/dishes?success="+url.QueryEscape("Тип заявки создан."))
+	s.redirect(w, r, dishesRedirect(category.ID, "Тип заявки создан."))
 }
 
 func (s *server) adminCategoryUpdate(w http.ResponseWriter, r *http.Request) {
@@ -246,7 +289,7 @@ func (s *server) adminCategoryUpdate(w http.ResponseWriter, r *http.Request) {
 		s.renderAdminDishes(w, r, viewer, cred, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось обновить тип заявки."))
 		return
 	}
-	s.redirect(w, r, "/admin/dishes?success="+url.QueryEscape("Тип заявки обновлён."))
+	s.redirect(w, r, dishesRedirect(id, "Тип заявки обновлён."))
 }
 
 func (s *server) adminCategoryDelete(w http.ResponseWriter, r *http.Request) {
@@ -259,7 +302,7 @@ func (s *server) adminCategoryDelete(w http.ResponseWriter, r *http.Request) {
 		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось удалить тип заявки."))
 		return
 	}
-	s.redirect(w, r, "/admin/dishes?success="+url.QueryEscape("Тип заявки удалён."))
+	s.redirect(w, r, dishesRedirect(0, "Тип заявки удалён."))
 }
 
 func (s *server) renderAdminDishes(w http.ResponseWriter, r *http.Request, viewer *contract.Me, cred application.Credentials, status int, message string) {
@@ -283,7 +326,30 @@ func (s *server) renderAdminDishes(w http.ResponseWriter, r *http.Request, viewe
 		}
 	}
 	data := adminDishesData{Dishes: dishes, Categories: categories, Available: available, Search: search}
-	s.render(w, r, status, page{Title: "Каталог", View: "admin-dishes", Viewer: viewer, Error: message, Success: queryMessage(r, "success"), Data: data})
+	// Group dishes into per-category tabs; anything without a type falls into a
+	// separate bucket so the admin can still find and fix legacy rows.
+	for _, category := range categories {
+		var picked []contract.Dish
+		for _, dish := range dishes {
+			if dish.CategoryID != nil && *dish.CategoryID == category.ID {
+				picked = append(picked, dish)
+			}
+		}
+		data.Groups = append(data.Groups, dishGroup{Category: category, Themes: groupDishesByTheme(picked), Count: len(picked)})
+	}
+	var uncategorized []contract.Dish
+	for _, dish := range dishes {
+		if dish.CategoryID == nil {
+			uncategorized = append(uncategorized, dish)
+		}
+	}
+	data.Uncategorized = groupDishesByTheme(uncategorized)
+	// Keep the requested tab open across reloads; default to the first type.
+	data.ActiveTab = parseInt64(r.URL.Query().Get("tab"))
+	if data.ActiveTab == 0 && len(data.Groups) > 0 {
+		data.ActiveTab = data.Groups[0].Category.ID
+	}
+	s.render(w, r, status, page{Title: "Меню", View: "admin-dishes", Viewer: viewer, Error: message, Success: queryMessage(r, "success"), Data: data})
 }
 
 func (s *server) adminTechCardsPage(w http.ResponseWriter, r *http.Request) {

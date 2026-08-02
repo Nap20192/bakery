@@ -68,6 +68,8 @@
     initializeSelection(root);
     initializeSelectionRemoval(root);
     initializeCatalog(root);
+    initializeCatalogTabs(root);
+    initializeSortable(root);
     initializeCommentToggles(root);
     initializeProduction(root);
     initializeScrollHints(root);
@@ -127,6 +129,19 @@
       dialog.addEventListener('close', () => dialog.remove());
       dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
       dialog.showModal();
+    });
+    // Manual dialogs: opened by a [data-open-dialog] button, closed on backdrop
+    // click or a [data-close-dialog] button. Unlike the auto ones they persist.
+    root.querySelectorAll('dialog[data-dialog]:not([data-ready])').forEach((dialog) => {
+      dialog.dataset.ready = 'true';
+      dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) dialog.close();
+        if (event.target.closest('[data-close-dialog]')) dialog.close();
+      });
+    });
+    root.querySelectorAll('[data-open-dialog]:not([data-ready])').forEach((opener) => {
+      opener.dataset.ready = 'true';
+      opener.addEventListener('click', () => document.getElementById(opener.dataset.openDialog)?.showModal());
     });
   }
 
@@ -366,6 +381,63 @@
       editor.querySelectorAll('.quantity-input').forEach((input) => input.addEventListener('input', () => updateSummary(editor)));
       updateRows();
     });
+  }
+
+  // Per-category tabs on the admin catalog: show one panel at a time. Only
+  // buttons carrying data-tab are real tabs — the "＋ Тип" button opens a dialog.
+  function initializeCatalogTabs(root) {
+    root.querySelectorAll('[data-catalog-tabs]:not([data-ready])').forEach((tabs) => {
+      tabs.dataset.ready = 'true';
+      const buttons = [...tabs.querySelectorAll('.tab-button[data-tab]')];
+      const panels = [...tabs.querySelectorAll('.tab-panel')];
+      const show = (id) => {
+        buttons.forEach((button) => button.setAttribute('aria-selected', String(button.dataset.tab === id)));
+        panels.forEach((panel) => { panel.hidden = panel.id !== id; });
+      };
+      buttons.forEach((button) => button.addEventListener('click', () => show(button.dataset.tab)));
+      const active = buttons.find((button) => button.getAttribute('aria-selected') === 'true') || buttons[0];
+      if (active) show(active.dataset.tab);
+    });
+  }
+
+  // Dish ordering via ↑/↓ buttons: move the row past its sibling, then save the
+  // full catalogue order (every tab, in DOM order) so the stored sort matches what
+  // the admin sees. The buttons live in the row's <summary>, so cancel the click's
+  // default toggle before moving.
+  function initializeSortable(root) {
+    root.querySelectorAll('[data-sortable]:not([data-ready])').forEach((list) => {
+      list.dataset.ready = 'true';
+      list.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-move]');
+        if (!button) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const item = button.closest('.sortable-item');
+        if (!item) return;
+        if (button.dataset.move === 'up') {
+          const prev = item.previousElementSibling;
+          if (prev && prev.classList.contains('sortable-item')) list.insertBefore(item, prev);
+        } else {
+          const next = item.nextElementSibling;
+          if (next && next.classList.contains('sortable-item')) list.insertBefore(next, item);
+        }
+        saveDishOrder();
+      });
+    });
+  }
+
+  function saveDishOrder() {
+    const codes = [...document.querySelectorAll('.sortable-item[data-dish-code]')].map((item) => item.dataset.dishCode);
+    if (codes.length === 0) return;
+    const body = new URLSearchParams();
+    codes.forEach((code) => body.append('codes', code));
+    const token = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    fetch('/admin/dishes/reorder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-Token': token },
+      body,
+    }).then((response) => { if (!response.ok) showToast('Не удалось сохранить порядок блюд.'); })
+      .catch(() => showToast('Не удалось сохранить порядок блюд.'));
   }
 
   function initializeCommentToggles(root) {
