@@ -84,7 +84,7 @@ func TestTemplatesRenderEveryView(t *testing.T) {
 				{User: contract.User{ID: 1, Username: "tester", Role: "admin"}},
 			}},
 		},
-		{View: "admin-dishes", Viewer: viewer, Data: adminDishesData{Dishes: []contract.Dish{dish}, Categories: []contract.Category{category}}},
+		{View: "admin-dishes", Viewer: viewer, Data: adminDishesData{Dishes: []contract.Dish{dish}, Categories: []contract.Category{category}, Groups: []dishGroup{{Category: category, Themes: groupDishesByTheme([]contract.Dish{dish}), Count: 1}}, ActiveTab: categoryID}},
 	}
 
 	for _, value := range tests {

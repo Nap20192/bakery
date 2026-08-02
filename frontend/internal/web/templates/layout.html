@@ -34,7 +34,7 @@
         {{if canUseProduction .Viewer}}<a href="/calculator" {{if active .CurrentPath "/calculator"}}aria-current="page"{{end}}>{{template "navicon" "bowl"}}<span class="nav-label">Тесто</span></a>{{end}}
         {{if isAdmin .Viewer}}
           <a href="/admin/users" {{if active .CurrentPath "/admin/users"}}aria-current="page"{{end}}>{{template "navicon" "users"}}<span class="nav-label">Пользователи</span></a>
-          <a href="/admin/dishes" {{if active .CurrentPath "/admin/dishes"}}aria-current="page"{{end}}>{{template "navicon" "book"}}<span class="nav-label">Каталог</span></a>
+          <a href="/admin/dishes" {{if active .CurrentPath "/admin/dishes"}}aria-current="page"{{end}}>{{template "navicon" "book"}}<span class="nav-label">Меню</span></a>
           <a href="/admin/techcards" {{if active .CurrentPath "/admin/techcards"}}aria-current="page"{{end}}>{{template "navicon" "sheet"}}<span class="nav-label">Тех.карты</span></a>
         {{end}}
         <a href="/me" {{if active .CurrentPath "/me"}}aria-current="page"{{end}}>{{template "navicon" "user"}}<span class="nav-label">Профиль</span></a>
