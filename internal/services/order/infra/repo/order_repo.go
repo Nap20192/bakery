@@ -343,7 +343,9 @@ func (r *OrderRepository) ResolveDishCatalogItem(ctx context.Context, name strin
 		return orderuc.DishCatalogItem{}, orderuc.ErrDishCatalogItemAmbiguous
 	}
 	for _, row := range byCode {
-		return dishCatalogItem(row), nil
+		// Theme is unused by the resolve caller (it only reads Code/Name), so
+		// skip the extra group lookup here.
+		return dishCatalogItem(row, ""), nil
 	}
 	return orderuc.DishCatalogItem{}, orderuc.ErrDishCatalogItemNotFound
 }
@@ -353,19 +355,27 @@ func (r *OrderRepository) ListDishCatalog(ctx context.Context) ([]orderuc.DishCa
 	if err != nil {
 		return nil, fmt.Errorf("list dish catalog items: %w", err)
 	}
+	names, err := r.groupNames(ctx)
+	if err != nil {
+		return nil, err
+	}
 	items := make([]orderuc.DishCatalogItem, 0, len(rows))
 	for _, row := range rows {
-		items = append(items, dishCatalogItem(row))
+		items = append(items, dishCatalogItem(row, themeFor(names, row.GroupID)))
 	}
 	return items, nil
 }
 
 func (r *OrderRepository) UpsertDishCatalogItem(ctx context.Context, item orderuc.DishCatalogItem) error {
 	now := helpers.TimestamptzNow()
-	_, err := r.queries.UpsertDishCatalogItem(ctx, sqlc.UpsertDishCatalogItemParams{
+	groupID, err := r.resolveDishGroupID(ctx, item.Theme, item.CategoryID)
+	if err != nil {
+		return err
+	}
+	_, err = r.queries.UpsertDishCatalogItem(ctx, sqlc.UpsertDishCatalogItemParams{
 		Code:       item.Code,
 		Name:       item.Name,
-		Theme:      item.Theme,
+		GroupID:    groupID,
 		CategoryID: item.CategoryID,
 		SortOrder:  item.SortOrder,
 		CreatedAt:  now,
@@ -402,11 +412,15 @@ func (r *OrderRepository) SetDishCatalogSortOrder(ctx context.Context, code stri
 }
 
 func (r *OrderRepository) UpdateDishCatalogItem(ctx context.Context, code string, item orderuc.DishCatalogItem) (orderuc.DishCatalogItem, error) {
+	groupID, err := r.resolveDishGroupID(ctx, item.Theme, item.CategoryID)
+	if err != nil {
+		return orderuc.DishCatalogItem{}, err
+	}
 	row, err := r.queries.UpdateDishCatalogItem(ctx, sqlc.UpdateDishCatalogItemParams{
 		Code:       code,
 		NewCode:    item.Code,
 		Name:       item.Name,
-		Theme:      item.Theme,
+		GroupID:    groupID,
 		CategoryID: item.CategoryID,
 		SortOrder:  item.SortOrder,
 		UpdatedAt:  helpers.TimestamptzNow(),
@@ -417,7 +431,7 @@ func (r *OrderRepository) UpdateDishCatalogItem(ctx context.Context, code string
 		}
 		return orderuc.DishCatalogItem{}, fmt.Errorf("update dish catalog item: %w", err)
 	}
-	return dishCatalogItem(row), nil
+	return dishCatalogItem(row, strings.TrimSpace(item.Theme)), nil
 }
 
 func (r *OrderRepository) DeleteDishCatalogItem(ctx context.Context, code string) error {
@@ -898,12 +912,50 @@ func mapOrderItems(items []sqlc.GetOrderItemsByOrderIDRow) []orderdomain.OrderIt
 	return result
 }
 
-func dishCatalogItem(row sqlc.DishCatalog) orderuc.DishCatalogItem {
+func dishCatalogItem(row sqlc.DishCatalog, theme string) orderuc.DishCatalogItem {
 	return orderuc.DishCatalogItem{
 		Code:       row.Code,
 		Name:       row.Name,
-		Theme:      row.Theme,
+		Theme:      theme,
 		CategoryID: row.CategoryID,
 		SortOrder:  row.SortOrder,
 	}
+}
+
+// groupNames returns id → group name for mapping a dish's group_id back to the
+// «группа» string the domain/UI still work with.
+func (r *OrderRepository) groupNames(ctx context.Context) (map[int64]string, error) {
+	groups, err := r.queries.ListDishGroups(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list dish groups: %w", err)
+	}
+	names := make(map[int64]string, len(groups))
+	for _, g := range groups {
+		names[g.ID] = g.Name
+	}
+	return names, nil
+}
+
+func themeFor(names map[int64]string, groupID *int64) string {
+	if groupID == nil {
+		return ""
+	}
+	return names[*groupID]
+}
+
+// resolveDishGroupID find-or-creates the group for a dish's «группа» name under
+// its category, returning the group_id (nil for an empty group name).
+func (r *OrderRepository) resolveDishGroupID(ctx context.Context, theme string, categoryID *int64) (*int64, error) {
+	theme = strings.TrimSpace(theme)
+	if theme == "" {
+		return nil, nil
+	}
+	id, err := r.queries.EnsureDishGroup(ctx, sqlc.EnsureDishGroupParams{
+		CategoryID: categoryID,
+		Name:       theme,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("ensure dish group: %w", err)
+	}
+	return &id, nil
 }

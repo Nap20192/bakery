@@ -971,7 +971,7 @@ components:
       properties:
         code: { type: string }
         name: { type: string }
-        theme: { type: string, description: Display group, e.g. КОКРОКИ }
+        theme: { type: string, description: "Group name, e.g. КОКРОКИ (normalized to a dish_groups row keyed by category+name)" }
         category_id: { type: integer, format: int64, nullable: true }
         sort_order: { type: integer, format: int64 }
 
@@ -985,7 +985,7 @@ components:
       properties:
         code: { type: string, description: iiko product code }
         name: { type: string }
-        theme: { type: string }
+        theme: { type: string, description: "Group name; find-or-created in dish_groups under category_id" }
         category_id: { type: integer, format: int64, nullable: true }
         sort_order: { type: integer, format: int64 }
 

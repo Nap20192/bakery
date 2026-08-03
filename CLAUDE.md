@@ -112,13 +112,14 @@ Order service records domain events (`order.created`, `order.updated`) on the ag
 - `queries/*.sql` → run `sqlc generate` → `internal/outbound/db/sqlc/`
 - Migrations in `migrations/NNNNN_name.sql` (goose-style); applied automatically by worker on startup
 - `DATABASE_URL` takes priority over individual `POSTGRES_*` vars
-- Seed data for dish catalog: `templates/dishes.txt` → «Булочки», `templates/bread.txt` → «Хлеб» (worker сидит оба на старте; категория, назначенная админом, не затирается)
+- Seed data for dish catalog: `templates/dishes.txt` → «Булочки», `templates/bread.txt` → «Хлеб» (worker сидит оба на старте; категория, назначенная админом, не затирается). Формат шаблона: строка-заголовок «группа» (заглавными) + строки `<код> <название>`.
+- Normalized catalog model: `order_categories` → `dish_groups` (группа, FK на категорию) → `dish_catalog` (блюдо, FK `group_id` + `category_id`). Слой repo мапит `group_id` обратно в строку «группа» (поле `Theme` в domain/DTO осталось — это имя группы).
 
 ## Domain rules (do not regress)
 
 **Departments:** `shop` and `workshop` types. Orders flow shop → workshop. Shop users see/edit only their own orders; workshop (`baker`) sees all and can also create orders — the source is always resolved server-side to the real «Цех Пекари» department (`GetByCode(ctx, "pekari")`), any client-supplied `from_department_id` is ignored for that role. Own letter/counter sequence (`Ц`), no collision with shop counters.
 
-**Order categories (типы заявок):** dynamic `order_categories` dictionary (letter + color slug from `orderdomain.CategoryColors`). Every order requires a category; its letter is part of the order number (`Г.Х.08.07.26.001`), counters are per shop+category+day, category never changes on edit. Dish catalog entries carry `category_id`.
+**Order categories (типы заявок):** dynamic `order_categories` dictionary (letter + color slug from `orderdomain.CategoryColors`). Every order requires a category; its letter is part of the order number (`Г.Х.08.07.26.001`), counters are per shop+category+day, category never changes on edit. Dish catalog entries carry `category_id` + `group_id` (нормализованная «группа», см. `dish_groups`).
 
 **Order drafts (черновики):** shop-only convenience on `/orders/new`, keyed by `(created_by_username, category_id)` — one draft per user per category, `order_drafts` table upserts on that pair (`SaveOrderDraft`), never touching order numbering/counters. Same validation as `CreateOrder` (`Service.validateOrderWrite` — shared, extracted). Consumed (deleted) when the real order is created from it; otherwise purged by the same cleanup ticker that prunes old orders (`DeleteOrderDraftsOlderThan`, same retention).
 

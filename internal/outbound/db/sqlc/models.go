@@ -37,11 +37,20 @@ type DishCatalog struct {
 	ID         int64              `json:"id"`
 	Code       string             `json:"code"`
 	Name       string             `json:"name"`
-	Theme      string             `json:"theme"`
 	CreatedAt  pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
 	SortOrder  int64              `json:"sort_order"`
 	CategoryID *int64             `json:"category_id"`
+	GroupID    *int64             `json:"group_id"`
+}
+
+type DishGroup struct {
+	ID         int64              `json:"id"`
+	CategoryID *int64             `json:"category_id"`
+	Name       string             `json:"name"`
+	SortOrder  int64              `json:"sort_order"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
 }
 
 type IikoAssemblyChart struct {

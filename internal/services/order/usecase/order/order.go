@@ -1040,10 +1040,12 @@ func normalizeTemplateName(name string) string {
 	return strings.ToUpper(strings.TrimSpace(name))
 }
 
+// parseDefaultDishCatalogItems reads a seed template: an uppercase «группа»
+// header line followed by `<код> <название>` dish lines. Blank lines separate
+// groups; anything before the first header is ignored.
 func parseDefaultDishCatalogItems(raw string) []DishCatalogItem {
 	var items []DishCatalogItem
 	currentTheme := ""
-	spec := orderdomain.NewOrderSpec()
 
 	for _, line := range strings.Split(raw, "\n") {
 		line = strings.TrimSpace(line)
@@ -1057,17 +1059,33 @@ func parseDefaultDishCatalogItems(raw string) []DishCatalogItem {
 		if currentTheme == "" {
 			continue
 		}
-		parsed := orderdomain.ParseOrderLine(orderdomain.BulkOrderLine{Raw: line})
-		if parsed.Code == "" || parsed.Name == "" || !spec.Quantity.IsValid(parsed) {
+		code, name, ok := strings.Cut(line, " ")
+		if !ok || !isAllDigits(code) {
+			continue
+		}
+		name = strings.TrimSpace(name)
+		if name == "" {
 			continue
 		}
 		items = append(items, DishCatalogItem{
-			Code:      parsed.Code,
-			Name:      parsed.Name,
+			Code:      code,
+			Name:      name,
 			Theme:     currentTheme,
 			SortOrder: int64(len(items) + 1),
 		})
 	}
 
 	return items
+}
+
+func isAllDigits(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }
