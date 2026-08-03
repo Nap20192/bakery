@@ -265,6 +265,18 @@ func (s *server) adminDishReorder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (s *server) adminIikoSync(w http.ResponseWriter, r *http.Request) {
+	viewer, cred, ok := s.requireAdmin(w, r)
+	if !ok {
+		return
+	}
+	if err := s.commands.SyncIiko(r.Context(), cred); err != nil {
+		s.renderAdminDishes(w, r, viewer, cred, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось запустить синхронизацию с iiko."))
+		return
+	}
+	s.redirect(w, r, dishesRedirect(parseInt64(r.FormValue("tab")), "Синхронизация с iiko запущена — каталог обновится через минуту."))
+}
+
 func (s *server) adminCategoryCreate(w http.ResponseWriter, r *http.Request) {
 	viewer, cred, ok := s.requireAdmin(w, r)
 	if !ok {

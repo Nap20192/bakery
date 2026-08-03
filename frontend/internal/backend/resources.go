@@ -259,6 +259,10 @@ func (c *Client) DeleteCategory(ctx context.Context, cred application.Credential
 	return c.do(ctx, cred, request{method: http.MethodDelete, path: idPath("/admin/categories/", id)})
 }
 
+func (c *Client) SyncIiko(ctx context.Context, cred application.Credentials) error {
+	return c.do(ctx, cred, request{method: http.MethodPost, path: "/admin/iiko/sync"})
+}
+
 func resourcePath(prefix, value string) string { return prefix + url.PathEscape(value) }
 
 func idPath(prefix string, id int64) string { return prefix + strconv.FormatInt(id, 10) }

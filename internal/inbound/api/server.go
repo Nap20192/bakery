@@ -17,6 +17,8 @@ import (
 	monitoruc "bakery/internal/services/monitor/usecase/monitor"
 	orderhttp "bakery/internal/services/order/infra/http"
 	orderuc "bakery/internal/services/order/usecase/order"
+	synchttp "bakery/internal/services/sync/infra/http"
+	syncuc "bakery/internal/services/sync/usecase/sync"
 	techcarduc "bakery/internal/services/techcard/usecase/techcard"
 )
 
@@ -45,6 +47,7 @@ func NewServer(
 	authSvc authuc.UseCase,
 	adminSvc adminuc.UseCase,
 	techcardSvc techcarduc.UseCase,
+	syncSvc syncuc.UseCase,
 	config ServerConfig,
 ) *Server {
 	presenter := orderhttp.NewPresenter(departmentSvc)
@@ -56,6 +59,7 @@ func NewServer(
 			departmenthttp.New(departmentSvc),
 			orderhttp.New(orderSvc, departmentSvc, techcardSvc, presenter),
 			monitorhttp.New(monitorSvc, orderSvc, presenter),
+			synchttp.New(syncSvc),
 		},
 		config: config,
 	}

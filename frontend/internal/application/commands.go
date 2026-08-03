@@ -29,4 +29,5 @@ type Commands interface {
 	CreateCategory(ctx context.Context, credentials Credentials, input contract.CategoryWrite) (contract.Category, error)
 	UpdateCategory(ctx context.Context, credentials Credentials, id int64, input contract.CategoryWrite) (contract.Category, error)
 	DeleteCategory(ctx context.Context, credentials Credentials, id int64) error
+	SyncIiko(ctx context.Context, credentials Credentials) error
 }

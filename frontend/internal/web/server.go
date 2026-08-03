@@ -120,6 +120,7 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("POST /admin/dishes/{code}", s.adminDishUpdate)
 	mux.HandleFunc("POST /admin/dishes/{code}/delete", s.adminDishDelete)
 	mux.HandleFunc("POST /admin/dishes/reorder", s.adminDishReorder)
+	mux.HandleFunc("POST /admin/iiko/sync", s.adminIikoSync)
 	mux.HandleFunc("POST /admin/categories", s.adminCategoryCreate)
 	mux.HandleFunc("POST /admin/categories/{id}", s.adminCategoryUpdate)
 	mux.HandleFunc("POST /admin/categories/{id}/delete", s.adminCategoryDelete)

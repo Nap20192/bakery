@@ -168,6 +168,10 @@ func (f *fakeBackend) DeleteCategory(context.Context, application.Credentials, i
 	return nil
 }
 
+func (f *fakeBackend) SyncIiko(context.Context, application.Credentials) error {
+	return nil
+}
+
 // newE2E starts the real handler over httptest and returns a client whose
 // cookie jar carries session + CSRF cookies between requests, and does not
 // auto-follow redirects so tests can assert on 303/HX responses.
