@@ -9,6 +9,7 @@
     {{range $data.Groups}}<button type="button" role="tab" class="tab-button category-choice-{{categoryTone .Category}}" data-tab="cat-{{.Category.ID}}" aria-controls="cat-{{.Category.ID}}" {{if eq .Category.ID $active}}aria-selected="true"{{end}}><span class="choice-letter">{{.Category.Letter}}</span><span>{{.Category.Name}}</span><span class="tab-count">{{.Count}}</span></button>{{end}}
     {{if $data.Uncategorized}}<button type="button" role="tab" class="tab-button" data-tab="cat-none" aria-controls="cat-none" {{if eq $active 0}}aria-selected="true"{{end}}><span>Без типа</span></button>{{end}}
     <button type="button" class="tab-button tab-add" data-open-dialog="dialog-new-category">＋ Тип</button>
+    <form class="tab-sync" action="/admin/iiko/sync" method="post">{{template "csrf" $.CSRF}}<input type="hidden" name="tab" value="{{$active}}"><button type="submit" class="tab-button" data-confirm="Запустить синхронизацию с iiko? Каталог обновится из iiko в фоне.">⟳ Синхронизация iiko</button></form>
     </div>
 
     {{range $group := $data.Groups}}

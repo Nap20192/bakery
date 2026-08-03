@@ -637,6 +637,15 @@ paths:
                 items: { $ref: "#/components/schemas/AvailableDish" }
         "403": { $ref: "#/components/responses/Error" }
 
+  /admin/iiko/sync:
+    post:
+      tags: [admin]
+      summary: Trigger a one-off iiko sync (runs in the background)
+      operationId: syncIiko
+      responses:
+        "202": { description: Sync started }
+        "409": { $ref: "#/components/responses/Error" }
+
   /admin/dishes/reorder:
     put:
       tags: [admin]
