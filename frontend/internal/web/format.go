@@ -62,10 +62,10 @@ func formatQuantity(value any) string {
 		return strconv.FormatInt(int64(math.Round(number)), 10)
 	}
 	// Dough calculations divide by assembled amounts and produce long tails such
-	// as 1.3333333333333333. Two decimals is display-only rounding; the backend
+	// as 1.3333333333333333. Three decimals is display-only rounding; the backend
 	// keeps full precision. Order and production quantities never carry more than
 	// one decimal, so they pass through unchanged.
-	rounded := math.Round(number*100) / 100
+	rounded := math.Round(number*1000) / 1000
 	if math.Abs(rounded-math.Round(rounded)) < 0.000001 {
 		return strconv.FormatInt(int64(math.Round(rounded)), 10)
 	}
