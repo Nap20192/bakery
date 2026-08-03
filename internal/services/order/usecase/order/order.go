@@ -723,8 +723,10 @@ func (s *Service) EnsureDefaultOrderTemplates(ctx context.Context, seeds ...Cata
 	}
 
 	// Сквозная нумерация sort_order по всем файлам, чтобы группы не
-	// перемешивались между типами.
+	// перемешивались между типами. Все блюда собираются и апсертятся одной
+	// транзакцией — частичный сбой не оставляет каталог наполовину обновлённым.
 	sortOffset := int64(0)
+	var all []DishCatalogItem
 	for _, seed := range seeds {
 		data, err := os.ReadFile(seed.Path) //nolint:gosec // path is a configured local template file.
 		if err != nil {
@@ -743,16 +745,18 @@ func (s *Service) EnsureDefaultOrderTemplates(ctx context.Context, seeds ...Cata
 		}
 
 		items := parseDefaultDishCatalogItems(string(data))
-		for _, item := range items {
-			item.CategoryID = categoryID
-			item.SortOrder += sortOffset
-			if err := s.repo.UpsertDishCatalogItem(ctx, item); err != nil {
-				return result, fmt.Errorf("upsert dish catalog item %s: %w", item.Code, err)
-			}
-			result.CatalogItems++
+		for i := range items {
+			items[i].CategoryID = categoryID
+			items[i].SortOrder += sortOffset
 		}
+		all = append(all, items...)
 		sortOffset += int64(len(items))
 	}
+
+	if err := s.repo.UpsertDishCatalogItems(ctx, all); err != nil {
+		return result, fmt.Errorf("seed dish catalog: %w", err)
+	}
+	result.CatalogItems = len(all)
 	return result, nil
 }
 
