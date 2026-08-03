@@ -39,6 +39,12 @@ type Querier interface {
 	DeleteProductionSheetLoads(ctx context.Context, sheetID int64) error
 	DeleteProductionSheetOrders(ctx context.Context, sheetID int64) error
 	DishExistsByCode(ctx context.Context, code string) (int64, error)
+	// Find-or-create a group by (category, name); returns its id. The repo resolves
+	// a dish's group name to this id before upserting the dish.
+	// ponytail: UNIQUE(category_id, name) does not dedupe NULL-category groups
+	// (Postgres treats NULLs as distinct), so uncategorized groups can duplicate.
+	// Harmless — the UI groups by name — upgrade to NULLS NOT DISTINCT (PG15+) if it matters.
+	EnsureDishGroup(ctx context.Context, arg EnsureDishGroupParams) (int64, error)
 	FinishIikoSyncRun(ctx context.Context, arg FinishIikoSyncRunParams) (IikoSyncRun, error)
 	GetActiveAssemblyChartByProductID(ctx context.Context, arg GetActiveAssemblyChartByProductIDParams) (GetActiveAssemblyChartByProductIDRow, error)
 	GetActiveAssemblyChartFullByProductID(ctx context.Context, arg GetActiveAssemblyChartFullByProductIDParams) (IikoAssemblyChart, error)
@@ -80,6 +86,7 @@ type Querier interface {
 	ListDepartments(ctx context.Context, type_ *string) ([]Department, error)
 	ListDishCatalogItems(ctx context.Context) ([]DishCatalog, error)
 	ListDishCatalogItemsByName(ctx context.Context, name string) ([]DishCatalog, error)
+	ListDishGroups(ctx context.Context) ([]ListDishGroupsRow, error)
 	ListOrderCategories(ctx context.Context) ([]OrderCategory, error)
 	ListOrderDrafts(ctx context.Context, createdByUsername string) ([]OrderDraft, error)
 	ListOrderHistoryByOrderID(ctx context.Context, orderID int64) ([]OrderHistory, error)

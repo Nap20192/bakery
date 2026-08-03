@@ -238,4 +238,6 @@ Other roles get `403 «Отработку ведёт пекарь или адм�
 - **Outbox relay** — see [architecture.md](../architecture.md#events-and-messaging).
 - **Catalog seeding** — `EnsureDefaultOrderTemplates` on startup parses
   `templates/dishes.txt` (→ `buns`) and `templates/bread.txt` (→ `bread`),
-  upserting dishes without overwriting an admin-assigned category.
+  upserting dishes without overwriting an admin-assigned category. Each template
+  is an uppercase «группа» header followed by `<код> <название>` lines; the
+  group name resolves to a `dish_groups` row (`EnsureDishGroup`).

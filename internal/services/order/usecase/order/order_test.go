@@ -354,11 +354,11 @@ func TestRunCleanupTickerPurgesStaleDrafts(t *testing.T) {
 func TestParseDefaultDishCatalogItems(t *testing.T) {
 	items := parseDefaultDishCatalogItems(`
 КОКРОКИ
-15542 Кокрок с картофелем 0
-15544 Кокрок с творогом 0
+15542 Кокрок с картофелем
+15544 Кокрок с творогом
 
 САМСА И УЧПУЧМАК
-15646 Самса с курицей 0
+15646 Самса с курицей
 broken line
 `)
 	if len(items) != 3 {
