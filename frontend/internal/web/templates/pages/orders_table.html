@@ -1,0 +1,23 @@
+{{define "orders-table"}}
+{{$data := .Data}}
+<section class="page table-page">
+  <header class="page-heading">
+    {{template "page-title" (dict "Title" "Таблица")}}
+  </header>
+  <div class="page-toolbar">
+    {{template "view-switch" (dict "CurrentPath" .CurrentPath "CategoryID" $data.ActiveCategoryID)}}
+    <div class="window-nav">
+      <a class="button" href="/orders/table?start={{$data.PrevStart}}&category_id={{$data.ActiveCategoryID}}">← Раньше</a>
+      <a class="button" href="/orders/table?start={{$data.TodayStart}}&category_id={{$data.ActiveCategoryID}}">Сегодня</a>
+      <a class="button" href="/orders/table?start={{$data.NextStart}}&category_id={{$data.ActiveCategoryID}}">Позже →</a>
+    </div>
+  </div>
+  <div class="page-toolbar">
+    <nav class="category-tabs" aria-label="Тип заявки">{{range $data.Categories}}<a class="category-tab category-tab-{{categoryTone .}} {{if eq .ID $data.ActiveCategoryID}}is-active{{end}}" href="/orders/table?category_id={{.ID}}">{{.Name}}</a>{{end}}</nav>
+    <p class="table-hint">Клик по дате открывает отработку.</p>
+  </div>
+  <div class="scroll-frame"><div class="summary-scroll" role="region" aria-label="Сводка блюд по датам" tabindex="0"><table class="summary-table"><thead><tr><th class="summary-axis">Блюдо</th>{{range $data.Columns}}<th class="tone-{{.Tone}}">{{if .ActionURL}}<a href="{{.ActionURL}}" hx-boost="false"><strong>{{.Label}}</strong><small>{{formatDayMonth .Date}}</small></a>{{else}}<strong>{{.Label}}</strong><small>{{formatDayMonth .Date}}</small>{{end}}</th>{{end}}</tr></thead><tbody>
+    {{range $row := $data.Rows}}<tr><th class="summary-axis">{{$row.Dish.Name}}</th>{{range $cell := $row.Cells}}<td>{{if $cell.Quantity}}<strong>{{formatQty $cell.Quantity}}</strong>{{if $cell.Produced}}{{if $cell.Delta}}<sup class="{{if lt $cell.Delta 0.0}}negative{{else}}positive{{end}}">{{if gt $cell.Delta 0.0}}+{{end}}{{formatQty $cell.Delta}}</sup>{{else}}<sup class="done">✓</sup>{{end}}{{end}}{{else}}{{template "empty-cell"}}{{end}}</td>{{end}}</tr>{{end}}
+  </tbody><tfoot><tr><th class="summary-axis">Итого</th>{{range $data.Totals}}<td>{{if .}}{{formatQty .}}{{else}}·{{end}}</td>{{end}}</tr></tfoot></table></div></div>
+</section>
+{{end}}

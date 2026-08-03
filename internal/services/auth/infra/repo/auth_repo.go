@@ -10,7 +10,6 @@ import (
 	"fmt"
 
 	sqlc "bakery/internal/outbound/db/sqlc"
-	"bakery/internal/pkg/apperr"
 	"bakery/internal/pkg/helpers"
 	accessdomain "bakery/internal/services/auth/domain"
 	authuc "bakery/internal/services/auth/usecase/auth"
@@ -42,6 +41,9 @@ func (r *AuthRepository) CreatePasswordUser(ctx context.Context, input authuc.Cr
 		UpdatedAt:        now,
 	})
 	if err != nil {
+		if conflict := authUserUniqueConflict(err); conflict != nil {
+			return accessdomain.AuthUser{}, conflict
+		}
 		return accessdomain.AuthUser{}, fmt.Errorf("create password auth user: %w", err)
 	}
 	return authUserToDomain(user), nil
@@ -106,9 +108,8 @@ func (r *AuthRepository) SetUsername(ctx context.Context, id int64, username str
 		if errors.Is(err, pgx.ErrNoRows) {
 			return accessdomain.AuthUser{}, authuc.ErrAuthUserNotFound
 		}
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			return accessdomain.AuthUser{}, apperr.Conflict("auth.username_taken", "Логин уже занят.")
+		if conflict := authUserUniqueConflict(err); conflict != nil {
+			return accessdomain.AuthUser{}, conflict
 		}
 		return accessdomain.AuthUser{}, fmt.Errorf("update auth user username: %w", err)
 	}
@@ -229,4 +230,19 @@ func optionalTelegramUsername(value string) *string {
 		return nil
 	}
 	return &value
+}
+
+func authUserUniqueConflict(err error) error {
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) || pgErr.Code != "23505" {
+		return nil
+	}
+	switch pgErr.ConstraintName {
+	case "idx_auth_users_username":
+		return authuc.ErrUsernameTaken
+	case "idx_auth_users_telegram_username":
+		return authuc.ErrTelegramUsernameTaken
+	default:
+		return nil
+	}
 }

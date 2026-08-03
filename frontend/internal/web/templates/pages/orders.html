@@ -1,0 +1,69 @@
+{{define "orders"}}
+{{$data := .Data}}
+<section class="page orders-page">
+{{if canUseProduction .Viewer}}
+  {{/* Shared chrome (title → toggle+window-nav → tabs+actions) is laid out
+       identically to orders-table so switching views doesn't shift anything. */}}
+  <header class="page-heading">
+    {{template "page-title" (dict "Title" "Заказы")}}
+  </header>
+  <div class="page-toolbar">
+    {{template "view-switch" (dict "CurrentPath" .CurrentPath "CategoryID" $data.Filters.CategoryID)}}
+    <div class="window-nav">
+      <a class="button" href="/orders?fulfillment_from={{$data.PrevFrom}}&fulfillment_to={{$data.PrevTo}}&category_id={{$data.Filters.CategoryID}}">← Раньше</a>
+      <span>{{$data.Filters.FulfillmentFrom}} — {{$data.Filters.FulfillmentTo}}</span>
+      <a class="button" href="/orders?fulfillment_from={{$data.NextFrom}}&fulfillment_to={{$data.NextTo}}&category_id={{$data.Filters.CategoryID}}">Позже →</a>
+    </div>
+  </div>
+  <div class="page-toolbar">
+    <nav class="category-tabs" aria-label="Тип заявки">
+      {{range $data.Categories}}<a class="category-tab category-tab-{{categoryTone .}} {{if eq .ID $data.Filters.CategoryID}}is-active{{end}}" href="/orders?category_id={{.ID}}&fulfillment_from={{$data.Filters.FulfillmentFrom}}&fulfillment_to={{$data.Filters.FulfillmentTo}}" {{if eq .ID $data.Filters.CategoryID}}aria-current="page"{{end}}>{{.Name}}</a>{{end}}
+    </nav>
+    <div class="selection-actions" data-selection-toolbar>
+      <button class="button" type="button" data-selection-toggle aria-pressed="false">Выбрать заказы</button>
+      <a class="button button-primary" href="/orders/selection" data-selection-open hx-boost="false" hidden>Продолжить · <span data-selection-count>0</span></a>
+    </div>
+  </div>
+  {{if $data.Matrix}}
+  <div class="scroll-frame"><div class="matrix-scroll" role="region" aria-label="Матрица заказов" tabindex="0">
+    <table class="order-matrix">
+      <thead><tr><th class="matrix-axis">Дата</th>{{range $data.Shops}}<th>{{.Name}}</th>{{end}}</tr></thead>
+      <tbody>
+      {{range $row := $data.Matrix}}
+        <tr><th class="matrix-axis {{if $row.Tone}}tone-{{$row.Tone}}{{end}}"><strong>{{$row.Label}}</strong><small>{{formatDayMonth $row.Date}}</small></th>
+        {{range $cell := $row.Cells}}<td>
+          <div class="matrix-cell">
+          {{range $order := $cell.Orders}}{{template "order-card" (dict "Order" $order "LinkSheet" true)}}{{else}}{{template "empty-cell"}}{{end}}
+          </div>
+        </td>{{end}}
+        </tr>
+      {{end}}
+      </tbody>
+    </table>
+  </div></div>
+  {{else}}{{template "empty-state" (dict "Text" "На выбранные даты заказов нет.")}}{{end}}
+{{else}}
+  <header class="page-heading">
+    {{template "page-title" (dict "Title" "Заказы")}}
+  </header>
+  <nav class="category-tabs" aria-label="Тип заявки">
+    {{range $data.Categories}}<a class="category-tab category-tab-{{categoryTone .}} {{if eq .ID $data.Filters.CategoryID}}is-active{{end}}" href="/orders?category_id={{.ID}}&from_department_id={{$data.Filters.FromDepartmentID}}&fulfillment_date={{$data.Filters.FulfillmentDate}}" {{if eq .ID $data.Filters.CategoryID}}aria-current="page"{{end}}>{{.Name}}</a>{{end}}
+  </nav>
+  <form class="filters" action="/orders" method="get" aria-label="Фильтры заказов">
+    <input type="hidden" name="category_id" value="{{$data.Filters.CategoryID}}">
+    <label class="field compact"><span>Магазин</span><select name="from_department_id"><option value="">Все</option>{{template "id-options" (dict "Items" $data.Shops "Selected" $data.Filters.FromDepartmentID)}}</select></label>
+    <label class="field compact"><span>Дата</span><input type="date" name="fulfillment_date" value="{{$data.Filters.FulfillmentDate}}"></label>
+    <button class="button" type="submit">Применить</button>
+    <a class="button button-ghost" href="/orders?category_id={{$data.Filters.CategoryID}}">Сбросить</a>
+  </form>
+  <div class="shop-order-list">
+    {{range $data.Page.Items}}{{template "order-card" (dict "Order" . "LinkSheet" false)}}{{else}}{{template "empty-state" (dict "Text" "Заказов пока нет. Создайте первую заявку.")}}{{end}}
+  </div>
+  {{if gt $data.Page.TotalPages 1}}<nav class="pagination" aria-label="Страницы заказов">
+    {{if gt $data.Page.Page 1}}<a class="button" href="/orders?page={{pageOffset $data.Page.Page -1}}&category_id={{$data.Filters.CategoryID}}">← Назад</a>{{end}}
+    <span>Страница {{$data.Page.Page}} из {{$data.Page.TotalPages}}</span>
+    {{if lt $data.Page.Page $data.Page.TotalPages}}<a class="button" href="/orders?page={{pageOffset $data.Page.Page 1}}&category_id={{$data.Filters.CategoryID}}">Дальше →</a>{{end}}
+  </nav>{{end}}
+{{end}}
+</section>
+{{end}}

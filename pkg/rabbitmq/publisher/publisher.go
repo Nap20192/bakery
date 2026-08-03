@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"bakery/internal/pkg/enum"
+	"bakery/pkg/rabbitmq"
 
 	"github.com/google/uuid"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -30,12 +31,12 @@ type Publisher struct {
 	exchangeName string
 	exchangeKind string
 	bindingKey   string
-	amqpConn     *amqp.Connection
+	conn         *rabbitmq.Conn
 }
 
-func New(amqpConn *amqp.Connection) *Publisher {
+func New(conn *rabbitmq.Conn) *Publisher {
 	return &Publisher{
-		amqpConn:     amqpConn,
+		conn:         conn,
 		exchangeName: enum.ExchangeOrderEvents.String(),
 		exchangeKind: enum.ExchangeKindFanout.String(),
 		bindingKey:   bindingKey,
@@ -119,7 +120,7 @@ func envelope(event any) map[string]any {
 }
 
 func (p *Publisher) publish(ctx context.Context, body []byte) error {
-	ch, err := p.amqpConn.Channel()
+	ch, err := p.conn.Channel()
 	if err != nil {
 		return fmt.Errorf("open channel: %w", err)
 	}

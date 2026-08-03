@@ -1,12 +1,12 @@
 -- name: CreateOrderCounterDay :exec
-INSERT INTO order_counters(day, department_id, counter)
-VALUES (sqlc.arg(day), sqlc.arg(department_id), 0)
-ON CONFLICT(day, department_id) DO NOTHING;
+INSERT INTO order_counters(day, department_id, category_id, counter)
+VALUES (sqlc.arg(day), sqlc.arg(department_id), sqlc.arg(category_id), 0)
+ON CONFLICT(day, department_id, category_id) DO NOTHING;
 
 -- name: NextOrderCounter :one
 UPDATE order_counters
 SET counter = counter + 1
-WHERE day = sqlc.arg(day) AND department_id = sqlc.arg(department_id)
+WHERE day = sqlc.arg(day) AND department_id = sqlc.arg(department_id) AND category_id = sqlc.arg(category_id)
 RETURNING counter;
 
 -- name: CreateOrder :one
@@ -15,6 +15,7 @@ INSERT INTO orders (
     location,
     from_department_id,
     to_department_id,
+    category_id,
     created_at,
     fulfillment_date,
     created_by_username,
@@ -24,6 +25,7 @@ INSERT INTO orders (
     sqlc.arg(location),
     sqlc.narg(from_department_id),
     sqlc.narg(to_department_id),
+    sqlc.narg(category_id),
     sqlc.arg(created_at),
     sqlc.arg(fulfillment_date),
     sqlc.arg(created_by_username),
@@ -53,6 +55,8 @@ FROM orders
 WHERE number = sqlc.arg(number);
 
 -- name: GetOrderItemsByOrderID :many
+-- Позиции хранят только заявку. Факт отработки живёт в журнале и
+-- декорируется при чтении (GetOrderProductionFacts + мердж в репозитории).
 SELECT
     oi.id,
     oi.order_id,
@@ -79,6 +83,11 @@ FROM order_items AS oi
 LEFT JOIN iiko_products AS p ON p.id = oi.iiko_product_id
 WHERE oi.order_id = ANY(sqlc.arg(order_ids)::BIGINT[])
 ORDER BY oi.order_id, oi.id;
+
+-- name: GetOrderByID :one
+SELECT *
+FROM orders
+WHERE id = sqlc.arg(id);
 
 -- name: DeleteOrderItemsByOrderID :exec
 DELETE FROM order_items
@@ -148,6 +157,9 @@ FROM orders
 WHERE
     (sqlc.narg(from_department_id)::BIGINT IS NULL OR from_department_id = sqlc.narg(from_department_id)::BIGINT)
     AND (sqlc.narg(fulfillment_date)::DATE IS NULL OR fulfillment_date = sqlc.narg(fulfillment_date)::DATE)
+    AND (sqlc.narg(fulfillment_from)::DATE IS NULL OR fulfillment_date >= sqlc.narg(fulfillment_from)::DATE)
+    AND (sqlc.narg(fulfillment_to)::DATE IS NULL OR fulfillment_date <= sqlc.narg(fulfillment_to)::DATE)
+    AND (sqlc.narg(category_id)::BIGINT IS NULL OR category_id = sqlc.narg(category_id)::BIGINT)
 ORDER BY id DESC
 LIMIT sqlc.arg(order_limit)
 OFFSET sqlc.arg(order_offset);
@@ -157,7 +169,10 @@ SELECT COUNT(*)
 FROM orders
 WHERE
     (sqlc.narg(from_department_id)::BIGINT IS NULL OR from_department_id = sqlc.narg(from_department_id)::BIGINT)
-    AND (sqlc.narg(fulfillment_date)::DATE IS NULL OR fulfillment_date = sqlc.narg(fulfillment_date)::DATE);
+    AND (sqlc.narg(fulfillment_date)::DATE IS NULL OR fulfillment_date = sqlc.narg(fulfillment_date)::DATE)
+    AND (sqlc.narg(fulfillment_from)::DATE IS NULL OR fulfillment_date >= sqlc.narg(fulfillment_from)::DATE)
+    AND (sqlc.narg(fulfillment_to)::DATE IS NULL OR fulfillment_date <= sqlc.narg(fulfillment_to)::DATE)
+    AND (sqlc.narg(category_id)::BIGINT IS NULL OR category_id = sqlc.narg(category_id)::BIGINT);
 
 -- name: SetOrderFavorite :one
 UPDATE orders

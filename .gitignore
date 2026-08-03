@@ -26,3 +26,10 @@ bakery
 
 # Understand Anything knowledge graph (local analysis artifacts)
 .understand-anything/
+
+# Claude Code generated files
+skills-lock.json
+
+# Local browser QA artifacts
+.playwright-cli/
+output/playwright/

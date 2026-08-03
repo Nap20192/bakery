@@ -11,7 +11,7 @@ const (
 	RoleAdmin = string(enum.RoleAdmin)
 	// RoleShop — магазин: создаёт и редактирует заказы.
 	RoleShop = string(enum.RoleShop)
-	// RoleBaker — цех: видит все заказы и считает мониторинг по тесту.
+	// RoleBaker — цех: управляет заказами, отработками и расчётом теста.
 	RoleBaker = string(enum.RoleBaker)
 )
 

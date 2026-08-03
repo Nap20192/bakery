@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 
+	"bakery/internal/inbound/bot/response"
 	"bakery/internal/pkg/enum"
 	authuc "bakery/internal/services/auth/usecase/auth"
 	orderdomain "bakery/internal/services/order/domain"
@@ -32,7 +33,8 @@ type orderEventEnvelope struct {
 }
 
 type orderEventPayload struct {
-	Order orderdomain.Order `json:"order"`
+	Order              orderdomain.Order `json:"order"`
+	ProducedByUsername string            `json:"produced_by_username"`
 }
 
 func (b *OrderBot) handleOrderEvent(ctx context.Context, body []byte) error {
@@ -57,13 +59,17 @@ func (b *OrderBot) handleOrderEvent(ctx context.Context, body []byte) error {
 	var message string
 	switch env.Type {
 	case orderdomain.EventOrderCreated:
-		message = responses.OrderSummary(order, fromName, toName)
+		message = response.OrderSummary(order, fromName, toName)
 	case orderdomain.EventOrderUpdated:
-		message = responses.OrderUpdated(order, fromName, toName)
+		message = response.OrderUpdated(order, fromName, toName)
 	case orderdomain.EventOrderCancelled:
-		message = responses.OrderCancelled(order, fromName, toName)
+		message = response.OrderCancelled(order, fromName, toName)
 	case orderdomain.EventOrderRestored:
-		message = responses.OrderRestored(order, fromName, toName)
+		message = response.OrderRestored(order, fromName, toName)
+	case orderdomain.EventOrderProduced, orderdomain.EventOrderProductionCleared:
+		// Отработка (produced/cleared) намеренно не уведомляет — уведомления
+		// только на создание, обновление и удаление/отмену заказа.
+		return nil
 	default:
 		slog.WarnContext(ctx, "unknown order event type", "type", env.Type)
 		return nil

@@ -15,15 +15,15 @@ import (
 
 	"bakery/internal/config"
 	"bakery/internal/deps"
+	"bakery/internal/inbound/bot"
 	outbounddb "bakery/internal/outbound/db"
 	"bakery/internal/pkg/dbmigrate"
-	"bakery/internal/pkg/helpers"
 	"bakery/pkg/logger"
 	"bakery/pkg/rabbitmq"
 )
 
 func main() {
-	_ = config.LoadDotenv()
+	config.LoadDotenv()
 
 	cfg := config.New()
 
@@ -41,7 +41,7 @@ func main() {
 		log.Error("open db failed", "error", err)
 		os.Exit(1)
 	}
-	defer helpers.ClosePool(db)
+	defer db.Close()
 	if err = dbmigrate.ApplyMigrations(ctx, db, log, cfg.Migration.Dir); err != nil {
 		log.Error("apply db migrations failed", "error", err, "dir", cfg.Migration.Dir)
 		os.Exit(1)
@@ -57,12 +57,21 @@ func main() {
 	slog.Info("starting bot", "bot_env", cfg.Telegram.BotEnv)
 	slog.Info("chat_id", "chat_id", cfg.Telegram.WorkshopChatID)
 
+	if cfg.Telegram.BotToken == "" {
+		switch cfg.Telegram.BotEnv {
+		case "prod", "production":
+			log.Error("PROD_BOT_TOKEN не задан")
+		default:
+			log.Error("TEST_BOT_TOKEN не задан")
+		}
+		os.Exit(1)
+	}
+
 	infra, err := deps.NewInfraDeps(
 		deps.WithConfig(cfg),
 		deps.WithPostgres(db),
 		deps.WithRepositories(),
 		deps.WithRabbitMQ(rabbitConn),
-		deps.WithIikoClient(),
 	)
 	if err != nil {
 		log.Error("build infra deps failed", "error", err)
@@ -71,16 +80,23 @@ func main() {
 
 	appDeps, err := deps.NewAppDeps(
 		deps.WithAuthService(infra),
-		deps.WithRbacService(),
-		deps.WithOrderService(infra),
 		deps.WithDepartmentService(infra),
-		deps.WithMonitorService(infra),
-		deps.WithTechCardService(infra),
-		deps.WithSyncService(infra),
-		deps.WithOrderBot(infra),
 	)
 	if err != nil {
 		log.Error("build bot deps failed", "error", err)
+		os.Exit(1)
+	}
+
+	orderBot, err := bot.NewOrderBot(
+		cfg.Telegram.BotToken,
+		appDeps.AuthService,
+		appDeps.DepartmentService,
+		infra.EventConsumer(),
+		cfg.Telegram.MiniAppURL,
+		cfg.Telegram.WorkshopChatID,
+	)
+	if err != nil {
+		log.Error("build order bot failed", "error", err)
 		os.Exit(1)
 	}
 
@@ -89,19 +105,19 @@ func main() {
 		log.Info(
 			"orderbot started",
 			"bot_env", cfg.Telegram.BotEnv,
-			"bot_name", appDeps.OrderBot.Name(),
-			"bot_username", appDeps.OrderBot.Username(),
+			"bot_name", orderBot.Name(),
+			"bot_username", orderBot.Username(),
 		)
-		appDeps.OrderBot.Start()
+		orderBot.Start()
 		return nil
 	})
 	group.Go(func() error {
 		log.Info("order events consumer started")
-		return appDeps.OrderBot.ConsumeOrderEvents(groupCtx)
+		return orderBot.ConsumeOrderEvents(groupCtx)
 	})
 	group.Go(func() error {
 		<-groupCtx.Done()
-		appDeps.OrderBot.Stop()
+		orderBot.Stop()
 		return nil
 	})
 

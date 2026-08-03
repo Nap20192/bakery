@@ -1,44 +1,25 @@
 # Railway Frontend Setup
 
-Frontend is a separate Railway service that serves React through a small Node HTTP server.
-The browser calls the frontend public domain, and the Node server proxies `/api/*` to the backend over Railway private network.
+The frontend is a separate Go service. It renders HTML with `html/template`,
+uses HTMX for partial navigation, and calls the bakery JSON API over Railway's
+private network. Browsers never receive the backend bearer token: the frontend
+stores the API credential in an `HttpOnly`, `SameSite=Lax` cookie.
 
 ## Services
 
-- `frontend`: React + Node static/proxy server, public domain enabled.
-- `bakery`: Go backend/bot/sync, no public domain required.
-- `Postgres`: database, private network only.
+- `frontend`: public Go HTML/HTMX service;
+- `bakery`: private worker/API service;
+- `Postgres` and RabbitMQ: private infrastructure.
 
-## Frontend Variables
-
-Set these on the `frontend` service:
+## Frontend variables
 
 ```env
-HOST=0.0.0.0
-PORT=8080
+FRONTEND_ADDR=:8080
 BACKEND_URL=http://bakery.railway.internal:8080
 ```
 
-React defaults to `/api`, so `VITE_API_BASE_URL` is not needed on Railway.
-`BACKEND_URL` is used only inside the frontend container by the Node proxy.
-
-## Backend Variables
-
-Set this on the `bakery` service:
-
-```env
-PORT=8080
-MINI_APP_URL=https://<frontend-domain>
-```
-
-`HTTP_ALLOWED_ORIGINS` is not needed when the browser only calls the frontend domain and the Node server proxies to `bakery` privately.
-`MINI_APP_URL` enables the `Открыть приложение` button after a user selects a shop or workshop in the bot.
-
-## Frontend Service Settings
-
-Use the repository `Nap20192/bakery`.
-
-Recommended settings:
+The container is built from the repository root because the frontend belongs
+to the same Go module as the backend.
 
 ```text
 Root Directory: /
@@ -46,28 +27,22 @@ Dockerfile Path: /frontend/Dockerfile
 Config File: /frontend/railway.json
 ```
 
-If deploying manually from local CLI:
+The config pins the container start command to
+`/usr/local/bin/bakery-frontend`. Do not override it with `go run`: the final
+Alpine image contains only the compiled binary, not the Go toolchain.
 
-```bash
-railway service link frontend
-railway up --detach -m "Deploy frontend"
+Generate a public domain only for `frontend`. Configure the worker with:
+
+```env
+MINI_APP_URL=https://<frontend-domain>
 ```
 
-## Public Domains
-
-Generate a public domain only for `frontend`.
-
-Remove the public domain from `bakery` after verifying:
+Verify both services through the frontend BFF:
 
 ```text
-https://<frontend-domain>/api/health
+https://<frontend-domain>/health
 ```
 
-Expected response:
-
-```json
-{"status":"ok"}
-```
-
-Open the bot, run `/start`, select a location, then use `Открыть приложение`.
-All application API endpoints except `/api/health` require signed Telegram Mini App data.
+Expected response: `{"status":"ok"}`. Telegram Mini App login is exchanged
+for a server cookie at `POST /session/telegram`; web login uses
+`POST /session/login`.

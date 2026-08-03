@@ -1,0 +1,26 @@
+{{/* Dough calculation: the side panel that triggers it and the result markup. */}}
+
+{{/* monitor-panel: Title, Placeholder, Orders (order numbers to calculate),
+     Dirty (sheet editors must be saved before calculating).
+     Rendered as the /fragments/monitor response target. */}}
+{{define "monitor-panel"}}
+  <section class="surface monitor-panel">
+  {{template "section-heading" (dict "Title" .Title)}}
+  <div id="monitor-result">{{if .Placeholder}}<p class="muted">{{.Placeholder}}</p>{{end}}</div>
+  {{if .Dirty}}<p class="dirty-warning" data-dirty-warning hidden>Сохраните или отмените правки перед расчётом.</p>{{end}}
+  <button class="button button-primary button-wide" {{if .Dirty}}data-monitor-button{{end}} hx-get="/fragments/monitor?{{range .Orders}}order={{urlquery .}}&{{end}}" hx-target="#monitor-result" hx-select="unset" hx-swap="innerHTML" hx-disabled-elt="this" hx-indicator="#global-progress">Рассчитать тесто</button>
+</section>
+{{end}}
+
+{{/* monitor takes the calculation data; also rendered standalone as a fragment. */}}
+{{define "monitor"}}
+{{if .Reports}}
+<div class="monitor-results">
+  {{range .Reports}}<article class="monitor-report"><div class="monitor-total"><span>{{.Report.Ingredient.ProductName}}</span><strong>{{formatQty .Report.Ingredient.Quantity}} {{.Report.Ingredient.Unit}}</strong></div>
+    {{if .Report.Components}}<details><summary>Состав</summary><ul class="ingredient-list">{{range .Report.Components}}<li><span>{{.ProductName}}</span><strong>{{formatQty .Quantity}} {{.Unit}}</strong></li>{{end}}</ul></details>{{end}}
+    {{if .Report.Breakdown}}<details><summary>Расшифровка</summary><ul class="ingredient-list">{{range .Report.Breakdown}}<li><span>{{.OrderItemName}} · {{formatQty .OrderItemQuantity}}</span><strong>{{formatQty .IngredientQuantity}}</strong></li>{{end}}</ul></details>{{end}}
+  </article>{{end}}
+</div>
+{{if gt (len .OrderReports) 1}}<details class="monitor-breakdown"><summary>По заказам</summary>{{range .OrderReports}}<section><h3>{{.Order.Number}}</h3>{{range .Reports}}<div class="monitor-total"><span>{{.Report.Ingredient.ProductName}}</span><strong>{{formatQty .Report.Ingredient.Quantity}} {{.Report.Ingredient.Unit}}</strong></div>{{end}}</section>{{end}}</details>{{end}}
+{{else}}{{template "empty-state" (dict "Text" "Расчёт пуст." "Compact" true)}}{{end}}
+{{end}}

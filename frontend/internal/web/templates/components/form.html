@@ -1,0 +1,4 @@
+{{/* Form building blocks. */}}
+
+{{/* csrf takes the token itself: {{template "csrf" $.CSRF}} */}}
+{{define "csrf"}}<input type="hidden" name="_csrf" value="{{.}}">{{end}}

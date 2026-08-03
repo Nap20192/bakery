@@ -1,0 +1,42 @@
+{{/* Order tiles. order-card takes {Order, LinkSheet}; LinkSheet turns the
+      production-sheet stamp into a link to /production/{id} (only for viewers
+      who can open it — the matrix, not the shop list). */}}
+
+{{define "order-card"}}
+{{$o := .Order}}
+<article class="order-card category-border-{{categoryTone $o.Category}}{{if $o.Cancelled}} is-cancelled{{end}}{{if $o.ProductionSheetID}} {{sheetTone $o.ProductionSheetID}}{{end}}" data-select-order data-number="{{$o.Number}}" data-category="{{if $o.Category}}{{$o.Category.ID}}{{else}}0{{end}}" data-category-name="{{if $o.Category}}{{$o.Category.Name}}{{else}}Без типа{{end}}" data-sheet="{{if $o.ProductionSheetID}}{{$o.ProductionSheetID}}{{end}}" data-cancelled="{{$o.Cancelled}}">
+  <a class="order-card-link" href="/orders/{{urlquery $o.Number}}" aria-label="{{if $o.Category}}{{$o.Category.Name}}{{else}}Без типа{{end}}, заказ {{$o.Number}}"></a>
+  <span class="order-card-head">
+    <strong class="order-card-title">{{$o.Number}}{{if $o.Favorite}} <span class="order-card-star" aria-label="Избранный">★</span>{{end}}</strong>
+  </span>
+  <div class="order-card-meta-row">
+    <span class="order-card-count"><strong>{{len $o.Items}}</strong> поз.</span>
+    {{if $o.Cancelled}}<span class="status status-danger" title="Отменён" aria-label="Отменён">✕</span>
+    {{else if $o.ProductionSheetID}}{{template "sheet-stamp" (dict "ID" $o.ProductionSheetID "Link" .LinkSheet)}}{{end}}
+  </div>
+  <div class="order-card-foot">
+    <span class="order-card-meta">@{{$o.CreatedByUsername}}</span>
+    <button class="order-preview-action" type="button" hx-get="/fragments/orders/{{urlquery $o.Number}}" hx-target="#preview-slot" hx-select="unset" hx-swap="innerHTML" aria-label="Обзор заказа {{$o.Number}}" title="Обзор">{{template "navicon" "eye"}}</button>
+  </div>
+</article>
+{{end}}
+
+{{/* sheet-stamp: {ID, Link, Tone?}. A link to the отработка when Link is true,
+      an inert chip otherwise. Tone overrides the default status-done colour. */}}
+{{define "sheet-stamp"}}
+{{$class := "status"}}{{if .Tone}}{{$class = printf "status %s" .Tone}}{{else}}{{$class = "status status-done"}}{{end}}
+{{if .Link}}<a class="{{$class}}" href="/production/{{.ID}}" title="Открыть отработку №{{.ID}}" aria-label="Отработка №{{.ID}}">✓</a>{{else}}<span class="{{$class}}" title="Отработка №{{.ID}}" aria-label="Отработка №{{.ID}}">✓</span>{{end}}
+{{end}}
+
+{{/* Rendered on its own as the /fragments/orders/{number} response.
+      Takes {Order, LinkSheet}. */}}
+{{define "order-preview"}}
+{{$o := .Order}}
+<dialog class="preview-dialog" data-auto-dialog aria-labelledby="preview-title">
+  <div class="preview-header"><div><h2 id="preview-title">{{$o.Number}}</h2></div><form method="dialog"><button class="button button-icon" aria-label="Закрыть">×</button></form></div>
+  <div class="heading-badges">{{template "category-badge" $o.Category}}{{if $o.ProductionSheetID}}{{template "sheet-stamp" (dict "ID" $o.ProductionSheetID "Link" .LinkSheet "Tone" (sheetTone $o.ProductionSheetID))}}{{end}}</div>
+  <dl class="preview-meta"><div><dt>Выполнить</dt><dd>{{formatDate $o.FulfillmentDate}}</dd></div><div><dt>Отправитель</dt><dd>{{if $o.FromDepartment}}{{$o.FromDepartment.Name}}{{else}}{{$o.Location}}{{end}}</dd></div></dl>
+  <ul class="preview-items">{{range $o.Items}}<li><span>{{.ProductName}}</span><strong>{{formatQty .ProductionQuantity}}</strong></li>{{end}}</ul>
+  <div class="form-actions"><form method="dialog"><button class="button">Закрыть</button></form><a class="button button-primary" href="/orders/{{urlquery $o.Number}}">Открыть заказ</a></div>
+</dialog>
+{{end}}

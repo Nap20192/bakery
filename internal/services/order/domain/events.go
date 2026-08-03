@@ -5,10 +5,12 @@ import (
 )
 
 const (
-	EventOrderCreated   = "order.created"
-	EventOrderUpdated   = "order.updated"
-	EventOrderCancelled = "order.cancelled"
-	EventOrderRestored  = "order.restored"
+	EventOrderCreated           = "order.created"
+	EventOrderUpdated           = "order.updated"
+	EventOrderCancelled         = "order.cancelled"
+	EventOrderRestored          = "order.restored"
+	EventOrderProduced          = "order.produced"
+	EventOrderProductionCleared = "order.production_cleared"
 )
 
 var (
@@ -16,6 +18,8 @@ var (
 	_ sharedkernel.DomainEvent = OrderUpdatedEvent{}
 	_ sharedkernel.DomainEvent = OrderCancelledEvent{}
 	_ sharedkernel.DomainEvent = OrderRestoredEvent{}
+	_ sharedkernel.DomainEvent = OrderProducedEvent{}
+	_ sharedkernel.DomainEvent = OrderProductionClearedEvent{}
 )
 
 // OrderCreatedEvent carries a snapshot of a newly created order.
@@ -49,6 +53,38 @@ type OrderRestoredEvent struct {
 }
 
 func (OrderRestoredEvent) Identity() string { return EventOrderRestored }
+
+// OrderProducedEvent carries a snapshot of an order after the отработка
+// (production fact) was recorded.
+type OrderProducedEvent struct {
+	sharedkernel.Event
+	Order Order `json:"order"`
+	// ProducedByUsername — пекарь, внёсший отработку.
+	ProducedByUsername string `json:"produced_by_username"`
+}
+
+func (OrderProducedEvent) Identity() string { return EventOrderProduced }
+
+// OrderProductionClearedEvent carries a snapshot of an order whose отработка
+// was reset.
+type OrderProductionClearedEvent struct {
+	sharedkernel.Event
+	Order Order `json:"order"`
+	// ProducedByUsername — пекарь, снявший отработку.
+	ProducedByUsername string `json:"produced_by_username"`
+}
+
+func (OrderProductionClearedEvent) Identity() string { return EventOrderProductionCleared }
+
+// RecordProduced appends an отработка-recorded domain event to the aggregate.
+func (o *Order) RecordProduced(byUsername string) {
+	o.ApplyDomain(OrderProducedEvent{Event: sharedkernel.NewEvent(), Order: o.snapshot(), ProducedByUsername: byUsername})
+}
+
+// RecordProductionCleared appends an отработка-reset domain event.
+func (o *Order) RecordProductionCleared(byUsername string) {
+	o.ApplyDomain(OrderProductionClearedEvent{Event: sharedkernel.NewEvent(), Order: o.snapshot(), ProducedByUsername: byUsername})
+}
 
 // RecordCreated appends an order-created domain event to the aggregate.
 func (o *Order) RecordCreated() {

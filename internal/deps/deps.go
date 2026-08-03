@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"bakery/internal/inbound/api"
-	"bakery/internal/inbound/bot"
 	adminapp "bakery/internal/services/admin/app"
 	adminuc "bakery/internal/services/admin/usecase/admin"
 	authapp "bakery/internal/services/auth/app"
@@ -25,7 +24,6 @@ import (
 type AppDeps struct {
 	AuthService       authuc.UseCase
 	AdminService      adminuc.UseCase
-	RbacService       *authuc.RBAC
 	DepartmentService departmentuc.UseCase
 	MonitorService    monitoruc.UseCase
 	OrderService      orderuc.UseCase
@@ -33,7 +31,6 @@ type AppDeps struct {
 	SyncService       syncuc.UseCase
 	TechCardService   techcarduc.UseCase
 	APIServer         *api.Server
-	OrderBot          *bot.OrderBot
 }
 
 type appOption func(*AppDeps) error
@@ -64,13 +61,6 @@ func WithAdminService() appOption {
 			return fmt.Errorf("missing dependencies for AdminService")
 		}
 		deps.AdminService = adminapp.New(deps.AuthService, deps.DepartmentService)
-		return nil
-	}
-}
-
-func WithRbacService() appOption {
-	return func(deps *AppDeps) error {
-		deps.RbacService = authapp.NewRBAC()
 		return nil
 	}
 }
@@ -135,44 +125,15 @@ func WithSyncService(infra *InfraDeps) appOption {
 	}
 }
 
-func WithOrderBot(infra *InfraDeps) appOption {
-	return func(deps *AppDeps) error {
-		if infra == nil || infra.config == nil || deps.OrderService == nil || deps.AuthService == nil || deps.RbacService == nil || deps.DepartmentService == nil || deps.MonitorService == nil || deps.SyncService == nil || deps.TechCardService == nil {
-			return fmt.Errorf("missing dependencies for OrderBot")
-		}
-		if infra.config.Telegram.BotToken == "" {
-			switch infra.config.Telegram.BotEnv {
-			case "prod", "production":
-				return fmt.Errorf("PROD_BOT_TOKEN не задан")
-			default:
-				return fmt.Errorf("TEST_BOT_TOKEN не задан")
-			}
-		}
-		orderBot, err := bot.NewOrderBot(
-			infra.config.Telegram.BotToken,
-			deps.AuthService,
-			deps.DepartmentService,
-			infra.eventConsumer,
-			infra.config.Telegram.MiniAppURL,
-			infra.config.Telegram.WorkshopChatID,
-		)
-		if err != nil {
-			return err
-		}
-		deps.OrderBot = orderBot
-		return nil
-	}
-}
-
 func WithAPIServerConfig(infra *InfraDeps) appOption {
 	return func(deps *AppDeps) error {
 		if infra == nil || infra.config == nil {
 			return fmt.Errorf("missing dependencies for APIServer config")
 		}
-		if deps.OrderService == nil || deps.MonitorService == nil || deps.DepartmentService == nil || deps.AuthService == nil || deps.AdminService == nil {
+		if deps.OrderService == nil || deps.MonitorService == nil || deps.DepartmentService == nil || deps.AuthService == nil || deps.AdminService == nil || deps.TechCardService == nil || deps.SyncService == nil {
 			return fmt.Errorf("missing dependencies for APIServer")
 		}
-		deps.APIServer = api.NewServer(deps.OrderService, deps.MonitorService, deps.DepartmentService, deps.AuthService, deps.AdminService, api.ServerConfig{
+		deps.APIServer = api.NewServer(deps.OrderService, deps.MonitorService, deps.DepartmentService, deps.AuthService, deps.AdminService, deps.TechCardService, deps.SyncService, api.ServerConfig{
 			Addr:           infra.config.Server.Addr(),
 			AllowedOrigins: infra.config.Server.AllowedOrigins,
 			BotToken:       infra.config.Telegram.BotToken,

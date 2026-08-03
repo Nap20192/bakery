@@ -2,7 +2,6 @@ package logger
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"strings"
 	"unicode/utf8"
@@ -78,20 +77,6 @@ func WithPayload(ctx context.Context, payload Payload) context.Context {
 	return WithAttrs(ctx, payload.Attr())
 }
 
-func WithOrderNumber(ctx context.Context, number string) context.Context {
-	if strings.TrimSpace(number) == "" {
-		return ctx
-	}
-	return WithAttrs(ctx, slog.String("order_number", strings.TrimSpace(number)))
-}
-
-func WithProductCode(ctx context.Context, code string) context.Context {
-	if strings.TrimSpace(code) == "" {
-		return ctx
-	}
-	return WithAttrs(ctx, slog.String("product_code", strings.TrimSpace(code)))
-}
-
 type Payload struct {
 	Kind           string
 	Command        string
@@ -153,34 +138,6 @@ func (p Payload) Attr() slog.Attr {
 		attrs = append(attrs, slog.String("callback_data", p.CallbackData))
 	}
 	return slog.Group("payload", attrsToAny(attrs)...)
-}
-
-type ErrorWithContext struct {
-	err   error
-	attrs []slog.Attr
-}
-
-func WrapError(ctx context.Context, err error) error {
-	if err == nil {
-		return nil
-	}
-	return &ErrorWithContext{err: err, attrs: ContextAttrs(ctx)}
-}
-
-func ErrorContext(ctx context.Context, err error) context.Context {
-	var withCtx *ErrorWithContext
-	if errors.As(err, &withCtx) {
-		return WithAttrs(ctx, withCtx.attrs...)
-	}
-	return ctx
-}
-
-func (e *ErrorWithContext) Error() string {
-	return e.err.Error()
-}
-
-func (e *ErrorWithContext) Unwrap() error {
-	return e.err
 }
 
 func attrsToAny(attrs []slog.Attr) []any {

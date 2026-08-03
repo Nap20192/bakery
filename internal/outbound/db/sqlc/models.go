@@ -34,13 +34,23 @@ type Department struct {
 }
 
 type DishCatalog struct {
-	ID        int64              `json:"id"`
-	Code      string             `json:"code"`
-	Name      string             `json:"name"`
-	Theme     string             `json:"theme"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	SortOrder int64              `json:"sort_order"`
+	ID         int64              `json:"id"`
+	Code       string             `json:"code"`
+	Name       string             `json:"name"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	SortOrder  int64              `json:"sort_order"`
+	CategoryID *int64             `json:"category_id"`
+	GroupID    *int64             `json:"group_id"`
+}
+
+type DishGroup struct {
+	ID         int64              `json:"id"`
+	CategoryID *int64             `json:"category_id"`
+	Name       string             `json:"name"`
+	SortOrder  int64              `json:"sort_order"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
 }
 
 type IikoAssemblyChart struct {
@@ -134,12 +144,37 @@ type Order struct {
 	IsFavorite          bool               `json:"is_favorite"`
 	CancelledAt         pgtype.Timestamptz `json:"cancelled_at"`
 	CancelledByUsername string             `json:"cancelled_by_username"`
+	CategoryID          *int64             `json:"category_id"`
+}
+
+type OrderCategory struct {
+	ID           int64              `json:"id"`
+	Code         string             `json:"code"`
+	Letter       string             `json:"letter"`
+	Name         string             `json:"name"`
+	Color        string             `json:"color"`
+	SortOrder    int64              `json:"sort_order"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	MonitorCodes []string           `json:"monitor_codes"`
 }
 
 type OrderCounter struct {
 	Day          string `json:"day"`
 	Counter      int64  `json:"counter"`
 	DepartmentID int64  `json:"department_id"`
+	CategoryID   int64  `json:"category_id"`
+}
+
+type OrderDraft struct {
+	ID                int64              `json:"id"`
+	CreatedByUsername string             `json:"created_by_username"`
+	CategoryID        int64              `json:"category_id"`
+	FromDepartmentID  *int64             `json:"from_department_id"`
+	FulfillmentDate   pgtype.Date        `json:"fulfillment_date"`
+	Comments          []byte             `json:"comments"`
+	Items             []byte             `json:"items"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
 }
 
 type OrderHistory struct {
@@ -178,4 +213,32 @@ type OrderOutbox struct {
 	CorrelationID string             `json:"correlation_id"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	PublishedAt   pgtype.Timestamptz `json:"published_at"`
+}
+
+type ProductionSheet struct {
+	ID                int64              `json:"id"`
+	CreatedByUsername string             `json:"created_by_username"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+}
+
+type ProductionSheetItem struct {
+	ID               int64   `json:"id"`
+	SheetID          int64   `json:"sheet_id"`
+	OrderID          int64   `json:"order_id"`
+	ProductName      string  `json:"product_name"`
+	ProducedQuantity float64 `json:"produced_quantity"`
+	Reason           string  `json:"reason"`
+}
+
+type ProductionSheetLoad struct {
+	SheetID        int64   `json:"sheet_id"`
+	OrderID        int64   `json:"order_id"`
+	ProductName    string  `json:"product_name"`
+	LoadedQuantity float64 `json:"loaded_quantity"`
+}
+
+type ProductionSheetOrder struct {
+	SheetID int64 `json:"sheet_id"`
+	OrderID int64 `json:"order_id"`
 }

@@ -1,0 +1,52 @@
+{{/* Production sheet editor. The same form serves a new batch and a saved sheet. */}}
+
+{{/* production-form: Action, CSRF, Rows, Submit */}}
+{{define "production-form"}}
+<form class="production-form" action="{{.Action}}" method="post" data-production-form hx-sync="this:replace" hx-disabled-elt="find button[type=submit]">
+  {{template "csrf" .CSRF}}
+  {{template "production-rows" .Rows}}
+  <div class="form-actions"><button class="button" type="button" data-production-reset>Отменить правки</button><button class="button button-primary" type="submit">{{.Submit}}</button></div>
+</form>
+{{end}}
+
+{{/* overview-cell renders a productionPivotCell: the produced fact plus its +/-
+     deviation from the order (shown only when the sheet changed it). */}}
+{{define "overview-cell"}}{{if .Produced}}{{formatQty .Produced}}{{else}}·{{end}}{{if .Delta}}<sup class="{{if lt .Delta 0.0}}negative{{else}}positive{{end}}">{{if gt .Delta 0.0}}+{{end}}{{formatQty .Delta}}</sup>{{end}}{{end}}
+
+{{/* production-overview: read-only pivot — dishes down the side, orders across the
+     top, «Итого» column per dish and a totals footer. Cells show the produced fact
+     with its +/- deviation. Takes a productionOverview. */}}
+{{define "production-overview"}}
+<div class="scroll-frame"><div class="summary-scroll overview-scroll" role="region" aria-label="Обзор партии" tabindex="0">
+  <table class="summary-table overview-pivot">
+    <thead><tr><th class="summary-axis">Позиция</th>{{range .OrderNumbers}}<th>{{.}}</th>{{end}}<th class="overview-total-col">Итого</th></tr></thead>
+    <tbody>
+      {{range .Rows}}<tr><th class="summary-axis">{{.Name}}</th>{{range .Cells}}<td>{{if .}}{{formatQty .}}{{else}}·{{end}}</td>{{end}}<td class="overview-total-col"><strong>{{template "overview-cell" .Total}}</strong></td></tr>{{end}}
+    </tbody>
+    <tfoot><tr><th class="summary-axis">Итого</th>{{range .ColumnTotals}}<td><strong>{{if .}}{{formatQty .}}{{else}}·{{end}}</strong></td>{{end}}<td class="overview-total-col"><strong>{{template "overview-cell" .GrandTotal}}</strong></td></tr></tfoot>
+  </table>
+</div></div>
+{{end}}
+
+{{/* production-rows takes the row slice. */}}
+{{define "production-rows"}}
+<table class="production-table">
+<colgroup><col><col class="production-quantity-column"><col class="production-quantity-column"></colgroup>
+<thead><tr><th>Название</th><th>Заявка</th><th>Закладка</th></tr></thead>
+{{range $index, $_ := .}}<tbody data-production-row data-linked="{{.Linked}}" data-initial-linked="{{.Linked}}">
+<tr>
+  <td>
+    <input type="hidden" name="product_name" value="{{.ProductName}}">
+    <input type="hidden" name="share_count" value="{{len .Shares}}">
+    {{range .Shares}}<input type="hidden" name="order_number" value="{{.OrderNumber}}"><input type="hidden" name="ordered_quantity" value="{{formatQty .OrderedQuantity}}">{{end}}
+    <strong>{{.ProductName}}</strong>
+    <button class="text-action production-comment-toggle" type="button" data-comment-toggle aria-expanded="{{if .ReasonConflict}}true{{else}}false{{end}}" aria-controls="production-reason-{{$index}}">Комментарий</button>
+  </td>
+  <td class="ordered" data-ordered="{{.OrderedQuantity}}">{{formatQty .OrderedQuantity}}</td>
+  <td><input class="quantity-input" type="number" name="loaded_quantity" min="0" step="1" inputmode="numeric" value="{{formatQty .LoadedQuantity}}" aria-label="Общая закладка: {{.ProductName}}" required></td>
+  <td><input type="hidden" name="produced_quantity" value="{{formatQty .ProducedQuantity}}"></td>
+</tr>
+<tr class="production-comment-row"><td colspan="3"><label class="field item-comment" {{if not .ReasonConflict}}hidden{{end}}><span>Комментарий к позиции</span><input id="production-reason-{{$index}}" name="reason" value="{{.Reason}}" maxlength="200" placeholder="{{if .ReasonConflict}}Укажите одну общую причину{{else}}Если есть отклонение{{end}}" {{if .ReasonConflict}}required{{end}}>{{if .ReasonConflict}}<small>Раньше причины различались — выберите одну общую.</small>{{end}}</label></td></tr>
+</tbody>{{end}}
+</table>
+{{end}}

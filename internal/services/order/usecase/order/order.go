@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math"
 	"os"
 	"strings"
 	"time"
@@ -19,6 +20,11 @@ var (
 	ErrDishCatalogItemAmbiguous = apperr.Conflict("order.dish_ambiguous", "Найдено несколько блюд с таким названием.")
 	ErrFulfillmentDateInPast    = apperr.Invalid("order.fulfillment_date_in_past", "Дата выполнения не может быть в прошлом.")
 	ErrOrderCancelled           = apperr.Conflict("order.cancelled", "Отменённый заказ нельзя изменить. Сначала восстановите его.")
+	ErrCategoryRequired         = apperr.Invalid("order.category_required", "Выберите тип заявки.")
+	ErrCategoryNotFound         = apperr.NotFound("order.category_not_found", "Тип заявки не найден.")
+	ErrCategoryHasDishes        = apperr.Conflict("order.category_has_dishes", "У типа заявки есть блюда. Сначала перенесите их в другой тип.")
+	ErrProductionOrderNotFound  = apperr.NotFound("order.production_order_not_found", "Заказ для отработки не найден.")
+	ErrProductionSheetNotFound  = apperr.NotFound("order.production_sheet_not_found", "Отработка не найдена.")
 )
 
 // Service is the order use-case implementation. It depends only on the
@@ -40,34 +46,78 @@ func NewService(repo Repository) *Service {
 	}
 }
 
+// validatedOrderWrite is the outcome of validateOrderWrite: resolved items
+// plus everything CreateOrder and SaveOrderDraft both need to persist their
+// write (source department, category, normalized fulfillment date).
+type validatedOrderWrite struct {
+	Items           []orderdomain.OrderItem
+	FulfillmentDate time.Time
+	Source          Department
+	Category        orderdomain.OrderCategory
+}
+
+// validateOrderWrite runs the validation shared by CreateOrder and
+// SaveOrderDraft: resolve items against the dish catalog, drop zero-quantity
+// lines, reject a past fulfillment date, and check the source department and
+// category both exist. now is the reference point for "not in the past" —
+// CreateOrder passes the order's createdAt, SaveOrderDraft passes time.Now().
+func (s *Service) validateOrderWrite(
+	ctx context.Context,
+	items []orderdomain.OrderItem,
+	categoryID int64,
+	fromDepartmentID *int64,
+	rawFulfillmentDate time.Time,
+	now time.Time,
+) (validatedOrderWrite, error) {
+	resolvedItems, err := s.resolveOrderItems(ctx, items)
+	if err != nil {
+		return validatedOrderWrite{}, err
+	}
+	resolvedItems = positiveOrderItems(resolvedItems)
+	if len(resolvedItems) == 0 {
+		return validatedOrderWrite{}, fmt.Errorf("order must contain items")
+	}
+
+	fulfillmentDate := s.domain.NormalizeFulfillmentDate(rawFulfillmentDate, now)
+	if err := validateFulfillmentDateNotPast(fulfillmentDate, now); err != nil {
+		return validatedOrderWrite{}, err
+	}
+	source, err := s.orderSourceDepartment(ctx, fromDepartmentID)
+	if err != nil {
+		return validatedOrderWrite{}, err
+	}
+	if categoryID <= 0 {
+		return validatedOrderWrite{}, ErrCategoryRequired
+	}
+	category, err := s.repo.GetOrderCategoryByID(ctx, categoryID)
+	if err != nil {
+		return validatedOrderWrite{}, ErrCategoryNotFound
+	}
+	return validatedOrderWrite{
+		Items:           resolvedItems,
+		FulfillmentDate: fulfillmentDate,
+		Source:          source,
+		Category:        category,
+	}, nil
+}
+
 func (s *Service) CreateOrder(ctx context.Context, input orderdomain.CreateOrderInput) (orderdomain.Order, error) {
 	if s.repo == nil {
 		return orderdomain.Order{}, fmt.Errorf("missing order repository")
 	}
-	resolvedItems, err := s.resolveOrderItems(ctx, input.Items)
-	if err != nil {
-		return orderdomain.Order{}, err
-	}
-	input.Items = positiveOrderItems(resolvedItems)
-	if len(input.Items) == 0 {
-		return orderdomain.Order{}, fmt.Errorf("order must contain items")
-	}
-
 	createdAt := s.domain.NormalizeCreatedAt(input.Date)
-	fulfillmentDate := s.domain.NormalizeFulfillmentDate(input.FulfillmentDate, createdAt)
-	if err := validateFulfillmentDateNotPast(fulfillmentDate, createdAt); err != nil {
-		return orderdomain.Order{}, err
-	}
-	shop, err := s.orderShopDepartment(ctx, input.FromDepartmentID)
+	validated, err := s.validateOrderWrite(ctx, input.Items, input.CategoryID, input.FromDepartmentID, input.FulfillmentDate, createdAt)
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
+	input.Items = validated.Items
 
 	order, err := s.repo.CreateOrder(ctx, CreateOrderRepositoryInput{
 		Input:           input,
-		Shop:            shop,
+		Source:          validated.Source,
+		Category:        validated.Category,
 		CreatedAt:       createdAt,
-		FulfillmentDate: fulfillmentDate,
+		FulfillmentDate: validated.FulfillmentDate,
 		CounterDay:      s.domain.OrderCounterDay(createdAt),
 	})
 	if err != nil {
@@ -188,6 +238,138 @@ func (s *Service) CancelOrder(ctx context.Context, number, byUsername string) (o
 	return s.repo.CancelOrder(ctx, number, strings.TrimSpace(byUsername))
 }
 
+// CreateProductionSheet создаёт документ отработки: фиксирует партию
+// (выбранные заказы) и отклонения факта от заявки. Заказы не изменяются —
+// факт декорирует их при чтении; наружу уходят события order.produced для
+// заказов, чей видимый факт изменился.
+func (s *Service) CreateProductionSheet(ctx context.Context, input RecordProductionInput) (orderdomain.ProductionSheet, error) {
+	orders, err := s.validateProductionInput(ctx, input)
+	if err != nil {
+		return orderdomain.ProductionSheet{}, err
+	}
+	return s.repo.SaveProductionSheet(ctx, SaveProductionSheetInput{
+		ProducedByUsername: strings.TrimSpace(input.ProducedByUsername),
+		Orders:             orders,
+	})
+}
+
+// UpdateProductionSheet заменяет партию и отклонения существующего документа.
+// Значение, равное заявке, убирает строку отклонения; лист живёт, пока его
+// не удалят явно — даже если отклонений не осталось (партия зафиксирована).
+func (s *Service) UpdateProductionSheet(ctx context.Context, id int64, input RecordProductionInput) (orderdomain.ProductionSheet, error) {
+	if id <= 0 {
+		return orderdomain.ProductionSheet{}, ErrProductionSheetNotFound
+	}
+	if _, err := s.repo.GetProductionSheet(ctx, id); err != nil {
+		return orderdomain.ProductionSheet{}, ErrProductionSheetNotFound
+	}
+	orders, err := s.validateProductionInput(ctx, input)
+	if err != nil {
+		return orderdomain.ProductionSheet{}, err
+	}
+	return s.repo.SaveProductionSheet(ctx, SaveProductionSheetInput{
+		SheetID:            id,
+		ProducedByUsername: strings.TrimSpace(input.ProducedByUsername),
+		Orders:             orders,
+	})
+}
+
+// DeleteProductionSheet удаляет документ отработки; факт в затронутых заказах
+// пересчитывается по оставшимся листам журнала.
+func (s *Service) DeleteProductionSheet(ctx context.Context, id int64, byUsername string) error {
+	if id <= 0 {
+		return ErrProductionSheetNotFound
+	}
+	if _, err := s.repo.GetProductionSheet(ctx, id); err != nil {
+		return ErrProductionSheetNotFound
+	}
+	return s.repo.DeleteProductionSheet(ctx, id, strings.TrimSpace(byUsername))
+}
+
+func (s *Service) ListProductionSheets(ctx context.Context) ([]orderdomain.ProductionSheet, error) {
+	sheets, err := s.repo.ListProductionSheets(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list production sheets: %w", err)
+	}
+	return sheets, nil
+}
+
+func (s *Service) GetProductionSheet(ctx context.Context, id int64) (orderdomain.ProductionSheet, error) {
+	sheet, err := s.repo.GetProductionSheet(ctx, id)
+	if err != nil {
+		return orderdomain.ProductionSheet{}, ErrProductionSheetNotFound
+	}
+	return sheet, nil
+}
+
+// validateProductionInput проверяет партию отработки: каждый заказ существует
+// и не отменён, позиции принадлежат заказу, количества корректны. Возвращает
+// ВСЕ заказы выбора (лист фиксирует партию); items — только отклонения от
+// заявки, поэтому у заказа они могут быть пустыми.
+func (s *Service) validateProductionInput(ctx context.Context, input RecordProductionInput) ([]OrderProductionInput, error) {
+	if len(input.Orders) == 0 {
+		return nil, apperr.Invalid("order.production_empty", "Нет заказов для отработки.")
+	}
+	result := make([]OrderProductionInput, 0, len(input.Orders))
+	for _, orderInput := range input.Orders {
+		number := strings.TrimSpace(orderInput.Number)
+		if number == "" {
+			return nil, apperr.Invalid("order.number_required", "Укажите номер заказа.")
+		}
+		existing, err := s.repo.GetOrderByNumber(ctx, number)
+		if err != nil {
+			return nil, ErrProductionOrderNotFound
+		}
+		if existing.Cancelled {
+			return nil, apperr.Conflict("order.production_cancelled", fmt.Sprintf("Заказ %s отменён — отработка невозможна.", number))
+		}
+		byName := make(map[string]orderdomain.OrderItem, len(existing.Items))
+		for _, item := range existing.Items {
+			byName[strings.ToLower(strings.TrimSpace(item.ProductName))] = item
+		}
+		items := make([]ProducedItemInput, 0, len(orderInput.Items))
+		seen := make(map[string]struct{}, len(orderInput.Items))
+		for _, item := range orderInput.Items {
+			name := strings.TrimSpace(item.ProductName)
+			key := strings.ToLower(name)
+			if name == "" {
+				return nil, apperr.Invalid("order.production_item_name", "У позиции отработки должно быть название.")
+			}
+			if _, ok := seen[key]; ok {
+				return nil, apperr.Invalid("order.production_item_duplicate", fmt.Sprintf("Позиция %q в отработке повторяется.", name))
+			}
+			seen[key] = struct{}{}
+			orderItem, ok := byName[key]
+			if !ok {
+				return nil, apperr.Invalid("order.production_item_unknown", fmt.Sprintf("Позиции %q нет в заказе %s.", name, number))
+			}
+			if item.ProducedQuantity < 0 || math.IsNaN(item.ProducedQuantity) || math.IsInf(item.ProducedQuantity, 0) {
+				return nil, apperr.Invalid("order.production_quantity", fmt.Sprintf("Укажите количество для позиции %q.", name))
+			}
+			loaded := orderItem.ProductionQuantity()
+			if item.LoadedQuantity != nil {
+				loaded = *item.LoadedQuantity
+			}
+			if loaded < 0 || math.IsNaN(loaded) || math.IsInf(loaded, 0) {
+				return nil, apperr.Invalid("order.production_loaded_quantity", fmt.Sprintf("Укажите закладку для позиции %q.", name))
+			}
+			reason := strings.TrimSpace(item.Reason)
+			if len([]rune(reason)) > 200 {
+				return nil, apperr.Invalid("order.production_reason_too_long", fmt.Sprintf("Обоснование для %q слишком длинное (до 200 символов).", name))
+			}
+			items = append(items, ProducedItemInput{
+				ProductName:      orderItem.ProductName,
+				LoadedQuantity:   &loaded,
+				ProducedQuantity: item.ProducedQuantity,
+				IsDeviation:      item.ProducedQuantity != orderItem.ProductionQuantity(),
+				Reason:           reason,
+			})
+		}
+		result = append(result, OrderProductionInput{Number: number, Items: items})
+	}
+	return result, nil
+}
+
 // RestoreOrder clears an order's cancelled state. Active orders are returned
 // unchanged (idempotent).
 func (s *Service) RestoreOrder(ctx context.Context, number, byUsername string) (orderdomain.Order, error) {
@@ -245,13 +427,119 @@ func (s *Service) ListDishCatalog(ctx context.Context) ([]orderdomain.DishCatalo
 	items := make([]orderdomain.DishCatalogItem, 0, len(rows))
 	for _, row := range rows {
 		items = append(items, orderdomain.DishCatalogItem{
-			Code:      row.Code,
-			Name:      row.Name,
-			Theme:     row.Theme,
-			SortOrder: row.SortOrder,
+			Code:       row.Code,
+			Name:       row.Name,
+			Theme:      row.Theme,
+			CategoryID: row.CategoryID,
+			SortOrder:  row.SortOrder,
 		})
 	}
 	return items, nil
+}
+
+func (s *Service) ListOrderCategories(ctx context.Context) ([]orderdomain.OrderCategory, error) {
+	categories, err := s.repo.ListOrderCategories(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list order categories: %w", err)
+	}
+	return categories, nil
+}
+
+// CreateOrderCategory adds a new тип заявки. The letter goes into order
+// numbers, the color must come from the fixed palette.
+func (s *Service) CreateOrderCategory(ctx context.Context, input orderdomain.OrderCategory) (orderdomain.OrderCategory, error) {
+	category, err := sanitizeOrderCategoryInput(input)
+	if err != nil {
+		return orderdomain.OrderCategory{}, err
+	}
+	created, err := s.repo.CreateOrderCategory(ctx, category)
+	if err != nil {
+		return orderdomain.OrderCategory{}, fmt.Errorf("create order category: %w", err)
+	}
+	return created, nil
+}
+
+func (s *Service) UpdateOrderCategory(ctx context.Context, id int64, input orderdomain.OrderCategory) (orderdomain.OrderCategory, error) {
+	if id <= 0 {
+		return orderdomain.OrderCategory{}, ErrCategoryNotFound
+	}
+	category, err := sanitizeOrderCategoryInput(input)
+	if err != nil {
+		return orderdomain.OrderCategory{}, err
+	}
+	updated, err := s.repo.UpdateOrderCategory(ctx, id, category)
+	if err != nil {
+		return orderdomain.OrderCategory{}, ErrCategoryNotFound
+	}
+	return updated, nil
+}
+
+// DeleteOrderCategory removes a category. Categories that still own dishes are
+// protected — the admin reassigns dishes first. Existing orders keep working:
+// their category link is severed (SET NULL), the number stays as issued.
+func (s *Service) DeleteOrderCategory(ctx context.Context, id int64) error {
+	if id <= 0 {
+		return ErrCategoryNotFound
+	}
+	dishes, err := s.repo.CountDishesByCategoryID(ctx, id)
+	if err != nil {
+		return fmt.Errorf("count dishes by category: %w", err)
+	}
+	if dishes > 0 {
+		return ErrCategoryHasDishes
+	}
+	return s.repo.DeleteOrderCategory(ctx, id)
+}
+
+// sanitizeOrderCategoryInput validates admin-supplied category fields. The code
+// is derived from the name when empty; the letter is a single uppercase rune.
+func sanitizeOrderCategoryInput(input orderdomain.OrderCategory) (orderdomain.OrderCategory, error) {
+	name := strings.TrimSpace(input.Name)
+	if name == "" {
+		return orderdomain.OrderCategory{}, apperr.Invalid("order.category_name_required", "Укажите название типа заявки.")
+	}
+	letter := []rune(strings.TrimSpace(input.Letter))
+	if len(letter) == 0 {
+		return orderdomain.OrderCategory{}, apperr.Invalid("order.category_letter_required", "Укажите букву для номера заказа.")
+	}
+	color := strings.TrimSpace(input.Color)
+	if color == "" {
+		color = "stone"
+	}
+	if !orderdomain.IsValidCategoryColor(color) {
+		return orderdomain.OrderCategory{}, apperr.Invalid("order.category_color_invalid", "Недопустимый цвет типа заявки.")
+	}
+	code := strings.TrimSpace(input.Code)
+	if code == "" {
+		code = strings.ToLower(strings.Join(strings.Fields(name), "-"))
+	}
+	return orderdomain.OrderCategory{
+		Code:         code,
+		Letter:       strings.ToUpper(string(letter[0])),
+		Name:         name,
+		Color:        color,
+		SortOrder:    max(input.SortOrder, 0),
+		MonitorCodes: normalizeMonitorCodes(input.MonitorCodes),
+	}, nil
+}
+
+// normalizeMonitorCodes trims, de-duplicates and drops empty dough codes,
+// preserving the admin's order.
+func normalizeMonitorCodes(codes []string) []string {
+	result := make([]string, 0, len(codes))
+	seen := make(map[string]struct{}, len(codes))
+	for _, code := range codes {
+		code = strings.TrimSpace(code)
+		if code == "" {
+			continue
+		}
+		if _, ok := seen[code]; ok {
+			continue
+		}
+		seen[code] = struct{}{}
+		result = append(result, code)
+	}
+	return result
 }
 
 // SearchAvailableDishes returns iiko DISH products matching the query (by name
@@ -350,19 +638,21 @@ func sanitizeDishCatalogInput(input orderdomain.DishCatalogItem) (DishCatalogIte
 		code = "custom:" + strings.ToLower(strings.Join(strings.Fields(name), " "))
 	}
 	return DishCatalogItem{
-		Code:      code,
-		Name:      name,
-		Theme:     strings.TrimSpace(input.Theme),
-		SortOrder: max(input.SortOrder, 0),
+		Code:       code,
+		Name:       name,
+		Theme:      strings.TrimSpace(input.Theme),
+		CategoryID: input.CategoryID,
+		SortOrder:  max(input.SortOrder, 0),
 	}, nil
 }
 
 func toDomainDishCatalogItem(item DishCatalogItem) orderdomain.DishCatalogItem {
 	return orderdomain.DishCatalogItem{
-		Code:      item.Code,
-		Name:      item.Name,
-		Theme:     item.Theme,
-		SortOrder: item.SortOrder,
+		Code:       item.Code,
+		Name:       item.Name,
+		Theme:      item.Theme,
+		CategoryID: item.CategoryID,
+		SortOrder:  item.SortOrder,
 	}
 }
 
@@ -411,25 +701,62 @@ func (s *Service) GetTemplate(ctx context.Context) (string, error) {
 	return s.CombinedOrderTemplate(ctx)
 }
 
-func (s *Service) EnsureDefaultOrderTemplates(ctx context.Context, path string) (EnsureDefaultTemplatesResult, error) {
+// EnsureDefaultOrderTemplates сидит каталог блюд из файлов-шаблонов, привязывая
+// блюда к типам заявок. Upsert не затирает категорию, назначенную админом
+// вручную; отсутствующий файл — не ошибка (шаблон опционален).
+func (s *Service) EnsureDefaultOrderTemplates(ctx context.Context, seeds ...CatalogSeed) (EnsureDefaultTemplatesResult, error) {
 	var result EnsureDefaultTemplatesResult
-	if strings.TrimSpace(path) == "" {
-		path = "templates/dishes.txt"
-	}
-	data, err := os.ReadFile(path) //nolint:gosec // path is a configured local template file.
-	if err != nil {
-		if os.IsNotExist(err) {
-			return result, nil
+	if len(seeds) == 0 {
+		seeds = []CatalogSeed{
+			{Path: "templates/dishes.txt", CategoryCode: "buns"},
+			{Path: "templates/bread.txt", CategoryCode: "bread"},
 		}
-		return result, fmt.Errorf("read default templates: %w", err)
 	}
 
-	for _, item := range parseDefaultDishCatalogItems(string(data)) {
-		if err := s.repo.UpsertDishCatalogItem(ctx, item); err != nil {
-			return result, fmt.Errorf("upsert dish catalog item %s: %w", item.Code, err)
+	categoryByCode := make(map[string]int64)
+	if categories, err := s.repo.ListOrderCategories(ctx); err == nil {
+		for _, category := range categories {
+			categoryByCode[category.Code] = category.ID
 		}
-		result.CatalogItems++
+	} else {
+		slog.WarnContext(ctx, "list categories for catalog seed failed", "error", err)
 	}
+
+	// Сквозная нумерация sort_order по всем файлам, чтобы группы не
+	// перемешивались между типами. Все блюда собираются и апсертятся одной
+	// транзакцией — частичный сбой не оставляет каталог наполовину обновлённым.
+	sortOffset := int64(0)
+	var all []DishCatalogItem
+	for _, seed := range seeds {
+		data, err := os.ReadFile(seed.Path) //nolint:gosec // path is a configured local template file.
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return result, fmt.Errorf("read default templates %s: %w", seed.Path, err)
+		}
+
+		var categoryID *int64
+		if id, ok := categoryByCode[strings.TrimSpace(seed.CategoryCode)]; ok {
+			categoryID = &id
+		} else if seed.CategoryCode != "" {
+			slog.WarnContext(ctx, "catalog seed category not found, seeding without category",
+				"path", seed.Path, "category_code", seed.CategoryCode)
+		}
+
+		items := parseDefaultDishCatalogItems(string(data))
+		for i := range items {
+			items[i].CategoryID = categoryID
+			items[i].SortOrder += sortOffset
+		}
+		all = append(all, items...)
+		sortOffset += int64(len(items))
+	}
+
+	if err := s.repo.UpsertDishCatalogItems(ctx, all); err != nil {
+		return result, fmt.Errorf("seed dish catalog: %w", err)
+	}
+	result.CatalogItems = len(all)
 	return result, nil
 }
 
@@ -445,6 +772,49 @@ func (s *Service) DeleteOrdersOlderThan(ctx context.Context, now time.Time, rete
 	return count, nil
 }
 
+func (s *Service) SaveOrderDraft(ctx context.Context, input SaveOrderDraftInput) (orderdomain.OrderDraft, error) {
+	if s.repo == nil {
+		return orderdomain.OrderDraft{}, fmt.Errorf("missing order repository")
+	}
+	validated, err := s.validateOrderWrite(ctx, input.Items, input.CategoryID, input.FromDepartmentID, input.FulfillmentDate, time.Now().UTC())
+	if err != nil {
+		return orderdomain.OrderDraft{}, err
+	}
+	draft, err := s.repo.SaveOrderDraft(ctx, SaveOrderDraftRepositoryInput{
+		CreatedByUsername: input.CreatedByUsername,
+		CategoryID:        validated.Category.ID,
+		FromDepartmentID:  validated.Source.ID,
+		Items:             validated.Items,
+		FulfillmentDate:   validated.FulfillmentDate,
+		Comments:          input.Comments,
+	})
+	if err != nil {
+		return orderdomain.OrderDraft{}, err
+	}
+	return draft, nil
+}
+
+func (s *Service) GetOrderDraft(ctx context.Context, username string, categoryID int64) (orderdomain.OrderDraft, error) {
+	if s.repo == nil {
+		return orderdomain.OrderDraft{}, fmt.Errorf("missing order repository")
+	}
+	return s.repo.GetOrderDraft(ctx, strings.TrimSpace(username), categoryID)
+}
+
+func (s *Service) ListOrderDrafts(ctx context.Context, username string) ([]orderdomain.OrderDraft, error) {
+	if s.repo == nil {
+		return nil, fmt.Errorf("missing order repository")
+	}
+	return s.repo.ListOrderDrafts(ctx, strings.TrimSpace(username))
+}
+
+func (s *Service) DeleteOrderDraft(ctx context.Context, username string, categoryID int64) error {
+	if s.repo == nil {
+		return fmt.Errorf("missing order repository")
+	}
+	return s.repo.DeleteOrderDraft(ctx, strings.TrimSpace(username), categoryID)
+}
+
 func (s *Service) RunCleanupTicker(ctx context.Context, interval, retention time.Duration) error {
 	if interval <= 0 {
 		interval = 24 * time.Hour
@@ -457,9 +827,16 @@ func (s *Service) RunCleanupTicker(ctx context.Context, interval, retention time
 		deleted, err := s.DeleteOrdersOlderThan(ctx, time.Now(), retention)
 		if err != nil {
 			slog.ErrorContext(ctx, "old orders cleanup failed", "error", err)
+		} else {
+			slog.InfoContext(ctx, "old orders cleanup finished", "deleted", deleted, "retention", retention.String())
+		}
+		cutoff := time.Now().UTC().Add(-retention)
+		draftsDeleted, err := s.repo.DeleteOrderDraftsOlderThan(ctx, cutoff)
+		if err != nil {
+			slog.ErrorContext(ctx, "old order drafts cleanup failed", "error", err)
 			return
 		}
-		slog.InfoContext(ctx, "old orders cleanup finished", "deleted", deleted, "retention", retention.String())
+		slog.InfoContext(ctx, "old order drafts cleanup finished", "deleted", draftsDeleted, "retention", retention.String())
 	}
 
 	run()
@@ -476,19 +853,20 @@ func (s *Service) RunCleanupTicker(ctx context.Context, interval, retention time
 	}
 }
 
-func (s *Service) orderShopDepartment(ctx context.Context, departmentID *int64) (Department, error) {
+func (s *Service) orderSourceDepartment(ctx context.Context, departmentID *int64) (Department, error) {
 	if departmentID == nil {
-		return Department{}, fmt.Errorf("order shop department is required")
+		return Department{}, fmt.Errorf("order source department is required")
 	}
 	department, err := s.repo.GetDepartmentByID(ctx, *departmentID)
 	if err != nil {
-		return Department{}, fmt.Errorf("get order shop department: %w", err)
+		return Department{}, fmt.Errorf("get order source department: %w", err)
 	}
-	if !strings.EqualFold(strings.TrimSpace(department.Type), string(enum.DepartmentTypeShop)) {
-		return Department{}, fmt.Errorf("order can be created only from shop department")
+	departmentType := enum.DepartmentType(strings.ToLower(strings.TrimSpace(department.Type)))
+	if departmentType != enum.DepartmentTypeShop && departmentType != enum.DepartmentTypeWorkshop {
+		return Department{}, fmt.Errorf("order source must be a shop or workshop department")
 	}
 	if strings.TrimSpace(department.Code) == "" && strings.TrimSpace(department.Name) == "" {
-		return Department{}, fmt.Errorf("order shop department code or name is required")
+		return Department{}, fmt.Errorf("order source department code or name is required")
 	}
 	return department, nil
 }
@@ -666,10 +1044,12 @@ func normalizeTemplateName(name string) string {
 	return strings.ToUpper(strings.TrimSpace(name))
 }
 
+// parseDefaultDishCatalogItems reads a seed template: an uppercase «группа»
+// header line followed by `<код> <название>` dish lines. Blank lines separate
+// groups; anything before the first header is ignored.
 func parseDefaultDishCatalogItems(raw string) []DishCatalogItem {
 	var items []DishCatalogItem
 	currentTheme := ""
-	spec := orderdomain.NewOrderSpec()
 
 	for _, line := range strings.Split(raw, "\n") {
 		line = strings.TrimSpace(line)
@@ -683,17 +1063,33 @@ func parseDefaultDishCatalogItems(raw string) []DishCatalogItem {
 		if currentTheme == "" {
 			continue
 		}
-		parsed := orderdomain.ParseOrderLine(orderdomain.BulkOrderLine{Raw: line})
-		if parsed.Code == "" || parsed.Name == "" || !spec.Quantity.IsValid(parsed) {
+		code, name, ok := strings.Cut(line, " ")
+		if !ok || !isAllDigits(code) {
+			continue
+		}
+		name = strings.TrimSpace(name)
+		if name == "" {
 			continue
 		}
 		items = append(items, DishCatalogItem{
-			Code:      parsed.Code,
-			Name:      parsed.Name,
+			Code:      code,
+			Name:      name,
 			Theme:     currentTheme,
 			SortOrder: int64(len(items) + 1),
 		})
 	}
 
 	return items
+}
+
+func isAllDigits(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }

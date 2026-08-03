@@ -1,0 +1,52 @@
+{{define "order-form"}}
+{{$data := .Data}}
+{{$csrf := .CSRF}}
+{{$update := eq $data.Mode "update"}}
+{{$title := "Новая заявка"}}{{$step := "Тип заявки"}}{{$submit := "Создать заказ"}}
+{{if $update}}{{$title = "Изменить заявку"}}{{$step = "Тип заявки (зафиксирован)"}}{{$submit = "Сохранить изменения"}}{{end}}
+{{$back := "/orders"}}{{if $data.Order}}{{$back = printf "/orders/%s" (urlquery $data.Order.Number)}}{{end}}
+<section class="page order-editor" data-order-editor>
+  <header class="page-heading">
+    {{template "page-title" (dict "Title" $title)}}
+    <a class="button" href="{{$back}}" data-confirm="Уйти без сохранения? Введённые данные не сохранятся.">Закрыть</a>
+  </header>
+  <form class="editor-form" action="{{if $update}}/orders/{{urlquery $data.Order.Number}}/edit{{else}}/orders{{end}}" method="post" hx-disabled-elt="find button[type=submit]" hx-sync="this:replace">
+    {{template "csrf" $csrf}}
+    <section class="editor-step">
+      {{template "section-heading" (dict "Step" "1" "Title" $step)}}
+      {{template "category-picker" (dict "Categories" $data.Categories "Selected" $data.CategoryID "Locked" $update)}}
+    </section>
+    <section class="editor-step">
+      {{template "section-heading" (dict "Step" "2" "Title" "Куда и когда")}}
+      <div class="form-grid two">
+        {{if $data.WorkshopSource}}
+          <label class="field"><span>Отправитель</span><input value="Цех Пекари" readonly></label>
+        {{else}}
+          <label class="field"><span>Отправитель</span><select name="from_department_id" required><option value="">Выберите отправителя</option>{{template "id-options" (dict "Items" $data.Shops "Selected" $data.FromDepartmentID)}}</select></label>
+        {{end}}
+        <label class="field"><span>Дата выполнения</span><input type="date" name="fulfillment_date" value="{{$data.FulfillmentDate}}" min="{{.Today}}" required></label>
+      </div>
+    </section>
+    <section class="editor-step">
+      <div class="section-heading"><div class="section-heading-main"><span class="step-number">3</span><h2>Позиции</h2></div><output class="editor-summary" data-editor-summary>0 поз.</output></div>
+      <div class="catalog-groups">
+      {{range $group := $data.Groups}}<section class="catalog-group"><h3>{{$group.Name}}</h3><div class="catalog-list">
+        {{range $item := $group.Items}}<div class="catalog-row" data-catalog-row data-category="{{deref $item.Dish.CategoryID}}" data-name="{{$item.Dish.Name}}">
+          <input type="hidden" name="item_name" value="{{$item.Dish.Name}}">
+          <div class="catalog-name"><strong>{{$item.Dish.Name}}</strong><button class="text-action" type="button" data-comment-toggle>Комментарий</button></div>
+          <label><span>Заявка</span><input class="quantity-input" type="number" name="quantity" min="0" step="1" inputmode="numeric" value="{{inputQty $item.Quantity}}"></label>
+          <label><span>Заказ</span><input class="quantity-input" type="number" name="reserved_quantity" min="0" step="1" inputmode="numeric" value="{{inputQty $item.Reserved}}"></label>
+          <label class="item-comment" hidden><span>Комментарий к позиции</span><input name="item_comment" value="{{$item.Comment}}" maxlength="500"></label>
+        </div>{{end}}
+      </div></section>{{end}}
+      </div>
+    </section>
+    <section class="editor-step"><label class="field"><span>Общий комментарий</span><textarea name="general_comment" rows="3" maxlength="1000">{{$data.GeneralComment}}</textarea></label></section>
+    <div class="sticky-submit">
+      <a class="button" href="{{$back}}" data-confirm="Уйти без сохранения? Введённые данные не сохранятся.">Отменить</a>
+      {{if and (not $update) (isShop .Viewer)}}<button class="button" type="submit" formaction="/orders/draft">Сохранить черновик</button>{{end}}
+      <button class="button button-primary" type="submit">{{$submit}}</button>
+    </div>
+  </form>
+</section>
+{{end}}

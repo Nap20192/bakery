@@ -33,13 +33,6 @@ const (
 	white        = 97
 )
 
-type Encoder string
-
-const (
-	JSON           = Encoder("json")
-	defaultEncoder = JSON
-)
-
 func colorizer(colorCode int, v string) string {
 	return fmt.Sprintf("\033[%sm%s%s", strconv.Itoa(colorCode), v, reset)
 }
@@ -50,16 +43,13 @@ func colorizer(colorCode int, v string) string {
 type Handler struct {
 	handler slog.Handler
 	// Per-handler configuration
-	writer          io.Writer
-	replaceAttrFunc func([]string, slog.Attr) slog.Attr
+	writer io.Writer
 	// Shared state across WithAttrs/WithGroup instances for output synchronization.
 	// This ensures log lines from related handlers don't get interleaved.
-	buffer           *bytes.Buffer
-	mutex            *sync.Mutex
-	encoder          Encoder
-	groups           []string
-	colorize         bool
-	outputEmptyAttrs bool
+	buffer   *bytes.Buffer
+	mutex    *sync.Mutex
+	groups   []string
+	colorize bool
 }
 
 func (h *Handler) Enabled(ctx context.Context, level slog.Level) bool {
@@ -68,15 +58,12 @@ func (h *Handler) Enabled(ctx context.Context, level slog.Level) bool {
 
 func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	return &Handler{
-		handler:          h.handler.WithAttrs(attrs),
-		buffer:           h.buffer,
-		encoder:          h.encoder,
-		replaceAttrFunc:  h.replaceAttrFunc,
-		mutex:            h.mutex,
-		writer:           h.writer,
-		colorize:         h.colorize,
-		outputEmptyAttrs: h.outputEmptyAttrs,
-		groups:           h.groups,
+		handler:  h.handler.WithAttrs(attrs),
+		buffer:   h.buffer,
+		mutex:    h.mutex,
+		writer:   h.writer,
+		colorize: h.colorize,
+		groups:   h.groups,
 	}
 }
 
@@ -88,15 +75,12 @@ func (h *Handler) WithGroup(name string) slog.Handler {
 	copy(newGroups, h.groups)
 	newGroups[len(h.groups)] = name
 	return &Handler{
-		handler:          h.handler.WithGroup(name),
-		buffer:           h.buffer,
-		encoder:          h.encoder,
-		replaceAttrFunc:  h.replaceAttrFunc,
-		mutex:            h.mutex,
-		writer:           h.writer,
-		colorize:         h.colorize,
-		outputEmptyAttrs: h.outputEmptyAttrs,
-		groups:           newGroups,
+		handler:  h.handler.WithGroup(name),
+		buffer:   h.buffer,
+		mutex:    h.mutex,
+		writer:   h.writer,
+		colorize: h.colorize,
+		groups:   newGroups,
 	}
 }
 
@@ -124,52 +108,23 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 	if h.colorize {
 		colorize = colorizer
 	}
-	var level string
-	levelAttr := slog.Attr{
-		Key:   slog.LevelKey,
-		Value: slog.AnyValue(r.Level),
+	level := r.Level.String() + ":"
+	switch {
+	case r.Level <= slog.LevelDebug:
+		level = colorize(magenta, level)
+	case r.Level <= slog.LevelInfo:
+		level = colorize(green, level)
+	case r.Level < slog.LevelWarn:
+		level = colorize(lightBlue, level)
+	case r.Level < slog.LevelError:
+		level = colorize(yellow, level)
+	case r.Level == slog.LevelError:
+		level = colorize(lightRed, level)
+	default:
+		level = colorize(lightMagenta, level)
 	}
-	if h.replaceAttrFunc != nil {
-		levelAttr = h.replaceAttrFunc([]string{}, levelAttr)
-	}
-	if !levelAttr.Equal(slog.Attr{}) {
-		level = levelAttr.Value.String() + ":"
-		if r.Level <= slog.LevelDebug {
-			level = colorize(magenta, level)
-		} else if r.Level <= slog.LevelInfo {
-			level = colorize(green, level)
-		} else if r.Level < slog.LevelWarn {
-			level = colorize(lightBlue, level)
-		} else if r.Level < slog.LevelError {
-			level = colorize(yellow, level)
-		} else if r.Level == slog.LevelError {
-			level = colorize(lightRed, level)
-		} else {
-			level = colorize(lightMagenta, level)
-		}
-	}
-	var timestamp string
-	timeAttr := slog.Attr{
-		Key:   slog.TimeKey,
-		Value: slog.StringValue(r.Time.Format(timeFormat)),
-	}
-	if h.replaceAttrFunc != nil {
-		timeAttr = h.replaceAttrFunc([]string{}, timeAttr)
-	}
-	if !timeAttr.Equal(slog.Attr{}) {
-		timestamp = colorize(lightGray, timeAttr.Value.String())
-	}
-	var msg string
-	msgAttr := slog.Attr{
-		Key:   slog.MessageKey,
-		Value: slog.StringValue(r.Message),
-	}
-	if h.replaceAttrFunc != nil {
-		msgAttr = h.replaceAttrFunc([]string{}, msgAttr)
-	}
-	if !msgAttr.Equal(slog.Attr{}) {
-		msg = colorize(cyan, msgAttr.Value.String())
-	}
+	timestamp := colorize(lightGray, r.Time.Format(timeFormat))
+	msg := colorize(cyan, r.Message)
 	// Add group prefix to message when groups exist
 	var groupPrefix string
 	if len(h.groups) > 0 {
@@ -180,13 +135,8 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 		return err
 	}
 	var attrsAsBytes []byte
-	if h.outputEmptyAttrs || len(attrs) > 0 {
-		switch h.encoder {
-		case JSON:
-			attrsAsBytes, err = json.MarshalIndent(attrs, "", "  ")
-		default:
-			return fmt.Errorf("unsupported encoder %q", h.encoder)
-		}
+	if len(attrs) > 0 {
+		attrsAsBytes, err = json.MarshalIndent(attrs, "", "  ")
 		if err != nil {
 			return fmt.Errorf("error when marshaling attrs: %w", err)
 		}
@@ -217,95 +167,28 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 	return nil
 }
 
-func suppressDefaults(
-	next func([]string, slog.Attr) slog.Attr,
-) func([]string, slog.Attr) slog.Attr {
-	return func(groups []string, a slog.Attr) slog.Attr {
-		if a.Key == slog.TimeKey ||
-			a.Key == slog.LevelKey ||
-			a.Key == slog.MessageKey {
-			return slog.Attr{}
-		}
-		if next == nil {
-			return a
-		}
-		return next(groups, a)
+// suppressDefaults drops the attrs Handle renders itself, leaving the inner
+// JSON handler to emit only the caller's own attributes.
+func suppressDefaults(_ []string, a slog.Attr) slog.Attr {
+	switch a.Key {
+	case slog.TimeKey, slog.LevelKey, slog.MessageKey:
+		return slog.Attr{}
 	}
+	return a
 }
 
-type handlerOptions struct {
-	slog.HandlerOptions
-	writer           io.Writer
-	encoder          Encoder
-	colorize         bool
-	outputEmptyAttrs bool
-}
-
-func NewHandler(options ...Option) *Handler {
-	config := handlerOptions{
-		writer:  io.Discard,
-		encoder: defaultEncoder,
-	}
-	for _, opt := range options {
-		if opt != nil {
-			opt(&config)
-		}
-	}
-	buf := &bytes.Buffer{}
-	handler := &Handler{
-		buffer:           buf,
-		writer:           config.writer,
-		encoder:          config.encoder,
-		colorize:         config.colorize,
-		outputEmptyAttrs: config.outputEmptyAttrs,
-		handler: slog.NewJSONHandler(buf, &slog.HandlerOptions{
-			Level:       config.Level,
-			AddSource:   config.AddSource,
-			ReplaceAttr: suppressDefaults(config.ReplaceAttr),
+// NewHandler builds the development handler: slog's JSON handler renders the
+// record into a buffer, which Handle then reformats into a colorized line.
+func NewHandler(writer io.Writer, level slog.Leveler, colorize bool) *Handler {
+	buffer := &bytes.Buffer{}
+	return &Handler{
+		buffer:   buffer,
+		writer:   writer,
+		colorize: colorize,
+		handler: slog.NewJSONHandler(buffer, &slog.HandlerOptions{
+			Level:       level,
+			ReplaceAttr: suppressDefaults,
 		}),
-		replaceAttrFunc: config.ReplaceAttr,
-		mutex:           &sync.Mutex{},
-	}
-	return handler
-}
-
-type Option func(h *handlerOptions)
-
-func WithWriter(writer io.Writer) Option {
-	return func(h *handlerOptions) {
-		h.writer = writer
-	}
-}
-
-func WithColor(x ...bool) Option {
-	return func(h *handlerOptions) {
-		for i := range x {
-			h.colorize = x[i]
-		}
-	}
-}
-
-func WithOutputEmptyAttrs(x ...bool) Option {
-	return func(h *handlerOptions) {
-		for i := range x {
-			h.outputEmptyAttrs = x[i]
-		}
-	}
-}
-
-func WithEncoder(e Encoder) Option {
-	return func(h *handlerOptions) {
-		switch e {
-		case JSON:
-			h.encoder = e
-		default:
-			panic(fmt.Sprintf("slogging: unsupported encoder %q", e))
-		}
-	}
-}
-
-func WithLevel(lvl slog.Leveler) Option {
-	return func(h *handlerOptions) {
-		h.Level = lvl
+		mutex: &sync.Mutex{},
 	}
 }

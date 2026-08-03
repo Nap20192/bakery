@@ -3,6 +3,9 @@ package orderuc
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -189,21 +192,25 @@ func TestServiceCreateOrderRejectsPastFulfillmentDate(t *testing.T) {
 	}
 }
 
-func TestServiceCreateOrderAllowsTodayFulfillmentDate(t *testing.T) {
+func TestServiceCreateOrderAllowsWorkshopSource(t *testing.T) {
 	repo := &fakeRepo{
 		departmentByID: map[int64]Department{
-			10: {ID: 10, Code: "gagarina", Name: "Магазин Гагарина", Type: "shop"},
+			10: {ID: 10, Code: "pekari", Name: "Цех Пекари", Type: "workshop"},
+		},
+		categoryByID: map[int64]orderdomain.OrderCategory{
+			1: {ID: 1, Code: "buns", Letter: "Б", Name: "Булочки", Color: "sky"},
 		},
 	}
 	svc := NewService(repo)
-	shopID := int64(10)
+	workshopID := int64(10)
 	now := time.Date(2026, 6, 18, 10, 0, 0, 0, time.UTC)
 
 	_, err := svc.CreateOrder(context.Background(), orderdomain.CreateOrderInput{
 		Date:              now,
 		FulfillmentDate:   now,
-		FromDepartmentID:  &shopID,
-		CreatedByUsername: "shop",
+		FromDepartmentID:  &workshopID,
+		CategoryID:        1,
+		CreatedByUsername: "baker",
 		Items: []orderdomain.OrderItem{{
 			Code:        "15635",
 			ProductName: "Пирожок",
@@ -215,18 +222,143 @@ func TestServiceCreateOrderAllowsTodayFulfillmentDate(t *testing.T) {
 		t.Fatalf("CreateOrder returned error: %v", err)
 	}
 	if !repo.createCalled {
-		t.Fatal("CreateOrder should persist order with today's fulfillment date")
+		t.Fatal("CreateOrder should persist an order from the workshop")
+	}
+}
+
+func draftFixtureRepo() *fakeRepo {
+	return &fakeRepo{
+		departmentByID: map[int64]Department{
+			10: {ID: 10, Code: "shop-1", Name: "Магазин 1", Type: "shop"},
+		},
+		categoryByID: map[int64]orderdomain.OrderCategory{
+			1: {ID: 1, Code: "bread", Letter: "Х", Name: "Хлеб", Color: "amber"},
+			2: {ID: 2, Code: "buns", Letter: "Б", Name: "Булочки", Color: "sky"},
+		},
+	}
+}
+
+func draftInput(shopID int64, categoryID int64, now time.Time) SaveOrderDraftInput {
+	return SaveOrderDraftInput{
+		CreatedByUsername: "shop",
+		CategoryID:        categoryID,
+		FromDepartmentID:  &shopID,
+		FulfillmentDate:   now,
+		Items: []orderdomain.OrderItem{{
+			Code:        "15635",
+			ProductName: "Пирожок",
+			Quantity:    1,
+		}},
+	}
+}
+
+func TestServiceSaveOrderDraftCreatesOnePerCategory(t *testing.T) {
+	repo := draftFixtureRepo()
+	svc := NewService(repo)
+	shopID := int64(10)
+	now := time.Now().UTC()
+
+	if _, err := svc.SaveOrderDraft(context.Background(), draftInput(shopID, 1, now)); err != nil {
+		t.Fatalf("SaveOrderDraft (bread) returned error: %v", err)
+	}
+	if _, err := svc.SaveOrderDraft(context.Background(), draftInput(shopID, 2, now)); err != nil {
+		t.Fatalf("SaveOrderDraft (buns) returned error: %v", err)
+	}
+
+	drafts, err := svc.ListOrderDrafts(context.Background(), "shop")
+	if err != nil {
+		t.Fatalf("ListOrderDrafts returned error: %v", err)
+	}
+	if len(drafts) != 2 {
+		t.Fatalf("drafts = %d, want 2 (one per category): %#v", len(drafts), drafts)
+	}
+}
+
+func TestServiceSaveOrderDraftOverwritesSameCategory(t *testing.T) {
+	repo := draftFixtureRepo()
+	svc := NewService(repo)
+	shopID := int64(10)
+	now := time.Now().UTC()
+
+	if _, err := svc.SaveOrderDraft(context.Background(), draftInput(shopID, 1, now)); err != nil {
+		t.Fatalf("first SaveOrderDraft returned error: %v", err)
+	}
+	second := draftInput(shopID, 1, now)
+	second.Items[0].Quantity = 5
+	if _, err := svc.SaveOrderDraft(context.Background(), second); err != nil {
+		t.Fatalf("second SaveOrderDraft returned error: %v", err)
+	}
+
+	drafts, err := svc.ListOrderDrafts(context.Background(), "shop")
+	if err != nil {
+		t.Fatalf("ListOrderDrafts returned error: %v", err)
+	}
+	if len(drafts) != 1 {
+		t.Fatalf("drafts = %d, want 1 (overwritten, not duplicated): %#v", len(drafts), drafts)
+	}
+	if drafts[0].Items[0].Quantity != 5 {
+		t.Fatalf("draft quantity = %v, want 5 (latest save wins)", drafts[0].Items[0].Quantity)
+	}
+}
+
+func TestServiceSaveOrderDraftRejectsPastFulfillmentDate(t *testing.T) {
+	repo := draftFixtureRepo()
+	svc := NewService(repo)
+	shopID := int64(10)
+	now := time.Now().UTC()
+
+	input := draftInput(shopID, 1, now)
+	input.FulfillmentDate = now.AddDate(0, 0, -1)
+	if _, err := svc.SaveOrderDraft(context.Background(), input); !errors.Is(err, ErrFulfillmentDateInPast) {
+		t.Fatalf("SaveOrderDraft error = %v, want ErrFulfillmentDateInPast", err)
+	}
+}
+
+func TestServiceDeleteOrderDraft(t *testing.T) {
+	repo := draftFixtureRepo()
+	svc := NewService(repo)
+	shopID := int64(10)
+	now := time.Now().UTC()
+
+	if _, err := svc.SaveOrderDraft(context.Background(), draftInput(shopID, 1, now)); err != nil {
+		t.Fatalf("SaveOrderDraft returned error: %v", err)
+	}
+	if err := svc.DeleteOrderDraft(context.Background(), "shop", 1); err != nil {
+		t.Fatalf("DeleteOrderDraft returned error: %v", err)
+	}
+	if _, err := svc.GetOrderDraft(context.Background(), "shop", 1); err == nil {
+		t.Fatal("GetOrderDraft should fail after delete")
+	}
+}
+
+func TestRunCleanupTickerPurgesStaleDrafts(t *testing.T) {
+	repo := draftFixtureRepo()
+	repo.drafts = map[string]orderdomain.OrderDraft{
+		draftKey("shop", 1): {CreatedByUsername: "shop", CategoryID: 1, UpdatedAt: time.Now().Add(-60 * 24 * time.Hour)},
+	}
+	svc := NewService(repo)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- svc.RunCleanupTicker(ctx, time.Hour, 31*24*time.Hour) }()
+	cancel()
+	if err := <-done; err != nil {
+		t.Fatalf("RunCleanupTicker returned error: %v", err)
+	}
+
+	if len(repo.drafts) != 0 {
+		t.Fatalf("stale draft should have been purged by the cleanup ticker: %#v", repo.drafts)
 	}
 }
 
 func TestParseDefaultDishCatalogItems(t *testing.T) {
 	items := parseDefaultDishCatalogItems(`
 КОКРОКИ
-15542 Кокрок с картофелем 0
-15544 Кокрок с творогом 0
+15542 Кокрок с картофелем
+15544 Кокрок с творогом
 
 САМСА И УЧПУЧМАК
-15646 Самса с курицей 0
+15646 Самса с курицей
 broken line
 `)
 	if len(items) != 3 {
@@ -237,6 +369,196 @@ broken line
 	}
 	if items[2].Code != "15646" || items[2].Name != "Самса с курицей" || items[2].Theme != "САМСА И УЧПУЧМАК" || items[2].SortOrder != 3 {
 		t.Fatalf("third item = %#v", items[2])
+	}
+}
+
+func TestServiceCreateProductionSheetNormalizesItems(t *testing.T) {
+	repo := &fakeRepo{
+		ordersByNumber: map[string]orderdomain.Order{
+			"Г.Х.09.07.26.001": {
+				Number: "Г.Х.09.07.26.001",
+				Items: []orderdomain.OrderItem{
+					{Code: "15702", ProductName: "Хлеб Бородино", Quantity: 8},
+				},
+			},
+		},
+	}
+	svc := NewService(repo)
+
+	sheet, err := svc.CreateProductionSheet(context.Background(), RecordProductionInput{
+		ProducedByUsername: "baker",
+		Orders: []OrderProductionInput{{
+			Number: " Г.Х.09.07.26.001 ",
+			Items: []ProducedItemInput{
+				{ProductName: "хлеб бородино", ProducedQuantity: 7}, // имя матчится без регистра
+			},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("CreateProductionSheet returned error: %v", err)
+	}
+	if sheet.ID == 0 || len(repo.productionInputs) != 1 {
+		t.Fatalf("sheet = %#v, inputs = %d", sheet, len(repo.productionInputs))
+	}
+	input := repo.productionInputs[0]
+	if input.SheetID != 0 || input.ProducedByUsername != "baker" {
+		t.Fatalf("input = %#v", input)
+	}
+	if len(input.Orders) != 1 || input.Orders[0].Number != "Г.Х.09.07.26.001" ||
+		input.Orders[0].Items[0].ProductName != "Хлеб Бородино" || input.Orders[0].Items[0].ProducedQuantity != 7 {
+		t.Fatalf("orders = %#v", input.Orders)
+	}
+	item := input.Orders[0].Items[0]
+	if item.LoadedQuantity == nil || *item.LoadedQuantity != 8 || !item.IsDeviation {
+		t.Fatalf("item = %#v, want default loaded quantity 8 and output deviation", item)
+	}
+}
+
+func TestServiceCreateProductionSheetRejectsUnknownItemAndCancelled(t *testing.T) {
+	repo := &fakeRepo{
+		ordersByNumber: map[string]orderdomain.Order{
+			"A": {Number: "A", Items: []orderdomain.OrderItem{{ProductName: "Хлеб", Quantity: 1}}},
+			"C": {Number: "C", Cancelled: true, Items: []orderdomain.OrderItem{{ProductName: "Хлеб", Quantity: 1}}},
+		},
+	}
+	svc := NewService(repo)
+
+	_, err := svc.CreateProductionSheet(context.Background(), RecordProductionInput{
+		Orders: []OrderProductionInput{{Number: "A", Items: []ProducedItemInput{{ProductName: "Неизвестное", ProducedQuantity: 1}}}},
+	})
+	if err == nil {
+		t.Fatal("CreateProductionSheet must reject unknown item")
+	}
+
+	_, err = svc.CreateProductionSheet(context.Background(), RecordProductionInput{
+		Orders: []OrderProductionInput{{Number: "C", Items: []ProducedItemInput{{ProductName: "Хлеб", ProducedQuantity: 1}}}},
+	})
+	if err == nil {
+		t.Fatal("CreateProductionSheet must reject cancelled order")
+	}
+	negative := -1.0
+	_, err = svc.CreateProductionSheet(context.Background(), RecordProductionInput{
+		Orders: []OrderProductionInput{{Number: "A", Items: []ProducedItemInput{{ProductName: "Хлеб", LoadedQuantity: &negative, ProducedQuantity: 1}}}},
+	})
+	if err == nil {
+		t.Fatal("CreateProductionSheet must reject negative loaded quantity")
+	}
+	if len(repo.productionInputs) != 0 {
+		t.Fatal("nothing must be persisted on validation errors")
+	}
+}
+
+func TestServiceUpdateAndDeleteProductionSheetRequireExistingSheet(t *testing.T) {
+	repo := &fakeRepo{
+		sheetsByID: map[int64]struct{}{5: {}},
+		ordersByNumber: map[string]orderdomain.Order{
+			"A": {Number: "A", Items: []orderdomain.OrderItem{{ProductName: "Хлеб", Quantity: 1}}},
+		},
+	}
+	svc := NewService(repo)
+
+	input := RecordProductionInput{
+		Orders: []OrderProductionInput{{Number: "A", Items: []ProducedItemInput{{ProductName: "Хлеб", ProducedQuantity: 2}}}},
+	}
+	if _, err := svc.UpdateProductionSheet(context.Background(), 99, input); !errors.Is(err, ErrProductionSheetNotFound) {
+		t.Fatalf("UpdateProductionSheet(99) error = %v, want ErrProductionSheetNotFound", err)
+	}
+	if _, err := svc.UpdateProductionSheet(context.Background(), 5, input); err != nil {
+		t.Fatalf("UpdateProductionSheet(5) error: %v", err)
+	}
+	if len(repo.productionInputs) != 1 || repo.productionInputs[0].SheetID != 5 {
+		t.Fatalf("inputs = %#v", repo.productionInputs)
+	}
+
+	if err := svc.DeleteProductionSheet(context.Background(), 99, "baker"); !errors.Is(err, ErrProductionSheetNotFound) {
+		t.Fatalf("DeleteProductionSheet(99) error = %v", err)
+	}
+	if err := svc.DeleteProductionSheet(context.Background(), 5, "baker"); err != nil {
+		t.Fatalf("DeleteProductionSheet(5) error: %v", err)
+	}
+	if len(repo.productionDeleted) != 1 || repo.productionDeleted[0] != 5 {
+		t.Fatalf("deleted = %#v", repo.productionDeleted)
+	}
+}
+
+func TestServiceUpdateProductionSheetKeepsBatchWhenAllValuesMatchOrder(t *testing.T) {
+	repo := &fakeRepo{
+		sheetsByID: map[int64]struct{}{5: {}},
+		ordersByNumber: map[string]orderdomain.Order{
+			"A": {Number: "A", Items: []orderdomain.OrderItem{{ProductName: "Хлеб", Quantity: 10}}},
+		},
+	}
+	svc := NewService(repo)
+
+	// Выход вернули к заказу — отклонений не осталось, но лист фиксирует
+	// партию и закладку для каждой позиции.
+	sheet, err := svc.UpdateProductionSheet(context.Background(), 5, RecordProductionInput{
+		ProducedByUsername: "baker",
+		Orders:             []OrderProductionInput{{Number: "A", Items: []ProducedItemInput{{ProductName: "Хлеб", ProducedQuantity: 10}}}},
+	})
+	if err != nil {
+		t.Fatalf("UpdateProductionSheet returned error: %v", err)
+	}
+	if sheet.ID != 5 {
+		t.Fatalf("sheet.ID = %d, want 5 (batch survives)", sheet.ID)
+	}
+	if len(repo.productionDeleted) != 0 {
+		t.Fatalf("delete must not be called, deleted = %#v", repo.productionDeleted)
+	}
+	if len(repo.productionInputs) != 1 {
+		t.Fatalf("inputs = %#v, want one save", repo.productionInputs)
+	}
+	saved := repo.productionInputs[0]
+	if saved.SheetID != 5 || len(saved.Orders) != 1 || saved.Orders[0].Number != "A" || len(saved.Orders[0].Items) != 1 {
+		t.Fatalf("saved = %#v, want order A with its loaded item", saved)
+	}
+	item := saved.Orders[0].Items[0]
+	if item.LoadedQuantity == nil || *item.LoadedQuantity != 10 || item.IsDeviation {
+		t.Fatalf("saved item = %#v, want loaded 10 without output deviation", item)
+	}
+}
+
+func TestServiceEnsureDefaultOrderTemplatesSeedsCategories(t *testing.T) {
+	dir := t.TempDir()
+	buns := filepath.Join(dir, "dishes.txt")
+	bread := filepath.Join(dir, "bread.txt")
+	if err := os.WriteFile(buns, []byte("БУЛОЧКИ\n15664 Булочка Улитка 0\n15667 Плюшка московская 0\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(bread, []byte("ХЛЕБ\n15702 Хлеб Бородино 0\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	repo := &fakeRepo{
+		categoryByID: map[int64]orderdomain.OrderCategory{
+			1: {ID: 1, Code: "bread", Letter: "Х", Name: "Хлеб"},
+			2: {ID: 2, Code: "buns", Letter: "Б", Name: "Булочки"},
+		},
+	}
+	svc := NewService(repo)
+
+	result, err := svc.EnsureDefaultOrderTemplates(context.Background(),
+		CatalogSeed{Path: buns, CategoryCode: "buns"},
+		CatalogSeed{Path: bread, CategoryCode: "bread"},
+		CatalogSeed{Path: filepath.Join(dir, "missing.txt"), CategoryCode: "buns"}, // не ошибка
+	)
+	if err != nil {
+		t.Fatalf("EnsureDefaultOrderTemplates returned error: %v", err)
+	}
+	if result.CatalogItems != 3 || len(repo.upserted) != 3 {
+		t.Fatalf("catalog items = %d, upserted = %d, want 3/3", result.CatalogItems, len(repo.upserted))
+	}
+
+	byCode := map[string]DishCatalogItem{}
+	for _, item := range repo.upserted {
+		byCode[item.Code] = item
+	}
+	if item := byCode["15664"]; item.CategoryID == nil || *item.CategoryID != 2 || item.SortOrder != 1 {
+		t.Fatalf("булочка = %#v, want category 2 sort 1", item)
+	}
+	// Сквозная нумерация: хлебный файл продолжает счёт после булочек.
+	if item := byCode["15702"]; item.CategoryID == nil || *item.CategoryID != 1 || item.SortOrder != 3 {
+		t.Fatalf("хлеб = %#v, want category 1 sort 3", item)
 	}
 }
 
@@ -257,15 +579,79 @@ func assertContains(t *testing.T, value, needle string) {
 
 // fakeRepo is an in-memory Repository test double.
 type fakeRepo struct {
-	dishExistsByCode map[string]bool
-	dishErrorsByCode map[string]error
-	resolveByName    map[string]DishCatalogItem
-	resolveErrByName map[string]error
-	dishCatalog      []DishCatalogItem
-	deleteResult     int64
-	deleteCutoff     time.Time
-	departmentByID   map[int64]Department
-	createCalled     bool
+	dishExistsByCode  map[string]bool
+	dishErrorsByCode  map[string]error
+	resolveByName     map[string]DishCatalogItem
+	resolveErrByName  map[string]error
+	dishCatalog       []DishCatalogItem
+	deleteResult      int64
+	deleteCutoff      time.Time
+	departmentByID    map[int64]Department
+	categoryByID      map[int64]orderdomain.OrderCategory
+	createCalled      bool
+	ordersByNumber    map[string]orderdomain.Order
+	sheetsByID        map[int64]struct{}
+	productionInputs  []SaveProductionSheetInput
+	productionDeleted []int64
+	upserted          []DishCatalogItem
+	drafts            map[string]orderdomain.OrderDraft
+	draftDeleteCutoff time.Time
+}
+
+func draftKey(username string, categoryID int64) string {
+	return fmt.Sprintf("%s\x00%d", username, categoryID)
+}
+
+func (f *fakeRepo) SaveOrderDraft(_ context.Context, input SaveOrderDraftRepositoryInput) (orderdomain.OrderDraft, error) {
+	if f.drafts == nil {
+		f.drafts = make(map[string]orderdomain.OrderDraft)
+	}
+	fromDepartmentID := input.FromDepartmentID
+	draft := orderdomain.OrderDraft{
+		CreatedByUsername: input.CreatedByUsername,
+		CategoryID:        input.CategoryID,
+		FromDepartmentID:  &fromDepartmentID,
+		Items:             input.Items,
+		FulfillmentDate:   input.FulfillmentDate,
+		Comments:          input.Comments,
+		UpdatedAt:         time.Now().UTC(),
+	}
+	f.drafts[draftKey(input.CreatedByUsername, input.CategoryID)] = draft
+	return draft, nil
+}
+
+func (f *fakeRepo) GetOrderDraft(_ context.Context, username string, categoryID int64) (orderdomain.OrderDraft, error) {
+	if draft, ok := f.drafts[draftKey(username, categoryID)]; ok {
+		return draft, nil
+	}
+	return orderdomain.OrderDraft{}, fmt.Errorf("draft not found")
+}
+
+func (f *fakeRepo) ListOrderDrafts(_ context.Context, username string) ([]orderdomain.OrderDraft, error) {
+	out := make([]orderdomain.OrderDraft, 0)
+	for _, draft := range f.drafts {
+		if draft.CreatedByUsername == username {
+			out = append(out, draft)
+		}
+	}
+	return out, nil
+}
+
+func (f *fakeRepo) DeleteOrderDraft(_ context.Context, username string, categoryID int64) error {
+	delete(f.drafts, draftKey(username, categoryID))
+	return nil
+}
+
+func (f *fakeRepo) DeleteOrderDraftsOlderThan(_ context.Context, cutoff time.Time) (int64, error) {
+	f.draftDeleteCutoff = cutoff
+	var deleted int64
+	for key, draft := range f.drafts {
+		if draft.UpdatedAt.Before(cutoff) {
+			delete(f.drafts, key)
+			deleted++
+		}
+	}
+	return deleted, nil
 }
 
 var _ Repository = (*fakeRepo)(nil)
@@ -308,7 +694,13 @@ func (f *fakeRepo) UpdateOrder(context.Context, UpdateOrderRepositoryInput) (ord
 	return orderdomain.Order{}, nil
 }
 
-func (f *fakeRepo) GetOrderByNumber(context.Context, string) (orderdomain.Order, error) {
+func (f *fakeRepo) GetOrderByNumber(_ context.Context, number string) (orderdomain.Order, error) {
+	if order, ok := f.ordersByNumber[number]; ok {
+		return order, nil
+	}
+	if f.ordersByNumber != nil {
+		return orderdomain.Order{}, ErrProductionOrderNotFound
+	}
 	return orderdomain.Order{}, nil
 }
 
@@ -323,7 +715,65 @@ func (f *fakeRepo) GetDepartmentByID(_ context.Context, id int64) (Department, e
 	return Department{}, nil
 }
 
-func (f *fakeRepo) UpsertDishCatalogItem(context.Context, DishCatalogItem) error {
+func (f *fakeRepo) SaveProductionSheet(_ context.Context, input SaveProductionSheetInput) (orderdomain.ProductionSheet, error) {
+	f.productionInputs = append(f.productionInputs, input)
+	return orderdomain.ProductionSheet{ID: max(input.SheetID, 1)}, nil
+}
+
+func (f *fakeRepo) ListProductionSheets(context.Context) ([]orderdomain.ProductionSheet, error) {
+	return nil, nil
+}
+
+func (f *fakeRepo) GetProductionSheet(_ context.Context, id int64) (orderdomain.ProductionSheet, error) {
+	if _, ok := f.sheetsByID[id]; ok {
+		return orderdomain.ProductionSheet{ID: id}, nil
+	}
+	return orderdomain.ProductionSheet{}, ErrProductionSheetNotFound
+}
+
+func (f *fakeRepo) DeleteProductionSheet(_ context.Context, id int64, _ string) error {
+	f.productionDeleted = append(f.productionDeleted, id)
+	return nil
+}
+
+func (f *fakeRepo) ListOrderCategories(context.Context) ([]orderdomain.OrderCategory, error) {
+	out := make([]orderdomain.OrderCategory, 0, len(f.categoryByID))
+	for _, category := range f.categoryByID {
+		out = append(out, category)
+	}
+	return out, nil
+}
+
+func (f *fakeRepo) GetOrderCategoryByID(_ context.Context, id int64) (orderdomain.OrderCategory, error) {
+	if category, ok := f.categoryByID[id]; ok {
+		return category, nil
+	}
+	return orderdomain.OrderCategory{}, ErrCategoryNotFound
+}
+
+func (f *fakeRepo) CreateOrderCategory(_ context.Context, input orderdomain.OrderCategory) (orderdomain.OrderCategory, error) {
+	return input, nil
+}
+
+func (f *fakeRepo) UpdateOrderCategory(_ context.Context, _ int64, input orderdomain.OrderCategory) (orderdomain.OrderCategory, error) {
+	return input, nil
+}
+
+func (f *fakeRepo) DeleteOrderCategory(context.Context, int64) error {
+	return nil
+}
+
+func (f *fakeRepo) CountDishesByCategoryID(context.Context, int64) (int64, error) {
+	return 0, nil
+}
+
+func (f *fakeRepo) UpsertDishCatalogItem(_ context.Context, item DishCatalogItem) error {
+	f.upserted = append(f.upserted, item)
+	return nil
+}
+
+func (f *fakeRepo) UpsertDishCatalogItems(_ context.Context, items []DishCatalogItem) error {
+	f.upserted = append(f.upserted, items...)
 	return nil
 }
 

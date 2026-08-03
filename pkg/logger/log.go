@@ -29,7 +29,7 @@ func InitLogger(level string, pretty bool, logDir string) (*slog.Logger, error) 
 	var TerminalHandler slog.Handler
 
 	if pretty {
-		TerminalHandler = NewHandler(WithColor(true), WithLevel(logLevel), WithEncoder(JSON), WithWriter(os.Stdout))
+		TerminalHandler = NewHandler(os.Stdout, logLevel, true)
 	} else {
 		TerminalHandler = slog.NewJSONHandler(os.Stdout, opts)
 	}

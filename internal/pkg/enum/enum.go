@@ -11,7 +11,7 @@ const (
 	// RoleShop — магазин: создаёт и редактирует заказы, видит только заказы
 	// своего магазина.
 	RoleShop Role = "shop"
-	// RoleBaker — цех: видит все заказы и считает мониторинг по тесту.
+	// RoleBaker — цех: управляет заказами, отработками и расчётом теста.
 	RoleBaker Role = "baker"
 	// RoleUser — роль по умолчанию для нового пользователя без выданных прав.
 	RoleUser Role = "user"
@@ -29,17 +29,6 @@ func IsValidRole(role string) bool {
 		return false
 	}
 }
-
-type Permission string
-
-const (
-	PermissionTechCard     Permission = "techcard:view"
-	PermissionSync         Permission = "sync:run"
-	PermissionManageUsers  Permission = "user:manage"
-	PermissionOrderWrite   Permission = "order:write"
-	PermissionOrderViewAll Permission = "order:view_all"
-	PermissionMonitorDough Permission = "monitor:dough"
-)
 
 type DepartmentType string
 

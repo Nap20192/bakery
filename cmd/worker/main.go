@@ -13,13 +13,12 @@ import (
 	"bakery/internal/deps"
 	outbounddb "bakery/internal/outbound/db"
 	"bakery/internal/pkg/dbmigrate"
-	"bakery/internal/pkg/helpers"
 	"bakery/pkg/logger"
 	"bakery/pkg/rabbitmq"
 )
 
 func main() {
-	_ = config.LoadDotenv()
+	config.LoadDotenv()
 
 	cfg := config.New()
 
@@ -37,7 +36,7 @@ func main() {
 		log.Error("open db failed", "error", err)
 		os.Exit(1)
 	}
-	defer helpers.ClosePool(db)
+	defer db.Close()
 	if err = dbmigrate.ApplyMigrations(ctx, db, log, cfg.Migration.Dir); err != nil {
 		log.Error("apply db migrations failed", "error", err, "dir", cfg.Migration.Dir)
 		os.Exit(1)
@@ -64,7 +63,6 @@ func main() {
 
 	appDeps, err := deps.NewAppDeps(
 		deps.WithAuthService(infra),
-		deps.WithRbacService(),
 		deps.WithOrderService(infra),
 		deps.WithOrderOutboxRelay(infra),
 		deps.WithDepartmentService(infra),
@@ -90,7 +88,8 @@ func main() {
 	}
 	log.Info("admin user ready", "username", admin.Username, "role", admin.Role, "created", created)
 
-	templateSeed, err := appDeps.OrderService.EnsureDefaultOrderTemplates(ctx, "templates/dishes.txt")
+	// Сидит каталог из templates/: dishes.txt → «Булочки», bread.txt → «Хлеб».
+	templateSeed, err := appDeps.OrderService.EnsureDefaultOrderTemplates(ctx)
 	if err != nil {
 		log.Error("ensure default templates failed", "error", err)
 		os.Exit(1)

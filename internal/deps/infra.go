@@ -7,11 +7,11 @@ import (
 	"bakery/internal/config"
 	"bakery/internal/outbound/db/sqlc"
 	"bakery/internal/outbound/iiko"
+	"bakery/pkg/rabbitmq"
 	"bakery/pkg/rabbitmq/consumer"
 	"bakery/pkg/rabbitmq/publisher"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type InfraDeps struct {
@@ -21,6 +21,12 @@ type InfraDeps struct {
 	queries        *sqlc.Queries
 	eventPublisher *publisher.Publisher
 	eventConsumer  *consumer.Consumer
+}
+
+// EventConsumer exposes the RabbitMQ consumer for wiring done outside this
+// package (the bot binary builds its own transport).
+func (d *InfraDeps) EventConsumer() *consumer.Consumer {
+	return d.eventConsumer
 }
 
 type infraOption func(*InfraDeps) error
@@ -68,7 +74,7 @@ func WithRepositories() infraOption {
 	}
 }
 
-func WithRabbitMQ(conn *amqp.Connection) infraOption {
+func WithRabbitMQ(conn *rabbitmq.Conn) infraOption {
 	return func(deps *InfraDeps) error {
 		if conn == nil {
 			return fmt.Errorf("missing rabbitmq connection")

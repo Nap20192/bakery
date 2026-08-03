@@ -1,0 +1,54 @@
+{{define "layout"}}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f4f3ee">
+  <meta name="csrf-token" content="{{.CSRF}}">
+  <meta name="htmx-config" content='{"includeIndicatorStyles":false}'>
+  <title>{{.Title}} · Bakery</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/app.css">
+  <script defer src="https://telegram.org/js/telegram-web-app.js?62"></script>
+  <script defer src="/static/vendor/htmx.min.js"></script>
+  <script defer src="/static/app.js"></script>
+</head>
+<body>
+  <div id="global-progress" class="progress" role="progressbar" aria-label="Загрузка"></div>
+  {{if eq .View "login"}}
+    {{template "login" .}}
+  {{else}}
+  <div id="app-shell" class="app-shell" hx-boost="true" hx-target="#app-shell" hx-select="#app-shell" hx-swap="outerHTML show:window:top" hx-indicator="#global-progress">
+    {{template "nav-icons"}}
+    <header class="topbar">
+      <a class="brand" href="/orders" aria-label="Bakery, заказы">
+        <span><strong>Bakery</strong><small>Производственный журнал</small></span>
+      </a>
+      {{if .Viewer}}
+      <nav id="main-nav" class="main-nav" aria-label="Основная навигация">
+        <a href="/orders" {{if or (active .CurrentPath "/orders") (eq .CurrentPath "/orders/table")}}aria-current="page"{{end}}>{{template "navicon" "grid"}}<span class="nav-label">Заказы</span></a>
+        {{if canUseProduction .Viewer}}<a href="/production" {{if active .CurrentPath "/production"}}aria-current="page"{{end}}>{{template "navicon" "sheet"}}<span class="nav-label">Отработки</span></a>{{end}}
+        {{if canManageOrders .Viewer}}<a href="/orders/new" {{if active .CurrentPath "/orders/new"}}aria-current="page"{{end}}>{{template "navicon" "plus"}}<span class="nav-label">Новая заявка</span></a>{{end}}
+        {{if isShop .Viewer}}<a href="/drafts" {{if active .CurrentPath "/drafts"}}aria-current="page"{{end}}>{{template "navicon" "draft"}}<span class="nav-label">Черновики</span></a>{{end}}
+        {{if canUseProduction .Viewer}}<a href="/calculator" {{if active .CurrentPath "/calculator"}}aria-current="page"{{end}}>{{template "navicon" "bowl"}}<span class="nav-label">Тесто</span></a>{{end}}
+        {{if isAdmin .Viewer}}
+          <a href="/admin/users" {{if active .CurrentPath "/admin/users"}}aria-current="page"{{end}}>{{template "navicon" "users"}}<span class="nav-label">Пользователи</span></a>
+          <a href="/admin/dishes" {{if active .CurrentPath "/admin/dishes"}}aria-current="page"{{end}}>{{template "navicon" "book"}}<span class="nav-label">Меню</span></a>
+          <a href="/admin/techcards" {{if active .CurrentPath "/admin/techcards"}}aria-current="page"{{end}}>{{template "navicon" "sheet"}}<span class="nav-label">Тех.карты</span></a>
+        {{end}}
+        <a href="/me" {{if active .CurrentPath "/me"}}aria-current="page"{{end}}>{{template "navicon" "user"}}<span class="nav-label">Профиль</span></a>
+      </nav>
+      {{end}}
+    </header>
+    <main id="main" tabindex="-1">
+      {{template "flash" .}}
+      {{view .View .}}
+    </main>
+  </div>
+  {{end}}
+  <div id="preview-slot"></div>
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>
+{{end}}

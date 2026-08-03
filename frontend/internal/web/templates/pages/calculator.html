@@ -1,0 +1,20 @@
+{{define "calculator"}}
+{{$data := .Data}}
+<section class="page calculator-page" data-calculator>
+  <header class="page-heading">{{template "page-title" (dict "Title" "Калькулятор теста" "Lede" "Черновик: ничего не создаёт и не сохраняет.")}}</header>
+  <form class="calculator-layout" action="/calculator" method="post" hx-sync="this:replace" hx-disabled-elt="find button[type=submit]">
+    {{template "csrf" .CSRF}}
+    <section class="surface">
+      {{template "section-heading" (dict "Title" "Тип и блюда")}}
+      {{template "category-picker" (dict "Categories" $data.Categories "Selected" $data.CategoryID "Compact" true)}}
+      <label class="field search-field"><span>Найти блюдо</span><input type="search" data-dish-search placeholder="Название"></label>
+      <div class="calculator-catalog">{{range $group := $data.Groups}}<section class="catalog-group"><h3>{{$group.Name}}</h3>{{range $item := $group.Items}}<label class="calculator-row" data-catalog-row data-category="{{deref $item.Dish.CategoryID}}" data-name="{{$item.Dish.Name}}"><input type="hidden" name="code" value="{{$item.Dish.Code}}"><input type="hidden" name="product_name" value="{{$item.Dish.Name}}"><span>{{$item.Dish.Name}}</span><input class="quantity-input" type="number" name="quantity" min="0" step="1" inputmode="numeric" value="{{inputQty $item.Quantity}}" aria-label="Количество {{$item.Dish.Name}}"></label>{{end}}</section>{{end}}</div>
+      <div class="form-actions"><a class="button" href="/calculator">Сбросить</a><button class="button button-primary" type="submit">Рассчитать тесто</button></div>
+    </section>
+    <section class="surface monitor-panel">
+      {{template "section-heading" (dict "Title" "Результат")}}
+      {{if $data.Reports}}{{template "monitor" $data}}{{else}}{{template "empty-state" (dict "Text" "Заполните количества и запустите расчёт." "Compact" true)}}{{end}}
+    </section>
+  </form>
+</section>
+{{end}}

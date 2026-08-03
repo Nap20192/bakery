@@ -44,66 +44,6 @@ func (q *Queries) AssignUserDepartment(ctx context.Context, arg AssignUserDepart
 	return i, err
 }
 
-const createDepartment = `-- name: CreateDepartment :one
-INSERT INTO departments (
-    type,
-    code,
-    name,
-    iiko_department_id,
-    metadata_json,
-    is_active,
-    created_at,
-    updated_at
-) VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6,
-    $7,
-    $8
-)
-RETURNING id, type, code, name, iiko_department_id, metadata_json, is_active, created_at, updated_at
-`
-
-type CreateDepartmentParams struct {
-	Type             string             `json:"type"`
-	Code             string             `json:"code"`
-	Name             string             `json:"name"`
-	IikoDepartmentID *string            `json:"iiko_department_id"`
-	MetadataJson     string             `json:"metadata_json"`
-	IsActive         bool               `json:"is_active"`
-	CreatedAt        pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
-}
-
-func (q *Queries) CreateDepartment(ctx context.Context, arg CreateDepartmentParams) (Department, error) {
-	row := q.db.QueryRow(ctx, createDepartment,
-		arg.Type,
-		arg.Code,
-		arg.Name,
-		arg.IikoDepartmentID,
-		arg.MetadataJson,
-		arg.IsActive,
-		arg.CreatedAt,
-		arg.UpdatedAt,
-	)
-	var i Department
-	err := row.Scan(
-		&i.ID,
-		&i.Type,
-		&i.Code,
-		&i.Name,
-		&i.IikoDepartmentID,
-		&i.MetadataJson,
-		&i.IsActive,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
 const getDepartmentByCode = `-- name: GetDepartmentByCode :one
 SELECT id, type, code, name, iiko_department_id, metadata_json, is_active, created_at, updated_at
 FROM departments

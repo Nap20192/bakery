@@ -16,7 +16,7 @@ UPDATE orders
 SET cancelled_at = $1,
     cancelled_by_username = $2
 WHERE number = $3
-RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username
+RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id
 `
 
 type CancelOrderParams struct {
@@ -41,6 +41,7 @@ func (q *Queries) CancelOrder(ctx context.Context, arg CancelOrderParams) (Order
 		&i.IsFavorite,
 		&i.CancelledAt,
 		&i.CancelledByUsername,
+		&i.CategoryID,
 	)
 	return i, err
 }
@@ -51,15 +52,27 @@ FROM orders
 WHERE
     ($1::BIGINT IS NULL OR from_department_id = $1::BIGINT)
     AND ($2::DATE IS NULL OR fulfillment_date = $2::DATE)
+    AND ($3::DATE IS NULL OR fulfillment_date >= $3::DATE)
+    AND ($4::DATE IS NULL OR fulfillment_date <= $4::DATE)
+    AND ($5::BIGINT IS NULL OR category_id = $5::BIGINT)
 `
 
 type CountOrdersParams struct {
 	FromDepartmentID *int64      `json:"from_department_id"`
 	FulfillmentDate  pgtype.Date `json:"fulfillment_date"`
+	FulfillmentFrom  pgtype.Date `json:"fulfillment_from"`
+	FulfillmentTo    pgtype.Date `json:"fulfillment_to"`
+	CategoryID       *int64      `json:"category_id"`
 }
 
 func (q *Queries) CountOrders(ctx context.Context, arg CountOrdersParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countOrders, arg.FromDepartmentID, arg.FulfillmentDate)
+	row := q.db.QueryRow(ctx, countOrders,
+		arg.FromDepartmentID,
+		arg.FulfillmentDate,
+		arg.FulfillmentFrom,
+		arg.FulfillmentTo,
+		arg.CategoryID,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -71,6 +84,7 @@ INSERT INTO orders (
     location,
     from_department_id,
     to_department_id,
+    category_id,
     created_at,
     fulfillment_date,
     created_by_username,
@@ -83,9 +97,10 @@ INSERT INTO orders (
     $5,
     $6,
     $7,
-    $8
+    $8,
+    $9
 )
-RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username
+RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id
 `
 
 type CreateOrderParams struct {
@@ -93,6 +108,7 @@ type CreateOrderParams struct {
 	Location          string             `json:"location"`
 	FromDepartmentID  *int64             `json:"from_department_id"`
 	ToDepartmentID    *int64             `json:"to_department_id"`
+	CategoryID        *int64             `json:"category_id"`
 	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 	FulfillmentDate   pgtype.Date        `json:"fulfillment_date"`
 	CreatedByUsername string             `json:"created_by_username"`
@@ -105,6 +121,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		arg.Location,
 		arg.FromDepartmentID,
 		arg.ToDepartmentID,
+		arg.CategoryID,
 		arg.CreatedAt,
 		arg.FulfillmentDate,
 		arg.CreatedByUsername,
@@ -124,23 +141,25 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		&i.IsFavorite,
 		&i.CancelledAt,
 		&i.CancelledByUsername,
+		&i.CategoryID,
 	)
 	return i, err
 }
 
 const createOrderCounterDay = `-- name: CreateOrderCounterDay :exec
-INSERT INTO order_counters(day, department_id, counter)
-VALUES ($1, $2, 0)
-ON CONFLICT(day, department_id) DO NOTHING
+INSERT INTO order_counters(day, department_id, category_id, counter)
+VALUES ($1, $2, $3, 0)
+ON CONFLICT(day, department_id, category_id) DO NOTHING
 `
 
 type CreateOrderCounterDayParams struct {
 	Day          string `json:"day"`
 	DepartmentID int64  `json:"department_id"`
+	CategoryID   int64  `json:"category_id"`
 }
 
 func (q *Queries) CreateOrderCounterDay(ctx context.Context, arg CreateOrderCounterDayParams) error {
-	_, err := q.db.Exec(ctx, createOrderCounterDay, arg.Day, arg.DepartmentID)
+	_, err := q.db.Exec(ctx, createOrderCounterDay, arg.Day, arg.DepartmentID, arg.CategoryID)
 	return err
 }
 
@@ -308,8 +327,35 @@ func (q *Queries) DeleteOrdersCreatedBefore(ctx context.Context, createdAtBefore
 	return column_1, err
 }
 
+const getOrderByID = `-- name: GetOrderByID :one
+SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id
+FROM orders
+WHERE id = $1
+`
+
+func (q *Queries) GetOrderByID(ctx context.Context, id int64) (Order, error) {
+	row := q.db.QueryRow(ctx, getOrderByID, id)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.Number,
+		&i.Location,
+		&i.CreatedAt,
+		&i.FromDepartmentID,
+		&i.ToDepartmentID,
+		&i.FulfillmentDate,
+		&i.CreatedByUsername,
+		&i.Comments,
+		&i.IsFavorite,
+		&i.CancelledAt,
+		&i.CancelledByUsername,
+		&i.CategoryID,
+	)
+	return i, err
+}
+
 const getOrderByNumber = `-- name: GetOrderByNumber :one
-SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username
+SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id
 FROM orders
 WHERE number = $1
 `
@@ -330,6 +376,7 @@ func (q *Queries) GetOrderByNumber(ctx context.Context, number string) (Order, e
 		&i.IsFavorite,
 		&i.CancelledAt,
 		&i.CancelledByUsername,
+		&i.CategoryID,
 	)
 	return i, err
 }
@@ -359,6 +406,8 @@ type GetOrderItemsByOrderIDRow struct {
 	ProductCode      string  `json:"product_code"`
 }
 
+// Позиции хранят только заявку. Факт отработки живёт в журнале и
+// декорируется при чтении (GetOrderProductionFacts + мердж в репозитории).
 func (q *Queries) GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]GetOrderItemsByOrderIDRow, error) {
 	rows, err := q.db.Query(ctx, getOrderItemsByOrderID, orderID)
 	if err != nil {
@@ -510,19 +559,25 @@ func (q *Queries) ListOrderHistoryItemsByHistoryID(ctx context.Context, historyI
 }
 
 const listOrders = `-- name: ListOrders :many
-SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username
+SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id
 FROM orders
 WHERE
     ($1::BIGINT IS NULL OR from_department_id = $1::BIGINT)
     AND ($2::DATE IS NULL OR fulfillment_date = $2::DATE)
+    AND ($3::DATE IS NULL OR fulfillment_date >= $3::DATE)
+    AND ($4::DATE IS NULL OR fulfillment_date <= $4::DATE)
+    AND ($5::BIGINT IS NULL OR category_id = $5::BIGINT)
 ORDER BY id DESC
-LIMIT $4
-OFFSET $3
+LIMIT $7
+OFFSET $6
 `
 
 type ListOrdersParams struct {
 	FromDepartmentID *int64      `json:"from_department_id"`
 	FulfillmentDate  pgtype.Date `json:"fulfillment_date"`
+	FulfillmentFrom  pgtype.Date `json:"fulfillment_from"`
+	FulfillmentTo    pgtype.Date `json:"fulfillment_to"`
+	CategoryID       *int64      `json:"category_id"`
 	OrderOffset      int32       `json:"order_offset"`
 	OrderLimit       int32       `json:"order_limit"`
 }
@@ -531,6 +586,9 @@ func (q *Queries) ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order
 	rows, err := q.db.Query(ctx, listOrders,
 		arg.FromDepartmentID,
 		arg.FulfillmentDate,
+		arg.FulfillmentFrom,
+		arg.FulfillmentTo,
+		arg.CategoryID,
 		arg.OrderOffset,
 		arg.OrderLimit,
 	)
@@ -554,6 +612,7 @@ func (q *Queries) ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order
 			&i.IsFavorite,
 			&i.CancelledAt,
 			&i.CancelledByUsername,
+			&i.CategoryID,
 		); err != nil {
 			return nil, err
 		}
@@ -568,17 +627,18 @@ func (q *Queries) ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order
 const nextOrderCounter = `-- name: NextOrderCounter :one
 UPDATE order_counters
 SET counter = counter + 1
-WHERE day = $1 AND department_id = $2
+WHERE day = $1 AND department_id = $2 AND category_id = $3
 RETURNING counter
 `
 
 type NextOrderCounterParams struct {
 	Day          string `json:"day"`
 	DepartmentID int64  `json:"department_id"`
+	CategoryID   int64  `json:"category_id"`
 }
 
 func (q *Queries) NextOrderCounter(ctx context.Context, arg NextOrderCounterParams) (int64, error) {
-	row := q.db.QueryRow(ctx, nextOrderCounter, arg.Day, arg.DepartmentID)
+	row := q.db.QueryRow(ctx, nextOrderCounter, arg.Day, arg.DepartmentID, arg.CategoryID)
 	var counter int64
 	err := row.Scan(&counter)
 	return counter, err
@@ -589,7 +649,7 @@ UPDATE orders
 SET cancelled_at = NULL,
     cancelled_by_username = ''
 WHERE number = $1
-RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username
+RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id
 `
 
 func (q *Queries) RestoreOrder(ctx context.Context, number string) (Order, error) {
@@ -608,6 +668,7 @@ func (q *Queries) RestoreOrder(ctx context.Context, number string) (Order, error
 		&i.IsFavorite,
 		&i.CancelledAt,
 		&i.CancelledByUsername,
+		&i.CategoryID,
 	)
 	return i, err
 }
@@ -616,7 +677,7 @@ const setOrderFavorite = `-- name: SetOrderFavorite :one
 UPDATE orders
 SET is_favorite = $1
 WHERE number = $2
-RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username
+RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id
 `
 
 type SetOrderFavoriteParams struct {
@@ -640,6 +701,7 @@ func (q *Queries) SetOrderFavorite(ctx context.Context, arg SetOrderFavoritePara
 		&i.IsFavorite,
 		&i.CancelledAt,
 		&i.CancelledByUsername,
+		&i.CategoryID,
 	)
 	return i, err
 }
@@ -652,7 +714,7 @@ SET
     fulfillment_date = $3,
     comments = $4
 WHERE number = $5
-RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username
+RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id
 `
 
 type UpdateOrderParams struct {
@@ -687,6 +749,7 @@ func (q *Queries) UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order
 		&i.IsFavorite,
 		&i.CancelledAt,
 		&i.CancelledByUsername,
+		&i.CategoryID,
 	)
 	return i, err
 }

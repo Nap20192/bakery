@@ -108,3 +108,29 @@ func TestUserCanReadOrder(t *testing.T) {
 		}
 	})
 }
+
+func TestOrderWriterRoles(t *testing.T) {
+	tests := []struct {
+		role string
+		ok   bool
+	}{
+		{role: authdomain.RoleShop, ok: true},
+		{role: authdomain.RoleBaker, ok: true},
+		{role: authdomain.RoleAdmin, ok: true},
+		{role: "user"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.role, func(t *testing.T) {
+			request := httptest.NewRequest("POST", "/orders", nil)
+			request = request.WithContext(httpx.WithMiniAppUser(
+				request.Context(),
+				httpx.MiniAppUser{Auth: authdomain.AuthUser{Role: tt.role}},
+			))
+			_, ok := (&Handler{}).orderWriter(httptest.NewRecorder(), request)
+			if ok != tt.ok {
+				t.Fatalf("orderWriter() ok = %v, want %v", ok, tt.ok)
+			}
+		})
+	}
+}

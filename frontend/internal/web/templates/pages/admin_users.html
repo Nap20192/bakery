@@ -1,0 +1,31 @@
+{{define "admin-users"}}
+{{$data := .Data}}
+<section class="page admin-page">
+  <header class="page-heading">
+    {{template "page-title" (dict "Title" "Пользователи")}}
+    <span class="count">{{len $data.Users}}</span>
+  </header>
+  <details class="create-panel" {{if .Error}}open{{end}}><summary>Добавить пользователя</summary>
+    <form class="form-grid three" action="/admin/users" method="post">{{template "csrf" .CSRF}}
+      <label class="field"><span>Логин</span><input name="username" required></label>
+      <label class="field"><span>Пароль</span><input type="password" name="password" required autocomplete="new-password"></label>
+      <label class="field"><span>Telegram username</span><input name="telegram_username" placeholder="username"></label>
+      <label class="field"><span>Роль</span><select name="role" required>{{template "role-options" "shop"}}</select></label>
+      <label class="field"><span>Подразделение</span><select name="department_code"><option value="">Не назначено</option>{{template "code-options" (dict "Items" $data.Departments "Selected" "")}}</select></label>
+      <div class="field action-field"><span>&nbsp;</span><button class="button button-primary" type="submit">Создать</button></div>
+    </form>
+  </details>
+  <div class="admin-list">
+  {{range $row := $data.Users}}<details class="admin-row"><summary><span><strong>{{$row.User.Username}}</strong><small>{{roleName $row.User.Role}} · {{if $row.DepartmentName}}{{$row.DepartmentName}}{{else}}Без подразделения{{end}}</small></span><span>{{if $row.User.TelegramUsername}}@{{$row.User.TelegramUsername}}{{else}}Telegram не привязан{{end}}</span></summary>
+    <form class="form-grid three" action="/admin/users/{{$row.User.ID}}" method="post">{{template "csrf" $.CSRF}}
+      <label class="field"><span>Логин</span><input name="username" value="{{$row.User.Username}}" required></label>
+      <label class="field"><span>Роль</span><select name="role">{{template "role-options" $row.User.Role}}</select></label>
+      <label class="field"><span>Подразделение</span><select name="department_code"><option value="">Не назначено</option>{{template "code-options" (dict "Items" $data.Departments "Selected" $row.DepartmentCode)}}</select></label>
+      <label class="field"><span>Новый пароль</span><input type="password" name="password" autocomplete="new-password" placeholder="Оставьте пустым"></label>
+      <div class="form-actions"><button class="button button-primary" type="submit">Сохранить</button></div>
+    </form>
+    <form action="/admin/users/{{$row.User.ID}}/delete" method="post" data-confirm="Удалить пользователя {{$row.User.Username}}?">{{template "csrf" $.CSRF}}<button class="button button-danger" type="submit">Удалить</button></form>
+  </details>{{end}}
+  </div>
+</section>
+{{end}}

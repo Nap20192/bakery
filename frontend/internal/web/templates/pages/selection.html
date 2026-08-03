@@ -1,0 +1,37 @@
+{{define "selection"}}
+{{$data := .Data}}
+<section class="page selection-page" data-selection-page>
+  <header class="page-heading">
+    {{template "page-title" (dict "Title" "Новая отработка")}}
+    <a class="button" href="/orders">К матрице</a>
+  </header>
+  {{if $data.Orders}}
+  <ul class="batch-links selection-orders" aria-label="Заказы партии">
+    {{range $data.Orders}}<li><a href="/orders/{{urlquery .Number}}"><strong>{{.Number}}</strong></a><button class="text-action" type="button" data-selection-remove="{{.Number}}" data-selection-category="{{if .Category}}{{.Category.ID}}{{else}}0{{end}}" data-selection-category-name="{{if .Category}}{{.Category.Name}}{{else}}Без типа{{end}}" aria-label="Убрать заказ {{.Number}}">×</button></li>{{end}}
+  </ul>
+  <div class="production-layout">
+    <section class="surface sheet-views">
+      <input type="radio" id="view-sheet" name="sheet-view" class="sheet-view-input" checked>
+      <input type="radio" id="view-overview" name="sheet-view" class="sheet-view-input">
+      <div class="sheet-switch" role="tablist" aria-label="Вид отработки">
+        <label class="sheet-tab" for="view-sheet">Отработка</label>
+        <label class="sheet-tab" for="view-overview">Обзор</label>
+      </div>
+      <div class="sheet-panels">
+        <div class="sheet-panel" data-panel="sheet">
+          {{template "production-form" (dict "Action" "/production" "CSRF" .CSRF "Rows" $data.Rows "Submit" "Сохранить отработку")}}
+        </div>
+        <div class="sheet-panel" data-panel="overview">
+          {{template "production-overview" $data.Overview}}
+        </div>
+      </div>
+    </section>
+    {{template "monitor-panel" (dict
+      "Title" "Расчёт теста"
+      "Placeholder" ""
+      "Orders" $data.Numbers
+      "Dirty" true)}}
+  </div>
+  {{else}}{{template "empty-state" (dict "Text" "Партия пуста. Вернитесь в матрицу и выберите заказы одного типа.")}}{{end}}
+</section>
+{{end}}

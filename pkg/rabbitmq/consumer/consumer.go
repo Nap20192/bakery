@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"bakery/internal/pkg/enum"
+	"bakery/pkg/rabbitmq"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -47,12 +48,12 @@ type Consumer struct {
 	bindingKey     string
 	consumerTag    string
 	workerPoolSize int
-	amqpConn       *amqp.Connection
+	conn           *rabbitmq.Conn
 }
 
-func New(amqpConn *amqp.Connection) *Consumer {
+func New(conn *rabbitmq.Conn) *Consumer {
 	return &Consumer{
-		amqpConn:       amqpConn,
+		conn:           conn,
 		exchangeName:   enum.ExchangeOrderEvents.String(),
 		queueName:      enum.QueueBotOrderEvents.String(),
 		bindingKey:     bindingKey,
@@ -160,7 +161,7 @@ func (c *Consumer) consume(ctx context.Context, deliveries <-chan amqp.Delivery,
 }
 
 func (c *Consumer) createChannel() (*amqp.Channel, error) {
-	ch, err := c.amqpConn.Channel()
+	ch, err := c.conn.Channel()
 	if err != nil {
 		return nil, fmt.Errorf("open channel: %w", err)
 	}
