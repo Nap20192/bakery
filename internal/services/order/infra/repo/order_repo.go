@@ -367,12 +367,53 @@ func (r *OrderRepository) ListDishCatalog(ctx context.Context) ([]orderuc.DishCa
 }
 
 func (r *OrderRepository) UpsertDishCatalogItem(ctx context.Context, item orderuc.DishCatalogItem) error {
+	return upsertDishCatalogItem(ctx, r.queries, item)
+}
+
+// UpsertDishCatalogItems upserts every dish in one transaction so startup
+// seeding is all-or-nothing. With no pool (tests) it runs directly.
+func (r *OrderRepository) UpsertDishCatalogItems(ctx context.Context, items []orderuc.DishCatalogItem) error {
+	if len(items) == 0 {
+		return nil
+	}
+	if r.db == nil {
+		for _, item := range items {
+			if err := upsertDishCatalogItem(ctx, r.queries, item); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin catalog seed tx: %w", err)
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback(ctx)
+		}
+	}()
+	q := r.queries.WithTx(tx)
+	for _, item := range items {
+		if err := upsertDishCatalogItem(ctx, q, item); err != nil {
+			return err
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit catalog seed tx: %w", err)
+	}
+	committed = true
+	return nil
+}
+
+func upsertDishCatalogItem(ctx context.Context, q sqlc.Querier, item orderuc.DishCatalogItem) error {
 	now := helpers.TimestamptzNow()
-	groupID, err := r.resolveDishGroupID(ctx, item.Theme, item.CategoryID)
+	groupID, err := resolveDishGroupID(ctx, q, item.Theme, item.CategoryID)
 	if err != nil {
 		return err
 	}
-	_, err = r.queries.UpsertDishCatalogItem(ctx, sqlc.UpsertDishCatalogItemParams{
+	_, err = q.UpsertDishCatalogItem(ctx, sqlc.UpsertDishCatalogItemParams{
 		Code:       item.Code,
 		Name:       item.Name,
 		GroupID:    groupID,
@@ -412,7 +453,7 @@ func (r *OrderRepository) SetDishCatalogSortOrder(ctx context.Context, code stri
 }
 
 func (r *OrderRepository) UpdateDishCatalogItem(ctx context.Context, code string, item orderuc.DishCatalogItem) (orderuc.DishCatalogItem, error) {
-	groupID, err := r.resolveDishGroupID(ctx, item.Theme, item.CategoryID)
+	groupID, err := resolveDishGroupID(ctx, r.queries, item.Theme, item.CategoryID)
 	if err != nil {
 		return orderuc.DishCatalogItem{}, err
 	}
@@ -944,13 +985,14 @@ func themeFor(names map[int64]string, groupID *int64) string {
 }
 
 // resolveDishGroupID find-or-creates the group for a dish's «группа» name under
-// its category, returning the group_id (nil for an empty group name).
-func (r *OrderRepository) resolveDishGroupID(ctx context.Context, theme string, categoryID *int64) (*int64, error) {
+// its category, returning the group_id (nil for an empty group name). Takes a
+// querier so it can run inside a seed transaction.
+func resolveDishGroupID(ctx context.Context, q sqlc.Querier, theme string, categoryID *int64) (*int64, error) {
 	theme = strings.TrimSpace(theme)
 	if theme == "" {
 		return nil, nil
 	}
-	id, err := r.queries.EnsureDishGroup(ctx, sqlc.EnsureDishGroupParams{
+	id, err := q.EnsureDishGroup(ctx, sqlc.EnsureDishGroupParams{
 		CategoryID: categoryID,
 		Name:       theme,
 	})

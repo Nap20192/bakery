@@ -240,4 +240,7 @@ Other roles get `403 «Отработку ведёт пекарь или адм�
   `templates/dishes.txt` (→ `buns`) and `templates/bread.txt` (→ `bread`),
   upserting dishes without overwriting an admin-assigned category. Each template
   is an uppercase «группа» header followed by `<код> <название>` lines; the
-  group name resolves to a `dish_groups` row (`EnsureDishGroup`).
+  group name resolves to a `dish_groups` row (`EnsureDishGroup`). All dishes
+  across both files are upserted in **one transaction**
+  (`Repository.UpsertDishCatalogItems`) — a partial failure rolls back and
+  leaves the catalog untouched.

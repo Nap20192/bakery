@@ -78,6 +78,9 @@ type Repository interface {
 	ListDishCatalog(ctx context.Context) ([]DishCatalogItem, error)
 	SearchAvailableDishes(ctx context.Context, query string, limit int) ([]orderdomain.AvailableDish, error)
 	UpsertDishCatalogItem(ctx context.Context, item DishCatalogItem) error
+	// UpsertDishCatalogItems upserts many dishes atomically (one transaction) —
+	// used by startup seeding so a partial failure leaves the catalog untouched.
+	UpsertDishCatalogItems(ctx context.Context, items []DishCatalogItem) error
 	UpdateDishCatalogItem(ctx context.Context, code string, item DishCatalogItem) (DishCatalogItem, error)
 	SetDishCatalogSortOrder(ctx context.Context, code string, sortOrder int64) error
 	DeleteDishCatalogItem(ctx context.Context, code string) error

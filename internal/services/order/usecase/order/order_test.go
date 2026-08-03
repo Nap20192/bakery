@@ -772,6 +772,11 @@ func (f *fakeRepo) UpsertDishCatalogItem(_ context.Context, item DishCatalogItem
 	return nil
 }
 
+func (f *fakeRepo) UpsertDishCatalogItems(_ context.Context, items []DishCatalogItem) error {
+	f.upserted = append(f.upserted, items...)
+	return nil
+}
+
 func (f *fakeRepo) UpdateDishCatalogItem(_ context.Context, _ string, item DishCatalogItem) (DishCatalogItem, error) {
 	return item, nil
 }
