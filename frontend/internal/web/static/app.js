@@ -68,6 +68,9 @@
   document.addEventListener('htmx:afterRequest', (event) => {
     const form = event.target;
     if (!(form instanceof HTMLFormElement) || form.dataset.submitting !== 'true') return;
+    // On success the page swaps in a fresh form, so stay locked until then;
+    // only unlock a failed request so the user can fix and retry.
+    if (event.detail?.successful) return;
     delete form.dataset.submitting;
     form.querySelectorAll('button[type="submit"]').forEach((b) => { b.disabled = false; });
   });
