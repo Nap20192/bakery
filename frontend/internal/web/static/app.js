@@ -50,6 +50,28 @@
     });
   }, true);
 
+  // Block duplicate submissions. Once a form is mid-submit, swallow further
+  // submit events in the capture phase — which runs before htmx's own
+  // form-level boost handler — so a fast double-click can't fire a second
+  // request (native or boosted). The flag clears when the request settles
+  // (htmx:afterRequest) or, on success, when the page swaps in a fresh form.
+  document.addEventListener('submit', (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement)) return;
+    if (form.dataset.submitting === 'true') { event.preventDefault(); event.stopImmediatePropagation(); return; }
+    if (event.defaultPrevented) return; // a confirm dialog deferred this submit
+    form.dataset.submitting = 'true';
+    // Deferred so the submitter's value is still serialized into the request.
+    setTimeout(() => form.querySelectorAll('button[type="submit"]').forEach((b) => { b.disabled = true; }), 0);
+  }, true);
+
+  document.addEventListener('htmx:afterRequest', (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || form.dataset.submitting !== 'true') return;
+    delete form.dataset.submitting;
+    form.querySelectorAll('button[type="submit"]').forEach((b) => { b.disabled = false; });
+  });
+
   document.addEventListener('htmx:afterSwap', () => initialize(document));
   document.addEventListener('htmx:historyRestore', () => {
     // htmx's own back/forward cache swaps in a stringified DOM snapshot: listeners
