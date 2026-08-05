@@ -3,6 +3,8 @@
 
   const selectionKey = 'bakery:selected-orders';
   const selectionModeKey = 'bakery:selection-mode';
+  const orderCooldownKey = 'bakery:last-order-create';
+  const orderCooldownMs = 5000;
 
   document.addEventListener('htmx:configRequest', (event) => {
     const token = document.querySelector('meta[name="csrf-token"]')?.content;
@@ -61,6 +63,10 @@
     if (form.dataset.submitting === 'true') { event.preventDefault(); event.stopImmediatePropagation(); return; }
     if (event.defaultPrevented) return; // a confirm dialog deferred this submit
     form.dataset.submitting = 'true';
+    // A create submit posts to /orders (drafts go to /orders/draft, edits to
+    // /orders/{n}/edit) — remember it so the cooldown can start on success.
+    const action = (event.submitter?.getAttribute('formaction') || form.getAttribute('action') || '').split('?')[0];
+    form.dataset.createSubmit = /\/orders$/.test(action) ? 'true' : '';
     // Deferred so the submitter's value is still serialized into the request.
     setTimeout(() => form.querySelectorAll('button[type="submit"]').forEach((b) => { b.disabled = true; }), 0);
   }, true);
@@ -70,7 +76,10 @@
     if (!(form instanceof HTMLFormElement) || form.dataset.submitting !== 'true') return;
     // On success the page swaps in a fresh form, so stay locked until then;
     // only unlock a failed request so the user can fix and retry.
-    if (event.detail?.successful) return;
+    if (event.detail?.successful) {
+      if (form.dataset.createSubmit === 'true') { try { localStorage.setItem(orderCooldownKey, String(Date.now())); } catch (e) { /* storage disabled */ } }
+      return;
+    }
     delete form.dataset.submitting;
     form.querySelectorAll('button[type="submit"]').forEach((b) => { b.disabled = false; });
   });
@@ -98,6 +107,33 @@
     initializeCommentToggles(root);
     initializeProduction(root);
     initializeScrollHints(root);
+    initializeOrderCooldown(root);
+  }
+
+  // Frontend rate-limit: after an order is created, keep the create button
+  // disabled for 5s (persisted, so it survives the redirect to /orders and a
+  // quick "back" to the form). UX guard only — the real anti-duplicate is the
+  // capture-phase submit lock; this just stops rapid repeat creates.
+  function initializeOrderCooldown(root) {
+    const editor = root.querySelector('form.editor-form[action="/orders"]');
+    const btn = editor?.querySelector('.sticky-submit .button-primary[type="submit"]');
+    if (!btn || btn.dataset.cooldownReady === 'true') return;
+    btn.dataset.cooldownReady = 'true';
+    const label = btn.textContent;
+    const tick = () => {
+      let ts = 0;
+      try { ts = Number(localStorage.getItem(orderCooldownKey)) || 0; } catch (e) { /* storage disabled */ }
+      const remain = orderCooldownMs - (Date.now() - ts);
+      if (remain > 0) {
+        btn.disabled = true;
+        btn.textContent = 'Подождите ' + Math.ceil(remain / 1000) + ' с';
+        setTimeout(tick, 250);
+      } else {
+        btn.textContent = label;
+        if (btn.form?.dataset.submitting !== 'true') btn.disabled = false;
+      }
+    };
+    tick();
   }
 
   // Marks a scroll frame while its table still has content to the right, so the
