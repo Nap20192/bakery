@@ -103,7 +103,7 @@ func TestSessionCookieRoundTrip(t *testing.T) {
 	srv := &server{}
 	request := httptest.NewRequest("GET", "http://example.test/orders", nil)
 	response := httptest.NewRecorder()
-	srv.setSession(response, request, "Bearer signed-token", time.Now().Add(time.Hour))
+	srv.setSession(response, request, "shopuser", "Bearer signed-token", time.Now().Add(time.Hour))
 
 	result := response.Result()
 	defer func() { _ = result.Body.Close() }()
@@ -114,6 +114,9 @@ func TestSessionCookieRoundTrip(t *testing.T) {
 	request.AddCookie(cookies[0])
 	if got := credentials(request); got != "Bearer signed-token" {
 		t.Fatalf("credentials = %q", got)
+	}
+	if got := sessionUsername(request); got != "shopuser" {
+		t.Fatalf("sessionUsername = %q", got)
 	}
 }
 

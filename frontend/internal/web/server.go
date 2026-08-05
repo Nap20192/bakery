@@ -242,6 +242,7 @@ func (s *server) requestLogger(next http.Handler) http.Handler {
 		recorder := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(recorder, r)
 		s.logger.Info("frontend request",
+			"user", orAnon(sessionUsername(r)),
 			"method", r.Method,
 			"path", r.URL.Path,
 			"status", recorder.status,
@@ -302,12 +303,16 @@ func (s *server) ensureCSRF(w http.ResponseWriter, r *http.Request) string {
 	return token
 }
 
-func (s *server) setSession(w http.ResponseWriter, r *http.Request, cred application.Credentials, expires time.Time) {
+func (s *server) setSession(w http.ResponseWriter, r *http.Request, username string, cred application.Credentials, expires time.Time) {
+	// Store the login alongside the credentials so request logs can name the
+	// acting user without an extra backend round-trip. Separator is a newline,
+	// which never appears in a bearer token or tma initData.
+	value := base64.RawURLEncoding.EncodeToString([]byte(username + "\n" + string(cred)))
 	// Secure follows the actual request scheme so local HTTP development still works.
 	//nolint:gosec
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookie,
-		Value:    base64.RawURLEncoding.EncodeToString([]byte(cred)),
+		Value:    value,
 		Path:     "/",
 		Expires:  expires,
 		MaxAge:   int(time.Until(expires).Seconds()),
@@ -331,15 +336,40 @@ func (s *server) clearSession(w http.ResponseWriter, r *http.Request) {
 }
 
 func credentials(r *http.Request) application.Credentials {
+	_, cred := parseSession(r)
+	return cred
+}
+
+// sessionUsername returns the login stored in the session cookie, or "" for
+// anonymous requests or legacy cookies written before the login was stored.
+func sessionUsername(r *http.Request) string {
+	user, _ := parseSession(r)
+	return user
+}
+
+func parseSession(r *http.Request) (string, application.Credentials) {
 	cookie, err := r.Cookie(sessionCookie)
 	if err != nil {
-		return ""
+		return "", ""
 	}
 	decoded, err := base64.RawURLEncoding.DecodeString(cookie.Value)
 	if err != nil {
-		return ""
+		return "", ""
 	}
-	return application.Credentials(decoded)
+	// New cookies are "<username>\n<credentials>"; legacy cookies are just the
+	// credentials, so a missing separator means the whole value is the token.
+	if user, cred, ok := strings.Cut(string(decoded), "\n"); ok {
+		return user, application.Credentials(cred)
+	}
+	return "", application.Credentials(decoded)
+}
+
+// orAnon labels requests with no logged-in user so logs read clearly.
+func orAnon(user string) string {
+	if user == "" {
+		return "anonymous"
+	}
+	return user
 }
 
 func secureRequest(r *http.Request) bool {
