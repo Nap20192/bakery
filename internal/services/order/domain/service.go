@@ -1,8 +1,11 @@
 package order
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 	"unicode"
@@ -77,6 +80,32 @@ func (s *OrderService) BuildOrderNumber(sourceCode string, sourceName string, ca
 		prefix += "." + letter
 	}
 	return fmt.Sprintf("%s.%s.%03d", prefix, s.NormalizeCreatedAt(createdAt).Format("02.01.06"), counter)
+}
+
+// BuildOrderDedupKey is a deterministic fingerprint of a new order's identity
+// for the day it is created: the same author, source, category, target date and
+// exact item set collapse to one key. A partial UNIQUE index on this key stops
+// an accidental double-create — fast double-tap, a network retry, a Telegram
+// webview re-post — from persisting a second identical order. It is enforced in
+// the database, so it holds no matter which client (or how many) sends the
+// request, unlike any frontend guard.
+//
+// ponytail: a genuinely intended second identical same-day order is refused;
+// the workflow is to edit the existing order's quantities instead.
+func (s *OrderService) BuildOrderDedupKey(sourceID int64, categoryID int64, createdByUsername string, createdAt time.Time, fulfillmentDate time.Time, items []OrderItem) string {
+	sorted := append([]OrderItem(nil), items...)
+	sort.Slice(sorted, func(i, j int) bool { return sorted[i].ProductName < sorted[j].ProductName })
+	var b strings.Builder
+	fmt.Fprintf(&b, "%d|%d|%s|%s|%s",
+		sourceID, categoryID,
+		strings.ToLower(strings.TrimSpace(createdByUsername)),
+		s.OrderCounterDay(createdAt),
+		fulfillmentDate.UTC().Format("2006-01-02"))
+	for _, it := range sorted {
+		fmt.Fprintf(&b, "|%s:%g:%g", strings.TrimSpace(it.ProductName), it.Quantity, it.ReservedQuantity)
+	}
+	sum := sha256.Sum256([]byte(b.String()))
+	return hex.EncodeToString(sum[:])
 }
 
 func orderSourcePrefix(sourceCode string, sourceName string) string {

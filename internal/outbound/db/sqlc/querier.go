@@ -48,6 +48,7 @@ type Querier interface {
 	FinishIikoSyncRun(ctx context.Context, arg FinishIikoSyncRunParams) (IikoSyncRun, error)
 	GetActiveAssemblyChartByProductID(ctx context.Context, arg GetActiveAssemblyChartByProductIDParams) (GetActiveAssemblyChartByProductIDRow, error)
 	GetActiveAssemblyChartFullByProductID(ctx context.Context, arg GetActiveAssemblyChartFullByProductIDParams) (IikoAssemblyChart, error)
+	GetActiveOrderByDedupKey(ctx context.Context, dedupKey *string) (Order, error)
 	GetActivePreparedChartFullByProductID(ctx context.Context, arg GetActivePreparedChartFullByProductIDParams) (IikoPreparedChart, error)
 	GetAuthUserByID(ctx context.Context, id int64) (AuthUser, error)
 	GetAuthUserByTelegramID(ctx context.Context, telegramID *int64) (AuthUser, error)

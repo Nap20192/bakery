@@ -118,6 +118,9 @@ type CreateOrderRepositoryInput struct {
 	CreatedAt       time.Time
 	FulfillmentDate time.Time
 	CounterDay      string
+	// DedupKey fingerprints the order so the repo can refuse an accidental
+	// duplicate create (double-submit / retry) via a UNIQUE index.
+	DedupKey string
 }
 
 // UpdateOrderRepositoryInput carries the resolved update plus the precomputed

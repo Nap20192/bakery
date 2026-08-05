@@ -119,6 +119,9 @@ func (s *Service) CreateOrder(ctx context.Context, input orderdomain.CreateOrder
 		CreatedAt:       createdAt,
 		FulfillmentDate: validated.FulfillmentDate,
 		CounterDay:      s.domain.OrderCounterDay(createdAt),
+		DedupKey: s.domain.BuildOrderDedupKey(
+			validated.Source.ID, validated.Category.ID, input.CreatedByUsername,
+			createdAt, validated.FulfillmentDate, input.Items),
 	})
 	if err != nil {
 		return orderdomain.Order{}, err
