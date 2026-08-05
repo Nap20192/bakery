@@ -229,3 +229,38 @@ func assertItem(t *testing.T, item OrderItem, code string, name string, quantity
 		t.Fatalf("item = %#v, want code=%s name=%s quantity=%v reserved_quantity=%v", item, code, name, quantity, reservedQuantity)
 	}
 }
+
+func TestBuildOrderDedupKey(t *testing.T) {
+	svc := NewOrderService()
+	created := time.Date(2026, 8, 5, 21, 15, 0, 0, time.UTC)
+	fulfill := time.Date(2026, 8, 8, 0, 0, 0, 0, time.UTC)
+	items := []OrderItem{{ProductName: "Багет", Quantity: 2}, {ProductName: "Хлеб", Quantity: 3, ReservedQuantity: 1}}
+
+	base := svc.BuildOrderDedupKey(4, 1, "vnkjd", created, fulfill, items)
+	if base == "" {
+		t.Fatal("dedup key is empty")
+	}
+
+	// Same inputs -> same key (the double-submit case).
+	if got := svc.BuildOrderDedupKey(4, 1, "VNKJD", created.Add(3*time.Second), fulfill, items); got != base {
+		t.Errorf("key changed for an identical order: %s != %s", got, base)
+	}
+	// Item order must not matter.
+	reordered := []OrderItem{items[1], items[0]}
+	if got := svc.BuildOrderDedupKey(4, 1, "vnkjd", created, fulfill, reordered); got != base {
+		t.Errorf("key depends on item order")
+	}
+	// A different quantity is a different order.
+	changed := []OrderItem{{ProductName: "Багет", Quantity: 5}, {ProductName: "Хлеб", Quantity: 3, ReservedQuantity: 1}}
+	if got := svc.BuildOrderDedupKey(4, 1, "vnkjd", created, fulfill, changed); got == base {
+		t.Errorf("key ignored a quantity change")
+	}
+	// Different fulfillment date is a different order.
+	if got := svc.BuildOrderDedupKey(4, 1, "vnkjd", created, fulfill.AddDate(0, 0, 1), items); got == base {
+		t.Errorf("key ignored the fulfillment date")
+	}
+	// Different source department is a different order.
+	if got := svc.BuildOrderDedupKey(2, 1, "vnkjd", created, fulfill, items); got == base {
+		t.Errorf("key ignored the source department")
+	}
+}

@@ -16,7 +16,7 @@ UPDATE orders
 SET cancelled_at = $1,
     cancelled_by_username = $2
 WHERE number = $3
-RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id
+RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id, dedup_key
 `
 
 type CancelOrderParams struct {
@@ -42,6 +42,7 @@ func (q *Queries) CancelOrder(ctx context.Context, arg CancelOrderParams) (Order
 		&i.CancelledAt,
 		&i.CancelledByUsername,
 		&i.CategoryID,
+		&i.DedupKey,
 	)
 	return i, err
 }
@@ -88,7 +89,8 @@ INSERT INTO orders (
     created_at,
     fulfillment_date,
     created_by_username,
-    comments
+    comments,
+    dedup_key
 ) VALUES (
     $1,
     $2,
@@ -98,9 +100,10 @@ INSERT INTO orders (
     $6,
     $7,
     $8,
-    $9
+    $9,
+    $10
 )
-RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id
+RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id, dedup_key
 `
 
 type CreateOrderParams struct {
@@ -113,6 +116,7 @@ type CreateOrderParams struct {
 	FulfillmentDate   pgtype.Date        `json:"fulfillment_date"`
 	CreatedByUsername string             `json:"created_by_username"`
 	Comments          []byte             `json:"comments"`
+	DedupKey          *string            `json:"dedup_key"`
 }
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
@@ -126,6 +130,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		arg.FulfillmentDate,
 		arg.CreatedByUsername,
 		arg.Comments,
+		arg.DedupKey,
 	)
 	var i Order
 	err := row.Scan(
@@ -142,6 +147,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		&i.CancelledAt,
 		&i.CancelledByUsername,
 		&i.CategoryID,
+		&i.DedupKey,
 	)
 	return i, err
 }
@@ -327,8 +333,36 @@ func (q *Queries) DeleteOrdersCreatedBefore(ctx context.Context, createdAtBefore
 	return column_1, err
 }
 
+const getActiveOrderByDedupKey = `-- name: GetActiveOrderByDedupKey :one
+SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id, dedup_key FROM orders
+WHERE dedup_key = $1 AND cancelled_at IS NULL
+LIMIT 1
+`
+
+func (q *Queries) GetActiveOrderByDedupKey(ctx context.Context, dedupKey *string) (Order, error) {
+	row := q.db.QueryRow(ctx, getActiveOrderByDedupKey, dedupKey)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.Number,
+		&i.Location,
+		&i.CreatedAt,
+		&i.FromDepartmentID,
+		&i.ToDepartmentID,
+		&i.FulfillmentDate,
+		&i.CreatedByUsername,
+		&i.Comments,
+		&i.IsFavorite,
+		&i.CancelledAt,
+		&i.CancelledByUsername,
+		&i.CategoryID,
+		&i.DedupKey,
+	)
+	return i, err
+}
+
 const getOrderByID = `-- name: GetOrderByID :one
-SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id
+SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id, dedup_key
 FROM orders
 WHERE id = $1
 `
@@ -350,12 +384,13 @@ func (q *Queries) GetOrderByID(ctx context.Context, id int64) (Order, error) {
 		&i.CancelledAt,
 		&i.CancelledByUsername,
 		&i.CategoryID,
+		&i.DedupKey,
 	)
 	return i, err
 }
 
 const getOrderByNumber = `-- name: GetOrderByNumber :one
-SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id
+SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id, dedup_key
 FROM orders
 WHERE number = $1
 `
@@ -377,6 +412,7 @@ func (q *Queries) GetOrderByNumber(ctx context.Context, number string) (Order, e
 		&i.CancelledAt,
 		&i.CancelledByUsername,
 		&i.CategoryID,
+		&i.DedupKey,
 	)
 	return i, err
 }
@@ -559,7 +595,7 @@ func (q *Queries) ListOrderHistoryItemsByHistoryID(ctx context.Context, historyI
 }
 
 const listOrders = `-- name: ListOrders :many
-SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id
+SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id, dedup_key
 FROM orders
 WHERE
     ($1::BIGINT IS NULL OR from_department_id = $1::BIGINT)
@@ -613,6 +649,7 @@ func (q *Queries) ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order
 			&i.CancelledAt,
 			&i.CancelledByUsername,
 			&i.CategoryID,
+			&i.DedupKey,
 		); err != nil {
 			return nil, err
 		}
@@ -649,7 +686,7 @@ UPDATE orders
 SET cancelled_at = NULL,
     cancelled_by_username = ''
 WHERE number = $1
-RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id
+RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id, dedup_key
 `
 
 func (q *Queries) RestoreOrder(ctx context.Context, number string) (Order, error) {
@@ -669,6 +706,7 @@ func (q *Queries) RestoreOrder(ctx context.Context, number string) (Order, error
 		&i.CancelledAt,
 		&i.CancelledByUsername,
 		&i.CategoryID,
+		&i.DedupKey,
 	)
 	return i, err
 }
@@ -677,7 +715,7 @@ const setOrderFavorite = `-- name: SetOrderFavorite :one
 UPDATE orders
 SET is_favorite = $1
 WHERE number = $2
-RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id
+RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id, dedup_key
 `
 
 type SetOrderFavoriteParams struct {
@@ -702,6 +740,7 @@ func (q *Queries) SetOrderFavorite(ctx context.Context, arg SetOrderFavoritePara
 		&i.CancelledAt,
 		&i.CancelledByUsername,
 		&i.CategoryID,
+		&i.DedupKey,
 	)
 	return i, err
 }
@@ -714,7 +753,7 @@ SET
     fulfillment_date = $3,
     comments = $4
 WHERE number = $5
-RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id
+RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id, dedup_key
 `
 
 type UpdateOrderParams struct {
@@ -750,6 +789,7 @@ func (q *Queries) UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order
 		&i.CancelledAt,
 		&i.CancelledByUsername,
 		&i.CategoryID,
+		&i.DedupKey,
 	)
 	return i, err
 }

@@ -19,7 +19,8 @@ INSERT INTO orders (
     created_at,
     fulfillment_date,
     created_by_username,
-    comments
+    comments,
+    dedup_key
 ) VALUES (
     sqlc.arg(number),
     sqlc.arg(location),
@@ -29,9 +30,15 @@ INSERT INTO orders (
     sqlc.arg(created_at),
     sqlc.arg(fulfillment_date),
     sqlc.arg(created_by_username),
-    sqlc.narg(comments)
+    sqlc.narg(comments),
+    sqlc.narg(dedup_key)
 )
 RETURNING *;
+
+-- name: GetActiveOrderByDedupKey :one
+SELECT * FROM orders
+WHERE dedup_key = sqlc.arg(dedup_key) AND cancelled_at IS NULL
+LIMIT 1;
 
 -- name: CreateOrderItem :one
 INSERT INTO order_items (

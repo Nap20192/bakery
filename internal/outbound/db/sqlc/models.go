@@ -145,6 +145,7 @@ type Order struct {
 	CancelledAt         pgtype.Timestamptz `json:"cancelled_at"`
 	CancelledByUsername string             `json:"cancelled_by_username"`
 	CategoryID          *int64             `json:"category_id"`
+	DedupKey            *string            `json:"dedup_key"`
 }
 
 type OrderCategory struct {
