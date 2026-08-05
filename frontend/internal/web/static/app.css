@@ -104,7 +104,7 @@ small { display: block; color: var(--ink-muted); font-size: 0.78rem; }
 .field { display: grid; gap: 6px; min-width: 0; }
 .field > span, .catalog-row label > span { color: var(--ink-soft); font-size: 0.78rem; font-weight: 650; }
 .field.compact { min-width: 180px; }
-input, select, textarea { width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--ink); background: var(--surface-inset); padding: 9px 12px; }
+input, select, textarea { width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--ink); background: var(--surface-inset); padding: 9px 12px; font-size: 16px; }
 textarea { resize: vertical; }
 input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .form-grid { display: grid; gap: 14px; }
@@ -255,10 +255,11 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .sticky-submit { position: sticky; z-index: 40; bottom: 12px; display: flex; justify-content: flex-end; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-surface); background: rgba(250, 249, 245, 0.96); }
 
 .production-layout, .calculator-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.7fr); gap: 18px; align-items: start; }
-.production-table { min-width: 0; max-width: 620px; table-layout: fixed; }
+.production-table { min-width: 0; width: 100%; table-layout: fixed; }
 .production-table th, .production-table td { padding: 8px 4px; }
+.production-table th:not(:first-child), .production-table td:not(:first-child) { text-align: center; }
 .production-table th:not(:first-child) { font-size: 0.62rem; }
-.production-quantity-column { width: 64px; }
+.production-quantity-column { width: 23%; }
 .production-table td:first-child strong { display: block; overflow-wrap: anywhere; }
 .production-comment-toggle { min-height: 44px; }
 .production-comment-row:has(.item-comment[hidden]) { display: none; }
@@ -320,7 +321,7 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .tone-today { box-shadow: inset 0 3px 0 var(--accent-teal); }.tone-tomorrow { box-shadow: inset 0 3px 0 var(--accent-amber); }
 
 .calculator-catalog { max-height: 58vh; overflow-y: auto; }
-.calculator-row { display: grid; grid-template-columns: 1fr 92px; gap: 10px; align-items: center; min-height: 50px; border-bottom: 1px solid var(--line-soft); }
+.calculator-row { display: grid; grid-template-columns: minmax(0, 1fr) 92px; gap: 10px; align-items: center; min-height: 50px; border-bottom: 1px solid var(--line-soft); }
 .calculator-row input { background: var(--surface); }
 
 .admin-section { padding: 28px 0; border-top: 1px solid var(--line); }
@@ -416,7 +417,6 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 
 @media (max-width: 640px) {
   body { font-size: 15px; padding-bottom: env(safe-area-inset-bottom); }
-  input, select, textarea { font-size: 16px; }
   h1 { font-size: 2rem; }
   h2 { font-size: 1.42rem; }
   .page { padding: 22px 12px 52px; }
@@ -429,7 +429,7 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .filters { display: grid; grid-template-columns: 1fr 1fr; padding-top: 8px; }
   .filters .field { grid-column: 1 / -1; }
   .field.compact { min-width: 0; }
-  .form-grid.two, .form-grid.three { grid-template-columns: 1fr; }
+  .form-grid.two, .form-grid.three { grid-template-columns: minmax(0, 1fr); }
   .login-page { grid-template-columns: 1fr; }
   .login-intro { min-height: 36vh; padding: 30px 22px; }
   .login-intro h1 { font-size: 4rem; }
@@ -453,8 +453,8 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .category-choice { min-height: 58px; padding: 8px; }
   .catalog-row { grid-template-columns: minmax(130px, 1fr) 76px 76px; gap: 6px; }
   .catalog-row input { padding-inline: 4px; }
-  .sticky-submit { right: 0; bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom)); left: 0; }
-  .sticky-submit > * { flex: 1; }
+  .sticky-submit { right: 0; bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom)); left: 0; flex-wrap: wrap; }
+  .sticky-submit > * { flex: 1 1 auto; min-width: 40%; }
   .journal-table .journal-axis { width: 60px; }
   .summary-table .summary-axis { min-width: 112px; max-width: 130px; }
   .summary-table th, .summary-table td, .journal-table th, .journal-table td { padding: 7px; }
