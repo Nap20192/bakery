@@ -39,6 +39,7 @@ func (s *server) login(w http.ResponseWriter, r *http.Request) {
 	}
 	session, err := s.commands.Login(r.Context(), username, password)
 	if err != nil {
+		s.logger.Warn("login failed", "user", username, "error", err)
 		s.render(w, r, statusOr(err, http.StatusUnauthorized), page{
 			Title: "Вход",
 			View:  "login",
@@ -48,7 +49,8 @@ func (s *server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	expires := time.Unix(session.ExpiresAt, 0)
-	s.setSession(w, r, application.Credentials("Bearer "+session.Token), expires)
+	s.setSession(w, r, username, application.Credentials("Bearer "+session.Token), expires)
+	s.logger.Info("login", "user", username)
 	s.redirect(w, r, next)
 }
 
@@ -63,16 +65,20 @@ func (s *server) telegramLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cred := application.Credentials("tma " + initData)
-	if _, err := s.queries.Me(r.Context(), cred); err != nil {
+	viewer, err := s.queries.Me(r.Context(), cred)
+	if err != nil {
+		s.logger.Warn("telegram login failed", "error", err)
 		http.Error(w, application.MessageOf(err, "Telegram не подтвердил вход."), statusOr(err, http.StatusUnauthorized))
 		return
 	}
-	s.setSession(w, r, cred, time.Now().Add(24*time.Hour))
+	s.setSession(w, r, viewer.TelegramUsername, cred, time.Now().Add(24*time.Hour))
+	s.logger.Info("login", "user", viewer.TelegramUsername, "via", "telegram")
 	w.Header().Set("HX-Location", safeNext(r.FormValue("next")))
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *server) logout(w http.ResponseWriter, r *http.Request) {
+	s.logger.Info("logout", "user", orAnon(sessionUsername(r)))
 	s.clearSession(w, r)
 	s.redirect(w, r, "/login")
 }
