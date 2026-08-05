@@ -22,6 +22,7 @@ import (
 	orderuc "bakery/internal/services/order/usecase/order"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -45,7 +46,11 @@ func New(queries *sqlc.Queries, db *pgxpool.Pool) *OrderRepository {
 
 func (r *OrderRepository) CreateOrder(ctx context.Context, input orderuc.CreateOrderRepositoryInput) (orderdomain.Order, error) {
 	if r.db == nil {
-		return r.createOrderWithQueries(ctx, r.queries, input)
+		order, err := r.createOrderWithQueries(ctx, r.queries, input)
+		if errors.Is(err, errDuplicateOrder) {
+			return r.existingOrderByDedupKey(ctx, input.DedupKey)
+		}
+		return order, err
 	}
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
@@ -60,6 +65,11 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, input orderuc.CreateO
 
 	order, err := r.createOrderWithQueries(ctx, r.queries.WithTx(tx), input)
 	if err != nil {
+		// The losing side of a concurrent duplicate: this tx rolled back, the
+		// winner committed, so return the order it created.
+		if errors.Is(err, errDuplicateOrder) {
+			return r.existingOrderByDedupKey(ctx, input.DedupKey)
+		}
 		return orderdomain.Order{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -69,7 +79,36 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, input orderuc.CreateO
 	return order, nil
 }
 
+// existingOrderByDedupKey returns the already-persisted order that owns dedupKey,
+// used when a concurrent duplicate lost the race.
+func (r *OrderRepository) existingOrderByDedupKey(ctx context.Context, dedupKey string) (orderdomain.Order, error) {
+	row, err := r.queries.GetActiveOrderByDedupKey(ctx, &dedupKey)
+	if err != nil {
+		return orderdomain.Order{}, fmt.Errorf("load duplicate order: %w", err)
+	}
+	return r.GetOrderByNumber(ctx, row.Number)
+}
+
+// errDuplicateOrder signals that an identical active order already exists (the
+// dedup UNIQUE index fired). CreateOrder turns it into the existing order so a
+// double-submit is a no-op instead of an error.
+var errDuplicateOrder = errors.New("duplicate order")
+
+const orderDedupUniqueConstraint = "orders_dedup_key_active_uniq"
+
 func (r *OrderRepository) createOrderWithQueries(ctx context.Context, q sqlc.Querier, input orderuc.CreateOrderRepositoryInput) (orderdomain.Order, error) {
+	// Fast path: an identical active order already exists (a sequential
+	// double-submit whose first request has committed). Return it without
+	// touching the counter, inserting, or emitting events — so no duplicate
+	// order number is burned and the bot does not notify twice.
+	if input.DedupKey != "" {
+		if existing, err := q.GetActiveOrderByDedupKey(ctx, &input.DedupKey); err == nil {
+			return r.GetOrderByNumber(ctx, existing.Number)
+		} else if !errors.Is(err, pgx.ErrNoRows) {
+			return orderdomain.Order{}, fmt.Errorf("check duplicate order: %w", err)
+		}
+	}
+
 	if err := q.CreateOrderCounterDay(ctx, sqlc.CreateOrderCounterDayParams{Day: input.CounterDay, DepartmentID: input.Source.ID, CategoryID: input.Category.ID}); err != nil {
 		return orderdomain.Order{}, fmt.Errorf("init order counter: %w", err)
 	}
@@ -79,6 +118,10 @@ func (r *OrderRepository) createOrderWithQueries(ctx context.Context, q sqlc.Que
 	}
 
 	number := r.domain.BuildOrderNumber(input.Source.Code, input.Source.Name, input.Category.Letter, input.CreatedAt, counter)
+	dedupKey := &input.DedupKey
+	if input.DedupKey == "" {
+		dedupKey = nil
+	}
 	row, err := q.CreateOrder(ctx, sqlc.CreateOrderParams{
 		Number:            number,
 		Location:          input.Input.Location,
@@ -89,8 +132,15 @@ func (r *OrderRepository) createOrderWithQueries(ctx context.Context, q sqlc.Que
 		FulfillmentDate:   helpers.DateOf(input.FulfillmentDate),
 		CreatedByUsername: strings.TrimSpace(input.Input.CreatedByUsername),
 		Comments:          marshalComments(input.Input.Comments),
+		DedupKey:          dedupKey,
 	})
 	if err != nil {
+		// Concurrent duplicate: two identical creates raced, neither saw the
+		// other in the fast path, and the UNIQUE index rejected this one.
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" && pgErr.ConstraintName == orderDedupUniqueConstraint {
+			return orderdomain.Order{}, errDuplicateOrder
+		}
 		return orderdomain.Order{}, fmt.Errorf("create order: %w", err)
 	}
 

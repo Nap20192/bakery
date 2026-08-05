@@ -127,8 +127,13 @@ func (s *server) adminUserUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 	username := strings.TrimSpace(r.FormValue("username"))
 	role := strings.TrimSpace(r.FormValue("role"))
-	departmentCode := strings.TrimSpace(r.FormValue("department_code"))
-	body := contract.UserUpdate{Username: &username, Role: &role, DepartmentCode: &departmentCode}
+	body := contract.UserUpdate{Username: &username, Role: &role}
+	// Only touch the department when the form actually carries the field, so
+	// the users table (which no longer edits departments) can't wipe one.
+	if r.PostForm.Has("department_code") {
+		departmentCode := strings.TrimSpace(r.FormValue("department_code"))
+		body.DepartmentCode = &departmentCode
+	}
 	if password := r.FormValue("password"); password != "" {
 		body.Password = &password
 	}
