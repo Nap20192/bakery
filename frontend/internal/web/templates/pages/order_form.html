@@ -10,7 +10,7 @@
     {{template "page-title" (dict "Title" $title)}}
     <a class="button" href="{{$back}}" data-confirm="Уйти без сохранения? Введённые данные не сохранятся.">Закрыть</a>
   </header>
-  <form class="editor-form" action="{{if $update}}/orders/{{urlquery $data.Order.Number}}/edit{{else}}/orders{{end}}" method="post" hx-disabled-elt="find button[type=submit]" hx-sync="this:replace">
+  <form class="editor-form" action="{{if $update}}/orders/{{urlquery $data.Order.Number}}/edit{{else}}/orders{{end}}" method="post" hx-disabled-elt="button[type=submit]" hx-sync="this:replace">
     {{template "csrf" $csrf}}
     <section class="editor-step">
       {{template "section-heading" (dict "Step" "1" "Title" $step)}}
