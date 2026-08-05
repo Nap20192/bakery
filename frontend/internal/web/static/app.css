@@ -453,8 +453,8 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .category-choice { min-height: 58px; padding: 8px; }
   .catalog-row { grid-template-columns: minmax(130px, 1fr) 76px 76px; gap: 6px; }
   .catalog-row input { padding-inline: 4px; }
-  .sticky-submit { right: 0; bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom)); left: 0; flex-wrap: wrap; }
-  .sticky-submit > * { flex: 1 1 auto; min-width: 40%; }
+  .sticky-submit { right: 0; bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom)); left: 0; flex-wrap: wrap; gap: 6px; padding: 8px; }
+  .sticky-submit > * { flex: 0 1 auto; min-width: 0; min-height: 38px; padding: 6px 12px; }
   .journal-table .journal-axis { width: 60px; }
   .summary-table .summary-axis { min-width: 112px; max-width: 130px; }
   .summary-table th, .summary-table td, .journal-table th, .journal-table td { padding: 7px; }
