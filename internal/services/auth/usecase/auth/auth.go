@@ -126,6 +126,16 @@ func (s *Service) VerifyPassword(ctx context.Context, username, password string)
 }
 
 func (s *Service) AuthenticateTelegram(ctx context.Context, telegramID int64, telegramUsername string) (accessdomain.AuthUser, error) {
+	if telegramID > 0 {
+		account, err := s.repo.GetByTelegramID(ctx, telegramID)
+		if err == nil {
+			return account, nil
+		}
+		if !errors.Is(err, ErrAuthUserNotFound) {
+			return accessdomain.AuthUser{}, err
+		}
+	}
+
 	account, err := s.repo.GetByTelegramUsername(ctx, strings.TrimSpace(telegramUsername))
 	if err != nil {
 		return accessdomain.AuthUser{}, err

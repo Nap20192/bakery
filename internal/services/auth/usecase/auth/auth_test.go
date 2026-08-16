@@ -28,6 +28,23 @@ func TestServiceAuthenticateTelegramBindsByTelegramUsername(t *testing.T) {
 	}
 }
 
+func TestServiceAuthenticateTelegramUsesBoundIDFirst(t *testing.T) {
+	telegramID := int64(123456789)
+	existing := accessdomain.AuthUser{ID: 8, Username: "shop", TelegramID: &telegramID, TelegramUsername: strPtr("old_name")}
+	repo := &fakeAuthRepo{byTelegramID: existing}
+
+	user, err := NewService(repo).AuthenticateTelegram(context.Background(), telegramID, "new_name")
+	if err != nil {
+		t.Fatalf("AuthenticateTelegram returned error: %v", err)
+	}
+	if user.ID != existing.ID {
+		t.Fatalf("user id = %d, want %d", user.ID, existing.ID)
+	}
+	if repo.boundUserID != 0 {
+		t.Fatalf("bound user id = %d, want 0", repo.boundUserID)
+	}
+}
+
 func TestServiceEnsureAdminUserKeepsExistingAccount(t *testing.T) {
 	existing := accessdomain.AuthUser{ID: 7, Username: "admin", Role: accessdomain.RoleAdmin}
 	repo := &fakeAuthRepo{byUsername: existing}
@@ -76,12 +93,20 @@ func TestServiceEnsureAdminUserHandlesConcurrentCreate(t *testing.T) {
 type fakeAuthRepo struct {
 	Repository
 	byTelegramUsername map[string]accessdomain.AuthUser
+	byTelegramID       accessdomain.AuthUser
 	boundUserID        int64
 	byUsername         accessdomain.AuthUser
 	missUsernameOnce   bool
 	getByUsernameCalls int
 	createErr          error
 	createCalls        int
+}
+
+func (r *fakeAuthRepo) GetByTelegramID(_ context.Context, telegramID int64) (accessdomain.AuthUser, error) {
+	if r.byTelegramID.ID == 0 || r.byTelegramID.TelegramID == nil || *r.byTelegramID.TelegramID != telegramID {
+		return accessdomain.AuthUser{}, ErrAuthUserNotFound
+	}
+	return r.byTelegramID, nil
 }
 
 func (r *fakeAuthRepo) GetByTelegramUsername(_ context.Context, telegramUsername string) (accessdomain.AuthUser, error) {
