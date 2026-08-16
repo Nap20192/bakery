@@ -409,7 +409,11 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
      headers and the tables' own overflow:auto scrollers keep working, but a
      stray over-wide element can't drag the whole page sideways. */
   html { overflow-x: clip; }
-  .topbar { padding-inline: 16px; }
+  /* Wordmark row is redundant once nav lives in the bottom bar — collapse the
+     bar to nothing rather than display:none, which would also hide the
+     fixed-positioned .main-nav still nested inside it. */
+  .topbar { min-height: 0; padding: 0; border-bottom: 0; }
+  .brand { display: none; }
   /* Nav leaves the header and becomes a fixed bottom tab bar in the thumb zone. */
   .main-nav { position: fixed; z-index: 90; right: 0; bottom: 0; left: 0; display: flex; justify-content: space-around; gap: 2px; margin: 0; padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--surface-veil); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
   .main-nav a { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; min-height: 52px; padding: 4px 2px; color: var(--ink-soft); font-size: 0.72rem; font-weight: 600; }
@@ -450,7 +454,7 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .filters { display: grid; grid-template-columns: 1fr 1fr; padding-top: 8px; }
   .filters .field { grid-column: 1 / -1; }
   .field.compact { min-width: 0; }
-  .form-grid.two, .form-grid.three { grid-template-columns: minmax(0, 1fr); }
+  .form-grid.three { grid-template-columns: minmax(0, 1fr); }
   .login-page { grid-template-columns: 1fr; }
   .login-intro { min-height: 36vh; padding: 30px 22px; }
   .login-intro h1 { font-size: 4rem; }
@@ -474,8 +478,11 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .category-choice { min-height: 58px; padding: 8px; }
   .catalog-row { grid-template-columns: minmax(130px, 1fr) 76px 76px; gap: 6px; }
   .catalog-row input { padding-inline: 4px; }
-  .sticky-submit { right: 0; bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom)); left: 0; flex-wrap: wrap; gap: 6px; padding: 8px; }
-  .sticky-submit > * { flex: 0 1 auto; min-width: 0; min-height: 38px; padding: 6px 12px; }
+  .sticky-submit { right: 0; bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom)); left: 0; flex-wrap: wrap; justify-content: stretch; gap: 6px; padding: 8px; }
+  /* Equal flex-basis instead of the base rule's flex-end/auto-width: three
+     buttons share one even row, or wrap into two full-width rows — either
+     way no button is left stranded alone at the ragged edge. */
+  .sticky-submit > * { flex: 1 1 100px; min-width: 0; min-height: 38px; padding: 6px 8px; }
   .journal-table .journal-axis { width: 60px; }
   .summary-table .summary-axis { min-width: 112px; max-width: 130px; }
   .summary-table th, .summary-table td, .journal-table th, .journal-table td { padding: 7px; }
