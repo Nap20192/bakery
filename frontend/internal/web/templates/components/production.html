@@ -43,8 +43,7 @@
     <button class="text-action production-comment-toggle" type="button" data-comment-toggle aria-expanded="{{if .ReasonConflict}}true{{else}}false{{end}}" aria-controls="production-reason-{{$index}}">Комментарий</button>
   </td>
   <td class="ordered" data-ordered="{{.OrderedQuantity}}">{{formatQty .OrderedQuantity}}</td>
-  <td><input class="quantity-input" type="number" name="loaded_quantity" min="0" step="1" inputmode="numeric" value="{{formatQty .LoadedQuantity}}" aria-label="Общая закладка: {{.ProductName}}" required></td>
-  <td><input type="hidden" name="produced_quantity" value="{{formatQty .ProducedQuantity}}"></td>
+  <td><input class="quantity-input" type="number" name="loaded_quantity" min="0" step="1" inputmode="numeric" value="{{formatQty .LoadedQuantity}}" aria-label="Общая закладка: {{.ProductName}}" required><input type="hidden" name="produced_quantity" value="{{formatQty .ProducedQuantity}}"></td>
 </tr>
 <tr class="production-comment-row"><td colspan="3"><label class="field item-comment" {{if not .ReasonConflict}}hidden{{end}}><span>Комментарий к позиции</span><input id="production-reason-{{$index}}" name="reason" value="{{.Reason}}" maxlength="200" placeholder="{{if .ReasonConflict}}Укажите одну общую причину{{else}}Если есть отклонение{{end}}" {{if .ReasonConflict}}required{{end}}>{{if .ReasonConflict}}<small>Раньше причины различались — выберите одну общую.</small>{{end}}</label></td></tr>
 </tbody>{{end}}
