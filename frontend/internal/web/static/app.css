@@ -1,34 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=Caprasimo:wght@400&family=Figtree:wght@400;600;700&display=swap');
+
 :root {
   color-scheme: light;
-  --paper: #f5f0e8;
-  --paper-deep: #efe9de;
-  --surface: #faf9f5;
-  --surface-inset: #e8e0d2;
-  --ink: #141413;
-  --ink-soft: #3d3d3a;
-  --ink-muted: #6c6a64;
-  --ink-faint: rgba(61, 61, 58, 0.38);
-  --crust: #cc785c;
-  --crust-dark: #a9583e;
-  --line: #e6dfd8;
-  --line-soft: #ebe6df;
-  --success: #2a7043;
-  --success-soft: #e5f3e9;
+  --paper: #f5ead8;
+  --paper-deep: #ebddc5;
+  --surface: #f9f4ed;
+  --surface-inset: #eee7db;
+  --ink: #201e1d;
+  --ink-soft: #474238;
+  --ink-muted: #82796a;
+  --ink-faint: rgba(71, 66, 56, 0.38);
+  --crust: #c67139;
+  --crust-dark: #8c491a;
+  --line: #dcd3c4;
+  --line-soft: #eee7db;
+  --success: #56633f;
+  --success-soft: #f0fae1;
   --warning: #8a6412;
   --warning-soft: #f8edd2;
   --danger: #ad3838;
   --danger-soft: #f8e2df;
-  --accent-teal: #5db8a6;
-  --accent-amber: #e8a55a;
-  --focus: #cc785c;
+  --accent-teal: #8fa073;
+  --accent-amber: #d67f48;
+  --focus: #c67139;
   /* Translucent chrome (top bar, bottom nav, sticky footer) + modal scrim. */
-  --surface-veil: rgba(250, 249, 245, 0.94);
-  --backdrop: rgba(20, 20, 19, 0.42);
-  --radius-control: 8px;
-  --radius-surface: 12px;
+  --surface-veil: rgba(249, 244, 237, 0.94);
+  --backdrop: rgba(46, 43, 37, 0.5);
+  --radius-control: 999px;
+  --radius-surface: 20px;
   --max: 1180px;
-  --font-serif: "Cormorant Garamond", "EB Garamond", Georgia, "Times New Roman", serif;
-  --font-sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-serif: "Caprasimo", "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --font-sans: Figtree, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
@@ -109,6 +111,9 @@ small { display: block; color: var(--ink-muted); font-size: 0.78rem; }
 .field > span, .catalog-row label > span { color: var(--ink-soft); font-size: 0.78rem; font-weight: 650; }
 .field.compact { min-width: 180px; }
 input, select, textarea { width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--ink); background: var(--surface-inset); padding: 9px 12px; font-size: 16px; }
+/* Dense numeric grids (order/production/calculator quantity boxes) stay a
+   rounded rect, not a full pill — a stadium shape reads badly at 56-92px wide. */
+.quantity-input { border-radius: 14px; }
 textarea { resize: vertical; }
 input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .form-grid { display: grid; gap: 14px; }
@@ -503,16 +508,16 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
     --ink-soft: #cfcac1;
     --ink-muted: #9d978d;
     --ink-faint: rgba(207, 202, 193, 0.32);
-    --crust: #d98b70;
+    --crust: #dd8f5a;
     --line: #37332d;
     --line-soft: #302c27;
-    --success: #5cbd7c;
-    --success-soft: #18301f;
+    --success: #8faa5e;
+    --success-soft: #232a16;
     --warning: #d7a63f;
     --warning-soft: #322613;
     --danger: #e27070;
     --danger-soft: #331c1c;
-    --focus: #d98b70;
+    --focus: #dd8f5a;
     --surface-veil: rgba(26, 24, 20, 0.9);
     --backdrop: rgba(0, 0, 0, 0.55);
   }
