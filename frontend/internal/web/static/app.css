@@ -479,10 +479,13 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .catalog-row { grid-template-columns: minmax(130px, 1fr) 76px 76px; gap: 6px; }
   .catalog-row input { padding-inline: 4px; }
   .sticky-submit { right: 0; bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom)); left: 0; flex-wrap: wrap; justify-content: stretch; gap: 6px; padding: 8px; }
-  /* Equal flex-basis instead of the base rule's flex-end/auto-width: three
-     buttons share one even row, or wrap into two full-width rows — either
-     way no button is left stranded alone at the ragged edge. */
-  .sticky-submit > * { flex: 1 1 100px; min-width: 0; min-height: 38px; padding: 6px 8px; }
+  /* min-width:0 + nowrap (from .button) let a box shrink past its own text,
+     spilling the label outside the pill — three buttons (Отменить/Сохранить
+     черновик/Создать заказ) never fit one row at phone width regardless.
+     Give the primary action its own full row and let the rest share the row
+     below evenly; wrap as a safety net if a label still doesn't fit. */
+  .sticky-submit > * { flex: 1 1 0; min-width: 0; min-height: 38px; padding: 6px 8px; white-space: normal; text-align: center; }
+  .sticky-submit > .button-primary { order: -1; flex-basis: 100%; }
   .journal-table .journal-axis { width: 60px; }
   .summary-table .summary-axis { min-width: 112px; max-width: 130px; }
   .summary-table th, .summary-table td, .journal-table th, .journal-table td { padding: 7px; }
