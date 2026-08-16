@@ -2,6 +2,9 @@
 .env.*
 !.env.example
 cookies.txt
+*.log
+/tmp/
+
 
 # Go
 *.exe
@@ -32,4 +35,5 @@ skills-lock.json
 
 # Local browser QA artifacts
 .playwright-cli/
+.playwright-mcp/
 output/playwright/

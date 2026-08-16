@@ -1,9 +1,0 @@
-- main [ref=e3]:
-  - generic [ref=e4]:
-    - heading "Заказы пекарни" [level=1] [ref=e5]
-    - paragraph [ref=e6]: Войдите, чтобы продолжить.
-    - generic [ref=e7]: Логин
-    - textbox "Логин" [ref=e8]: demo
-    - generic [ref=e9]: Пароль
-    - textbox "Пароль" [ref=e10]: bad-password
-    - button "Войти" [ref=e11]
