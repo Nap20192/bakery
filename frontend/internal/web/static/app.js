@@ -564,7 +564,7 @@
       if (!target || base <= 0) return;
       const update = () => {
         const next = Number(target.value);
-        const scale = target.value === '' || !Number.isFinite(next) ? 1 : next / base;
+        const scale = target.value === '' || target.value === target.dataset.initialValue || !Number.isFinite(next) ? 1 : next / base;
         report.querySelectorAll('[data-monitor-qty]').forEach((node) => {
           const qty = (Number(node.dataset.baseQty) || 0) * scale;
           node.textContent = `${formatMonitorQty(qty)} ${node.dataset.unit || ''}`.trim();

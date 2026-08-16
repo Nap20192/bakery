@@ -228,8 +228,8 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .monitor-report { padding: 12px 0; border-top: 1px solid var(--line); }
 .monitor-total, .ingredient-list li { display: flex; justify-content: space-between; gap: 12px; }
 .monitor-total strong { font-family: var(--font-mono); font-size: 1.05rem; }
-.monitor-total-input { display: inline-grid; grid-template-columns: 74px auto; gap: 6px; align-items: center; font-family: var(--font-mono); font-weight: 750; }
-.monitor-total-input input { width: 74px; min-height: 36px; padding: 6px 7px; text-align: center; font: inherit; }
+.monitor-total-input { display: inline-grid; grid-template-columns: 82px auto; gap: 6px; align-items: center; font-family: var(--font-mono); font-weight: 750; }
+.monitor-total-input input { width: 82px; min-height: 40px; padding: 8px 9px; text-align: center; font: inherit; }
 .monitor-report details { margin-top: 10px; }
 .monitor-report summary { cursor: pointer; color: var(--ink-soft); font-weight: 650; }
 .monitor-breakdown { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }.monitor-breakdown > summary { cursor: pointer; font-weight: 700; }.monitor-breakdown section { margin-top: 12px; }.monitor-breakdown h3 { margin-bottom: 6px; }
