@@ -106,6 +106,7 @@
     initializeSortable(root);
     initializeCommentToggles(root);
     initializeProduction(root);
+    initializeMonitorScale(root);
     initializeScrollHints(root);
     initializeOrderCooldown(root);
   }
@@ -553,6 +554,30 @@
       form.addEventListener('input', updateDirty);
       form.querySelector('[data-production-reset]')?.addEventListener('click', () => { form.reset(); form.querySelectorAll('[data-production-row]').forEach((row) => { row.dataset.linked = row.dataset.initialLinked || 'false'; }); updateDirty(); });
     });
+  }
+
+  function initializeMonitorScale(root) {
+    root.querySelectorAll('[data-monitor-report]:not([data-ready])').forEach((report) => {
+      report.dataset.ready = 'true';
+      const target = report.querySelector('[data-monitor-target]');
+      const base = Number(report.dataset.baseQty) || 0;
+      if (!target || base <= 0) return;
+      const update = () => {
+        const next = Number(target.value);
+        const scale = target.value === '' || target.value === target.dataset.initialValue || !Number.isFinite(next) ? 1 : next / base;
+        report.querySelectorAll('[data-monitor-qty]').forEach((node) => {
+          const qty = (Number(node.dataset.baseQty) || 0) * scale;
+          node.textContent = `${formatMonitorQty(qty)} ${node.dataset.unit || ''}`.trim();
+        });
+      };
+      target.addEventListener('input', update);
+      update();
+    });
+  }
+
+  function formatMonitorQty(value) {
+    const rounded = Math.round(value * 1000) / 1000;
+    return Number.isInteger(rounded) ? String(rounded) : String(rounded).replace(/0+$/, '').replace(/\.$/, '');
   }
 
   function showToast(message) {

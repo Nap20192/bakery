@@ -16,8 +16,8 @@
 {{define "monitor"}}
 {{if .Reports}}
 <div class="monitor-results">
-  {{range .Reports}}<article class="monitor-report"><div class="monitor-total"><span>{{.Report.Ingredient.ProductName}}</span><strong>{{formatQty .Report.Ingredient.Quantity}} {{.Report.Ingredient.Unit}}</strong></div>
-    {{if .Report.Components}}<details><summary>Состав</summary><ul class="ingredient-list">{{range .Report.Components}}<li><span>{{.ProductName}}</span><strong>{{formatQty .Quantity}} {{.Unit}}</strong></li>{{end}}</ul></details>{{end}}
+  {{range .Reports}}<article class="monitor-report" data-monitor-report data-base-qty="{{printf "%.12g" .Report.Ingredient.Quantity}}"><div class="monitor-total"><span>{{.Report.Ingredient.ProductName}}</span>{{if and .Report.Components (gt .Report.Ingredient.Quantity 0.0)}}<label class="monitor-total-input"><input type="number" min="0" step="0.01" inputmode="decimal" value="{{formatQty .Report.Ingredient.Quantity}}" data-initial-value="{{formatQty .Report.Ingredient.Quantity}}" data-monitor-target aria-label="Новый объём: {{.Report.Ingredient.ProductName}}"><span>{{.Report.Ingredient.Unit}}</span></label>{{else}}<strong>{{formatQty .Report.Ingredient.Quantity}} {{.Report.Ingredient.Unit}}</strong>{{end}}</div>
+    {{if .Report.Components}}<details><summary>Состав</summary><ul class="ingredient-list">{{range .Report.Components}}<li><span>{{.ProductName}}</span><strong data-monitor-qty data-base-qty="{{printf "%.12g" .Quantity}}" data-unit="{{.Unit}}">{{formatQty .Quantity}} {{.Unit}}</strong></li>{{end}}</ul></details>{{end}}
     {{if .Report.Breakdown}}<details><summary>Расшифровка</summary><ul class="ingredient-list">{{range .Report.Breakdown}}<li><span>{{.OrderItemName}} · {{formatQty .OrderItemQuantity}}</span><strong>{{formatQty .IngredientQuantity}}</strong></li>{{end}}</ul></details>{{end}}
   </article>{{end}}
 </div>
