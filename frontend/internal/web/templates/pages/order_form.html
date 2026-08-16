@@ -8,7 +8,7 @@
 <section class="page order-editor" data-order-editor>
   <header class="page-heading">
     {{template "page-title" (dict "Title" $title)}}
-    <a class="button" href="{{$back}}" data-confirm="Уйти без сохранения? Введённые данные не сохранятся.">Закрыть</a>
+    {{if $update}}<a class="button" href="{{$back}}" data-confirm="Уйти без сохранения? Введённые данные не сохранятся.">Закрыть</a>{{end}}
   </header>
   <form class="editor-form" action="{{if $update}}/orders/{{urlquery $data.Order.Number}}/edit{{else}}/orders{{end}}" method="post" hx-disabled-elt="button[type=submit]" hx-sync="this:replace">
     {{template "csrf" $csrf}}

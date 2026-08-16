@@ -124,12 +124,9 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .filters { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-bottom: 24px; padding: 16px 0; border-block: 1px solid var(--line-soft); }
 .search-field { max-width: 420px; margin-bottom: 16px; }
 
-.login-page { display: grid; min-height: 100dvh; grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.85fr); }
-.login-intro { display: flex; flex-direction: column; justify-content: flex-end; padding: clamp(36px, 7vw, 96px); color: var(--surface); background: var(--ink); }
-.login-intro h1 { font-size: 7rem; }
-.login-intro p:last-child { max-width: 540px; margin: 20px 0 0; color: #a09d96; font-size: 1.1rem; }
-.login-form-wrap { display: grid; place-items: center; padding: 28px; }
-.login-form-wrap form { width: min(100%, 390px); }
+.login-page { display: grid; min-height: 100dvh; place-items: center; padding: 28px; }
+.login-form-wrap { display: grid; width: min(100%, 430px); place-items: center; padding: 0; }
+.login-form-wrap form { width: 100%; }
 .stack { display: grid; gap: 18px; }
 
 .category { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-soft); font-size: 0.75rem; font-weight: 700; }
@@ -460,9 +457,7 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .field.compact { min-width: 0; }
   .form-grid.three { grid-template-columns: minmax(0, 1fr); }
   .login-page { grid-template-columns: 1fr; }
-  .login-intro { min-height: 36vh; padding: 30px 22px; }
-  .login-intro h1 { font-size: 4rem; }
-  .login-form-wrap { align-items: start; padding: 28px 18px; }
+  .login-form-wrap { width: 100%; }
   .brand small { display: none; }
   .window-nav { display: grid; grid-template-columns: auto 1fr auto; text-align: center; }
   .window-nav span { align-self: center; font-size: 0.7rem; }

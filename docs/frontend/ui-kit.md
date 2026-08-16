@@ -32,9 +32,13 @@ Spacing follows an 8px baseline with 4px-compatible control adjustments.
 - `category-badge`: color dot plus category name; never color alone.
 - `order-card`: compact matrix/list item with category stripe, full number,
   item count, production/cancellation symbol, and independent `Обзор` action.
-- `monitor`: reusable dough totals and expandable composition/breakdown.
-- `production-rows`: the shared Order / Load / Output editor for new and
-  existing production sheets.
+- `monitor`: reusable dough totals and expandable composition/breakdown. When a
+  report has components, the total is an inline numeric input that scales the
+  visible composition locally for quick «what if we need more dough» checks.
+- `production-rows`: the shared production editor for new and existing sheets.
+  Visible columns are `Название / Заявка / Закладка`; output is submitted as a
+  hidden value inside the load cell, so hidden fields never create extra table
+  columns.
 
 ## Controls
 
@@ -43,6 +47,8 @@ Spacing follows an 8px baseline with 4px-compatible control adjustments.
 - `.button-danger` always opens the native confirmation dialog before submit.
 - `.field` provides label/control association; inputs are inset relative to
   their surrounding surface.
+- `.monitor-total-input` is intentionally compact: the dough total itself is the
+  edit control, not a second explanatory row.
 - Native `<details>` is used for disclosure and `<dialog>` for modal behavior,
   preserving keyboard and focus mechanics without a component library.
 
@@ -52,6 +58,10 @@ The order matrix, production journal, dough summary, and production editor do
 not collapse into generic cards. Their wrappers scroll horizontally while
 date/dish axes and header/footer rows stay sticky. The 375px order matrix uses
 compact shop columns so three columns remain scannable.
+
+On mobile, the bottom nav becomes fixed in the thumb zone, but it hides while a
+form control has focus so Telegram/iOS keyboards do not lift it over the input.
+The order editor's sticky submit bar follows the same rule.
 
 ## Category colors
 
