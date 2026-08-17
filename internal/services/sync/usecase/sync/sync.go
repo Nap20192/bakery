@@ -58,6 +58,9 @@ func (s *Service) SyncOnce(ctx context.Context) error {
 		return err
 	}
 	syncDate := time.Now().Format("2006-01-02")
+	// Окно вперёд: iiko заводит новые ревизии техкарт с будущей датой —
+	// getAll(сегодня, сегодня) их не возвращает, монитор считает нули.
+	syncDateTo := time.Now().AddDate(0, 0, 30).Format("2006-01-02")
 	if err := s.client.Auth(); err != nil {
 		return fmt.Errorf("auth: %w", err)
 	}
@@ -83,7 +86,7 @@ func (s *Service) SyncOnce(ctx context.Context) error {
 	})
 	group.Go(func() error {
 		var err error
-		charts, err = s.client.AssemblyChartsGetAll(syncDate, syncDate, false, true)
+		charts, err = s.client.AssemblyChartsGetAll(syncDate, syncDateTo, false, true)
 		if err != nil {
 			return fmt.Errorf("get assembly charts: %w", err)
 		}
