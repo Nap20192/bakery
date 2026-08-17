@@ -41,9 +41,17 @@ type MiniAppUser struct {
 	DepartmentType string
 }
 
-type telegramInitUser struct {
+// TelegramInitUser is the sender identity carried in validated initData.
+type TelegramInitUser struct {
 	ID       int64  `json:"id"`
 	Username string `json:"username"`
+}
+
+// ValidateMiniAppInitData checks the initData signature and freshness and
+// returns the sender identity. Shared by the auth middleware and the /login
+// telegram-bind fallback.
+func ValidateMiniAppInitData(raw, botToken string) (TelegramInitUser, error) {
+	return validateMiniAppInitData(raw, botToken, time.Now(), miniAppAuthMaxAge)
 }
 
 // Authenticator resolves the caller (Telegram Mini App initData or web bearer)
@@ -135,12 +143,21 @@ func (a *Authenticator) resolveUser(ctx context.Context, r *http.Request) (authd
 	case miniAppAuthorizationScheme:
 		init, err := validateMiniAppInitData(data, a.botToken, time.Now(), miniAppAuthMaxAge)
 		if err != nil {
-			slog.WarnContext(ctx, "mini app auth rejected", "error", err)
+			slog.WarnContext(ctx, "mini app auth rejected: init data invalid", "error", err)
 			return authdomain.AuthUser{}, &viewerError{http.StatusUnauthorized, "Не удалось подтвердить вход. Откройте приложение заново."}
 		}
-		return a.lookupUser(ctx, func() (authdomain.AuthUser, error) {
-			return a.authSvc.AuthenticateTelegram(ctx, init.ID, strings.TrimSpace(init.Username))
-		})
+		user, err := a.authSvc.AuthenticateTelegram(ctx, init.ID, strings.TrimSpace(init.Username))
+		if err != nil {
+			if errors.Is(err, authuc.ErrAuthUserNotFound) {
+				slog.WarnContext(ctx, "mini app auth rejected: user not found",
+					"telegram_id", init.ID, "telegram_username", init.Username)
+				return authdomain.AuthUser{}, &viewerError{http.StatusForbidden, "Пользователь не найден."}
+			}
+			slog.ErrorContext(ctx, "mini app user lookup failed",
+				"telegram_id", init.ID, "telegram_username", init.Username, "error", err)
+			return authdomain.AuthUser{}, &viewerError{http.StatusInternalServerError, "Не удалось определить пользователя."}
+		}
+		return user, nil
 	case "bearer":
 		claims, err := authtoken.Parse(a.botToken, data, time.Now())
 		if err != nil {
@@ -236,18 +253,18 @@ func authorizationCredentials(header string) (string, string, bool) {
 	return parts[0], data, data != ""
 }
 
-func validateMiniAppInitData(raw string, botToken string, now time.Time, maxAge time.Duration) (telegramInitUser, error) {
+func validateMiniAppInitData(raw string, botToken string, now time.Time, maxAge time.Duration) (TelegramInitUser, error) {
 	params, err := url.ParseQuery(raw)
 	if err != nil {
-		return telegramInitUser{}, fmt.Errorf("parse init data: %w", err)
+		return TelegramInitUser{}, fmt.Errorf("parse init data: %w", err)
 	}
 	hashValue := strings.TrimSpace(params.Get("hash"))
 	if hashValue == "" {
-		return telegramInitUser{}, fmt.Errorf("init data hash is missing")
+		return TelegramInitUser{}, fmt.Errorf("init data hash is missing")
 	}
 	receivedHash, err := hex.DecodeString(hashValue)
 	if err != nil {
-		return telegramInitUser{}, fmt.Errorf("decode init data hash: %w", err)
+		return TelegramInitUser{}, fmt.Errorf("decode init data hash: %w", err)
 	}
 
 	keys := make([]string, 0, len(params))
@@ -268,24 +285,24 @@ func validateMiniAppInitData(raw string, botToken string, now time.Time, maxAge 
 	signatureMAC := hmac.New(sha256.New, secretMAC.Sum(nil))
 	_, _ = signatureMAC.Write([]byte(dataCheckString))
 	if !hmac.Equal(receivedHash, signatureMAC.Sum(nil)) {
-		return telegramInitUser{}, fmt.Errorf("init data signature is invalid")
+		return TelegramInitUser{}, fmt.Errorf("init data signature is invalid")
 	}
 
 	authDate, err := strconv.ParseInt(params.Get("auth_date"), 10, 64)
 	if err != nil {
-		return telegramInitUser{}, fmt.Errorf("parse auth date: %w", err)
+		return TelegramInitUser{}, fmt.Errorf("parse auth date: %w", err)
 	}
 	authTime := time.Unix(authDate, 0)
 	if authTime.After(now.Add(time.Minute)) || now.Sub(authTime) > maxAge {
-		return telegramInitUser{}, fmt.Errorf("init data has expired")
+		return TelegramInitUser{}, fmt.Errorf("init data has expired")
 	}
 
-	var user telegramInitUser
+	var user TelegramInitUser
 	if err := json.Unmarshal([]byte(params.Get("user")), &user); err != nil {
-		return telegramInitUser{}, fmt.Errorf("parse telegram user: %w", err)
+		return TelegramInitUser{}, fmt.Errorf("parse telegram user: %w", err)
 	}
 	if user.ID <= 0 {
-		return telegramInitUser{}, fmt.Errorf("telegram user ID is missing")
+		return TelegramInitUser{}, fmt.Errorf("telegram user ID is missing")
 	}
 	return user, nil
 }

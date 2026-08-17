@@ -10,12 +10,12 @@ import (
 	"bakery/internal/inbound/api/contract"
 )
 
-func (c *Client) Login(ctx context.Context, username, password string) (contract.LoginResponse, error) {
+func (c *Client) Login(ctx context.Context, username, password, initData string) (contract.LoginResponse, error) {
 	var out contract.LoginResponse
 	err := c.do(ctx, "", request{
 		method: http.MethodPost,
 		path:   "/login",
-		body:   contract.LoginRequest{Username: username, Password: password},
+		body:   contract.LoginRequest{Username: username, Password: password, InitData: initData},
 		out:    &out,
 	})
 	return out, err

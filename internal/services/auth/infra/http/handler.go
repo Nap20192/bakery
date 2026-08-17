@@ -62,6 +62,20 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Mini App fallback: bind the Telegram sender to this account. Best-effort —
+	// the password already proved ownership, so a bad initData never fails login.
+	if raw := strings.TrimSpace(req.InitData); raw != "" {
+		if init, err := httpx.ValidateMiniAppInitData(raw, h.botToken); err != nil {
+			slog.WarnContext(r.Context(), "telegram bind skipped: init data invalid", "user_id", user.ID, "error", err)
+		} else if _, err := h.authSvc.BindTelegram(r.Context(), user.ID, init.ID); err != nil {
+			slog.WarnContext(r.Context(), "telegram bind after login failed",
+				"user_id", user.ID, "telegram_id", init.ID, "telegram_username", init.Username, "error", err)
+		} else {
+			slog.InfoContext(r.Context(), "telegram bound after password login",
+				"user_id", user.ID, "telegram_id", init.ID, "telegram_username", init.Username)
+		}
+	}
+
 	token, err := authtoken.Issue(h.botToken, user.ID, webSessionTTL, time.Now())
 	if err != nil {
 		slog.ErrorContext(r.Context(), "issue session token failed", "error", err)

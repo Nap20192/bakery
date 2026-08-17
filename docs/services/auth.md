@@ -61,12 +61,15 @@ writes (`auth.invalid_role`).
 
 | Route | Auth | Notes |
 |---|---|---|
-| `POST /login` | public | `{username, password}` → `{token, expires_at}`. Failures always answer `401 «Неверный логин или пароль.»` — no user enumeration. Returns `503` when the bot token isn't configured (the token is the HMAC secret). |
+| `POST /login` | public | `{username, password, init_data?}` → `{token, expires_at}`. Failures always answer `401 «Неверный логин или пароль.»` — no user enumeration. Returns `503` when the bot token isn't configured (the token is the HMAC secret). Optional `init_data` (raw Telegram initData) — after the password check it is HMAC-validated and the sender's `telegram_id` is bound to the account (Mini App fallback when initData didn't resolve a user, e.g. the stored `telegram_username` doesn't match). Invalid `init_data` or a bind conflict never fails the login — it is logged and skipped, the password already proved ownership. |
 | `GET /me` | RequireAuth | Role, telegram identity, and the resolved department (id/code/name/type) when the user has one. Admins may legitimately have no department. |
 
-Mini App clients do not call `/login` — they authenticate every request with
-`Authorization: tma <initData>` (see
-[architecture.md](../architecture.md#authentication)).
+Mini App clients normally do not call `/login` — they authenticate every
+request with `Authorization: tma <initData>` (see
+[architecture.md](../architecture.md#authentication)). The exception is the
+fallback above: when initData is valid but no account matches, the Mini App
+shows the password form and sends `init_data` along with it to bind the
+Telegram account.
 
 ## Ports
 
@@ -77,9 +80,12 @@ user CRUD-ish operations (`CreateUserWithPassword`, `SetPassword`,
 `ListUsersByDepartmentID`), and auth flows (`VerifyPassword`,
 `AuthenticateTelegram`, `EnsureAdminUser`).
 
+`authuc.UseCase` also exposes `BindTelegram(userID, telegramID)` — a direct
+bind used by the `/login` fallback after a successful password check.
+
 `authuc.Repository` mirrors these over the `users` table and additionally
 exposes `BindTelegramID` — called when a Telegram user first talks to the bot
-and their username matches an account.
+and their username matches an account, and by `BindTelegram`.
 
 ## Errors
 

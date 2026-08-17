@@ -24,7 +24,8 @@
         {{else}}
           <label class="field"><span>Отправитель</span><select name="from_department_id" required><option value="">Выберите отправителя</option>{{template "id-options" (dict "Items" $data.Shops "Selected" $data.FromDepartmentID)}}</select></label>
         {{end}}
-        <label class="field"><span>Дата выполнения</span><input type="date" name="fulfillment_date" value="{{$data.FulfillmentDate}}" min="{{.Today}}" required></label>
+        <label class="field"><span>Дата выполнения</span><input type="date" name="fulfillment_date" value="{{$data.FulfillmentDate}}" min="{{.Today}}" required data-date-input>
+        <span class="date-chips" data-date-chips role="group" aria-label="Быстрый выбор даты"></span></label>
       </div>
     </section>
     <section class="editor-step">
@@ -34,8 +35,8 @@
         {{range $item := $group.Items}}<div class="catalog-row" data-catalog-row data-category="{{deref $item.Dish.CategoryID}}" data-name="{{$item.Dish.Name}}">
           <input type="hidden" name="item_name" value="{{$item.Dish.Name}}">
           <div class="catalog-name"><strong>{{$item.Dish.Name}}</strong><button class="text-action" type="button" data-comment-toggle>Комментарий</button></div>
-          <label><span>Заявка</span><input class="quantity-input" type="number" name="quantity" min="0" step="1" inputmode="numeric" value="{{inputQty $item.Quantity}}"></label>
-          <label><span>Заказ</span><input class="quantity-input" type="number" name="reserved_quantity" min="0" step="1" inputmode="numeric" value="{{inputQty $item.Reserved}}"></label>
+          <label><span>Заявка</span><input class="quantity-input" type="number" name="quantity" min="0" step="1" inputmode="numeric" placeholder="0" value="{{inputQty $item.Quantity}}"></label>
+          <label><span>Заказ</span><input class="quantity-input" type="number" name="reserved_quantity" min="0" step="1" inputmode="numeric" placeholder="0" value="{{inputQty $item.Reserved}}"></label>
           <label class="item-comment" hidden><span>Комментарий к позиции</span><input name="item_comment" value="{{$item.Comment}}" maxlength="500"></label>
         </div>{{end}}
       </div></section>{{end}}

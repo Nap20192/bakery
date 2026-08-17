@@ -27,10 +27,10 @@
   {{if $data.Matrix}}
   <div class="scroll-frame"><div class="matrix-scroll" role="region" aria-label="Матрица заказов" tabindex="0">
     <table class="order-matrix">
-      <thead><tr><th class="matrix-axis">Дата</th>{{range $data.Shops}}<th>{{.Name}}</th>{{end}}</tr></thead>
+      <thead><tr><th class="matrix-axis">Дата</th>{{range $data.Shops}}<th><span class="matrix-shop">{{.Name}}</span></th>{{end}}</tr></thead>
       <tbody>
       {{range $row := $data.Matrix}}
-        <tr><th class="matrix-axis {{if $row.Tone}}tone-{{$row.Tone}}{{end}}"><strong>{{$row.Label}}</strong><small>{{formatDayMonth $row.Date}}</small></th>
+        <tr {{if $row.Tone}}class="tone-{{$row.Tone}}"{{end}}><th class="matrix-axis"><strong>{{$row.Label}}</strong><small>{{formatDayMonth $row.Date}}</small></th>
         {{range $cell := $row.Cells}}<td>
           <div class="matrix-cell">
           {{range $order := $cell.Orders}}{{template "order-card" (dict "Order" $order "LinkSheet" true)}}{{else}}{{template "empty-cell"}}{{end}}

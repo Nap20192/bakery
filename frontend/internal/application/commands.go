@@ -7,7 +7,7 @@ import (
 )
 
 type Commands interface {
-	Login(ctx context.Context, username, password string) (contract.LoginResponse, error)
+	Login(ctx context.Context, username, password, initData string) (contract.LoginResponse, error)
 	CreateOrder(ctx context.Context, credentials Credentials, input contract.OrderWrite) (contract.Order, error)
 	UpdateOrder(ctx context.Context, credentials Credentials, number string, input contract.OrderWrite) (contract.Order, error)
 	CancelOrder(ctx context.Context, credentials Credentials, number string) (contract.Order, error)

@@ -143,6 +143,13 @@ func (s *Service) AuthenticateTelegram(ctx context.Context, telegramID int64, te
 	return s.repo.BindTelegramID(ctx, account.ID, telegramID)
 }
 
+func (s *Service) BindTelegram(ctx context.Context, userID, telegramID int64) (accessdomain.AuthUser, error) {
+	if telegramID <= 0 {
+		return accessdomain.AuthUser{}, fmt.Errorf("telegram id is required")
+	}
+	return s.repo.BindTelegramID(ctx, userID, telegramID)
+}
+
 func (s *Service) SetPassword(ctx context.Context, id int64, password string) (accessdomain.AuthUser, error) {
 	if password == "" {
 		return accessdomain.AuthUser{}, fmt.Errorf("password is required")

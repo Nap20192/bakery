@@ -39,6 +39,7 @@ func parseTemplates() (*template.Template, error) {
 		"join":             strings.Join,
 		"list":             func(values ...any) []any { return values },
 		"pageOffset":       func(page, offset int32) int32 { return page + offset },
+		"profileInitials":  profileInitials,
 		"roleName":         roleName,
 		"sheetTone":        sheetTone,
 		"urlquery":         url.QueryEscape,

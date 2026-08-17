@@ -37,7 +37,7 @@ func (s *server) login(w http.ResponseWriter, r *http.Request) {
 		s.render(w, r, http.StatusUnprocessableEntity, page{Title: "Вход", View: "login", Error: "Введите логин и пароль.", Data: loginData{Next: next}})
 		return
 	}
-	session, err := s.commands.Login(r.Context(), username, password)
+	session, err := s.commands.Login(r.Context(), username, password, strings.TrimSpace(r.FormValue("init_data")))
 	if err != nil {
 		s.logger.Warn("login failed", "user", username, "error", err)
 		s.render(w, r, statusOr(err, http.StatusUnauthorized), page{

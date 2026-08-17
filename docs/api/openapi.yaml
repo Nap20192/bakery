@@ -54,7 +54,12 @@ paths:
     post:
       tags: [auth]
       summary: Web password login
-      description: Mini App clients do not use this — they send `tma <initData>` per request.
+      description: >
+        Mini App clients normally send `tma <initData>` per request instead.
+        They call this only as a fallback when initData didn't resolve a user:
+        `init_data` is then validated after the password check and the sender's
+        telegram_id is bound to the account (invalid init_data is logged and
+        skipped, never failing the login).
       security: []
       operationId: login
       requestBody:
@@ -67,6 +72,7 @@ paths:
               properties:
                 username: { type: string }
                 password: { type: string, format: password }
+                init_data: { type: string, description: Raw Telegram initData for the bind fallback }
       responses:
         "200":
           description: Session issued (7-day TTL)

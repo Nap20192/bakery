@@ -109,6 +109,41 @@
     initializeMonitorScale(root);
     initializeScrollHints(root);
     initializeOrderCooldown(root);
+    initializeDateChips(root);
+  }
+
+  // Quick-pick chips next to the fulfillment-date input: today, tomorrow and
+  // the day after (labelled by weekday). Built client-side so "today" is the
+  // user's local day, matching what the date input itself would show.
+  function initializeDateChips(root) {
+    root.querySelectorAll('[data-date-chips]:not([data-ready])').forEach((wrap) => {
+      wrap.dataset.ready = 'true';
+      const input = wrap.closest('label')?.querySelector('[data-date-input]');
+      if (!input) return;
+      const iso = (offset) => {
+        const day = new Date();
+        day.setDate(day.getDate() + offset);
+        return `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+      };
+      const weekday = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'][(new Date().getDay() + 2) % 7];
+      const chips = [['Сегодня', iso(0)], ['Завтра', iso(1)], [weekday, iso(2)]].map(([label, value]) => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'date-chip';
+        chip.textContent = label;
+        chip.dataset.date = value;
+        chip.addEventListener('click', () => {
+          input.value = value;
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+          render();
+        });
+        wrap.append(chip);
+        return chip;
+      });
+      const render = () => chips.forEach((chip) => chip.setAttribute('aria-pressed', String(chip.dataset.date === input.value)));
+      input.addEventListener('change', render);
+      render();
+    });
   }
 
   // Frontend rate-limit: after an order is created, keep the create button
@@ -216,6 +251,9 @@
     telegram.setBackgroundColor?.('#f4f3ee');
     const login = document.querySelector('[data-telegram-login]');
     if (!login || !telegram.initData) return;
+    // If auto-login fails (account not linked yet), the password form stays
+    // usable; sending initData with it lets the backend bind telegram_id.
+    login.querySelectorAll('[data-telegram-init-data]').forEach((input) => { input.value = telegram.initData; });
     const status = login.querySelector('.telegram-status');
     if (status) status.textContent = 'Подтверждаем вход через Telegram…';
     fetch('/session/telegram', {

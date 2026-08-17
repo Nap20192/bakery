@@ -92,6 +92,24 @@ func roleName(role string) string {
 	}
 }
 
+func profileInitials(viewer *contract.Me) string {
+	if viewer == nil {
+		return "?"
+	}
+	source := viewer.TelegramUsername
+	if source == "" {
+		source = roleName(viewer.Role)
+	}
+	runes := []rune(strings.ToUpper(source))
+	if len(runes) == 0 {
+		return "?"
+	}
+	if len(runes) == 1 {
+		return string(runes[0])
+	}
+	return string(runes[:2])
+}
+
 func activePath(current, target string) bool {
 	if target == "/orders" {
 		return current == target || (strings.HasPrefix(current, "/orders/") && current != "/orders/new" && current != "/orders/table")

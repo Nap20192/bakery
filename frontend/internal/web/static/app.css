@@ -22,6 +22,8 @@
   --danger-soft: #f8e2df;
   --accent-teal: #8fa073;
   --accent-amber: #d67f48;
+  --band-today: #f0fae1;
+  --band-tomorrow: #fff2eb;
   --focus: #c67139;
   /* Translucent chrome (top bar, bottom nav, sticky footer) + modal scrim. */
   --surface-veil: rgba(249, 244, 237, 0.94);
@@ -123,6 +125,9 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .action-field { justify-content: end; }
 .filters { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-bottom: 24px; padding: 16px 0; border-block: 1px solid var(--line-soft); }
 .search-field { max-width: 420px; margin-bottom: 16px; }
+.date-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.date-chip { min-height: 38px; padding: 6px 14px; border: 1.5px solid var(--line); border-radius: var(--radius-control); color: var(--success); background: var(--surface); font-weight: 700; }
+.date-chip[aria-pressed="true"] { border-color: var(--accent-teal); color: #ffffff; background: var(--accent-teal); }
 
 .login-page { display: grid; min-height: 100dvh; place-items: center; padding: 28px; }
 .login-form-wrap { display: grid; width: min(100%, 430px); place-items: center; padding: 0; }
@@ -200,10 +205,11 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .matrix-cell .order-card { min-height: 0; padding: 7px 8px; }
 .pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 24px; color: var(--ink-soft); }
 
-.meta-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; overflow: hidden; margin: 0 0 24px; border-radius: var(--radius-surface); background: var(--line); }
-.meta-grid div { padding: 14px; background: var(--paper-deep); }
-.meta-grid dt { color: var(--ink-muted); font-size: 0.72rem; }
-.meta-grid dd { margin: 3px 0 0; font-weight: 650; }
+/* One white card of «label — value» rows, per the mini-app design. */
+.meta-grid { display: grid; gap: 6px; margin: 0 0 24px; padding: 14px 16px; border-radius: var(--radius-surface); background: var(--surface); box-shadow: 0 1px 2px rgba(46, 43, 37, 0.14); }
+.meta-grid div { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 12px; align-items: baseline; }
+.meta-grid dt { color: var(--ink-soft); font-size: 0.85rem; }
+.meta-grid dd { margin: 0; font-weight: 650; }
 .detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; }
 .detail-aside { display: grid; align-content: start; gap: 12px; }
 .compact-form { padding: 12px; }
@@ -253,7 +259,11 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .catalog-groups { display: grid; gap: 18px; }
 .catalog-group h3 { position: sticky; z-index: 5; top: 0; padding: 8px 0; color: var(--ink-soft); background: var(--paper); font-family: var(--font-mono); text-transform: uppercase; }
 .catalog-list { border-top: 1px solid var(--line); }
-.catalog-row { display: grid; grid-template-columns: minmax(160px, 1fr) 92px 92px; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line-soft); }
+.catalog-row { display: grid; grid-template-columns: minmax(160px, 1fr) 92px 92px; gap: 10px; align-items: center; padding: 8px 10px; margin-bottom: 6px; border-radius: 14px; background: var(--surface); box-shadow: 0 1px 2px rgba(46, 43, 37, 0.14); }
+/* A filled quantity is tinted: green for заявка (полка), amber for заказ
+   (резерв) — matching the mini-app design. Relies on placeholder="0". */
+.catalog-row input[name="quantity"]:not(:placeholder-shown) { border-color: var(--accent-teal); background: var(--success-soft); }
+.catalog-row input[name="reserved_quantity"]:not(:placeholder-shown) { border-color: var(--accent-amber); background: var(--band-tomorrow); }
 .catalog-row > label { display: grid; gap: 3px; }
 .catalog-name { min-width: 0; }
 .catalog-name strong { display: block; overflow-wrap: anywhere; }
@@ -314,8 +324,11 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .sheet-link-author { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sheet-link-author, .sheet-link-facts { color: var(--ink-soft); font-size: 0.72rem; }
 .category-tabs { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 14px; padding: 3px; }
-.category-tab { display: inline-flex; min-height: 44px; align-items: center; padding: 8px 12px; border-bottom: 2px solid transparent; color: var(--ink-soft); font-weight: 700; text-decoration: none; white-space: nowrap; }
-.category-tab.is-active { border-color: currentColor; color: var(--ink); }
+/* Type chips per the mini-app design: pills, the active one filled solid with
+   the category colour. --chip is set by the per-tone classes below. */
+.category-tab { --chip: #948d84; display: inline-flex; min-height: 40px; align-items: center; padding: 8px 16px; border: 1.5px solid var(--line); border-radius: var(--radius-control); color: var(--chip); background: var(--surface); font-weight: 700; text-decoration: none; white-space: nowrap; }
+.category-tab.is-active { border-color: var(--chip); color: #ffffff; background: var(--chip); }
+.category-tab-amber { --chip: #a76b1f; }.category-tab-sky { --chip: #39718d; }.category-tab-violet { --chip: #74558b; }.category-tab-emerald { --chip: #477a62; }.category-tab-rose { --chip: #995565; }.category-tab-stone { --chip: #716a61; }
 .view-switch { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--surface); }
 .page-toolbar .category-tabs { margin-bottom: 0; }
 .view-switch .view-tab { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: calc(var(--radius-control) - 4px); color: var(--ink-soft); font-weight: 700; text-decoration: none; }
@@ -326,7 +339,15 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .summary-table td { text-align: center; font-family: var(--font-mono); }
 .summary-table tfoot th, .summary-table tfoot td { position: sticky; z-index: 20; bottom: 0; background: var(--paper-deep); font-weight: 800; }
 .summary-table sup { margin-left: 3px; font-size: 0.65rem; }.negative { color: var(--danger); }.positive, .done { color: var(--success); }
-.tone-today { box-shadow: inset 0 3px 0 var(--accent-teal); }.tone-tomorrow { box-shadow: inset 0 3px 0 var(--accent-amber); }
+/* Today/tomorrow highlight: the whole band (matrix row / table header cell)
+   is tinted, per the mini-app design. */
+.tone-today { background: var(--band-today) !important; }
+.tone-tomorrow { background: var(--band-tomorrow) !important; }
+.order-matrix .tone-today > th, .order-matrix .tone-today > td { background: var(--band-today); }
+.order-matrix .tone-tomorrow > th, .order-matrix .tone-tomorrow > td { background: var(--band-tomorrow); }
+.order-matrix .tone-today .matrix-axis small::after { content: " · сегодня"; color: var(--success); font-weight: 700; }
+.order-matrix .tone-tomorrow .matrix-axis small::after { content: " · завтра"; color: var(--accent-amber); font-weight: 700; }
+.matrix-shop { display: inline-block; width: 100%; padding: 5px 10px; border-radius: var(--radius-control); background: var(--surface-inset); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; font-weight: 700; }
 
 .calculator-catalog { max-height: 58vh; overflow-y: auto; }
 .calculator-row { display: grid; grid-template-columns: minmax(0, 1fr) 92px; gap: 10px; align-items: center; min-height: 50px; border-bottom: 1px solid var(--line-soft); }
@@ -388,6 +409,9 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .techcard-ingredients li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); font-family: var(--font-mono); font-size: 0.85rem; }
 .techcard-ingredients li:last-child { border: 0; }
 .order-index { display: grid; min-width: 30px; height: 30px; place-items: center; border-radius: 50%; background: var(--paper-deep); font-family: var(--font-mono); font-size: 0.72rem; }
+.profile-card { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: var(--radius-surface); background: var(--surface); box-shadow: 0 1px 2px rgba(46, 43, 37, 0.14); }
+.profile-avatar { display: grid; width: 52px; height: 52px; flex: none; place-items: center; border-radius: 50%; color: var(--crust-dark); background: #f6e5db; font-family: var(--font-serif); font-size: 1.25rem; }
+.profile-name { font-size: 1.05rem; font-weight: 800; }
 .profile-list { display: grid; margin: 24px 0; border-block: 1px solid var(--line); }
 .profile-list div { display: grid; grid-template-columns: 160px 1fr; gap: 18px; padding: 14px 0; border-bottom: 1px solid var(--line-soft); }.profile-list div:last-child { border: 0; }.profile-list dt { color: var(--ink-muted); }.profile-list dd { margin: 0; font-weight: 700; }
 
@@ -467,7 +491,7 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .matrix-cell .order-card-meta, .matrix-cell .order-preview-action { font-size: 0.68rem; }
   .shop-order-list { grid-template-columns: 1fr; }
   .drafts-grid { grid-template-columns: 1fr; }
-  .meta-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .meta-grid div { grid-template-columns: 96px minmax(0, 1fr); }
   .detail-aside { grid-template-columns: minmax(0, 1fr); }
   /* Quantities are the point of this page, so the table compresses to fit
      rather than hiding its numeric columns behind a horizontal scroll. */
@@ -529,6 +553,8 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
     --focus: #dd8f5a;
     --surface-veil: rgba(26, 24, 20, 0.9);
     --backdrop: rgba(0, 0, 0, 0.55);
+    --band-today: #232a16;
+    --band-tomorrow: #322613;
   }
   .category-amber { color: #d9a441; } .category-sky { color: #7bb4d0; } .category-violet { color: #b291c9; }
   .category-emerald { color: #6fbf95; } .category-rose { color: #d98a98; } .category-stone { color: #b3a89b; }
@@ -536,4 +562,8 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .sheet-plum { background-color: #2b1f2b !important; } .sheet-moss { background-color: #1f291f !important; } .sheet-clay { background-color: #2c211b !important; }
   .order-card.is-selected { background: #3a2a22 !important; }
   [data-selection-toggle][aria-pressed="true"] { background: #3a2a22; }
+  .profile-avatar { color: var(--crust); background: #3a2a22; }
+  .category-tab-amber { --chip: #d9a441; }.category-tab-sky { --chip: #7bb4d0; }.category-tab-violet { --chip: #b291c9; }
+  .category-tab-emerald { --chip: #6fbf95; }.category-tab-rose { --chip: #d98a98; }.category-tab-stone { --chip: #b3a89b; }
+  .category-tab.is-active { color: #191714; }
 }

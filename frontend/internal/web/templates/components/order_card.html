@@ -15,7 +15,7 @@
     {{else if $o.ProductionSheetID}}{{template "sheet-stamp" (dict "ID" $o.ProductionSheetID "Link" .LinkSheet)}}{{end}}
   </div>
   <div class="order-card-foot">
-    <span class="order-card-meta">@{{$o.CreatedByUsername}}</span>
+    <span class="order-card-meta">@{{$o.CreatedByUsername}} · {{formatDayMonth $o.CreatedAt}}</span>
     <button class="order-preview-action" type="button" hx-get="/fragments/orders/{{urlquery $o.Number}}" hx-target="#preview-slot" hx-select="unset" hx-swap="innerHTML" aria-label="Обзор заказа {{$o.Number}}" title="Обзор">{{template "navicon" "eye"}}</button>
   </div>
 </article>

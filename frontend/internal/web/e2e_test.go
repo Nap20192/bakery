@@ -96,7 +96,7 @@ func (f *fakeBackend) DishTechCards(context.Context, application.Credentials) ([
 	return nil, nil
 }
 
-func (f *fakeBackend) Login(_ context.Context, username, _ string) (contract.LoginResponse, error) {
+func (f *fakeBackend) Login(_ context.Context, username, _, _ string) (contract.LoginResponse, error) {
 	if f.loginErr != nil {
 		return contract.LoginResponse{}, f.loginErr
 	}

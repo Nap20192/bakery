@@ -11,6 +11,9 @@ type Error struct {
 type LoginRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+	// InitData is the raw Telegram initData, sent by the Mini App password
+	// fallback so the backend can bind telegram_id after a successful login.
+	InitData string `json:"init_data,omitempty"`
 }
 
 type LoginResponse struct {

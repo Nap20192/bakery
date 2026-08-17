@@ -20,6 +20,9 @@ type UseCase interface {
 	// AuthenticateTelegram binds the given telegram_id to the account whose
 	// telegram_username matches.
 	AuthenticateTelegram(ctx context.Context, telegramID int64, telegramUsername string) (accessdomain.AuthUser, error)
+	// BindTelegram binds telegram_id to a known account directly — used by the
+	// /login fallback after the password proved ownership.
+	BindTelegram(ctx context.Context, userID, telegramID int64) (accessdomain.AuthUser, error)
 	SetPassword(ctx context.Context, id int64, password string) (accessdomain.AuthUser, error)
 	DeleteUser(ctx context.Context, id int64) error
 	AssignUserDepartment(ctx context.Context, userID int64, departmentID *int64) (accessdomain.AuthUser, error)

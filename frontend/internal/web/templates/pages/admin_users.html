@@ -21,7 +21,7 @@
       {{range $row := $data.Users}}<tr>
         <td data-label="Логин"><strong>{{$row.User.Username}}</strong></td>
         <td data-label="Роль">{{roleName $row.User.Role}}</td>
-        <td data-label="Telegram">{{if $row.User.TelegramUsername}}@{{$row.User.TelegramUsername}}{{else}}<span class="muted">—</span>{{end}}</td>
+        <td data-label="Telegram">{{if $row.User.TelegramUsername}}@{{$row.User.TelegramUsername}}{{else}}<span class="muted">—</span>{{end}}{{if $row.User.TelegramID}} <span class="muted">ID&nbsp;{{$row.User.TelegramID}}</span>{{end}}</td>
         <td class="col-actions">
           <details class="user-edit">
             <summary class="button">Изменить</summary>

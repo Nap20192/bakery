@@ -3,6 +3,7 @@
   <section class="login-form-wrap" aria-label="Вход в систему">
     <form class="stack" action="/session/login" method="post" hx-boost="true" hx-disabled-elt="find button" hx-indicator="#global-progress">
       <input type="hidden" name="next" value="{{.Data.Next}}">
+      <input type="hidden" name="init_data" data-telegram-init-data>
       <div>
         <h2>Войти</h2>
       </div>

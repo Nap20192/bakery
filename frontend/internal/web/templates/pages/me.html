@@ -1,6 +1,13 @@
 {{define "me"}}
 <section class="page narrow-page">
   <header class="page-heading">{{template "page-title" (dict "Title" "Профиль")}}</header>
+  <div class="profile-card">
+    <span class="profile-avatar" aria-hidden="true">{{profileInitials .Viewer}}</span>
+    <div>
+      <div class="profile-name">{{if .Viewer.TelegramUsername}}@{{.Viewer.TelegramUsername}}{{else}}{{roleName .Viewer.Role}}{{end}}</div>
+      <small>{{roleName .Viewer.Role}} · {{if .Viewer.DepartmentName}}{{.Viewer.DepartmentName}}{{else}}без отдела{{end}}</small>
+    </div>
+  </div>
   <dl class="profile-list">
     <div><dt>Роль</dt><dd>{{roleName .Viewer.Role}}</dd></div>
     <div><dt>Telegram</dt><dd>{{if .Viewer.TelegramUsername}}@{{.Viewer.TelegramUsername}}{{else}}Не привязан{{end}}</dd></div>
