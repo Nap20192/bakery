@@ -143,14 +143,17 @@ func (a *Authenticator) resolveUser(ctx context.Context, r *http.Request) (authd
 	case miniAppAuthorizationScheme:
 		init, err := validateMiniAppInitData(data, a.botToken, time.Now(), miniAppAuthMaxAge)
 		if err != nil {
-			slog.WarnContext(ctx, "mini app auth rejected: init data invalid", "error", err)
+			slog.WarnContext(ctx, "mini app auth rejected: init data invalid",
+				"error", err, "remote_addr", ClientIP(r), "method", r.Method, "path", r.URL.Path,
+				"user_agent", r.UserAgent(), "init_data_len", len(data))
 			return authdomain.AuthUser{}, &viewerError{http.StatusUnauthorized, "Не удалось подтвердить вход. Откройте приложение заново."}
 		}
 		user, err := a.authSvc.AuthenticateTelegram(ctx, init.ID, strings.TrimSpace(init.Username))
 		if err != nil {
 			if errors.Is(err, authuc.ErrAuthUserNotFound) {
 				slog.WarnContext(ctx, "mini app auth rejected: user not found",
-					"telegram_id", init.ID, "telegram_username", init.Username)
+					"telegram_id", init.ID, "telegram_username", init.Username,
+					"remote_addr", ClientIP(r), "method", r.Method, "path", r.URL.Path)
 				return authdomain.AuthUser{}, &viewerError{http.StatusForbidden, "Пользователь не найден."}
 			}
 			slog.ErrorContext(ctx, "mini app user lookup failed",
@@ -161,13 +164,17 @@ func (a *Authenticator) resolveUser(ctx context.Context, r *http.Request) (authd
 	case "bearer":
 		claims, err := authtoken.Parse(a.botToken, data, time.Now())
 		if err != nil {
-			slog.WarnContext(ctx, "bearer auth rejected", "error", err)
+			slog.WarnContext(ctx, "bearer auth rejected",
+				"error", err, "remote_addr", ClientIP(r), "method", r.Method, "path", r.URL.Path,
+				"user_agent", r.UserAgent())
 			return authdomain.AuthUser{}, &viewerError{http.StatusUnauthorized, "Сессия истекла. Войдите заново."}
 		}
 		return a.lookupUser(ctx, func() (authdomain.AuthUser, error) {
 			return a.authSvc.GetUserByID(ctx, claims.UserID)
 		})
 	default:
+		slog.WarnContext(ctx, "auth rejected: unsupported authorization scheme",
+			"scheme", scheme, "remote_addr", ClientIP(r), "method", r.Method, "path", r.URL.Path)
 		return authdomain.AuthUser{}, &viewerError{http.StatusUnauthorized, "Неподдерживаемый способ авторизации."}
 	}
 }
@@ -242,6 +249,18 @@ func TelegramUsernameOf(u authdomain.AuthUser) string {
 		return strings.TrimSpace(*u.TelegramUsername)
 	}
 	return ""
+}
+
+// ClientIP returns the caller's address, preferring the proxy-set
+// X-Forwarded-For header (first hop) over the socket address.
+func ClientIP(r *http.Request) string {
+	if xff := strings.TrimSpace(r.Header.Get("X-Forwarded-For")); xff != "" {
+		if i := strings.IndexByte(xff, ','); i >= 0 {
+			return strings.TrimSpace(xff[:i])
+		}
+		return xff
+	}
+	return r.RemoteAddr
 }
 
 func authorizationCredentials(header string) (string, string, bool) {
