@@ -46,18 +46,27 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	var req contract.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		slog.WarnContext(r.Context(), "web login rejected: bad request body",
+			"error", err, "remote_addr", httpx.ClientIP(r), "user_agent", r.UserAgent(),
+			"content_type", r.Header.Get("Content-Type"), "content_length", r.ContentLength)
 		httpx.WriteError(w, http.StatusBadRequest, "Некорректные данные входа.")
 		return
 	}
 	req.Username = strings.TrimSpace(req.Username)
 	if req.Username == "" || req.Password == "" {
+		slog.WarnContext(r.Context(), "web login rejected: missing credentials",
+			"username", req.Username, "password_empty", req.Password == "",
+			"remote_addr", httpx.ClientIP(r), "user_agent", r.UserAgent())
 		httpx.WriteError(w, http.StatusBadRequest, "Укажите логин и пароль.")
 		return
 	}
 
 	user, err := h.authSvc.VerifyPassword(r.Context(), req.Username, req.Password)
 	if err != nil {
-		slog.WarnContext(r.Context(), "web login rejected", "username", req.Username, "error", err)
+		slog.WarnContext(r.Context(), "web login rejected",
+			"username", req.Username, "error", err, "password_len", len(req.Password),
+			"has_init_data", strings.TrimSpace(req.InitData) != "",
+			"remote_addr", httpx.ClientIP(r), "user_agent", r.UserAgent())
 		httpx.WriteError(w, http.StatusUnauthorized, "Неверный логин или пароль.")
 		return
 	}

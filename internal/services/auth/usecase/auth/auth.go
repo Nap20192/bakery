@@ -119,8 +119,11 @@ func (s *Service) VerifyPassword(ctx context.Context, username, password string)
 		}
 		return accessdomain.AuthUser{}, fmt.Errorf("get auth user: %w", err)
 	}
-	if passwordHash == "" || !verifyPassword(password, passwordHash) {
-		return accessdomain.AuthUser{}, fmt.Errorf("invalid credentials")
+	if passwordHash == "" {
+		return accessdomain.AuthUser{}, fmt.Errorf("password is not set for user %d (%s)", user.ID, user.Role)
+	}
+	if !verifyPassword(password, passwordHash) {
+		return accessdomain.AuthUser{}, fmt.Errorf("password mismatch for user %d (%s)", user.ID, user.Role)
 	}
 	return user, nil
 }
