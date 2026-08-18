@@ -247,6 +247,9 @@
     if (!telegram) return;
     telegram.ready();
     telegram.expand();
+    // Swiping down over a scrolled table otherwise drags/collapses the mini app
+    // window instead of scrolling the table (Bot API 7.7+).
+    telegram.disableVerticalSwipes?.();
     telegram.setHeaderColor?.('#f4f3ee');
     telegram.setBackgroundColor?.('#f4f3ee');
     const login = document.querySelector('[data-telegram-login]');

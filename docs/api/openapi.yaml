@@ -758,7 +758,7 @@ components:
       type: apiKey
       in: header
       name: Authorization
-      description: '`tma <initData>` — Telegram Mini App initData, validated per request (24h max age).'
+      description: '`tma <initData>` — Telegram Mini App initData, validated per request (24h max age). The user is resolved strictly by `telegram_id`; accounts without a bound id use the `POST /login` fallback.'
 
   parameters:
     OrderNumber:

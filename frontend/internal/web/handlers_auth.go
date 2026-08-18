@@ -78,6 +78,13 @@ func (s *server) telegramLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) logout(w http.ResponseWriter, r *http.Request) {
+	// Mini App sessions cannot log out: the identity comes from Telegram, the
+	// next request would auto-login again anyway. The UI hides the button; this
+	// guards direct POSTs.
+	if isMiniAppSession(r) {
+		s.redirect(w, r, "/me")
+		return
+	}
 	s.logger.Info("logout", "user", orAnon(sessionUsername(r)))
 	s.clearSession(w, r)
 	s.redirect(w, r, "/login")

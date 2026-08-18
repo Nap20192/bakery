@@ -189,7 +189,13 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 /* Pairs the view-switch with the date nav, and the category tabs with whatever
    sits opposite them — one line each instead of four stacked, full-width rows. */
 .page-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
-.matrix-scroll, .summary-scroll, .journal-scroll, .item-table-wrap { overflow: auto; overscroll-behavior-inline: contain; }
+.matrix-scroll, .summary-scroll, .journal-scroll, .item-table-wrap { overflow: auto; overscroll-behavior: contain; }
+/* Bounded height makes the wide tables their own two-axis scroll region, so the
+   sticky header/axis/totals actually stick: with an unbounded wrapper vertical
+   scrolling happens on the page and thead rides out of view. Inside the
+   Telegram Mini App 100dvh can exceed the visible area, so prefer the stable
+   viewport height its script publishes; min() ignores the var elsewhere. */
+.matrix-scroll, .summary-scroll, .journal-scroll { max-height: calc(min(100dvh, var(--tg-viewport-stable-height, 100dvh)) - 48px); }
 /* Fade on the right edge of a table that can still be dragged sideways. It has
    to overlay the scroller from outside: table cells are opaque and would paint
    over any background or inset shadow set on the scroller itself. */
@@ -314,6 +320,11 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .summary-table th, .summary-table td { min-width: 126px; }
 .journal-table thead th, .summary-table thead th { position: sticky; z-index: 20; top: 0; background: var(--paper-deep); text-align: center; }
 .journal-table .journal-axis, .summary-table .summary-axis { position: sticky; z-index: 30; left: 0; background: var(--paper); text-align: left; }
+/* Cells sliding under the sticky axis read as clipped text without a depth cue. */
+.journal-table .journal-axis, .summary-table .summary-axis, .order-matrix .matrix-axis { box-shadow: 6px 0 8px -6px rgba(20, 20, 19, 0.25); }
+/* Corner cell (sticky both ways) must beat the body axis, which shares z-index
+   30 and comes later in the DOM — otherwise rows slide over the header corner. */
+.journal-table thead .journal-axis, .summary-table thead .summary-axis, .order-matrix thead .matrix-axis { z-index: 40; }
 .journal-table .journal-axis { width: 84px; }
 .summary-table .summary-axis { min-width: 150px; max-width: 190px; }
 .sheet-link { display: grid; gap: 8px; margin-bottom: 8px; padding: 12px; border: 0; border-radius: var(--radius-surface); color: var(--ink); text-decoration: none; }
@@ -463,6 +474,8 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .available-row { grid-template-columns: minmax(180px, 1fr) 1fr; }
   /* Tablet: shrink the day-label column so more days fit before it scrolls. */
   .order-matrix .matrix-axis { width: 78px; }
+  /* The fixed bottom bar overlaps the page, so the scroll region stops above it. */
+  .matrix-scroll, .summary-scroll, .journal-scroll { max-height: calc(min(100dvh, var(--tg-viewport-stable-height, 100dvh)) - var(--bottom-bar) - env(safe-area-inset-bottom) - 8px); }
 }
 
 @media (max-width: 640px) {
@@ -487,6 +500,8 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .window-nav span { align-self: center; font-size: 0.7rem; }
   .order-matrix { min-width: 400px; }
   .order-matrix .matrix-axis { width: 60px; }
+  /* Phone: empty days collapse instead of eating a screen of blank cells. */
+  .matrix-cell { min-height: 56px; }
   .matrix-cell .order-card-title { overflow-wrap: normal; word-break: normal; }
   .matrix-cell .order-card-meta, .matrix-cell .order-preview-action { font-size: 0.68rem; }
   .shop-order-list { grid-template-columns: 1fr; }

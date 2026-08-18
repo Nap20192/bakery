@@ -148,7 +148,9 @@ func (a *Authenticator) resolveUser(ctx context.Context, r *http.Request) (authd
 				"user_agent", r.UserAgent(), "init_data_len", len(data))
 			return authdomain.AuthUser{}, &viewerError{http.StatusUnauthorized, "Не удалось подтвердить вход. Откройте приложение заново."}
 		}
-		user, err := a.authSvc.AuthenticateTelegram(ctx, init.ID, strings.TrimSpace(init.Username))
+		// Strictly telegram_id: the username is mutable and user-controlled, so
+		// it never authenticates. Unbound accounts bind via the /login fallback.
+		user, err := a.authSvc.GetUserByTelegramID(ctx, init.ID)
 		if err != nil {
 			if errors.Is(err, authuc.ErrAuthUserNotFound) {
 				slog.WarnContext(ctx, "mini app auth rejected: user not found",

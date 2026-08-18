@@ -44,6 +44,7 @@ type page struct {
 	CSRF        string
 	Error       string
 	Success     string
+	MiniApp     bool
 	Data        any
 }
 
@@ -153,6 +154,7 @@ func (s *server) render(w http.ResponseWriter, r *http.Request, status int, valu
 	value.CurrentPath = r.URL.Path
 	value.Today = time.Now().Format(time.DateOnly)
 	value.CSRF = s.ensureCSRF(w, r)
+	value.MiniApp = isMiniAppSession(r)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Vary", "HX-Request")
 	w.WriteHeader(status)
@@ -338,6 +340,13 @@ func (s *server) clearSession(w http.ResponseWriter, r *http.Request) {
 func credentials(r *http.Request) application.Credentials {
 	_, cred := parseSession(r)
 	return cred
+}
+
+// isMiniAppSession reports whether the session carries Telegram initData
+// credentials. Such sessions have no logout: the identity comes from Telegram
+// itself and the next request would auto-login again.
+func isMiniAppSession(r *http.Request) bool {
+	return strings.HasPrefix(string(credentials(r)), "tma ")
 }
 
 // sessionUsername returns the login stored in the session cookie, or "" for
