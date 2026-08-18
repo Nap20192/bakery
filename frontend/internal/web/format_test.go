@@ -32,6 +32,26 @@ func TestFormatQuantityRoundsToThreeDecimals(t *testing.T) {
 	}
 }
 
+func TestFormatQuantity3KeepsFixedDecimals(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		value float64
+		want  string
+	}{
+		{0.3, "0.300"},
+		{0.1, "0.100"},
+		{6.7381234, "6.738"},
+		{11.1, "11.100"},
+		{0, "0.000"},
+		{1.3333333333333333, "1.333"},
+	}
+	for _, test := range tests {
+		if got := formatQuantity3(test.value); got != test.want {
+			t.Errorf("formatQuantity3(%v) = %q, want %q", test.value, got, test.want)
+		}
+	}
+}
+
 func TestActivePathSeparatesNewOrderFromOrders(t *testing.T) {
 	t.Parallel()
 	if activePath("/orders/new", "/orders") {
