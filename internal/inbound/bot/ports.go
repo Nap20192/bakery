@@ -16,7 +16,7 @@ import (
 // AuthBackend is the slice of the auth service the bot uses.
 type AuthBackend interface {
 	VerifyPassword(ctx context.Context, username, password string) (accessdomain.AuthUser, error)
-	AuthenticateTelegram(ctx context.Context, telegramID int64, telegramUsername string) (accessdomain.AuthUser, error)
+	BindTelegram(ctx context.Context, userID, telegramID int64) (accessdomain.AuthUser, error)
 	GetUserByTelegramID(ctx context.Context, telegramID int64) (accessdomain.AuthUser, error)
 	GetUserByTelegramUsername(ctx context.Context, telegramUsername string) (accessdomain.AuthUser, error)
 	ListUsersByRole(ctx context.Context, role string) ([]accessdomain.AuthUser, error)

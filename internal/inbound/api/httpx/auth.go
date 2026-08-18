@@ -143,9 +143,8 @@ func (a *Authenticator) resolveUser(ctx context.Context, r *http.Request) (authd
 	case miniAppAuthorizationScheme:
 		init, err := validateMiniAppInitData(data, a.botToken, time.Now(), miniAppAuthMaxAge)
 		if err != nil {
-			slog.WarnContext(ctx, "mini app auth rejected: init data invalid",
-				"error", err, "remote_addr", ClientIP(r), "method", r.Method, "path", r.URL.Path,
-				"user_agent", r.UserAgent(), "init_data_len", len(data))
+			slog.WarnContext(ctx, "mini app auth rejected",
+				"reason", "init_data_invalid", "error", err, "remote_addr", ClientIP(r), "path", r.URL.Path)
 			return authdomain.AuthUser{}, &viewerError{http.StatusUnauthorized, "Не удалось подтвердить вход. Откройте приложение заново."}
 		}
 		// Strictly telegram_id: the username is mutable and user-controlled, so
@@ -153,9 +152,9 @@ func (a *Authenticator) resolveUser(ctx context.Context, r *http.Request) (authd
 		user, err := a.authSvc.GetUserByTelegramID(ctx, init.ID)
 		if err != nil {
 			if errors.Is(err, authuc.ErrAuthUserNotFound) {
-				slog.WarnContext(ctx, "mini app auth rejected: user not found",
-					"telegram_id", init.ID, "telegram_username", init.Username,
-					"remote_addr", ClientIP(r), "method", r.Method, "path", r.URL.Path)
+				slog.WarnContext(ctx, "mini app auth rejected",
+					"reason", "telegram_id_not_bound", "telegram_id", init.ID,
+					"telegram_username", init.Username, "remote_addr", ClientIP(r), "path", r.URL.Path)
 				return authdomain.AuthUser{}, &viewerError{http.StatusForbidden, "Пользователь не найден."}
 			}
 			slog.ErrorContext(ctx, "mini app user lookup failed",
@@ -167,8 +166,7 @@ func (a *Authenticator) resolveUser(ctx context.Context, r *http.Request) (authd
 		claims, err := authtoken.Parse(a.botToken, data, time.Now())
 		if err != nil {
 			slog.WarnContext(ctx, "bearer auth rejected",
-				"error", err, "remote_addr", ClientIP(r), "method", r.Method, "path", r.URL.Path,
-				"user_agent", r.UserAgent())
+				"reason", "token_invalid_or_expired", "error", err, "remote_addr", ClientIP(r), "path", r.URL.Path)
 			return authdomain.AuthUser{}, &viewerError{http.StatusUnauthorized, "Сессия истекла. Войдите заново."}
 		}
 		return a.lookupUser(ctx, func() (authdomain.AuthUser, error) {

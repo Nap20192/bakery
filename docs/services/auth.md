@@ -10,10 +10,12 @@ binding, web sessions, and role management.
 - Password verification for web login; HMAC session tokens.
 - Telegram authentication: Mini App requests resolve the user **strictly by
   `telegram_id`** (`GetUserByTelegramID`) — the username is mutable and
-  user-controlled, so it never authenticates. Binding a `telegram_id` to the
-  account whose `telegram_username` matches (`AuthenticateTelegram`) is used
-  **only** by the bot's `/start` flow; the Mini App binds via the `/login`
-  password fallback instead.
+  user-controlled, so it never authenticates. Binding always goes through
+  `BindTelegram(userID, telegramID)` after a **password check proved
+  ownership**: the Mini App via the `/login` fallback, the bot via its
+  `/start` gate. The bot's gate: if the sender's Telegram username matches an
+  account it asks only that account's password; otherwise it asks login +
+  password — the username match merely picks the login to verify.
 - Admin bootstrap: the worker calls `EnsureAdminUser(ADMIN_USERNAME,
   ADMIN_PASSWORD)` on startup — creates the admin if missing, otherwise
   leaves the record untouched.
@@ -84,14 +86,11 @@ user CRUD-ish operations (`CreateUserWithPassword`, `SetPassword`,
 `SetUserRole`, `SetUsername`, `AssignUserDepartment`, `DeleteUser`), lookups
 (`GetUserByID/TelegramID/TelegramUsername`, `ListUsers`, `ListUsersByRole`,
 `ListUsersByDepartmentID`), and auth flows (`VerifyPassword`,
-`AuthenticateTelegram`, `EnsureAdminUser`).
-
-`authuc.UseCase` also exposes `BindTelegram(userID, telegramID)` — a direct
-bind used by the `/login` fallback after a successful password check.
+`EnsureAdminUser`, `BindTelegram(userID, telegramID)` — the only way a
+`telegram_id` gets bound, always after a successful password check).
 
 `authuc.Repository` mirrors these over the `users` table and additionally
-exposes `BindTelegramID` — called when a Telegram user first talks to the bot
-and their username matches an account, and by `BindTelegram`.
+exposes `BindTelegramID`, called by `BindTelegram`.
 
 ## Errors
 
@@ -99,4 +98,4 @@ and their username matches an account, and by `BindTelegram`.
 |---|---|
 | `auth.user_not_found` | Lookup miss; mapped to 403 «Пользователь не найден.» by the auth middleware (a valid Telegram login without a provisioned account). |
 | `auth.invalid_role` | Role outside the enum. |
-| plain `invalid credentials` | Wrong password — deliberately not an apperr so it can't leak a distinct status. |
+| `ErrPasswordNotSet` / `ErrPasswordMismatch` | Login-failure sentinels — deliberately not apperrs so they can't leak a distinct status. The login handler logs the exact reason (`user_not_found` / `password_not_set` / `password_mismatch`) and always answers the generic 401. |
