@@ -616,9 +616,10 @@
     });
   }
 
+  // Fixed three decimals: scale weights are read against 1-gram precision, so
+  // 0.3 must render as 0.300 (matches the server-side formatQty3).
   function formatMonitorQty(value) {
-    const rounded = Math.round(value * 1000) / 1000;
-    return Number.isInteger(rounded) ? String(rounded) : String(rounded).replace(/0+$/, '').replace(/\.$/, '');
+    return (Math.round(value * 1000) / 1000).toFixed(3);
   }
 
   function showToast(message) {

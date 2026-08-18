@@ -72,6 +72,13 @@ func formatQuantity(value any) string {
 	return strconv.FormatFloat(rounded, 'f', -1, 64)
 }
 
+// formatQuantity3 renders ingredient weights with fixed three decimals
+// (0.3 → «0.300»): the dough scale is read to the gram, so trailing zeros
+// carry meaning. Order/production piece counts keep formatQuantity.
+func formatQuantity3(value float64) string {
+	return strconv.FormatFloat(math.Round(value*1000)/1000, 'f', 3, 64)
+}
+
 func inputQuantity(value float64) string {
 	if math.Abs(value) < 0.000001 {
 		return ""
