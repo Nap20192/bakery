@@ -39,7 +39,8 @@ func (s *server) login(w http.ResponseWriter, r *http.Request) {
 	}
 	session, err := s.commands.Login(r.Context(), username, password, strings.TrimSpace(r.FormValue("init_data")))
 	if err != nil {
-		s.logger.Warn("login failed", "user", username, "error", err)
+		// Not logged here: the worker already logs the exact mismatch reason,
+		// and the frontend access log records the 401.
 		s.render(w, r, statusOr(err, http.StatusUnauthorized), page{
 			Title: "Вход",
 			View:  "login",
@@ -67,7 +68,8 @@ func (s *server) telegramLogin(w http.ResponseWriter, r *http.Request) {
 	cred := application.Credentials("tma " + initData)
 	viewer, err := s.queries.Me(r.Context(), cred)
 	if err != nil {
-		s.logger.Warn("telegram login failed", "error", err)
+		// Not logged here: the worker middleware already logs the reason
+		// (init_data_invalid / telegram_id_not_bound).
 		http.Error(w, application.MessageOf(err, "Telegram не подтвердил вход."), statusOr(err, http.StatusUnauthorized))
 		return
 	}

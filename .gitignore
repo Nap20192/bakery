@@ -37,3 +37,4 @@ skills-lock.json
 .playwright-cli/
 .playwright-mcp/
 output/playwright/
+internal/outbound/iiko/testdata/results/

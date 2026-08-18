@@ -29,6 +29,11 @@ var (
 	ErrInvalidRole           = apperr.Invalid("auth.invalid_role", "Недопустимая роль.")
 	ErrUsernameTaken         = apperr.Conflict("auth.username_taken", "Логин уже занят.")
 	ErrTelegramUsernameTaken = apperr.Conflict("auth.telegram_username_taken", "Telegram username уже занят.")
+
+	// Login-failure sentinels: logged as the failure reason, never shown to the
+	// user — the login endpoint always answers a generic 401 (no enumeration).
+	ErrPasswordNotSet   = errors.New("password not set")
+	ErrPasswordMismatch = errors.New("password mismatch")
 )
 
 // Service is the auth use-case implementation. It depends only on the
@@ -120,30 +125,12 @@ func (s *Service) VerifyPassword(ctx context.Context, username, password string)
 		return accessdomain.AuthUser{}, fmt.Errorf("get auth user: %w", err)
 	}
 	if passwordHash == "" {
-		return accessdomain.AuthUser{}, fmt.Errorf("password is not set for user %d (%s)", user.ID, user.Role)
+		return accessdomain.AuthUser{}, ErrPasswordNotSet
 	}
 	if !verifyPassword(password, passwordHash) {
-		return accessdomain.AuthUser{}, fmt.Errorf("password mismatch for user %d (%s)", user.ID, user.Role)
+		return accessdomain.AuthUser{}, ErrPasswordMismatch
 	}
 	return user, nil
-}
-
-func (s *Service) AuthenticateTelegram(ctx context.Context, telegramID int64, telegramUsername string) (accessdomain.AuthUser, error) {
-	if telegramID > 0 {
-		account, err := s.repo.GetByTelegramID(ctx, telegramID)
-		if err == nil {
-			return account, nil
-		}
-		if !errors.Is(err, ErrAuthUserNotFound) {
-			return accessdomain.AuthUser{}, err
-		}
-	}
-
-	account, err := s.repo.GetByTelegramUsername(ctx, strings.TrimSpace(telegramUsername))
-	if err != nil {
-		return accessdomain.AuthUser{}, err
-	}
-	return s.repo.BindTelegramID(ctx, account.ID, telegramID)
 }
 
 func (s *Service) BindTelegram(ctx context.Context, userID, telegramID int64) (accessdomain.AuthUser, error) {

@@ -4,6 +4,7 @@ package authhttp
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -46,27 +47,25 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	var req contract.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		slog.WarnContext(r.Context(), "web login rejected: bad request body",
-			"error", err, "remote_addr", httpx.ClientIP(r), "user_agent", r.UserAgent(),
-			"content_type", r.Header.Get("Content-Type"), "content_length", r.ContentLength)
+		slog.WarnContext(r.Context(), "web login rejected",
+			"reason", "bad_request_body", "error", err, "remote_addr", httpx.ClientIP(r))
 		httpx.WriteError(w, http.StatusBadRequest, "Некорректные данные входа.")
 		return
 	}
 	req.Username = strings.TrimSpace(req.Username)
 	if req.Username == "" || req.Password == "" {
-		slog.WarnContext(r.Context(), "web login rejected: missing credentials",
-			"username", req.Username, "password_empty", req.Password == "",
-			"remote_addr", httpx.ClientIP(r), "user_agent", r.UserAgent())
+		slog.WarnContext(r.Context(), "web login rejected",
+			"reason", "missing_credentials", "username", req.Username, "remote_addr", httpx.ClientIP(r))
 		httpx.WriteError(w, http.StatusBadRequest, "Укажите логин и пароль.")
 		return
 	}
 
 	user, err := h.authSvc.VerifyPassword(r.Context(), req.Username, req.Password)
 	if err != nil {
+		// The reason says exactly what didn't match; the response stays a
+		// generic 401 so logins can't be enumerated.
 		slog.WarnContext(r.Context(), "web login rejected",
-			"username", req.Username, "error", err, "password_len", len(req.Password),
-			"has_init_data", strings.TrimSpace(req.InitData) != "",
-			"remote_addr", httpx.ClientIP(r), "user_agent", r.UserAgent())
+			"reason", loginFailureReason(err), "username", req.Username, "remote_addr", httpx.ClientIP(r))
 		httpx.WriteError(w, http.StatusUnauthorized, "Неверный логин или пароль.")
 		return
 	}
@@ -95,6 +94,20 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		Token:     token,
 		ExpiresAt: time.Now().Add(webSessionTTL).Unix(),
 	})
+}
+
+// loginFailureReason names what exactly didn't match for the logs.
+func loginFailureReason(err error) string {
+	switch {
+	case errors.Is(err, authuc.ErrAuthUserNotFound):
+		return "user_not_found"
+	case errors.Is(err, authuc.ErrPasswordNotSet):
+		return "password_not_set"
+	case errors.Is(err, authuc.ErrPasswordMismatch):
+		return "password_mismatch"
+	default:
+		return err.Error()
+	}
 }
 
 func (h *Handler) handleMe(w http.ResponseWriter, r *http.Request) {

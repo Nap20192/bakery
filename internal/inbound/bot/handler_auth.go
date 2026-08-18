@@ -27,48 +27,63 @@ func (b *OrderBot) handleStart(c tele.Context) error {
 	}
 
 	b.resetSession(sender.ID)
-	username := strings.TrimSpace(sender.Username)
-	if username == "" {
-		return sendText(c, "Добавьте username в настройках Telegram и нажмите /start.")
+	// Shortcut: the Telegram username matches a provisioned account — ask only
+	// for its password. The match merely picks the login to verify; it never
+	// authenticates by itself.
+	if username := strings.TrimSpace(sender.Username); username != "" {
+		if user, err := b.authSvc.GetUserByTelegramUsername(ctx, username); err == nil {
+			b.updateSession(sender.ID, func(s *session) {
+				s.awaitingPassword = true
+				s.username = user.Username
+			})
+			return sendText(c, "Введите пароль:")
+		}
 	}
-	user, err := b.authSvc.GetUserByTelegramUsername(ctx, username)
-	if err != nil {
-		return sendText(c, "Вы не зарегистрированы. Обратитесь к администратору.")
-	}
-
-	b.updateSession(sender.ID, func(s *session) {
-		s.awaitingPassword = true
-		s.username = user.Username
-	})
-	return sendText(c, "Введите пароль:")
+	// No or unmatched Telegram username — fall back to a full login+password
+	// gate instead of a dead end.
+	b.updateSession(sender.ID, func(s *session) { s.awaitingLogin = true })
+	return sendText(c, "Введите логин:")
 }
 
-// handleText treats free text as the password when the user is in the gate.
+// handleText drives the /start gate: first message is the login (when asked),
+// the next one is the password.
 func (b *OrderBot) handleText(c tele.Context) error {
 	sender := c.Sender()
 	if sender == nil {
 		return nil
 	}
 	sess := b.getSession(sender.ID)
-	if !sess.awaitingPassword {
+	ctx := requestContext(c)
+	text := strings.TrimSpace(c.Text())
+
+	switch {
+	case sess.awaitingLogin:
+		if text == "" {
+			return sendText(c, "Введите логин:")
+		}
+		b.updateSession(sender.ID, func(s *session) {
+			s.awaitingLogin = false
+			s.awaitingPassword = true
+			s.username = text
+		})
+		return sendText(c, "Введите пароль:")
+	case sess.awaitingPassword:
+		user, err := b.authSvc.VerifyPassword(ctx, sess.username, text)
+		if err != nil {
+			return sendText(c, "Неверный логин или пароль. Попробуйте ещё раз или нажмите /start.")
+		}
+		// Bind this Telegram account to the record that just proved the
+		// password — that is the authorization for the bot and the mini app.
+		if bound, err := b.authSvc.BindTelegram(ctx, user.ID, sender.ID); err != nil {
+			slog.WarnContext(ctx, "bind telegram after password failed", "user_id", user.ID, "telegram_id", sender.ID, "error", err)
+		} else {
+			user = bound
+		}
+		b.resetSession(sender.ID)
+		return b.sendUserInfo(c, user)
+	default:
 		return sendText(c, "Нажмите /start, чтобы войти.")
 	}
-
-	ctx := requestContext(c)
-	password := strings.TrimSpace(c.Text())
-	user, err := b.authSvc.VerifyPassword(ctx, sess.username, password)
-	if err != nil {
-		return sendText(c, "Неверный пароль. Попробуйте ещё раз или нажмите /start.")
-	}
-
-	// Bind the Telegram account to the user record — this is the authorization.
-	if bound, err := b.authSvc.AuthenticateTelegram(ctx, sender.ID, sender.Username); err != nil {
-		slog.WarnContext(ctx, "bind telegram after password failed", "error", err)
-	} else {
-		user = bound
-	}
-	b.resetSession(sender.ID)
-	return b.sendUserInfo(c, user)
 }
 
 // sendUserInfo sends the account info with an inline button that opens the mini

@@ -8,17 +8,13 @@ import (
 	accessdomain "bakery/internal/services/auth/domain"
 )
 
-func TestServiceAuthenticateTelegramBindsByTelegramUsername(t *testing.T) {
-	repo := &fakeAuthRepo{
-		byTelegramUsername: map[string]accessdomain.AuthUser{
-			"shop_user": {ID: 7, Username: "shop", TelegramUsername: strPtr("shop_user")},
-		},
-	}
+func TestServiceBindTelegramBindsTheGivenUser(t *testing.T) {
+	repo := &fakeAuthRepo{}
 	svc := NewService(repo)
 
-	user, err := svc.AuthenticateTelegram(context.Background(), 123456789, "shop_user")
+	user, err := svc.BindTelegram(context.Background(), 7, 123456789)
 	if err != nil {
-		t.Fatalf("AuthenticateTelegram returned error: %v", err)
+		t.Fatalf("BindTelegram returned error: %v", err)
 	}
 	if user.TelegramID == nil || *user.TelegramID != 123456789 {
 		t.Fatalf("telegram id = %#v, want 123456789", user.TelegramID)
@@ -28,20 +24,9 @@ func TestServiceAuthenticateTelegramBindsByTelegramUsername(t *testing.T) {
 	}
 }
 
-func TestServiceAuthenticateTelegramUsesBoundIDFirst(t *testing.T) {
-	telegramID := int64(123456789)
-	existing := accessdomain.AuthUser{ID: 8, Username: "shop", TelegramID: &telegramID, TelegramUsername: strPtr("old_name")}
-	repo := &fakeAuthRepo{byTelegramID: existing}
-
-	user, err := NewService(repo).AuthenticateTelegram(context.Background(), telegramID, "new_name")
-	if err != nil {
-		t.Fatalf("AuthenticateTelegram returned error: %v", err)
-	}
-	if user.ID != existing.ID {
-		t.Fatalf("user id = %d, want %d", user.ID, existing.ID)
-	}
-	if repo.boundUserID != 0 {
-		t.Fatalf("bound user id = %d, want 0", repo.boundUserID)
+func TestServiceBindTelegramRejectsMissingID(t *testing.T) {
+	if _, err := NewService(&fakeAuthRepo{}).BindTelegram(context.Background(), 7, 0); err == nil {
+		t.Fatal("BindTelegram(0) must fail")
 	}
 }
 

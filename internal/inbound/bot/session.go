@@ -10,9 +10,10 @@ const (
 	cleanupInterval = time.Hour     // проверяем каждый час
 )
 
-// session tracks the /start password gate: when awaitingPassword is set the
-// next text message from the user is treated as the password for `username`.
+// session tracks the /start gate: awaitingLogin means the next text message is
+// the login; awaitingPassword means it is the password for `username`.
 type session struct {
+	awaitingLogin    bool
 	awaitingPassword bool
 	username         string
 	updatedAt        time.Time
