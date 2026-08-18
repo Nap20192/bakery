@@ -652,6 +652,65 @@ func TestE2ELogoutClearsSession(t *testing.T) {
 	}
 }
 
+func TestE2EPasswordFallbackInMiniAppSetsTmaSession(t *testing.T) {
+	t.Parallel()
+	back := shopBackend()
+	back.viewers["tma bound-init-data"] = contract.Me{Role: "shop", TelegramUsername: "shopuser", DepartmentID: 1, DepartmentType: "shop"}
+	srv, client := newE2E(t, back)
+
+	resp, err := client.PostForm(srv.URL+"/session/login", url.Values{
+		"username": {"shopuser"}, "password": {"secret"}, "init_data": {"bound-init-data"}, "next": {"/orders"},
+	})
+	if err != nil {
+		t.Fatalf("login: %v", err)
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("login status = %d, want 303", resp.StatusCode)
+	}
+
+	// The session must run on tma credentials, not the bearer token: logout is
+	// refused exactly for tma sessions.
+	warm, _ := client.Get(srv.URL + "/orders")
+	_ = warm.Body.Close()
+	form := url.Values{"_csrf": {csrfToken(t, client, srv.URL)}}
+	resp, err = client.PostForm(srv.URL+"/session/logout", form)
+	if err != nil {
+		t.Fatalf("logout: %v", err)
+	}
+	_ = resp.Body.Close()
+	if resp.Header.Get("Location") != "/me" {
+		t.Fatalf("logout redirect = %q, want /me (tma session)", resp.Header.Get("Location"))
+	}
+}
+
+func TestE2EPasswordFallbackWithUnboundTelegramFailsWithoutBearerBypass(t *testing.T) {
+	t.Parallel()
+	// Password is right, but the tma credential resolves no user (bind did not
+	// take effect) — the login must fail instead of falling back to a bearer
+	// session inside the mini app.
+	srv, client := newE2E(t, shopBackend())
+
+	resp, err := client.PostForm(srv.URL+"/session/login", url.Values{
+		"username": {"shopuser"}, "password": {"secret"}, "init_data": {"unbound-init-data"}, "next": {"/orders"},
+	})
+	if err != nil {
+		t.Fatalf("login: %v", err)
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode == http.StatusSeeOther {
+		t.Fatal("login succeeded, want failure page without a session")
+	}
+	after, err := client.Get(srv.URL + "/orders")
+	if err != nil {
+		t.Fatalf("get /orders: %v", err)
+	}
+	_ = after.Body.Close()
+	if after.StatusCode == http.StatusOK {
+		t.Fatal("bearer session leaked into the mini app flow")
+	}
+}
+
 func TestE2EMiniAppSessionCannotLogout(t *testing.T) {
 	t.Parallel()
 	back := shopBackend()

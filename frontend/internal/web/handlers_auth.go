@@ -37,7 +37,8 @@ func (s *server) login(w http.ResponseWriter, r *http.Request) {
 		s.render(w, r, http.StatusUnprocessableEntity, page{Title: "Вход", View: "login", Error: "Введите логин и пароль.", Data: loginData{Next: next}})
 		return
 	}
-	session, err := s.commands.Login(r.Context(), username, password, strings.TrimSpace(r.FormValue("init_data")))
+	initData := strings.TrimSpace(r.FormValue("init_data"))
+	session, err := s.commands.Login(r.Context(), username, password, initData)
 	if err != nil {
 		// Not logged here: the worker already logs the exact mismatch reason,
 		// and the frontend access log records the 401.
@@ -47,6 +48,27 @@ func (s *server) login(w http.ResponseWriter, r *http.Request) {
 			Error: application.MessageOf(err, "Не удалось войти. Попробуйте ещё раз."),
 			Data:  loginData{Next: next},
 		})
+		return
+	}
+	// Mini App (init_data present): the session must run on Telegram initData —
+	// every request is then authorized by telegram_id only, never by the bearer
+	// token. Verify the bind actually took effect before trusting it.
+	if initData != "" {
+		cred := application.Credentials("tma " + initData)
+		if _, err := s.queries.Me(r.Context(), cred); err != nil {
+			// Password was right but this Telegram is not bound to the account
+			// (e.g. its id is already bound elsewhere) — no bearer bypass.
+			s.render(w, r, statusOr(err, http.StatusForbidden), page{
+				Title: "Вход",
+				View:  "login",
+				Error: "Не удалось привязать Telegram к этой учётке. Обратитесь к администратору.",
+				Data:  loginData{Next: next},
+			})
+			return
+		}
+		s.setSession(w, r, username, cred, time.Now().Add(24*time.Hour))
+		s.logger.Info("login", "user", username, "via", "telegram")
+		s.redirect(w, r, next)
 		return
 	}
 	expires := time.Unix(session.ExpiresAt, 0)
