@@ -18,7 +18,8 @@ type UseCase interface {
 	EnsureAdminUser(ctx context.Context, username, password string) (accessdomain.AuthUser, bool, error)
 	VerifyPassword(ctx context.Context, username, password string) (accessdomain.AuthUser, error)
 	// AuthenticateTelegram binds the given telegram_id to the account whose
-	// telegram_username matches.
+	// telegram_username matches. Bot /start only — Mini App requests resolve
+	// strictly by telegram_id (GetUserByTelegramID); username never authenticates.
 	AuthenticateTelegram(ctx context.Context, telegramID int64, telegramUsername string) (accessdomain.AuthUser, error)
 	// BindTelegram binds telegram_id to a known account directly — used by the
 	// /login fallback after the password proved ownership.

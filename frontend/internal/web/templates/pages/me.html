@@ -13,6 +13,6 @@
     <div><dt>Telegram</dt><dd>{{if .Viewer.TelegramUsername}}@{{.Viewer.TelegramUsername}}{{else}}Не привязан{{end}}</dd></div>
     <div><dt>Подразделение</dt><dd>{{if .Viewer.DepartmentName}}{{.Viewer.DepartmentName}}{{else}}Не назначено{{end}}</dd></div>
   </dl>
-  <form action="/session/logout" method="post">{{template "csrf" .CSRF}}<button class="button button-danger" type="submit">Выйти</button></form>
+  {{if .MiniApp}}<p class="muted">Вход выполнен через Telegram.</p>{{else}}<form action="/session/logout" method="post">{{template "csrf" .CSRF}}<button class="button button-danger" type="submit">Выйти</button></form>{{end}}
 </section>
 {{end}}

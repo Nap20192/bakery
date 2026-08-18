@@ -95,7 +95,7 @@ Every behavior change updates the relevant doc **in the same change** as the cod
 
 Every request authenticates via `Authorization` header:
 
-- `tma <initData>` — Telegram Mini App: HMAC-validated initData, resolved by `telegram_username`
+- `tma <initData>` — Telegram Mini App: HMAC-validated initData, resolved strictly by `telegram_id` (username never authenticates; unbound accounts bind via the `/login` password fallback)
 - `Bearer <token>` — Web: HMAC session token from `POST /login`, resolved by `user_id`
 
 Three middlewares in `internal/inbound/api/httpx/`:

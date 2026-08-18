@@ -8,9 +8,12 @@ binding, web sessions, and role management.
 - User records: username, pbkdf2-hashed password, role, optional department,
   Telegram username + Telegram ID.
 - Password verification for web login; HMAC session tokens.
-- Telegram authentication: binding a `telegram_id` to the account whose
-  `telegram_username` matches (used by the bot's `/start` flow and by
-  Mini App request auth).
+- Telegram authentication: Mini App requests resolve the user **strictly by
+  `telegram_id`** (`GetUserByTelegramID`) — the username is mutable and
+  user-controlled, so it never authenticates. Binding a `telegram_id` to the
+  account whose `telegram_username` matches (`AuthenticateTelegram`) is used
+  **only** by the bot's `/start` flow; the Mini App binds via the `/login`
+  password fallback instead.
 - Admin bootstrap: the worker calls `EnsureAdminUser(ADMIN_USERNAME,
   ADMIN_PASSWORD)` on startup — creates the admin if missing, otherwise
   leaves the record untouched.
@@ -66,10 +69,13 @@ writes (`auth.invalid_role`).
 
 Mini App clients normally do not call `/login` — they authenticate every
 request with `Authorization: tma <initData>` (see
-[architecture.md](../architecture.md#authentication)). The exception is the
-fallback above: when initData is valid but no account matches, the Mini App
-shows the password form and sends `init_data` along with it to bind the
-Telegram account.
+[architecture.md](../architecture.md#authentication)), resolved only by
+`telegram_id`. The exception is the fallback above: when initData is valid
+but no account has that `telegram_id` bound, the Mini App shows the password
+form and sends `init_data` along with it — the password check binds the id,
+and every later open logs in automatically. There is no logout in the Mini
+App: the identity comes from Telegram itself, so "logging out" would just
+auto-login again on the next request (see FRONTEND_BEHAVIOR.md `/me`).
 
 ## Ports
 

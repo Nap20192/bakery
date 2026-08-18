@@ -652,6 +652,52 @@ func TestE2ELogoutClearsSession(t *testing.T) {
 	}
 }
 
+func TestE2EMiniAppSessionCannotLogout(t *testing.T) {
+	t.Parallel()
+	back := shopBackend()
+	back.viewers["tma test-init-data"] = contract.Me{Role: "shop", TelegramUsername: "shopuser", DepartmentID: 1, DepartmentType: "shop"}
+	srv, client := newE2E(t, back)
+
+	resp, err := client.PostForm(srv.URL+"/session/telegram", url.Values{"init_data": {"test-init-data"}, "next": {"/orders"}})
+	if err != nil {
+		t.Fatalf("telegram login: %v", err)
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusNoContent {
+		t.Fatalf("telegram login status = %d, want 204", resp.StatusCode)
+	}
+
+	// /me hides the logout button for a tma session.
+	me, err := client.Get(srv.URL + "/me")
+	if err != nil {
+		t.Fatalf("get /me: %v", err)
+	}
+	body, _ := io.ReadAll(me.Body)
+	_ = me.Body.Close()
+	if strings.Contains(string(body), "Выйти") {
+		t.Fatal("/me shows logout button for mini app session")
+	}
+
+	// A direct logout POST must not clear the session.
+	form := url.Values{"_csrf": {csrfToken(t, client, srv.URL)}}
+	resp, err = client.PostForm(srv.URL+"/session/logout", form)
+	if err != nil {
+		t.Fatalf("logout: %v", err)
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusSeeOther || resp.Header.Get("Location") != "/me" {
+		t.Fatalf("logout = %d %q, want 303 /me", resp.StatusCode, resp.Header.Get("Location"))
+	}
+	after, err := client.Get(srv.URL + "/orders")
+	if err != nil {
+		t.Fatalf("get after logout: %v", err)
+	}
+	_ = after.Body.Close()
+	if after.StatusCode != http.StatusOK {
+		t.Fatalf("post-logout /orders = %d, want 200 (session must survive)", after.StatusCode)
+	}
+}
+
 func TestE2EHealthOK(t *testing.T) {
 	t.Parallel()
 	srv, client := newE2E(t, shopBackend())

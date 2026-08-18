@@ -158,7 +158,11 @@ by `internal/inbound/api/httpx.Authenticator`:
 - **`tma <initData>`** — Telegram Mini App. The initData query string is
   HMAC-SHA256 validated against the bot token (Telegram WebApp scheme),
   rejected when `auth_date` is older than **24 hours** or in the future.
-  The user is resolved by `telegram_username` from the initData payload.
+  The user is resolved **strictly by `telegram_id`** from the initData
+  payload — the username is mutable and user-controlled, so it is never used
+  to authenticate Mini App requests. An account without a bound `telegram_id`
+  gets 403 and goes through the Mini App password fallback of `POST /login`,
+  which binds the id (see [services/auth.md](services/auth.md)).
 - **`Bearer <token>`** — web login. `POST /login` verifies the password and
   issues an HMAC session token (`internal/pkg/authtoken`), signed with the
   bot token as the secret; the user is resolved by `user_id` claim.
