@@ -84,18 +84,6 @@
     form.querySelectorAll('button[type="submit"]').forEach((b) => { b.disabled = false; });
   });
 
-  // Telegram's in-app WebView can dismiss the on-screen keyboard (back
-  // gesture, tap outside) without firing native blur on the focused input,
-  // so the CSS `:has(:focus)` rule hiding the sticky submit bar while typing
-  // never reverts. Force a blur once the viewport reclaims its full height.
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', () => {
-      const closed = window.visualViewport.height >= window.innerHeight - 60;
-      const active = document.activeElement;
-      if (closed && active?.matches?.('input, textarea, select')) active.blur();
-    });
-  }
-
   document.addEventListener('htmx:afterSwap', () => initialize(document));
   document.addEventListener('htmx:historyRestore', () => {
     // htmx's own back/forward cache swaps in a stringified DOM snapshot: listeners
