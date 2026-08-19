@@ -461,8 +461,13 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .sticky-submit { bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom) + 8px); }
   .toast-region { bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom) + 12px); }
   body:has(input:focus, textarea:focus, select:focus) .main-nav { display: none; }
-  /* Always-visible bar (no focus-driven show/hide) needs the form to reserve
-     room at the bottom so the last rows/textarea don't sit underneath it. */
+  /* Real on-screen keyboards float fixed/sticky elements mid-viewport on
+     iOS and Android WebViews instead of anchoring them above the keyboard
+     (same reason .main-nav hides above), so the bar must hide while a
+     keyboard-summoning field is focused — scoped to text/number/date/
+     textarea, not the category radios or the department select, which
+     don't open a keyboard and previously caused needless flicker. */
+  body:has(.editor-form input:not([type="radio"]):not([type="checkbox"]):focus, .editor-form textarea:focus) .editor-form .sticky-submit { display: none; }
   .editor-form { padding-bottom: 92px; }
   /* minmax(0, …), not 1fr: plain 1fr floors the column at min-content, and the
      wide item/production tables inside would stretch the whole page instead of
