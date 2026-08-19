@@ -24,16 +24,37 @@ type fakeBackend struct {
 	// After login the credential is "Bearer <token>".
 	viewers map[application.Credentials]contract.Me
 	// loginToken is handed out by Login for the recognised username.
-	loginToken   string
-	loginErr     error
-	createdOrder contract.Order
-	orders       map[string]contract.Order
-	sheets       []contract.ProductionSheet
-	categories   []contract.Category
-	orderFilters application.OrderFilters
-	orderPages   map[int]contract.OrdersPage
-	orderCalls   []application.OrderFilters
-	drafts       []contract.OrderDraft
+	loginToken      string
+	loginErr        error
+	createdOrder    contract.Order
+	updatedOrder    contract.Order
+	orders          map[string]contract.Order
+	sheets          []contract.ProductionSheet
+	categories      []contract.Category
+	orderFilters    application.OrderFilters
+	orderPages      map[int]contract.OrdersPage
+	orderCalls      []application.OrderFilters
+	drafts          []contract.OrderDraft
+	draftByCategory map[int64]contract.OrderDraft
+
+	// call captures for the write-flow assertions below.
+	createOrderCalls     []contract.OrderWrite
+	updateOrderCalls     []orderUpdateCall
+	cancelOrderCalls     []string
+	restoreOrderCalls    []string
+	favoriteCalls        []favoriteCall
+	savedDraftWrites     []contract.OrderWrite
+	deletedDraftCategory []int64
+}
+
+type orderUpdateCall struct {
+	Number string
+	Write  contract.OrderWrite
+}
+
+type favoriteCall struct {
+	Number   string
+	Favorite bool
 }
 
 func (f *fakeBackend) Health(context.Context) error { return nil }
@@ -102,28 +123,75 @@ func (f *fakeBackend) Login(_ context.Context, username, _, _ string) (contract.
 	}
 	return contract.LoginResponse{Token: f.loginToken, ExpiresAt: 1 << 40}, nil
 }
-func (f *fakeBackend) CreateOrder(context.Context, application.Credentials, contract.OrderWrite) (contract.Order, error) {
-	return f.createdOrder, nil
+func (f *fakeBackend) CreateOrder(_ context.Context, _ application.Credentials, body contract.OrderWrite) (contract.Order, error) {
+	f.createOrderCalls = append(f.createOrderCalls, body)
+	order := f.createdOrder
+	if f.orders == nil {
+		f.orders = make(map[string]contract.Order)
+	}
+	f.orders[order.Number] = order
+	return order, nil
 }
-func (f *fakeBackend) UpdateOrder(context.Context, application.Credentials, string, contract.OrderWrite) (contract.Order, error) {
-	return contract.Order{}, nil
+func (f *fakeBackend) UpdateOrder(_ context.Context, _ application.Credentials, number string, body contract.OrderWrite) (contract.Order, error) {
+	f.updateOrderCalls = append(f.updateOrderCalls, orderUpdateCall{Number: number, Write: body})
+	order := f.updatedOrder
+	if order.Number == "" {
+		order.Number = number
+	}
+	if f.orders == nil {
+		f.orders = make(map[string]contract.Order)
+	}
+	f.orders[order.Number] = order
+	return order, nil
 }
-func (f *fakeBackend) CancelOrder(context.Context, application.Credentials, string) (contract.Order, error) {
-	return contract.Order{}, nil
+func (f *fakeBackend) CancelOrder(_ context.Context, _ application.Credentials, number string) (contract.Order, error) {
+	f.cancelOrderCalls = append(f.cancelOrderCalls, number)
+	if f.orders == nil {
+		f.orders = make(map[string]contract.Order)
+	}
+	order := f.orders[number]
+	order.Cancelled = true
+	f.orders[number] = order
+	return order, nil
 }
-func (f *fakeBackend) RestoreOrder(context.Context, application.Credentials, string) (contract.Order, error) {
-	return contract.Order{}, nil
+func (f *fakeBackend) RestoreOrder(_ context.Context, _ application.Credentials, number string) (contract.Order, error) {
+	f.restoreOrderCalls = append(f.restoreOrderCalls, number)
+	if f.orders == nil {
+		f.orders = make(map[string]contract.Order)
+	}
+	order := f.orders[number]
+	order.Cancelled = false
+	f.orders[number] = order
+	return order, nil
 }
-func (f *fakeBackend) SetOrderFavorite(context.Context, application.Credentials, string, bool) (contract.Order, error) {
-	return contract.Order{}, nil
+func (f *fakeBackend) SetOrderFavorite(_ context.Context, _ application.Credentials, number string, favorite bool) (contract.Order, error) {
+	f.favoriteCalls = append(f.favoriteCalls, favoriteCall{Number: number, Favorite: favorite})
+	if f.orders == nil {
+		f.orders = make(map[string]contract.Order)
+	}
+	order := f.orders[number]
+	order.Favorite = favorite
+	f.orders[number] = order
+	return order, nil
 }
-func (f *fakeBackend) SaveOrderDraft(context.Context, application.Credentials, contract.OrderWrite) (contract.OrderDraft, error) {
-	return contract.OrderDraft{}, nil
+func (f *fakeBackend) SaveOrderDraft(_ context.Context, _ application.Credentials, body contract.OrderWrite) (contract.OrderDraft, error) {
+	f.savedDraftWrites = append(f.savedDraftWrites, body)
+	draft := contract.OrderDraft{Write: body, UpdatedAt: "2026-08-01T00:00:00Z"}
+	if f.draftByCategory == nil {
+		f.draftByCategory = make(map[int64]contract.OrderDraft)
+	}
+	f.draftByCategory[body.CategoryID] = draft
+	return draft, nil
 }
-func (f *fakeBackend) DeleteOrderDraft(context.Context, application.Credentials, int64) error {
+func (f *fakeBackend) DeleteOrderDraft(_ context.Context, _ application.Credentials, categoryID int64) error {
+	f.deletedDraftCategory = append(f.deletedDraftCategory, categoryID)
+	delete(f.draftByCategory, categoryID)
 	return nil
 }
-func (f *fakeBackend) OrderDraft(context.Context, application.Credentials, int64) (contract.OrderDraft, error) {
+func (f *fakeBackend) OrderDraft(_ context.Context, _ application.Credentials, categoryID int64) (contract.OrderDraft, error) {
+	if draft, ok := f.draftByCategory[categoryID]; ok {
+		return draft, nil
+	}
 	return contract.OrderDraft{}, &application.Error{Status: http.StatusNotFound, Message: "черновик не найден"}
 }
 func (f *fakeBackend) OrderDrafts(context.Context, application.Credentials) ([]contract.OrderDraft, error) {
@@ -205,6 +273,24 @@ func csrfToken(t *testing.T, client *http.Client, base string) string {
 	}
 	t.Fatal("csrf cookie not set")
 	return ""
+}
+
+// postCSRF warms the CSRF cookie with a GET to warmPath, fills it into form,
+// then POSTs form to path. Mirrors the warm-then-post pattern the CSRF test
+// uses inline, factored out since the write-flow tests below all need it.
+func postCSRF(t *testing.T, client *http.Client, base, warmPath, path string, form url.Values) *http.Response {
+	t.Helper()
+	warm, err := client.Get(base + warmPath)
+	if err != nil {
+		t.Fatalf("warm %s: %v", warmPath, err)
+	}
+	_ = warm.Body.Close()
+	form.Set("_csrf", csrfToken(t, client, base))
+	resp, err := client.PostForm(base+path, form)
+	if err != nil {
+		t.Fatalf("post %s: %v", path, err)
+	}
+	return resp
 }
 
 func shopBackend() *fakeBackend {
@@ -619,6 +705,277 @@ func TestE2ECreateOrderRequiresCSRF(t *testing.T) {
 	_ = resp.Body.Close()
 	if resp.StatusCode == http.StatusForbidden {
 		t.Fatalf("valid CSRF still rejected: %d", resp.StatusCode)
+	}
+}
+
+func TestE2ECreateOrderSuccess(t *testing.T) {
+	t.Parallel()
+	back := shopBackend()
+	category := contract.Category{ID: 4, Name: "Хлеб", Letter: "Х", Color: "amber"}
+	back.categories = []contract.Category{category}
+	back.createdOrder = contract.Order{
+		Number:          "Г.Х.01.08.26.001",
+		Category:        &category,
+		FromDepartment:  &contract.Department{ID: 1, Name: "Магазин 1"},
+		FulfillmentDate: "2026-08-01",
+		Items:           []contract.OrderItem{{ProductName: "Багет", Quantity: 3}},
+	}
+	srv, client := newE2E(t, back)
+	login(t, client, srv.URL, "shopuser")
+
+	form := url.Values{
+		"category_id": {"4"}, "from_department_id": {"1"}, "fulfillment_date": {"2026-08-01"},
+		"item_name": {"Багет"}, "quantity": {"3"},
+	}
+	resp := postCSRF(t, client, srv.URL, "/orders/new", "/orders", form)
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("create status = %d, want 303", resp.StatusCode)
+	}
+	wantLocation := "/orders/" + url.PathEscape("Г.Х.01.08.26.001") + "?success=" + url.QueryEscape("Заказ создан.")
+	if got := resp.Header.Get("Location"); got != wantLocation {
+		t.Fatalf("create redirect = %q, want %q", got, wantLocation)
+	}
+
+	if len(back.createOrderCalls) != 1 {
+		t.Fatalf("CreateOrder calls = %d, want 1", len(back.createOrderCalls))
+	}
+	call := back.createOrderCalls[0]
+	if call.CategoryID != 4 || call.FulfillmentDate != "2026-08-01" {
+		t.Fatalf("CreateOrder body = %+v, want category 4, date 2026-08-01", call)
+	}
+	if call.FromDepartmentID == nil || *call.FromDepartmentID != 1 {
+		t.Fatalf("CreateOrder from_department_id = %v, want 1", call.FromDepartmentID)
+	}
+	if len(call.Items) != 1 || call.Items[0].ProductName != "Багет" || call.Items[0].Quantity != 3 {
+		t.Fatalf("CreateOrder items = %+v, want one Багет x3", call.Items)
+	}
+
+	page, err := client.Get(srv.URL + wantLocation)
+	if err != nil {
+		t.Fatalf("get created order: %v", err)
+	}
+	body, _ := io.ReadAll(page.Body)
+	_ = page.Body.Close()
+	html := string(body)
+	if page.StatusCode != http.StatusOK {
+		t.Fatalf("created order page status = %d, want 200", page.StatusCode)
+	}
+	if !strings.Contains(html, "Г.Х.01.08.26.001") || !strings.Contains(html, "Багет") || !strings.Contains(html, "Заказ создан.") {
+		t.Fatalf("created order page missing expected content: %s", html)
+	}
+}
+
+func TestE2EUpdateOrderSuccess(t *testing.T) {
+	t.Parallel()
+	back := shopBackend()
+	category := contract.Category{ID: 4, Name: "Хлеб", Letter: "Х", Color: "amber"}
+	back.categories = []contract.Category{category}
+	const number = "Г.Х.01.08.26.001"
+	back.orders = map[string]contract.Order{
+		number: {
+			Number: number, Category: &category,
+			FromDepartment:  &contract.Department{ID: 1, Name: "Магазин 1"},
+			FulfillmentDate: "2026-08-01", Items: []contract.OrderItem{{ProductName: "Багет", Quantity: 2}},
+		},
+	}
+	back.updatedOrder = contract.Order{
+		Number: number, Category: &category,
+		FromDepartment:  &contract.Department{ID: 1, Name: "Магазин 1"},
+		FulfillmentDate: "2026-08-02",
+		Items:           []contract.OrderItem{{ProductName: "Багет", Quantity: 5}},
+		Comments:        contract.Comments{General: "обновлено"},
+	}
+	srv, client := newE2E(t, back)
+	login(t, client, srv.URL, "shopuser")
+	editPath := "/orders/" + url.PathEscape(number) + "/edit"
+
+	form := url.Values{
+		"from_department_id": {"1"}, "fulfillment_date": {"2026-08-02"},
+		"item_name": {"Багет"}, "quantity": {"5"}, "general_comment": {"обновлено"},
+	}
+	resp := postCSRF(t, client, srv.URL, editPath, editPath, form)
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("update status = %d, want 303", resp.StatusCode)
+	}
+	wantLocation := "/orders/" + url.PathEscape(number) + "?success=" + url.QueryEscape("Изменения сохранены.")
+	if got := resp.Header.Get("Location"); got != wantLocation {
+		t.Fatalf("update redirect = %q, want %q", got, wantLocation)
+	}
+
+	if len(back.updateOrderCalls) != 1 {
+		t.Fatalf("UpdateOrder calls = %d, want 1", len(back.updateOrderCalls))
+	}
+	call := back.updateOrderCalls[0]
+	if call.Number != number {
+		t.Fatalf("UpdateOrder number = %q, want %s", call.Number, number)
+	}
+	if call.Write.FulfillmentDate != "2026-08-02" || call.Write.Comments.General != "обновлено" {
+		t.Fatalf("UpdateOrder body = %+v, want date 2026-08-02, comment обновлено", call.Write)
+	}
+	if len(call.Write.Items) != 1 || call.Write.Items[0].Quantity != 5 {
+		t.Fatalf("UpdateOrder items = %+v, want one item x5", call.Write.Items)
+	}
+
+	page, err := client.Get(srv.URL + wantLocation)
+	if err != nil {
+		t.Fatalf("get updated order: %v", err)
+	}
+	body, _ := io.ReadAll(page.Body)
+	_ = page.Body.Close()
+	html := string(body)
+	if !strings.Contains(html, "обновлено") || !strings.Contains(html, "Изменения сохранены.") {
+		t.Fatalf("updated order page does not reflect the change: %s", html)
+	}
+}
+
+func TestE2ECancelAndRestoreOrder(t *testing.T) {
+	t.Parallel()
+	back := shopBackend()
+	category := contract.Category{ID: 4, Name: "Хлеб", Letter: "Х", Color: "amber"}
+	back.categories = []contract.Category{category}
+	const number = "Г.Х.01.08.26.001"
+	back.orders = map[string]contract.Order{
+		number: {Number: number, Category: &category},
+	}
+	srv, client := newE2E(t, back)
+	login(t, client, srv.URL, "shopuser")
+	orderPath := "/orders/" + url.PathEscape(number)
+
+	cancelResp := postCSRF(t, client, srv.URL, orderPath, orderPath+"/cancel", url.Values{})
+	_ = cancelResp.Body.Close()
+	if cancelResp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("cancel status = %d, want 303", cancelResp.StatusCode)
+	}
+	if len(back.cancelOrderCalls) != 1 || back.cancelOrderCalls[0] != number {
+		t.Fatalf("CancelOrder calls = %v, want one call for %s", back.cancelOrderCalls, number)
+	}
+
+	afterCancel, err := client.Get(srv.URL + orderPath)
+	if err != nil {
+		t.Fatalf("get after cancel: %v", err)
+	}
+	body, _ := io.ReadAll(afterCancel.Body)
+	_ = afterCancel.Body.Close()
+	if !strings.Contains(string(body), "Отменён") || !strings.Contains(string(body), "Восстановить заказ") {
+		t.Fatalf("order page does not reflect cancellation: %s", body)
+	}
+
+	restoreResp := postCSRF(t, client, srv.URL, orderPath, orderPath+"/restore", url.Values{})
+	_ = restoreResp.Body.Close()
+	if restoreResp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("restore status = %d, want 303", restoreResp.StatusCode)
+	}
+	if len(back.restoreOrderCalls) != 1 || back.restoreOrderCalls[0] != number {
+		t.Fatalf("RestoreOrder calls = %v, want one call for %s", back.restoreOrderCalls, number)
+	}
+
+	afterRestore, err := client.Get(srv.URL + orderPath)
+	if err != nil {
+		t.Fatalf("get after restore: %v", err)
+	}
+	body, _ = io.ReadAll(afterRestore.Body)
+	_ = afterRestore.Body.Close()
+	if strings.Contains(string(body), "Отменён") || !strings.Contains(string(body), "Отменить заказ") {
+		t.Fatalf("order page does not reflect restoration: %s", body)
+	}
+}
+
+func TestE2ESetOrderFavorite(t *testing.T) {
+	t.Parallel()
+	back := &fakeBackend{
+		loginToken: "admin-token",
+		viewers: map[application.Credentials]contract.Me{
+			"Bearer admin-token": {Role: "admin", TelegramUsername: "adminuser"},
+		},
+	}
+	category := contract.Category{ID: 4, Name: "Хлеб", Letter: "Х", Color: "amber"}
+	back.categories = []contract.Category{category}
+	const number = "Г.Х.01.08.26.001"
+	back.orders = map[string]contract.Order{
+		number: {Number: number, Category: &category, Favorite: false},
+	}
+	srv, client := newE2E(t, back)
+	login(t, client, srv.URL, "adminuser")
+	orderPath := "/orders/" + url.PathEscape(number)
+
+	resp := postCSRF(t, client, srv.URL, orderPath, orderPath+"/favorite", url.Values{"favorite": {"true"}})
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("favorite status = %d, want 303", resp.StatusCode)
+	}
+	if len(back.favoriteCalls) != 1 || back.favoriteCalls[0] != (favoriteCall{Number: number, Favorite: true}) {
+		t.Fatalf("SetOrderFavorite calls = %+v, want one true call for %s", back.favoriteCalls, number)
+	}
+
+	page, err := client.Get(srv.URL + orderPath)
+	if err != nil {
+		t.Fatalf("get after favorite: %v", err)
+	}
+	body, _ := io.ReadAll(page.Body)
+	_ = page.Body.Close()
+	if !strings.Contains(string(body), "Убрать из избранного") {
+		t.Fatalf("order page does not reflect favorite toggle: %s", body)
+	}
+}
+
+func TestE2EDraftSaveLoadDeleteRoundTrip(t *testing.T) {
+	t.Parallel()
+	back := shopBackend()
+	category := contract.Category{ID: 4, Name: "Хлеб", Letter: "Х", Color: "amber"}
+	back.categories = []contract.Category{category}
+	srv, client := newE2E(t, back)
+	login(t, client, srv.URL, "shopuser")
+
+	saveForm := url.Values{
+		"category_id": {"4"}, "from_department_id": {"1"}, "fulfillment_date": {"2026-08-03"},
+		"item_name": {"Багет"}, "quantity": {"2"},
+	}
+	saveResp := postCSRF(t, client, srv.URL, "/orders/new", "/orders/draft", saveForm)
+	_ = saveResp.Body.Close()
+	if saveResp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("save draft status = %d, want 303", saveResp.StatusCode)
+	}
+	wantSaveLocation := "/orders/new?draft_category_id=4&success=" + url.QueryEscape("Черновик сохранён.")
+	if got := saveResp.Header.Get("Location"); got != wantSaveLocation {
+		t.Fatalf("save draft redirect = %q, want %q", got, wantSaveLocation)
+	}
+	if len(back.savedDraftWrites) != 1 || back.savedDraftWrites[0].CategoryID != 4 || back.savedDraftWrites[0].FulfillmentDate != "2026-08-03" {
+		t.Fatalf("SaveOrderDraft calls = %+v, want one draft for category 4 on 2026-08-03", back.savedDraftWrites)
+	}
+
+	loaded, err := client.Get(srv.URL + "/orders/new?draft_category_id=4")
+	if err != nil {
+		t.Fatalf("get draft-loaded form: %v", err)
+	}
+	body, _ := io.ReadAll(loaded.Body)
+	_ = loaded.Body.Close()
+	if !strings.Contains(string(body), `value="2"`) || !strings.Contains(string(body), `value="2026-08-03"`) {
+		t.Fatalf("draft-loaded form does not prefill the saved values: %s", body)
+	}
+
+	deleteResp := postCSRF(t, client, srv.URL, "/orders/new", "/orders/draft/4/delete", url.Values{})
+	_ = deleteResp.Body.Close()
+	if deleteResp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("delete draft status = %d, want 303", deleteResp.StatusCode)
+	}
+	wantDeleteLocation := "/drafts?success=" + url.QueryEscape("Черновик удалён.")
+	if got := deleteResp.Header.Get("Location"); got != wantDeleteLocation {
+		t.Fatalf("delete draft redirect = %q, want %q", got, wantDeleteLocation)
+	}
+	if len(back.deletedDraftCategory) != 1 || back.deletedDraftCategory[0] != 4 {
+		t.Fatalf("DeleteOrderDraft calls = %v, want one call for category 4", back.deletedDraftCategory)
+	}
+
+	afterDelete, err := client.Get(srv.URL + "/orders/new?draft_category_id=4")
+	if err != nil {
+		t.Fatalf("get after draft delete: %v", err)
+	}
+	body, _ = io.ReadAll(afterDelete.Body)
+	_ = afterDelete.Body.Close()
+	if strings.Contains(string(body), `value="2"`) {
+		t.Fatalf("deleted draft still prefills the form: %s", body)
 	}
 }
 
