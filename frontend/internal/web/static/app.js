@@ -84,6 +84,18 @@
     form.querySelectorAll('button[type="submit"]').forEach((b) => { b.disabled = false; });
   });
 
+  // Telegram's in-app WebView can dismiss the on-screen keyboard (back
+  // gesture, tap outside) without firing native blur on the focused input,
+  // so the CSS `:has(:focus)` rule hiding the sticky submit bar while typing
+  // never reverts. Force a blur once the viewport reclaims its full height.
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+      const closed = window.visualViewport.height >= window.innerHeight - 60;
+      const active = document.activeElement;
+      if (closed && active?.matches?.('input, textarea, select')) active.blur();
+    });
+  }
+
   document.addEventListener('htmx:afterSwap', () => initialize(document));
   document.addEventListener('htmx:historyRestore', () => {
     // htmx's own back/forward cache swaps in a stringified DOM snapshot: listeners
@@ -112,9 +124,9 @@
     initializeDateChips(root);
   }
 
-  // Quick-pick chips next to the fulfillment-date input: today, tomorrow and
-  // the day after (labelled by weekday). Built client-side so "today" is the
-  // user's local day, matching what the date input itself would show.
+  // Quick-pick chips next to the fulfillment-date input: today and tomorrow.
+  // Built client-side so "today" is the user's local day, matching what the
+  // date input itself would show.
   function initializeDateChips(root) {
     root.querySelectorAll('[data-date-chips]:not([data-ready])').forEach((wrap) => {
       wrap.dataset.ready = 'true';
@@ -125,8 +137,7 @@
         day.setDate(day.getDate() + offset);
         return `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
       };
-      const weekday = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'][(new Date().getDay() + 2) % 7];
-      const chips = [['Сегодня', iso(0)], ['Завтра', iso(1)], [weekday, iso(2)]].map(([label, value]) => {
+      const chips = [['Сегодня', iso(0)], ['Завтра', iso(1)]].map(([label, value]) => {
         const chip = document.createElement('button');
         chip.type = 'button';
         chip.className = 'date-chip';
