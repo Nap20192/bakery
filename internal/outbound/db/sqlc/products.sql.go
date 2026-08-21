@@ -376,7 +376,6 @@ ON CONFLICT (code) DO UPDATE SET
     name = excluded.name,
     group_id = COALESCE(excluded.group_id, dish_catalog.group_id),
     category_id = COALESCE(dish_catalog.category_id, excluded.category_id),
-    sort_order = excluded.sort_order,
     updated_at = excluded.updated_at
 RETURNING id, code, name, created_at, updated_at, sort_order, category_id, group_id
 `
@@ -391,8 +390,9 @@ type UpsertDishCatalogItemParams struct {
 	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
 }
 
-// category_id keeps an already-assigned category on conflict, so re-seeding
-// from templates/dishes.txt never clobbers the admin's assignment.
+// category_id keeps an already-assigned category on conflict, and sort_order
+// is only set on first insert, so re-seeding from templates/dishes.txt never
+// clobbers the admin's assignment or manual ordering.
 func (q *Queries) UpsertDishCatalogItem(ctx context.Context, arg UpsertDishCatalogItemParams) (DishCatalog, error) {
 	row := q.db.QueryRow(ctx, upsertDishCatalogItem,
 		arg.Code,

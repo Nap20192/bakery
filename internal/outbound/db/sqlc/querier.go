@@ -119,8 +119,9 @@ type Querier interface {
 	// its original author; who made each change is recorded in order_history.
 	UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order, error)
 	UpdateOrderCategory(ctx context.Context, arg UpdateOrderCategoryParams) (OrderCategory, error)
-	// category_id keeps an already-assigned category on conflict, so re-seeding
-	// from templates/dishes.txt never clobbers the admin's assignment.
+	// category_id keeps an already-assigned category on conflict, and sort_order
+	// is only set on first insert, so re-seeding from templates/dishes.txt never
+	// clobbers the admin's assignment or manual ordering.
 	UpsertDishCatalogItem(ctx context.Context, arg UpsertDishCatalogItemParams) (DishCatalog, error)
 	UpsertIikoAssemblyChart(ctx context.Context, arg UpsertIikoAssemblyChartParams) error
 	UpsertIikoPreparedChart(ctx context.Context, arg UpsertIikoPreparedChartParams) error

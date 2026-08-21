@@ -84,7 +84,7 @@ worker on startup).
 | `DishExistsByCode` | one | Does an iiko product with this code and `type = 'DISH'` exist — validates codes in bulk order text. |
 | `GetIikoProductByCode` | one | Product by code, preferring `DISH` over other types, then the freshest snapshot row. |
 | `GetIikoProductByID` | one | Product by iiko UUID. |
-| `UpsertDishCatalogItem` | one | Catalog seed/add. Takes a `group_id` (the repo find-or-creates the group from the dish's «группа» name first). On conflict by `code` updates name/group/sort, but `category_id = COALESCE(existing, new)` — **re-seeding never clobbers an admin-assigned category**. |
+| `UpsertDishCatalogItem` | one | Catalog seed/add. Takes a `group_id` (the repo find-or-creates the group from the dish's «группа» name first). On conflict by `code` updates name/group, but `category_id = COALESCE(existing, new)` and `sort_order` is left untouched — **re-seeding never clobbers an admin-assigned category or the manual ordering**. |
 | `SearchIikoDishes` | many | `ILIKE` search over DISH products by name or code (admin "add dish" picker), limited. |
 | `SetDishCatalogSortOrder` | exec | One position of the admin drag-and-drop reorder. |
 | `UpdateDishCatalogItem` | one | Edits a catalog row, including renaming its `code` (`new_code`); resolves the group name to a `group_id`. |

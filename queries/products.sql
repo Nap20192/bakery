@@ -32,8 +32,9 @@ FROM iiko_products
 WHERE id = sqlc.arg(id);
 
 -- name: UpsertDishCatalogItem :one
--- category_id keeps an already-assigned category on conflict, so re-seeding
--- from templates/dishes.txt never clobbers the admin's assignment.
+-- category_id keeps an already-assigned category on conflict, and sort_order
+-- is only set on first insert, so re-seeding from templates/dishes.txt never
+-- clobbers the admin's assignment or manual ordering.
 INSERT INTO dish_catalog (
     code,
     name,
@@ -55,7 +56,6 @@ ON CONFLICT (code) DO UPDATE SET
     name = excluded.name,
     group_id = COALESCE(excluded.group_id, dish_catalog.group_id),
     category_id = COALESCE(dish_catalog.category_id, excluded.category_id),
-    sort_order = excluded.sort_order,
     updated_at = excluded.updated_at
 RETURNING *;
 
