@@ -22,13 +22,13 @@
       <button class="button button-primary no-print" type="button" data-print>Печать</button>
     </header>
     <table class="print-table">
-      <thead><tr><th class="print-name">Позиция</th>{{range .Shops}}<th>{{.}}</th>{{end}}<th>Итого</th></tr></thead>
+      <thead><tr><th class="print-name">Позиция</th>{{range .Shops}}<th>{{.}}</th>{{end}}<th>Итого</th><th class="print-fact">Отработка</th></tr></thead>
       <tbody>
-        {{range .Groups}}<tr class="print-group"><th colspan="{{add (len $.Shops) 2}}">{{.Name}}</th></tr>
-        {{range .Rows}}<tr><th class="print-name">{{.Name}}</th>{{range .Cells}}<td>{{if .}}{{formatQty .}}{{else}}·{{end}}</td>{{end}}<td><strong>{{template "overview-cell" .Total}}</strong></td></tr>{{end}}
+        {{range .Groups}}<tr class="print-group"><th colspan="{{add (len $.Shops) 3}}">{{.Name}}</th></tr>
+        {{range .Rows}}<tr><th class="print-name">{{.Name}}</th>{{range .Cells}}<td>{{if .}}{{formatQty .}}{{else}}·{{end}}</td>{{end}}<td><strong>{{template "overview-cell" .Total}}</strong></td><td class="print-fact"></td></tr>{{end}}
         {{end}}
       </tbody>
-      <tfoot><tr><th class="print-name">Итого</th>{{range .ColumnTotals}}<td><strong>{{if .}}{{formatQty .}}{{else}}·{{end}}</strong></td>{{end}}<td><strong>{{template "overview-cell" .GrandTotal}}</strong></td></tr></tfoot>
+      <tfoot><tr><th class="print-name">Итого</th>{{range .ColumnTotals}}<td><strong>{{if .}}{{formatQty .}}{{else}}·{{end}}</strong></td>{{end}}<td><strong>{{template "overview-cell" .GrandTotal}}</strong></td><td class="print-fact"></td></tr></tfoot>
     </table>
     <section class="print-monitor">
       <h2>Расчёт теста</h2>
