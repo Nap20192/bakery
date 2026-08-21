@@ -610,10 +610,20 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .print-ingredients li { display: flex; justify-content: space-between; gap: 12px; padding: 1px 0; border-bottom: 1px dotted #ccc; }
 .print-table .print-fact { min-width: 48px; }
 .print-table .print-sub { font-size: 0.7rem; font-weight: 400; color: #666; text-transform: lowercase; }
-@page { size: A4; margin: 12mm; }
+@page { size: A4; margin: 8mm; }
 @media print {
   .no-print { display: none !important; }
-  .print-sheet { max-width: none; padding: 0; gap: 14px; }
+  .print-sheet { max-width: none; padding: 0; gap: 8px; }
+  .print-header h1 { font-size: 12pt; }
+  .print-meta { font-size: 8pt; margin: 0; }
+  /* Компактная таблица: бланк должен влезать в минимум страниц A4. */
+  .print-table { font-size: 7.5pt; line-height: 1.25; }
+  .print-table th, .print-table td { padding: 1px 3px; }
+  .print-table .print-group th { font-size: 7pt; padding: 1px 3px; }
+  .print-table .print-sub { font-size: 6.5pt; }
+  .print-monitor h2 { font-size: 11pt; }
+  .print-report h3 { font-size: 9pt; margin: 6px 0 2px; }
+  .print-ingredients { font-size: 8pt; }
   /* Расчёт теста — со своей страницы, таблица заявок остаётся на первой. */
   .print-monitor { break-before: page; page-break-before: always; }
   .print-table tr, .print-report { break-inside: avoid; }
