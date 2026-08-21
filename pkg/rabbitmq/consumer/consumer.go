@@ -115,7 +115,7 @@ func (c *Consumer) StartConsumer(ctx context.Context, handler Handler) error {
 		if chanErr == nil {
 			return nil
 		}
-		return chanErr
+		return fmt.Errorf("rabbitmq channel closed: %w", chanErr)
 	}
 }
 

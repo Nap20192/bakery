@@ -253,7 +253,7 @@ func (r *OrderRepository) updateOrderWithQueries(ctx context.Context, q sqlc.Que
 func (r *OrderRepository) GetOrderByNumber(ctx context.Context, number string) (orderdomain.Order, error) {
 	order, err := r.queries.GetOrderByNumber(ctx, number)
 	if err != nil {
-		return orderdomain.Order{}, err
+		return orderdomain.Order{}, fmt.Errorf("get order by number: %w", err)
 	}
 	items, err := loadOrderItems(ctx, r.queries, order.ID)
 	if err != nil {
@@ -292,7 +292,7 @@ func (r *OrderRepository) ListOrders(ctx context.Context, input orderuc.ListOrde
 		CategoryID:       input.CategoryID,
 	})
 	if err != nil {
-		return orderuc.ListOrdersResult{}, err
+		return orderuc.ListOrdersResult{}, fmt.Errorf("count orders: %w", err)
 	}
 	rows, err := r.queries.ListOrders(ctx, sqlc.ListOrdersParams{
 		FromDepartmentID: input.FromDepartmentID,
@@ -304,7 +304,7 @@ func (r *OrderRepository) ListOrders(ctx context.Context, input orderuc.ListOrde
 		OrderOffset:      input.Offset,
 	})
 	if err != nil {
-		return orderuc.ListOrdersResult{}, err
+		return orderuc.ListOrdersResult{}, fmt.Errorf("list orders: %w", err)
 	}
 	orderIDs := make([]int64, len(rows))
 	for i, row := range rows {
@@ -358,7 +358,7 @@ func (r *OrderRepository) attachProductionSheets(ctx context.Context, ids []int6
 func (r *OrderRepository) GetDepartmentByID(ctx context.Context, id int64) (orderuc.Department, error) {
 	department, err := r.queries.GetDepartmentByID(ctx, id)
 	if err != nil {
-		return orderuc.Department{}, err
+		return orderuc.Department{}, fmt.Errorf("get department by id: %w", err)
 	}
 	return orderuc.Department{
 		ID:   department.ID,
@@ -371,7 +371,7 @@ func (r *OrderRepository) GetDepartmentByID(ctx context.Context, id int64) (orde
 func (r *OrderRepository) DishExistsByCode(ctx context.Context, code string) (bool, error) {
 	count, err := r.queries.DishExistsByCode(ctx, code)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("check dish exists: %w", err)
 	}
 	return count > 0, nil
 }
@@ -472,7 +472,10 @@ func upsertDishCatalogItem(ctx context.Context, q sqlc.Querier, item orderuc.Dis
 		CreatedAt:  now,
 		UpdatedAt:  now,
 	})
-	return err
+	if err != nil {
+		return fmt.Errorf("upsert dish catalog item: %w", err)
+	}
+	return nil
 }
 
 func (r *OrderRepository) SearchAvailableDishes(ctx context.Context, query string, limit int) ([]orderdomain.AvailableDish, error) {
@@ -590,13 +593,13 @@ func (r *OrderRepository) createOrderHistory(ctx context.Context, q sqlc.Querier
 func (r *OrderRepository) listOrderHistory(ctx context.Context, q sqlc.Querier, orderID int64) ([]orderdomain.OrderHistory, error) {
 	rows, err := q.ListOrderHistoryByOrderID(ctx, orderID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list order history: %w", err)
 	}
 	result := make([]orderdomain.OrderHistory, 0, len(rows))
 	for _, row := range rows {
 		itemRows, err := q.ListOrderHistoryItemsByHistoryID(ctx, row.ID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("list order history items: %w", err)
 		}
 		items := make([]orderdomain.OrderHistoryItem, 0, len(itemRows))
 		for _, item := range itemRows {
@@ -917,7 +920,7 @@ func (r *OrderRepository) orderItemsByOrderIDs(ctx context.Context, orderIDs []i
 	}
 	rows, err := r.queries.GetOrderItemsByOrderIDs(ctx, orderIDs)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get order items: %w", err)
 	}
 	for _, item := range rows {
 		grouped[item.OrderID] = append(grouped[item.OrderID], orderdomain.OrderItem{
@@ -937,7 +940,7 @@ func (r *OrderRepository) orderItemsByOrderIDs(ctx context.Context, orderIDs []i
 func loadOrderItems(ctx context.Context, q sqlc.Querier, orderID int64) ([]orderdomain.OrderItem, error) {
 	rows, err := q.GetOrderItemsByOrderID(ctx, orderID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get order items: %w", err)
 	}
 	items := mapOrderItems(rows)
 	if err := decorateProductionFacts(ctx, q, map[int64][]orderdomain.OrderItem{orderID: items}); err != nil {

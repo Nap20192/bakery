@@ -804,3 +804,30 @@ func (f *fakeRepo) CancelOrder(context.Context, string, string) (orderdomain.Ord
 func (f *fakeRepo) RestoreOrder(context.Context, string) (orderdomain.Order, error) {
 	return orderdomain.Order{}, nil
 }
+
+func TestServiceCategoryLetterAndCodeMustBeUnique(t *testing.T) {
+	repo := &fakeRepo{
+		categoryByID: map[int64]orderdomain.OrderCategory{
+			1: {ID: 1, Code: "bread", Letter: "Х", Name: "Хлеб", Color: "amber"},
+		},
+	}
+	svc := NewService(repo)
+	ctx := context.Background()
+
+	_, err := svc.CreateOrderCategory(ctx, orderdomain.OrderCategory{Name: "Хачапури", Letter: "Х"})
+	if !errors.Is(err, ErrCategoryLetterTaken) {
+		t.Fatalf("create with duplicate letter: err = %v, want ErrCategoryLetterTaken", err)
+	}
+	_, err = svc.CreateOrderCategory(ctx, orderdomain.OrderCategory{Name: "Другое", Code: "bread", Letter: "Д"})
+	if !errors.Is(err, ErrCategoryCodeTaken) {
+		t.Fatalf("create with duplicate code: err = %v, want ErrCategoryCodeTaken", err)
+	}
+	_, err = svc.UpdateOrderCategory(ctx, 2, orderdomain.OrderCategory{Name: "Пироги", Letter: "Х"})
+	if !errors.Is(err, ErrCategoryLetterTaken) {
+		t.Fatalf("update to duplicate letter: err = %v, want ErrCategoryLetterTaken", err)
+	}
+	// Updating a category keeping its own letter must pass.
+	if _, err := svc.UpdateOrderCategory(ctx, 1, orderdomain.OrderCategory{Name: "Хлеб", Letter: "Х"}); err != nil {
+		t.Fatalf("update keeping own letter: err = %v, want nil", err)
+	}
+}

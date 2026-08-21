@@ -21,6 +21,7 @@ func parseTemplates() (*template.Template, error) {
 	funcs := template.FuncMap{
 		"active":           activePath,
 		"add":              func(a, b int) int { return a + b },
+		"canCancelOrders":  application.CanCancelOrders,
 		"canManageOrders":  application.CanManageOrders,
 		"canUseProduction": application.CanUseProduction,
 		"categoryTone":     categoryTone,

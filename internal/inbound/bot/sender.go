@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"fmt"
 	"log/slog"
 	"strings"
 
@@ -85,7 +86,7 @@ func sendTelegramChunks(send chunkSender, message string, options messageOptions
 	}
 	for i, chunk := range chunks {
 		if err := send(chunk, options.forChunk(i == len(chunks)-1)); err != nil {
-			return err
+			return fmt.Errorf("send telegram message chunk: %w", err)
 		}
 	}
 	return nil

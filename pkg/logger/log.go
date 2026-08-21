@@ -75,7 +75,7 @@ func (h multiHandler) Enabled(ctx context.Context, level slog.Level) bool {
 func (h multiHandler) Handle(ctx context.Context, record slog.Record) error {
 	for _, handler := range h.handlers {
 		if err := handler.Handle(ctx, record.Clone()); err != nil {
-			return err
+			return fmt.Errorf("log handler: %w", err)
 		}
 	}
 	return nil

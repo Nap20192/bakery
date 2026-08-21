@@ -2,7 +2,7 @@
 {{$order := .Data.Order}}
 <section class="page order-detail-page">
   <header class="page-heading">
-    <div><h1>{{$order.Number}}</h1><div class="heading-badges">{{template "category-badge" $order.Category}}{{if $order.Cancelled}}<span class="status status-danger">✕ Отменён</span>{{end}}{{if $order.ProductionSheetID}}<a class="status {{sheetTone $order.ProductionSheetID}}" href="/production/{{$order.ProductionSheetID}}">✓ Отр. №{{$order.ProductionSheetID}}</a>{{end}}</div></div>
+    <div><h1>{{$order.Number}}</h1><div class="heading-badges">{{template "category-badge" $order.Category}}{{if $order.Cancelled}}<span class="status status-danger">✕ Отменён</span>{{end}}{{if $order.ProductionSheetID}}{{if canUseProduction $.Viewer}}<a class="status {{sheetTone $order.ProductionSheetID}}" href="/production/{{$order.ProductionSheetID}}">✓ Отр. №{{$order.ProductionSheetID}}</a>{{else}}<span class="status {{sheetTone $order.ProductionSheetID}}">✓ Отр. №{{$order.ProductionSheetID}}</span>{{end}}{{end}}</div></div>
     <div class="actions">
       {{if canManageOrders $.Viewer}}
         <a class="button button-primary" href="/orders/{{urlquery $order.Number}}/edit">Изменить</a>
@@ -40,7 +40,7 @@
           "Orders" (list $order.Number))}}
       {{end}}
       {{if isAdmin $.Viewer}}<form class="surface compact-form" action="/orders/{{urlquery $order.Number}}/favorite" method="post">{{template "csrf" $.CSRF}}<input type="hidden" name="favorite" value="{{if $order.Favorite}}false{{else}}true{{end}}"><button class="button button-wide" type="submit">{{if $order.Favorite}}Убрать из избранного{{else}}Добавить в избранное{{end}}</button></form>{{end}}
-      {{if canManageOrders $.Viewer}}<form class="surface compact-form" action="/orders/{{urlquery $order.Number}}/{{if $order.Cancelled}}restore{{else}}cancel{{end}}" method="post" {{if not $order.Cancelled}}data-confirm="Отменить заказ {{$order.Number}}?"{{end}}>{{template "csrf" $.CSRF}}<button class="button {{if not $order.Cancelled}}button-danger{{end}} button-wide" type="submit">{{if $order.Cancelled}}Восстановить заказ{{else}}Отменить заказ{{end}}</button></form>{{end}}
+      {{if canCancelOrders $.Viewer}}<form class="surface compact-form" action="/orders/{{urlquery $order.Number}}/{{if $order.Cancelled}}restore{{else}}cancel{{end}}" method="post" {{if not $order.Cancelled}}data-confirm="Отменить заказ {{$order.Number}}?"{{end}}>{{template "csrf" $.CSRF}}<button class="button {{if not $order.Cancelled}}button-danger{{end}} button-wide" type="submit">{{if $order.Cancelled}}Восстановить заказ{{else}}Отменить заказ{{end}}</button></form>{{end}}
     </aside>
   </div>
 

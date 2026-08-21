@@ -418,13 +418,13 @@ func (s *server) orderAction(w http.ResponseWriter, r *http.Request, action stri
 	var err error
 	switch action {
 	case "cancel":
-		if !application.CanManageOrders(viewer) {
+		if !application.CanCancelOrders(viewer) {
 			s.renderError(w, r, http.StatusForbidden, "Недостаточно прав для отмены заказа.")
 			return
 		}
 		_, err = s.commands.CancelOrder(r.Context(), cred, number)
 	case "restore":
-		if !application.CanManageOrders(viewer) {
+		if !application.CanCancelOrders(viewer) {
 			s.renderError(w, r, http.StatusForbidden, "Недостаточно прав для восстановления заказа.")
 			return
 		}
@@ -805,12 +805,15 @@ func weekdayLabel(day time.Time) string {
 	return [...]string{"Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"}[int(day.Weekday())]
 }
 
+// dayTone compares calendar dates, not instants: grid days are parsed as UTC
+// midnights while time.Now() is server-local, so time.Equal would never match
+// on a non-UTC deployment.
 func dayTone(day time.Time) string {
-	today := startOfDay(time.Now())
-	switch {
-	case day.Equal(today):
+	now := time.Now()
+	switch day.Format(time.DateOnly) {
+	case now.Format(time.DateOnly):
 		return "today"
-	case day.Equal(today.AddDate(0, 0, 1)):
+	case now.AddDate(0, 0, 1).Format(time.DateOnly):
 		return "tomorrow"
 	}
 	return ""

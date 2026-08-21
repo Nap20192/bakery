@@ -161,7 +161,7 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 	if h.writer != nil {
 		_, err = io.WriteString(h.writer, out+"\n")
 		if err != nil {
-			return err
+			return fmt.Errorf("write log line: %w", err)
 		}
 	}
 	return nil

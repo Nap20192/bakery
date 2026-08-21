@@ -32,7 +32,7 @@ func (r *OrderRepository) SaveOrderDraft(ctx context.Context, input orderuc.Save
 func (r *OrderRepository) GetOrderDraft(ctx context.Context, username string, categoryID int64) (orderdomain.OrderDraft, error) {
 	row, err := r.queries.GetOrderDraft(ctx, sqlc.GetOrderDraftParams{CreatedByUsername: username, CategoryID: categoryID})
 	if err != nil {
-		return orderdomain.OrderDraft{}, err
+		return orderdomain.OrderDraft{}, fmt.Errorf("get order draft: %w", err)
 	}
 	return draftFromRow(row), nil
 }
@@ -40,7 +40,7 @@ func (r *OrderRepository) GetOrderDraft(ctx context.Context, username string, ca
 func (r *OrderRepository) ListOrderDrafts(ctx context.Context, username string) ([]orderdomain.OrderDraft, error) {
 	rows, err := r.queries.ListOrderDrafts(ctx, username)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list order drafts: %w", err)
 	}
 	drafts := make([]orderdomain.OrderDraft, 0, len(rows))
 	for _, row := range rows {

@@ -140,7 +140,11 @@ func loadShops(ctx context.Context, db *pgxpool.Pool) ([]shop, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load shops: %w", err)
 	}
-	return pgx.CollectRows(rows, pgx.RowToStructByPos[shop])
+	shops, err := pgx.CollectRows(rows, pgx.RowToStructByPos[shop])
+	if err != nil {
+		return nil, fmt.Errorf("collect shops: %w", err)
+	}
+	return shops, nil
 }
 
 func loadWorkshopID(ctx context.Context, db *pgxpool.Pool) (int64, error) {
@@ -156,7 +160,11 @@ func loadCategories(ctx context.Context, db *pgxpool.Pool) ([]category, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load categories: %w", err)
 	}
-	return pgx.CollectRows(rows, pgx.RowToStructByPos[category])
+	categories, err := pgx.CollectRows(rows, pgx.RowToStructByPos[category])
+	if err != nil {
+		return nil, fmt.Errorf("collect categories: %w", err)
+	}
+	return categories, nil
 }
 
 func loadDishes(ctx context.Context, db *pgxpool.Pool, categoryID int64) ([]dish, error) {
@@ -168,7 +176,11 @@ func loadDishes(ctx context.Context, db *pgxpool.Pool, categoryID int64) ([]dish
 	if err != nil {
 		return nil, fmt.Errorf("load dishes: %w", err)
 	}
-	return pgx.CollectRows(rows, pgx.RowToStructByPos[dish])
+	dishes, err := pgx.CollectRows(rows, pgx.RowToStructByPos[dish])
+	if err != nil {
+		return nil, fmt.Errorf("collect dishes: %w", err)
+	}
+	return dishes, nil
 }
 
 func nextCounter(ctx context.Context, db *pgxpool.Pool, day string, shopID, categoryID int64) (int64, error) {
@@ -197,7 +209,7 @@ func insertOrder(ctx context.Context, db *pgxpool.Pool, number string, s shop, w
 		RETURNING id`,
 		number, s.Name, s.ID, workshopID, categoryID, fulfillment.Format("2006-01-02")).Scan(&orderID)
 	if err != nil {
-		return err
+		return fmt.Errorf("insert order row: %w", err)
 	}
 
 	// 3–5 случайных блюд, количества 5–30, у ~трети позиций резерв 1–5.
@@ -216,7 +228,7 @@ func insertOrder(ctx context.Context, db *pgxpool.Pool, number string, s shop, w
 			INSERT INTO order_items (order_id, iiko_product_id, product_name, quantity, reserved_quantity)
 			VALUES ($1, $2, $3, $4, $5)`,
 			orderID, d.ProductID, d.Name, 5+rand.IntN(26), reserved); err != nil { //nolint:gosec
-			return err
+			return fmt.Errorf("insert order item: %w", err)
 		}
 	}
 	return nil

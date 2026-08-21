@@ -117,13 +117,16 @@ func (h *Handler) handleUpdateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fromDepartmentID := existing.FromDepartmentID
-	if input.fromDepartmentID != nil {
-		role := enum.NormalizeRole(user.Auth.Role)
+	// Baker's client-supplied source is always ignored (same rule as create):
+	// the order keeps its existing source, so a baker editing a shop's order
+	// cannot silently reassign it to another department.
+	role := enum.NormalizeRole(user.Auth.Role)
+	if input.fromDepartmentID != nil && role != enum.RoleBaker {
 		resolved, ok := h.resolveOrderSourceDepartmentID(
 			w,
 			r,
 			input.fromDepartmentID,
-			role == enum.RoleBaker || role == enum.RoleAdmin,
+			role == enum.RoleAdmin,
 		)
 		if !ok {
 			return

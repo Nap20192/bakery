@@ -59,3 +59,9 @@ func CanUseProduction(viewer *contract.Me) bool {
 func CanManageOrders(viewer *contract.Me) bool {
 	return viewer != nil && (viewer.Role == "admin" || viewer.Role == "shop" || viewer.Role == "baker")
 }
+
+// CanCancelOrders gates отмена/восстановление: the spec reserves them for
+// baker/admin — shops only create and edit.
+func CanCancelOrders(viewer *contract.Me) bool {
+	return viewer != nil && (viewer.Role == "admin" || viewer.Role == "baker")
+}

@@ -4,6 +4,7 @@ package rabbitmq
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -77,7 +78,10 @@ func (c *Conn) Close() error {
 	}
 	err := c.conn.Close()
 	c.conn = nil
-	return err
+	if err != nil {
+		return fmt.Errorf("close rabbitmq connection: %w", err)
+	}
+	return nil
 }
 
 func (c *Conn) live() (*amqp.Connection, error) {
@@ -101,7 +105,7 @@ func (c *Conn) live() (*amqp.Connection, error) {
 		if attempts > retryTimes {
 			// Callers retry on their own schedule — the relay ticks, the
 			// consumer restarts — so give up here instead of blocking them.
-			return nil, ErrCannotConnect
+			return nil, errors.Join(ErrCannotConnect, err)
 		}
 		time.Sleep(backOffSeconds * time.Second)
 	}

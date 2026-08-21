@@ -5,6 +5,7 @@ package departmentrepo
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	sqlc "bakery/internal/outbound/db/sqlc"
@@ -34,7 +35,7 @@ func (r *DepartmentRepository) ListByType(ctx context.Context, departmentType en
 		rows, err = r.queries.ListDepartments(ctx, &value)
 	}
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list departments: %w", err)
 	}
 	out := make([]departmentuc.Department, 0, len(rows))
 	for _, row := range rows {
@@ -46,7 +47,7 @@ func (r *DepartmentRepository) ListByType(ctx context.Context, departmentType en
 func (r *DepartmentRepository) GetByCode(ctx context.Context, code string) (departmentuc.Department, error) {
 	row, err := r.queries.GetDepartmentByCode(ctx, strings.TrimSpace(code))
 	if err != nil {
-		return departmentuc.Department{}, err
+		return departmentuc.Department{}, fmt.Errorf("get department by code: %w", err)
 	}
 	return toDepartment(row), nil
 }
@@ -54,7 +55,7 @@ func (r *DepartmentRepository) GetByCode(ctx context.Context, code string) (depa
 func (r *DepartmentRepository) GetByID(ctx context.Context, id int64) (departmentuc.Department, error) {
 	row, err := r.queries.GetDepartmentByID(ctx, id)
 	if err != nil {
-		return departmentuc.Department{}, err
+		return departmentuc.Department{}, fmt.Errorf("get department by id: %w", err)
 	}
 	return toDepartment(row), nil
 }

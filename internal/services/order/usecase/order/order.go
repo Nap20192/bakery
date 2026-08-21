@@ -23,6 +23,8 @@ var (
 	ErrCategoryRequired         = apperr.Invalid("order.category_required", "Выберите тип заявки.")
 	ErrCategoryNotFound         = apperr.NotFound("order.category_not_found", "Тип заявки не найден.")
 	ErrCategoryHasDishes        = apperr.Conflict("order.category_has_dishes", "У типа заявки есть блюда. Сначала перенесите их в другой тип.")
+	ErrCategoryLetterTaken      = apperr.Conflict("order.category_letter_taken", "Эта буква уже используется другим типом заявки.")
+	ErrCategoryCodeTaken        = apperr.Conflict("order.category_code_taken", "Этот код уже используется другим типом заявки.")
 	ErrProductionOrderNotFound  = apperr.NotFound("order.production_order_not_found", "Заказ для отработки не найден.")
 	ErrProductionSheetNotFound  = apperr.NotFound("order.production_sheet_not_found", "Отработка не найдена.")
 )
@@ -91,7 +93,7 @@ func (s *Service) validateOrderWrite(
 	}
 	category, err := s.repo.GetOrderCategoryByID(ctx, categoryID)
 	if err != nil {
-		return validatedOrderWrite{}, ErrCategoryNotFound
+		return validatedOrderWrite{}, errors.Join(ErrCategoryNotFound, err)
 	}
 	return validatedOrderWrite{
 		Items:           resolvedItems,
@@ -264,7 +266,7 @@ func (s *Service) UpdateProductionSheet(ctx context.Context, id int64, input Rec
 		return orderdomain.ProductionSheet{}, ErrProductionSheetNotFound
 	}
 	if _, err := s.repo.GetProductionSheet(ctx, id); err != nil {
-		return orderdomain.ProductionSheet{}, ErrProductionSheetNotFound
+		return orderdomain.ProductionSheet{}, errors.Join(ErrProductionSheetNotFound, err)
 	}
 	orders, err := s.validateProductionInput(ctx, input)
 	if err != nil {
@@ -284,7 +286,7 @@ func (s *Service) DeleteProductionSheet(ctx context.Context, id int64, byUsernam
 		return ErrProductionSheetNotFound
 	}
 	if _, err := s.repo.GetProductionSheet(ctx, id); err != nil {
-		return ErrProductionSheetNotFound
+		return errors.Join(ErrProductionSheetNotFound, err)
 	}
 	return s.repo.DeleteProductionSheet(ctx, id, strings.TrimSpace(byUsername))
 }
@@ -300,7 +302,7 @@ func (s *Service) ListProductionSheets(ctx context.Context) ([]orderdomain.Produ
 func (s *Service) GetProductionSheet(ctx context.Context, id int64) (orderdomain.ProductionSheet, error) {
 	sheet, err := s.repo.GetProductionSheet(ctx, id)
 	if err != nil {
-		return orderdomain.ProductionSheet{}, ErrProductionSheetNotFound
+		return orderdomain.ProductionSheet{}, errors.Join(ErrProductionSheetNotFound, err)
 	}
 	return sheet, nil
 }
@@ -321,7 +323,7 @@ func (s *Service) validateProductionInput(ctx context.Context, input RecordProdu
 		}
 		existing, err := s.repo.GetOrderByNumber(ctx, number)
 		if err != nil {
-			return nil, ErrProductionOrderNotFound
+			return nil, errors.Join(ErrProductionOrderNotFound, err)
 		}
 		if existing.Cancelled {
 			return nil, apperr.Conflict("order.production_cancelled", fmt.Sprintf("Заказ %s отменён — отработка невозможна.", number))
@@ -455,6 +457,9 @@ func (s *Service) CreateOrderCategory(ctx context.Context, input orderdomain.Ord
 	if err != nil {
 		return orderdomain.OrderCategory{}, err
 	}
+	if err := s.validateCategoryUnique(ctx, 0, category); err != nil {
+		return orderdomain.OrderCategory{}, fmt.Errorf("create order category: %w", err)
+	}
 	created, err := s.repo.CreateOrderCategory(ctx, category)
 	if err != nil {
 		return orderdomain.OrderCategory{}, fmt.Errorf("create order category: %w", err)
@@ -470,9 +475,12 @@ func (s *Service) UpdateOrderCategory(ctx context.Context, id int64, input order
 	if err != nil {
 		return orderdomain.OrderCategory{}, err
 	}
+	if err := s.validateCategoryUnique(ctx, id, category); err != nil {
+		return orderdomain.OrderCategory{}, fmt.Errorf("update order category %d: %w", id, err)
+	}
 	updated, err := s.repo.UpdateOrderCategory(ctx, id, category)
 	if err != nil {
-		return orderdomain.OrderCategory{}, ErrCategoryNotFound
+		return orderdomain.OrderCategory{}, errors.Join(ErrCategoryNotFound, err)
 	}
 	return updated, nil
 }
@@ -492,6 +500,33 @@ func (s *Service) DeleteOrderCategory(ctx context.Context, id int64) error {
 		return ErrCategoryHasDishes
 	}
 	return s.repo.DeleteOrderCategory(ctx, id)
+}
+
+// validateCategoryUnique rejects a category whose letter or code is already
+// taken by another category (id excludes the category being updated). The
+// letter is part of the order number, and orders.number is UNIQUE — two
+// categories sharing a letter would mint colliding numbers.
+// ponytail: read-then-write check without a DB constraint; admin-only writes
+// make the race window irrelevant. Add a unique index if that ever changes.
+func (s *Service) validateCategoryUnique(ctx context.Context, id int64, category orderdomain.OrderCategory) error {
+	existing, err := s.repo.ListOrderCategories(ctx)
+	if err != nil {
+		return fmt.Errorf("list order categories: %w", err)
+	}
+	for _, other := range existing {
+		if other.ID == id {
+			continue
+		}
+		if other.Letter == category.Letter {
+			return ErrCategoryLetterTaken
+		}
+		// The code is immutable on update (UpdateOrderCategory never writes
+		// it), so it only needs the check on create.
+		if id == 0 && other.Code == category.Code {
+			return ErrCategoryCodeTaken
+		}
+	}
+	return nil
 }
 
 // sanitizeOrderCategoryInput validates admin-supplied category fields. The code

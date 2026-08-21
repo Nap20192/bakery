@@ -76,7 +76,10 @@ func (r *SyncRepository) finishSyncRun(ctx context.Context, runID, revision int6
 		FinishedAt:    helpers.TimestamptzNow(),
 		ID:            runID,
 	})
-	return err
+	if err != nil {
+		return fmt.Errorf("finish sync run: %w", err)
+	}
+	return nil
 }
 
 func (r *SyncRepository) saveSnapshotData(ctx context.Context, catalog *iiko.NomenclatureResponse, charts *iiko.ChartResultDto) error {

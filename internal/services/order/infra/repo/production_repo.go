@@ -53,7 +53,7 @@ func (r *OrderRepository) SaveProductionSheet(ctx context.Context, input orderuc
 		for _, order := range input.Orders {
 			row, err := q.GetOrderByNumber(ctx, strings.TrimSpace(order.Number))
 			if err != nil {
-				return orderuc.ErrProductionOrderNotFound
+				return errors.Join(orderuc.ErrProductionOrderNotFound, err)
 			}
 			// Заказ принадлежит максимум одному листу: пересечение с чужим
 			// документом — конфликт, пусть правят существующую отработку.

@@ -6,6 +6,7 @@ package orderoutbox
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -62,16 +63,16 @@ func (r *Relay) Run(ctx context.Context) error {
 func (r *Relay) drain(ctx context.Context) error {
 	rows, err := r.queries.ListUnpublishedOrderOutboxEvents(ctx, r.batch)
 	if err != nil {
-		return err
+		return fmt.Errorf("list unpublished outbox events: %w", err)
 	}
 	for _, row := range rows {
 		if err := r.publisher.PublishStored(ctx, row.EventType, row.Payload, row.CreatedAt.Time, row.CorrelationID); err != nil {
 			// Stop on first failure; remaining rows stay unpublished and are
 			// retried on the next tick, preserving order.
-			return err
+			return fmt.Errorf("publish outbox event %d: %w", row.ID, err)
 		}
 		if err := r.queries.MarkOrderOutboxEventPublished(ctx, row.ID); err != nil {
-			return err
+			return fmt.Errorf("mark outbox event %d published: %w", row.ID, err)
 		}
 	}
 	return nil

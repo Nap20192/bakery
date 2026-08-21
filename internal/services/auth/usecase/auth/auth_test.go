@@ -123,7 +123,3 @@ func (r *fakeAuthRepo) CreatePasswordUser(_ context.Context, _ CreatePasswordUse
 	r.createCalls++
 	return accessdomain.AuthUser{}, r.createErr
 }
-
-func strPtr(value string) *string {
-	return &value
-}

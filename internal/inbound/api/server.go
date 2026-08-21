@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -77,7 +78,7 @@ func (s *Server) Start() error {
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		return err
+		return fmt.Errorf("http server listen: %w", err)
 	}
 	return nil
 }

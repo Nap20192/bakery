@@ -891,6 +891,9 @@ func TestE2EUpdateOrderSuccess(t *testing.T) {
 func TestE2ECancelAndRestoreOrder(t *testing.T) {
 	t.Parallel()
 	back := shopBackend()
+	// Cancel/restore is baker/admin-only (FRONTEND_BEHAVIOR.md: shop only
+	// creates and edits).
+	back.viewers["Bearer shop-token"] = contract.Me{Role: "baker", TelegramUsername: "baker"}
 	category := contract.Category{ID: 4, Name: "Хлеб", Letter: "Х", Color: "amber"}
 	back.categories = []contract.Category{category}
 	const number = "Г.Х.01.08.26.001"
