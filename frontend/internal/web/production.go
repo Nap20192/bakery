@@ -191,6 +191,9 @@ type productionPrintData struct {
 	GrandTotal   productionPivotCell
 	Reports      []contract.MonitorReport
 	MonitorError string
+	// TableSpan is the full column count (позиция + заявка/отпущено per shop
+	// + итого) — html/template has no multiply for the group-header colspan.
+	TableSpan int
 }
 
 // productionPrintPage renders the standalone print form of a saved sheet:
@@ -230,6 +233,7 @@ func (s *server) productionPrintPage(w http.ResponseWriter, r *http.Request) {
 		Groups:       groupPivotRows(catalog, pivot.Rows),
 		ColumnTotals: pivot.ColumnTotals,
 		GrandTotal:   pivot.GrandTotal,
+		TableSpan:    2*len(pivot.OrderNumbers) + 2,
 	}
 	monitor, err := s.monitorData(r, cred, sheet.OrderNumbers)
 	if err != nil {

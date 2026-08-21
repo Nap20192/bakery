@@ -608,7 +608,8 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .print-report h3 { display: flex; justify-content: space-between; gap: 12px; margin: 10px 0 4px; font-size: 0.95rem; border-bottom: 1px solid #999; padding-bottom: 2px; }
 .print-ingredients { list-style: none; margin: 0; padding: 0; max-width: 460px; }
 .print-ingredients li { display: flex; justify-content: space-between; gap: 12px; padding: 1px 0; border-bottom: 1px dotted #ccc; }
-.print-table .print-fact { min-width: 64px; }
+.print-table .print-fact { min-width: 48px; }
+.print-table .print-sub { font-size: 0.7rem; font-weight: 400; color: #666; text-transform: lowercase; }
 @page { size: A4; margin: 12mm; }
 @media print {
   .no-print { display: none !important; }
