@@ -63,21 +63,32 @@ type productionOverview struct {
 // place the заявка under the matching order column. The produced fact only lands in
 // «Итого» (per dish and grand), so no fact ever gets re-apportioned across orders.
 func buildProductionOverview(orders []contract.Order, rows []productionEditorRow) productionOverview {
-	overview := productionOverview{
-		OrderNumbers: make([]string, len(orders)),
-		Rows:         make([]productionPivotRow, 0, len(rows)),
-		ColumnTotals: make([]float64, len(orders)),
-	}
+	return buildProductionPivot(orders, rows, func(order contract.Order) string { return order.Number })
+}
+
+// buildProductionPivot is the pivot behind both views: one column per distinct
+// columnKey (order number for the on-screen «Обзор», shop name for the print
+// form — there several orders of one shop merge into a single column).
+func buildProductionPivot(orders []contract.Order, rows []productionEditorRow, columnKey func(contract.Order) string) productionOverview {
+	overview := productionOverview{Rows: make([]productionPivotRow, 0, len(rows))}
 	columnOf := make(map[string]int, len(orders))
-	for index, order := range orders {
-		overview.OrderNumbers[index] = order.Number
-		columnOf[order.Number] = index
+	orderColumn := make(map[string]int, len(orders))
+	for _, order := range orders {
+		key := columnKey(order)
+		column, ok := columnOf[key]
+		if !ok {
+			column = len(overview.OrderNumbers)
+			columnOf[key] = column
+			overview.OrderNumbers = append(overview.OrderNumbers, key)
+		}
+		orderColumn[order.Number] = column
 	}
+	overview.ColumnTotals = make([]float64, len(overview.OrderNumbers))
 	var grandOrdered, grandProduced float64
 	for _, row := range rows {
-		pivot := productionPivotRow{Name: row.ProductName, Cells: make([]float64, len(orders))}
+		pivot := productionPivotRow{Name: row.ProductName, Cells: make([]float64, len(overview.OrderNumbers))}
 		for _, share := range row.Shares {
-			if column, ok := columnOf[share.OrderNumber]; ok {
+			if column, ok := orderColumn[share.OrderNumber]; ok {
 				pivot.Cells[column] += share.OrderedQuantity
 				overview.ColumnTotals[column] += share.OrderedQuantity
 			}
@@ -89,6 +100,15 @@ func buildProductionOverview(orders []contract.Order, rows []productionEditorRow
 	}
 	overview.GrandTotal = productionPivotCell{Produced: grandProduced, Delta: grandProduced - grandOrdered}
 	return overview
+}
+
+// shopNameOf labels a print column with the sending shop, falling back to the
+// legacy free-text location for orders created before departments.
+func shopNameOf(order contract.Order) string {
+	if order.FromDepartment != nil && strings.TrimSpace(order.FromDepartment.Name) != "" {
+		return order.FromDepartment.Name
+	}
+	return fallback(strings.TrimSpace(order.Location), "Без магазина")
 }
 
 type productionSheetView struct {
@@ -155,6 +175,109 @@ func (s *server) productionDetailPage(w http.ResponseWriter, r *http.Request) {
 	rows := buildProductionRows(orders, sheet.Items)
 	data := productionEditorData{Sheet: &sheet, Orders: orders, Rows: rows, Overview: buildProductionOverview(orders, rows)}
 	s.render(w, r, http.StatusOK, page{Title: fmt.Sprintf("Отработка №%d", sheet.ID), View: "production-detail", Viewer: viewer, Success: queryMessage(r, "success"), Data: data})
+}
+
+// printGroup is one catalog group («Кокроки», «Пирожки», …) of the print form.
+type printGroup struct {
+	Name string
+	Rows []productionPivotRow
+}
+
+type productionPrintData struct {
+	Sheet        contract.ProductionSheet
+	Shops        []string
+	Groups       []printGroup
+	ColumnTotals []float64
+	GrandTotal   productionPivotCell
+	Reports      []contract.MonitorReport
+	MonitorError string
+}
+
+// productionPrintPage renders the standalone print form of a saved sheet:
+// dishes down the side grouped по заборнику, shops across the top, then the
+// dough calculation for the batch — the paper бланк цеха, but computed.
+func (s *server) productionPrintPage(w http.ResponseWriter, r *http.Request) {
+	_, cred, ok := s.requireProduction(w, r)
+	if !ok {
+		return
+	}
+	id, err := parseID(r)
+	if err != nil {
+		s.renderError(w, r, http.StatusBadRequest, "Некорректный номер отработки.")
+		return
+	}
+	sheet, err := s.queries.ProductionSheet(r.Context(), cred, id)
+	if err != nil {
+		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить отработку."))
+		return
+	}
+	orders, err := s.loadOrders(r, cred, sheet.OrderNumbers)
+	if err != nil {
+		s.renderError(w, r, statusOr(err, http.StatusBadGateway), application.MessageOf(err, "Не удалось загрузить заказы партии."))
+		return
+	}
+	pivot := buildProductionPivot(orders, buildProductionRows(orders, sheet.Items), shopNameOf)
+	// The catalog only orders and captions the rows — a failure to load it
+	// must not kill the print form, so it degrades to one unnamed group.
+	catalog, err := s.queries.Catalog(r.Context(), cred)
+	if err != nil {
+		s.logger.Error("load catalog for print", "error", err)
+		catalog = nil
+	}
+	data := productionPrintData{
+		Sheet:        sheet,
+		Shops:        pivot.OrderNumbers,
+		Groups:       groupPivotRows(catalog, pivot.Rows),
+		ColumnTotals: pivot.ColumnTotals,
+		GrandTotal:   pivot.GrandTotal,
+	}
+	monitor, err := s.monitorData(r, cred, sheet.OrderNumbers)
+	if err != nil {
+		data.MonitorError = application.MessageOf(err, "Не удалось рассчитать тесто.")
+	} else {
+		data.Reports = monitor.Reports
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := s.templates.ExecuteTemplate(w, "production-print", data); err != nil {
+		s.logger.Error("render production print", "error", err)
+	}
+}
+
+// groupPivotRows orders the dishes по заборнику (catalog sort) and slices them
+// into catalog groups, the way the paper form lists «Кокроки», «Пирожки», …
+// Dishes unknown to the catalog keep their batch order in a trailing «Прочее».
+func groupPivotRows(catalog []contract.Dish, rows []productionPivotRow) []printGroup {
+	type place struct {
+		position int
+		group    string
+	}
+	dishKey := func(name string) string { return strings.ToLower(strings.TrimSpace(name)) }
+	catalogPlace := make(map[string]place, len(catalog))
+	for index, dish := range catalog {
+		catalogPlace[dishKey(dish.Name)] = place{position: index, group: fallback(dish.Theme, "Без группы")}
+	}
+	sorted := make([]productionPivotRow, len(rows))
+	copy(sorted, rows)
+	sort.SliceStable(sorted, func(i, j int) bool {
+		a, aOK := catalogPlace[dishKey(sorted[i].Name)]
+		b, bOK := catalogPlace[dishKey(sorted[j].Name)]
+		if aOK != bOK {
+			return aOK
+		}
+		return aOK && a.position < b.position
+	})
+	var groups []printGroup
+	for _, row := range sorted {
+		name := "Прочее"
+		if placed, ok := catalogPlace[dishKey(row.Name)]; ok {
+			name = placed.group
+		}
+		if len(groups) == 0 || groups[len(groups)-1].Name != name {
+			groups = append(groups, printGroup{Name: name})
+		}
+		groups[len(groups)-1].Rows = append(groups[len(groups)-1].Rows, row)
+	}
+	return groups
 }
 
 func (s *server) productionCreate(w http.ResponseWriter, r *http.Request) {

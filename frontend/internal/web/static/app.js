@@ -42,6 +42,10 @@
   }, true);
 
   document.addEventListener('click', (event) => {
+    if (event.target.closest('[data-print]')) window.print();
+  });
+
+  document.addEventListener('click', (event) => {
     const link = event.target.closest('a[data-confirm]');
     if (!link || link.dataset.confirmed === 'true') return;
     event.preventDefault();

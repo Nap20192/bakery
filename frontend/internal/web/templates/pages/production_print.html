@@ -1,0 +1,45 @@
+{{/* Standalone print form of a production sheet: dishes grouped по заборнику,
+     shops across the top, then the batch dough calculation. No app shell —
+     the page exists to be printed. */}}
+{{define "production-print"}}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Отработка №{{.Sheet.ID}} · печать · Bakery</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/app.css">
+  <script defer src="/static/app.js"></script>
+</head>
+<body class="print-body">
+  <main class="print-sheet">
+    <header class="print-header">
+      <div>
+        <h1>Бланк отработки №{{.Sheet.ID}}</h1>
+        <p class="print-meta">{{formatDate .Sheet.CreatedAt}} · заказы: {{join .Sheet.OrderNumbers ", "}}</p>
+      </div>
+      <button class="button button-primary no-print" type="button" data-print>Печать</button>
+    </header>
+    <table class="print-table">
+      <thead><tr><th class="print-name">Позиция</th>{{range .Shops}}<th>{{.}}</th>{{end}}<th>Итого</th></tr></thead>
+      <tbody>
+        {{range .Groups}}<tr class="print-group"><th colspan="{{add (len $.Shops) 2}}">{{.Name}}</th></tr>
+        {{range .Rows}}<tr><th class="print-name">{{.Name}}</th>{{range .Cells}}<td>{{if .}}{{formatQty .}}{{else}}·{{end}}</td>{{end}}<td><strong>{{template "overview-cell" .Total}}</strong></td></tr>{{end}}
+        {{end}}
+      </tbody>
+      <tfoot><tr><th class="print-name">Итого</th>{{range .ColumnTotals}}<td><strong>{{if .}}{{formatQty .}}{{else}}·{{end}}</strong></td>{{end}}<td><strong>{{template "overview-cell" .GrandTotal}}</strong></td></tr></tfoot>
+    </table>
+    <section class="print-monitor">
+      <h2>Расчёт теста</h2>
+      {{if .MonitorError}}<p class="print-meta">{{.MonitorError}}</p>
+      {{else if .Reports}}{{range .Reports}}<article class="print-report">
+        <h3><span>{{.Report.Ingredient.ProductName}}</span><strong>{{formatQty3 .Report.Ingredient.Quantity}} {{.Report.Ingredient.Unit}}</strong></h3>
+        {{if .Report.Components}}<ul class="print-ingredients">{{range .Report.Components}}<li><span>{{.ProductName}}</span><strong>{{formatQty3 .Quantity}} {{.Unit}}</strong></li>{{end}}</ul>{{end}}
+      </article>{{end}}
+      {{else}}<p class="print-meta">Расчёт пуст.</p>{{end}}
+    </section>
+  </main>
+</body>
+</html>
+{{end}}

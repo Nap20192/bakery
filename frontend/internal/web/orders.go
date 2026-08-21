@@ -492,6 +492,26 @@ func (s *server) orderSelectionPage(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, http.StatusOK, page{Title: "Партия", View: "selection", Viewer: viewer, Error: notice, Data: selectionData{Orders: orders, Numbers: batch, Rows: rows, Overview: buildProductionOverview(orders, rows)}})
 }
 
+// monitorData runs the dough calculation for the given orders: the dedicated
+// single-order endpoint for one, the batch endpoint otherwise.
+func (s *server) monitorData(r *http.Request, cred application.Credentials, numbers []string) (monitorData, error) {
+	if len(numbers) == 1 {
+		result, err := s.queries.OrderMonitor(r.Context(), cred, numbers[0])
+		if err != nil {
+			return monitorData{}, err
+		}
+		return monitorData{
+			Reports:      result.Reports,
+			OrderReports: []contract.BatchOrderMonitor{{Order: result.Order, Reports: result.Reports}},
+		}, nil
+	}
+	result, err := s.queries.BatchMonitor(r.Context(), cred, numbers)
+	if err != nil {
+		return monitorData{}, err
+	}
+	return monitorData{Reports: result.TotalReports, OrderReports: result.Orders}, nil
+}
+
 func (s *server) monitorFragment(w http.ResponseWriter, r *http.Request) {
 	_, cred, ok := s.requireProduction(w, r)
 	if !ok {
@@ -502,23 +522,10 @@ func (s *server) monitorFragment(w http.ResponseWriter, r *http.Request) {
 		s.renderError(w, r, http.StatusBadRequest, "Выберите хотя бы один заказ.")
 		return
 	}
-	data := monitorData{}
-	if len(numbers) == 1 {
-		result, err := s.queries.OrderMonitor(r.Context(), cred, numbers[0])
-		if err != nil {
-			s.renderMonitorError(w, err)
-			return
-		}
-		data.Reports = result.Reports
-		data.OrderReports = []contract.BatchOrderMonitor{{Order: result.Order, Reports: result.Reports}}
-	} else {
-		result, err := s.queries.BatchMonitor(r.Context(), cred, numbers)
-		if err != nil {
-			s.renderMonitorError(w, err)
-			return
-		}
-		data.Reports = result.TotalReports
-		data.OrderReports = result.Orders
+	data, err := s.monitorData(r, cred, numbers)
+	if err != nil {
+		s.renderMonitorError(w, err)
+		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.templates.ExecuteTemplate(w, "monitor", data); err != nil {

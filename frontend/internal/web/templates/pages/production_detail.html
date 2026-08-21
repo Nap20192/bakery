@@ -6,6 +6,7 @@
       "Title" (printf "Отработка №%d" $sheet.ID))}}
     <div class="actions">
       <a class="button" href="/production">К журналу</a>
+      <a class="button" href="/production/{{$sheet.ID}}/print" target="_blank" rel="noopener">Печать</a>
       <form action="/production/{{$sheet.ID}}/delete" method="post" data-confirm="Удалить отработку №{{$sheet.ID}}? Заказы вернутся к факту по заявке.">{{template "csrf" .CSRF}}<button class="button button-danger" type="submit">Удалить</button></form>
     </div>
   </header>

@@ -108,6 +108,7 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("GET /production", s.productionPage)
 	mux.HandleFunc("POST /production", s.productionCreate)
 	mux.HandleFunc("GET /production/{id}", s.productionDetailPage)
+	mux.HandleFunc("GET /production/{id}/print", s.productionPrintPage)
 	mux.HandleFunc("POST /production/{id}", s.productionUpdate)
 	mux.HandleFunc("POST /production/{id}/delete", s.productionDelete)
 

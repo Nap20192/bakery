@@ -591,3 +591,24 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .category-tab-emerald { --chip: #6fbf95; }.category-tab-rose { --chip: #d98a98; }.category-tab-stone { --chip: #b3a89b; }
   .category-tab.is-active { color: #191714; }
 }
+
+/* Печатный бланк отработки (/production/:id/print): всегда светлый — он для бумаги. */
+.print-body { background: #fff; color: #1a1a1a; }
+.print-sheet { max-width: 900px; margin: 0 auto; padding: 24px 16px 40px; display: grid; gap: 20px; }
+.print-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.print-header h1 { margin: 0; font-size: 1.25rem; }
+.print-meta { margin: 4px 0 0; color: #666; font-size: 0.85rem; }
+.print-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.print-table th, .print-table td { border: 1px solid #999; padding: 3px 8px; text-align: center; }
+.print-table .print-name { text-align: left; font-weight: 500; }
+.print-table .print-group th { background: #eee; text-transform: uppercase; font-size: 0.78rem; letter-spacing: 0.04em; }
+.print-table tfoot th, .print-table tfoot td { background: #f5f5f5; }
+.print-monitor h2 { margin: 0 0 8px; font-size: 1.1rem; }
+.print-report { break-inside: avoid; }
+.print-report h3 { display: flex; justify-content: space-between; gap: 12px; margin: 10px 0 4px; font-size: 0.95rem; border-bottom: 1px solid #999; padding-bottom: 2px; }
+.print-ingredients { list-style: none; margin: 0; padding: 0; max-width: 460px; }
+.print-ingredients li { display: flex; justify-content: space-between; gap: 12px; padding: 1px 0; border-bottom: 1px dotted #ccc; }
+@media print {
+  .no-print { display: none !important; }
+  .print-sheet { max-width: none; padding: 0; gap: 14px; }
+}

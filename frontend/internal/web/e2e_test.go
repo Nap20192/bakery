@@ -13,6 +13,7 @@ import (
 
 	"bakery/frontend/internal/application"
 	"bakery/internal/inbound/api/contract"
+	monitoringdomain "bakery/internal/services/monitor/domain"
 )
 
 // fakeBackend implements application.Queries and application.Commands in memory,
@@ -30,6 +31,8 @@ type fakeBackend struct {
 	updatedOrder    contract.Order
 	orders          map[string]contract.Order
 	sheets          []contract.ProductionSheet
+	sheet           contract.ProductionSheet
+	batchMonitor    contract.BatchMonitor
 	categories      []contract.Category
 	orderFilters    application.OrderFilters
 	orderPages      map[int]contract.OrdersPage
@@ -93,13 +96,13 @@ func (f *fakeBackend) ProductionSheets(context.Context, application.Credentials)
 	return f.sheets, nil
 }
 func (f *fakeBackend) ProductionSheet(context.Context, application.Credentials, int64) (contract.ProductionSheet, error) {
-	return contract.ProductionSheet{}, nil
+	return f.sheet, nil
 }
 func (f *fakeBackend) OrderMonitor(context.Context, application.Credentials, string) (contract.OrderMonitor, error) {
 	return contract.OrderMonitor{}, nil
 }
 func (f *fakeBackend) BatchMonitor(context.Context, application.Credentials, []string) (contract.BatchMonitor, error) {
-	return contract.BatchMonitor{}, nil
+	return f.batchMonitor, nil
 }
 func (f *fakeBackend) Users(context.Context, application.Credentials) ([]contract.User, error) {
 	return []contract.User{{ID: 1, Username: "admin", Role: "admin"}}, nil
@@ -667,6 +670,61 @@ func TestE2EProductionJournalOmitsSheetsWithoutCategory(t *testing.T) {
 	}
 	if strings.Contains(html, "№2") || strings.Contains(html, "Без типа") {
 		t.Fatal("uncategorized production sheet reached the journal")
+	}
+}
+
+func TestE2EProductionPrintPage(t *testing.T) {
+	t.Parallel()
+	category := contract.Category{ID: 1, Name: "Хлеб", Letter: "Х", Color: "amber"}
+	back := &fakeBackend{
+		loginToken: "baker-token",
+		viewers: map[application.Credentials]contract.Me{
+			"Bearer baker-token": {Role: "baker", TelegramUsername: "bakeruser"},
+		},
+		orders: map[string]contract.Order{
+			"A1": {Number: "A1", Category: &category,
+				FromDepartment: &contract.Department{ID: 1, Name: "Сары-Арка"},
+				Items: []contract.OrderItem{
+					{ProductName: "Багет", Quantity: 3, ProductionQuantity: 3},
+					{ProductName: "Самса", Quantity: 5, ProductionQuantity: 5},
+				}},
+			"A2": {Number: "A2", Category: &category,
+				FromDepartment: &contract.Department{ID: 2, Name: "Шолохова"},
+				Items: []contract.OrderItem{
+					{ProductName: "Багет", Quantity: 2, ProductionQuantity: 2},
+				}},
+		},
+		sheet: contract.ProductionSheet{ID: 7, CreatedAt: "2026-08-20T08:00:00Z", OrderNumbers: []string{"A1", "A2"}},
+		batchMonitor: contract.BatchMonitor{TotalReports: []contract.MonitorReport{{
+			Code: "dough",
+			Report: monitoringdomain.IngredientReport{
+				Ingredient: monitoringdomain.IngredientUsage{ProductName: "Тесто дрожжевое", Unit: "кг", Quantity: 12.5},
+				Components: []monitoringdomain.IngredientComponent{{ProductName: "Мука", Unit: "кг", Quantity: 8}},
+			},
+		}}},
+	}
+	srv, client := newE2E(t, back)
+	login(t, client, srv.URL, "bakeruser")
+
+	resp, err := client.Get(srv.URL + "/production/7/print")
+	if err != nil {
+		t.Fatalf("get print: %v", err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("print status = %d, want 200", resp.StatusCode)
+	}
+	html := string(body)
+	// Shop columns, catalog group + trailing «Прочее», and the dough calc.
+	for _, want := range []string{"Сары-Арка", "Шолохова", "Хлеб", "Багет", "Прочее", "Самса", "Тесто дрожжевое", "Мука"} {
+		if !strings.Contains(html, want) {
+			t.Errorf("print page misses %q", want)
+		}
+	}
+	// «Багет» (catalog dish, group «Хлеб») must come before «Самса» (unknown, «Прочее»).
+	if strings.Index(html, "Багет") > strings.Index(html, "Самса") {
+		t.Error("print rows are not in catalog order")
 	}
 }
 
