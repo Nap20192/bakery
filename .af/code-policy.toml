@@ -1,0 +1,25 @@
+schema = "af.code-task-policy/1"
+check_wall_ms = 5400000
+require_container = false
+
+[checks."vet"]
+name = "vet"
+required = true
+
+[checks."vet".command]
+program = "make"
+
+[[checks."vet".command.args]]
+value = "vet"
+provenance = "literal"
+
+[checks."test"]
+name = "test"
+required = true
+
+[checks."test".command]
+program = "make"
+
+[[checks."test".command.args]]
+value = "test"
+provenance = "literal"

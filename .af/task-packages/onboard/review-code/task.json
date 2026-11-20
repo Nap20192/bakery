@@ -1,0 +1,6 @@
+{
+  "schema":"af.task-file/1", "task_id":"review", "kind":"review",
+  "goal":"Review the selected change", "strategy":"light",
+  "requirements":{"review_scope":"Review the selected source or Diff for actionable defects under the captured policy and acceptance checks."},
+  "pipeline":{"name":"onboard/review-code","fallback":"refuse"}
+}
