@@ -15,21 +15,26 @@ make sqlc       # sqlc generate  — run after editing queries/
 # Run a single test
 go test ./internal/services/order/... -run TestFoo
 
+# Run the app (web UI + API + bot + background jobs) on :8080
+go run ./cmd/bakery
+
 # Frontend
 go test ./frontend/...
 go vet ./frontend/...
-FRONTEND_ADDR=:5173 BACKEND_URL=http://127.0.0.1:8080 go run ./frontend
 ```
 
 After editing any `.sql` file in `queries/`, run `make sqlc` before building.
 
 ## Architecture
 
-**Modular monolith** with clean architecture and dependency inversion. Three binaries share one Go module:
+**Modular monolith** with clean architecture and dependency inversion. One binary, `cmd/bakery`, runs everything in one process:
 
-- `cmd/worker` — HTTP API + iiko sync + order cleanup; applies DB migrations on startup, creates admin user
-- `cmd/bot` — Telegram bot + RabbitMQ order-event consumer
-- `frontend` — Go HTML/HTMX BFF; calls the worker API and never the database
+- HTML/HTMX frontend — the only HTTP listener; calls the API through an in-process transport and never the database
+- JSON API — not mounted on any port
+- iiko sync, order cleanup, outbox relay
+- Telegram bot — connects in the background; Telegram being down never stops the web UI (`docs/constraints.md` C4)
+
+It applies DB migrations on startup and creates the admin user. Deployment: `docs/deployment.md`.
 
 **Dependency direction is strictly inward:**
 
@@ -64,10 +69,10 @@ Not every service has every folder: `admin` has no domain/repo; `sync` has no do
 
 Two-phase wiring in `internal/deps`:
 
-1. `InfraDeps` — db, sqlc `*Queries`, RabbitMQ publisher/consumer, iiko client
+1. `InfraDeps` — db, sqlc `*Queries`, iiko client
 2. `AppDeps` — services + transport, each `WithXService(infra)` delegates to `<svc>app.New(...)`
 
-The two binaries select different option sets. Dependency order matters: declare a service after its dependencies (e.g. `admin` needs `auth` + `department`).
+Dependency order matters: declare a service after its dependencies (e.g. `admin` needs `auth` + `department`).
 
 ## Critical rules
 
@@ -77,7 +82,7 @@ The two binaries select different option sets. Dependency order matters: declare
 
 **Domain is pure.** No DB, pgx, sqlc, HTTP, telebot, or other service imports in `domain/`.
 
-**Use `internal/pkg/enum`** for roles, department types, iiko product types, rabbitmq names. Never hardcode their string values.
+**Use `internal/pkg/enum`** for roles, department types, iiko product types. Never hardcode their string values.
 
 **Never expose raw DB/iiko errors to users.** Log the technical cause; return a safe message.
 
@@ -103,16 +108,16 @@ Three middlewares in `internal/inbound/api/httpx/`:
 - `RequireAuth` — any logged-in user
 - `RequireAdmin` — admin role only
 
-## Events (RabbitMQ)
+## Events (transactional outbox, no broker)
 
-Order service records domain events (`order.created`, `order.updated`) on the aggregate via `sharedkernel.AggregateRoot`, then the usecase publishes them through its `EventPublisher` port. Fanout exchange `bakery.order-events` → bot queue `bakery.bot.order-events`. Bot notifies: order creator, all bakers, workshop group chat.
+Order service records domain events (`order.created`, `order.updated`, …) on the aggregate via `sharedkernel.AggregateRoot`; the repo stores them in `order_outbox` in the same transaction. The outbox relay hands each row, in order, to its `orderoutbox.Handler` — the Telegram bot, in-process. Bot notifies: order creator, all bakers, workshop group chat. While the bot is not connected, events wait in the outbox.
 
 ## Database
 
 - `queries/*.sql` → run `sqlc generate` → `internal/outbound/db/sqlc/`
-- Migrations in `migrations/NNNNN_name.sql` (goose-style); applied automatically by worker on startup
+- Migrations in `migrations/NNNNN_name.sql` (goose-style); applied automatically on startup
 - `DATABASE_URL` takes priority over individual `POSTGRES_*` vars
-- Seed data for dish catalog: `templates/dishes.txt` → «Булочки», `templates/bread.txt` → «Хлеб» (worker сидит оба на старте; категория, назначенная админом, и ручной `sort_order` не затираются — `sort_order` задаётся шаблоном только при первой вставке). Формат шаблона: строка-заголовок «группа» (заглавными) + строки `<код> <название>`.
+- Seed data for dish catalog: `templates/dishes.txt` → «Булочки», `templates/bread.txt` → «Хлеб» (приложение сидит оба на старте; категория, назначенная админом, и ручной `sort_order` не затираются — `sort_order` задаётся шаблоном только при первой вставке). Формат шаблона: строка-заголовок «группа» (заглавными) + строки `<код> <название>`.
 - Normalized catalog model: `order_categories` → `dish_groups` (группа, FK на категорию) → `dish_catalog` (блюдо, FK `group_id` + `category_id`). Слой repo мапит `group_id` обратно в строку «группа» (поле `Theme` в domain/DTO осталось — это имя группы).
 
 ## Domain rules (do not regress)
@@ -136,8 +141,8 @@ Keep cycle protection and recursion-depth limits.
 ## Frontend
 
 Go `html/template` + vendored HTMX + plain CSS/JavaScript in `frontend/`.
-Deployed on Railway as a separate Go BFF that calls the worker API over the
-private network. API credentials remain in `HttpOnly` cookies.
+Served by `cmd/bakery`; calls the API in-process through `frontend.NewHandler`.
+API credentials remain in `HttpOnly` cookies.
 
 Role-based UI: `shop` creates/edits orders; `baker`/`workshop` also creates orders (self-sourced from «Цех Пекари», no draft support) plus views all orders and runs ingredient calculations; `admin` manages users. See `frontend/FRONTEND_BEHAVIOR.md` for full route and behavior spec.
 
@@ -149,4 +154,4 @@ Frontend validation (past-date guard) is a UX hint only — backend enforces all
 
 **Add a service:** domain → usecase (interfaces + impl) → infra/repo → infra/http → app/app.go → wire in `internal/deps` → add handler to `api.NewServer` if it has HTTP routes.
 
-**Add a domain event:** Define in `<svc>/domain` embedding `sharedkernel.Event`; record on aggregate; publish from usecase via `EventPublisher` port; add exchange/queue names to `internal/pkg/enum/rabbitmq.go`; handle in `internal/inbound/bot`.
+**Add a domain event:** Define in `<svc>/domain` embedding `sharedkernel.Event`; record on aggregate; the repo persists it to `order_outbox`; handle it in `internal/inbound/bot/handler_events.go`.

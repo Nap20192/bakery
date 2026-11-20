@@ -1,8 +1,9 @@
 # Bakery — Technical Documentation
 
 Documentation for the bakery order-management system: a Go 1.26 modular
-monolith (worker + Telegram bot) over PostgreSQL 17 and RabbitMQ 3, with a
-Go HTML/HTMX Telegram Mini App frontend. Exact pinned
+monolith over PostgreSQL 17, shipped as one binary that runs the API, the
+Telegram bot, the background jobs and the Go HTML/HTMX Telegram Mini App
+frontend. Exact pinned
 versions: [architecture.md → Technology stack](architecture.md#technology-stack).
 
 Organised loosely by the [Diátaxis](https://diataxis.fr/) framework: the
@@ -13,9 +14,10 @@ and edge-cases pages are **explanation** (understand why).
 
 | Document | Type | What it covers |
 |---|---|---|
-| [commands.md](commands.md) | How-to | Run/restart/generate commands: build, sqlc, docker, worker/bot, frontend, workflows |
+| [commands.md](commands.md) | How-to | Run/restart/generate commands: build, sqlc, docker, the app, frontend, workflows |
 | [adding-features.md](adding-features.md) | How-to | The backend↔frontend sync loop and step-by-step checklists for adding features |
-| [architecture.md](architecture.md) | Explanation | System layout, layers, binaries, composition root, auth, events, database, configuration |
+| [architecture.md](architecture.md) | Explanation | System layout, layers, the binary, composition root, auth, events, database, configuration |
+| [deployment.md](deployment.md) | How-to | Railway setup and migration from the three-service layout |
 | [database.md](database.md) | Reference | Every sqlc query in `queries/` — purpose, parameters, callers, SQL conventions |
 | [api/openapi.yaml](api/openapi.yaml) | Reference | The HTTP API contract; drives the route-sync test and the frontend's typed client |
 | [services/order.md](services/order.md) | Reference | Orders, categories, dish catalog, templates, production sheets (отработка), HTTP API, events |

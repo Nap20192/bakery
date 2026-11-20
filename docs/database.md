@@ -9,8 +9,8 @@ Annotation meanings: `:one` returns a single row, `:many` a slice, `:exec`
 nothing. `sqlc.arg` is a required parameter, `sqlc.narg` is nullable
 (optional filter / NULLable column).
 
-Tables are created by goose migrations in `migrations/` (applied by the
-worker on startup).
+Tables are created by goose migrations in `migrations/` (applied on
+startup).
 
 ## queries/orders.sql — orders, items, history (order service)
 

@@ -25,7 +25,6 @@ type LogConfig struct {
 type ServerConfig struct {
 	Host            string
 	Port            int
-	AllowedOrigins  string
 	ShutdownTimeout time.Duration
 }
 
@@ -70,14 +69,9 @@ type Config struct {
 	Migration    MigrationConfig
 	OrderCleanup OrderCleanupConfig
 	Outbox       OutboxConfig
-	RabbitMQ     RabbitMQConfig
 	Server       ServerConfig
 	Sync         SyncConfig
 	Telegram     TelegramConfig
-}
-
-type RabbitMQConfig struct {
-	URL string
 }
 
 type SyncConfig struct {
@@ -134,11 +128,7 @@ func New() *Config {
 		Server: ServerConfig{
 			Host:            helpers.Env("HTTP_HOST", ""),
 			Port:            serverPort(),
-			AllowedOrigins:  helpers.Env("HTTP_ALLOWED_ORIGINS", ""),
 			ShutdownTimeout: helpers.EnvDuration("HTTP_SHUTDOWN_TIMEOUT", 10*time.Second),
-		},
-		RabbitMQ: RabbitMQConfig{
-			URL: helpers.Env("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
 		},
 		Sync: SyncConfig{
 			Interval: helpers.EnvDuration("SYNC_INTERVAL", 6*time.Hour),

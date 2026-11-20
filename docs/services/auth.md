@@ -16,7 +16,7 @@ binding, web sessions, and role management.
   `/start` gate. The bot's gate: if the sender's Telegram username matches an
   account it asks only that account's password; otherwise it asks login +
   password — the username match merely picks the login to verify.
-- Admin bootstrap: the worker calls `EnsureAdminUser(ADMIN_USERNAME,
+- Admin bootstrap: the app calls `EnsureAdminUser(ADMIN_USERNAME,
   ADMIN_PASSWORD)` on startup — creates the admin if missing, otherwise
   leaves the record untouched.
 - Role definitions live in `internal/pkg/enum`; authorization is enforced by

@@ -1,9 +1,4 @@
 // Package backend is the outbound HTTP adapter for the bakery JSON API.
-//
-// The web UI runs as its own service and never touches the database: every
-// read and write goes through the same public API the Telegram Mini App used
-// to call from the browser. Credentials are passed per request instead of
-// being stored on the client, because one process serves many visitors.
 package backend
 
 import (
@@ -21,7 +16,6 @@ import (
 	"bakery/internal/inbound/api/contract"
 )
 
-// Client talks to the bakery API over HTTP.
 type Client struct {
 	baseURL string
 	http    *http.Client

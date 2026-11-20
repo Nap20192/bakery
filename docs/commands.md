@@ -2,7 +2,7 @@
 
 How-to reference for day-to-day operations: running, restarting, code
 generation, database, tests, frontend. All backend commands run from the repo
-root; `.env` is loaded automatically by both binaries (`config.LoadDotenv()`),
+root; `.env` is loaded automatically by the binary (`config.LoadDotenv()`),
 no `export` needed.
 
 ## Build, checks, generation (Makefile)
@@ -35,13 +35,13 @@ go test ./internal/services/order/... -run TestFoo
 go test ./internal/services/order/usecase/order/ -v
 ```
 
-## Infrastructure (Postgres + RabbitMQ)
+## Infrastructure (Postgres)
 
 Docker runs through **colima** on this machine — start it first:
 
 ```bash
 colima start                 # start the docker VM
-docker compose up -d db rabbitmq    # Postgres 17 :5432, RabbitMQ :5672 (+ UI)
+docker compose up -d db      # Postgres 17 :5432
 docker compose ps            # check status
 docker compose logs -f db    # follow logs
 docker compose down          # stop everything (data volumes survive)
@@ -56,31 +56,34 @@ docker compose exec db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"
 psql "$DATABASE_URL"
 ```
 
-## Run the backend
+## Run the app
 
-### Worker (HTTP API :8080, migrations, sync, outbox)
+One binary runs the web UI, the API, the Telegram bot and the background jobs
+(iiko sync, order cleanup, outbox relay):
 
 ```bash
-go run ./cmd/worker
+go run ./cmd/bakery          # http://localhost:8080
 ```
 
 Migrations apply automatically on startup; the admin user and dish catalog
-are ensured/seeded on every start.
+are ensured/seeded on every start. Without a bot token (and `BOT_ENV` other
+than `prod`) the bot is disabled and web login is unavailable — set
+`TEST_BOT_TOKEN` in `.env` to log in.
 
 **Run in background + restart cycle** (the pattern used during development):
 
 ```bash
 # build & start detached, log to /tmp
-go build -o /tmp/bakery-worker ./cmd/worker && \
-  nohup /tmp/bakery-worker > /tmp/bakery-worker.log 2>&1 &
+go build -o /tmp/bakery ./cmd/bakery && \
+  nohup /tmp/bakery > /tmp/bakery.log 2>&1 &
 
 # follow the log
-tail -f /tmp/bakery-worker.log
+tail -f /tmp/bakery.log
 
 # RESTART after code changes: kill old, rebuild, start again
-pkill -f "/tmp/bakery-worker"; \
-  go build -o /tmp/bakery-worker ./cmd/worker && \
-  nohup /tmp/bakery-worker > /tmp/bakery-worker.log 2>&1 &
+pkill -f "/tmp/bakery$"; \
+  go build -o /tmp/bakery ./cmd/bakery && \
+  nohup /tmp/bakery > /tmp/bakery.log 2>&1 &
 ```
 
 If port 8080 is busy (a stray `go run` process):
@@ -89,15 +92,6 @@ If port 8080 is busy (a stray `go run` process):
 lsof -i :8080          # find the PID
 kill <PID>
 ```
-
-### Bot (Telegram + RabbitMQ consumer)
-
-```bash
-go run ./cmd/bot
-```
-
-Requires `BOT_ENV` + the matching `TEST_BOT_TOKEN`/`PROD_BOT_TOKEN` and
-`RABBITMQ_URL` in `.env`.
 
 ### Health check
 
@@ -123,17 +117,13 @@ After editing SQL in `queries/`: `make sqlc` → `make build`. Never edit
 
 ## Frontend (`frontend/`)
 
-```bash
-# Worker must be running on :8080.
-FRONTEND_ADDR=:5173 BACKEND_URL=http://127.0.0.1:8080 go run ./frontend
+The frontend is served by `go run ./cmd/bakery` (see above).
 
+```bash
 # Frontend-only checks.
-gofmt -w frontend/main.go frontend/internal
+gofmt -w frontend
 go test ./frontend/...
 go vet ./frontend/...
-
-# Production binary.
-go build -o /tmp/bakery-frontend ./frontend
 ```
 
 Browser QA is documented in
@@ -146,8 +136,7 @@ run `go test ./internal/inbound/api` (route-sync test), then
 `make frontend-check` (compiles the typed Go API client and renders every
 template fixture).
 
-The dev server expects the worker on :8080. Login for local web testing:
-`admin` / `ADMIN_PASSWORD` from `.env`.
+Login for local web testing: `admin` / `ADMIN_PASSWORD` from `.env`.
 
 ## Typical workflows
 
@@ -156,7 +145,7 @@ The dev server expects the worker on :8080. Login for local web testing:
 ```bash
 # 1. edit code (+ queries/*.sql → make sqlc)
 make build && make vet && make test && make lint
-# 2. restart the local worker (see restart cycle above)
+# 2. restart the local app (see restart cycle above)
 ```
 
 **New DB field:**
@@ -167,26 +156,24 @@ make build && make vet && make test && make lint
 make sqlc
 # 3. adjust repo/domain code
 make build && make test
-# 4. restart worker — it applies the migration on startup
+# 4. restart the app — it applies the migration on startup
 ```
 
 **Fresh local environment from zero:**
 
 ```bash
 colima start
-docker compose up -d db rabbitmq
+docker compose up -d db
 cp .env.example .env          # fill in tokens/passwords
-go run ./cmd/worker           # applies migrations, seeds admin + catalog
-# in a second terminal:
-FRONTEND_ADDR=:5173 BACKEND_URL=http://127.0.0.1:8080 go run ./frontend
+go run ./cmd/bakery           # applies migrations, seeds admin + catalog
 ```
 
 **Full reset of local data:**
 
 ```bash
 docker compose down -v        # ⚠ drops the Postgres volume
-docker compose up -d db rabbitmq
-go run ./cmd/worker           # re-migrates and re-seeds from scratch
+docker compose up -d db
+go run ./cmd/bakery           # re-migrates and re-seeds from scratch
 ```
 
 ## Git conventions used in this repo

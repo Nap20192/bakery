@@ -12,7 +12,7 @@ infra/repo/         techcardrepo — assembles the card from snapshot tables
 app/app.go          techcardapp.New(queries)
 ```
 
-No HTTP adapter. The service is wired into the worker's `AppDeps`
+No HTTP adapter. The service is wired into `AppDeps`
 (`WithTechCardService`) as an internal capability; a future delivery adapter
 should be admin-gated.
 

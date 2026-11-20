@@ -75,7 +75,7 @@ point to the service pages with implementation detail.
 
 ### Retention
 
-- The worker deletes orders older than `ORDER_RETENTION` on
+- The app deletes orders older than `ORDER_RETENTION` on
   `ORDER_CLEANUP_INTERVAL`. Anything that must survive (reports, exports)
   cannot rely on old orders being present.
 

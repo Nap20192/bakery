@@ -7,8 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"bakery/pkg/rabbitmq/consumer"
-
 	tele "gopkg.in/telebot.v3"
 )
 
@@ -16,7 +14,6 @@ type baseBot struct {
 	tele           *tele.Bot
 	authSvc        AuthBackend
 	departmentSvc  DepartmentBackend
-	eventConsumer  *consumer.Consumer
 	miniAppURL     string
 	workshopChatID int64
 }
@@ -31,7 +28,6 @@ func NewOrderBot(
 	token string,
 	authSvc AuthBackend,
 	departmentSvc DepartmentBackend,
-	eventConsumer *consumer.Consumer,
 	miniAppURL string,
 	workshopChatID int64,
 ) (*OrderBot, error) {
@@ -53,7 +49,6 @@ func NewOrderBot(
 			tele:           b,
 			authSvc:        authSvc,
 			departmentSvc:  departmentSvc,
-			eventConsumer:  eventConsumer,
 			miniAppURL:     miniAppURL,
 			workshopChatID: workshopChatID,
 		},

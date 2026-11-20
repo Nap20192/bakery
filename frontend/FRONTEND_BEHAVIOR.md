@@ -7,14 +7,15 @@ Frontend используется как рабочий интерфейс дл�
 
 Реализация: Go BFF рендерит HTML-шаблоны, HTMX улучшает навигацию и формы,
 plain CSS/JavaScript отвечают за адаптивность и локальные взаимодействия.
-Браузер не вызывает worker API напрямую.
+Браузер не вызывает JSON API: API не опубликован ни на одном порту, BFF
+вызывает его внутри процесса.
 
 ## Технические границы
 
 - Frontend — BFF, а не второй backend: авторизация, cookie, CSRF, HTML-роуты,
   projection во view model; бизнес-правила, сохранение, права и расчёты остаются
-  в worker API.
-- Все вызовы worker идут через `frontend/internal/application` Queries/Commands
+  в API.
+- Все вызовы API идут через `frontend/internal/application` Queries/Commands
   и `frontend/internal/backend`. Шаблоны и `app.js` не собирают JSON API руками.
 - HTML-формы должны работать без JavaScript настолько, насколько это возможно;
   HTMX только улучшает навигацию, disabled-state, фрагменты и redirect.
@@ -26,7 +27,7 @@ plain CSS/JavaScript отвечают за адаптивность и лока�
   backend adapter → application port → handler/view model → template.
 - Мутирующие формы используют CSRF: hidden `_csrf` + `X-CSRF-Token` для HTMX/fetch.
 - Ошибки API показываются безопасным русским текстом; технические причины
-  остаются в логах backend/worker.
+  остаются в логах приложения.
 
 ## Роли
 
@@ -489,7 +490,7 @@ plain CSS/JavaScript отвечают за адаптивность и лока�
 
 Поведение:
 - `Рассчитать тесто` запрашивает `/fragments/monitor` или `/monitor/calc`
-  через BFF, не из браузера напрямую в worker;
+  через BFF, не из браузера напрямую в API;
 - ответ — список тестов. Каждый тест показывает название и итог;
 - если есть `Components`, итог справа становится инпутом объёма. Пользователь
   может ввести больший или меньший объём и сразу увидеть пересчитанный состав;
@@ -658,7 +659,7 @@ Backend:
 После изменений frontend:
 
 ```bash
-gofmt -w frontend/main.go frontend/internal
+gofmt -w frontend
 go test ./frontend/...
 go vet ./frontend/...
 ```

@@ -1,11 +1,7 @@
 package api
 
 import (
-	"context"
-	"errors"
-	"fmt"
 	"net/http"
-	"time"
 
 	"bakery/internal/inbound/api/httpx"
 	adminhttp "bakery/internal/services/admin/infra/http"
@@ -24,9 +20,7 @@ import (
 )
 
 type ServerConfig struct {
-	Addr           string
-	AllowedOrigins string
-	BotToken       string
+	BotToken string
 }
 
 // routeRegistrar is implemented by each service's HTTP delivery adapter.
@@ -37,8 +31,6 @@ type routeRegistrar interface {
 type Server struct {
 	auth     *httpx.Authenticator
 	handlers []routeRegistrar
-	config   ServerConfig
-	server   *http.Server
 }
 
 func NewServer(
@@ -62,32 +54,18 @@ func NewServer(
 			monitorhttp.New(monitorSvc, orderSvc, presenter),
 			synchttp.New(syncSvc),
 		},
-		config: config,
 	}
 }
 
-func (s *Server) Start() error {
+// Handler returns the API with its middleware. It is mounted only on the
+// in-process transport the web UI uses, never on a public listener.
+func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", s.handleHealth)
 	for _, h := range s.handlers {
 		h.RegisterRoutes(mux, s.auth)
 	}
-	s.server = &http.Server{
-		Addr:              s.config.Addr,
-		Handler:           s.withMiddleware(mux),
-		ReadHeaderTimeout: 5 * time.Second,
-	}
-	if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		return fmt.Errorf("http server listen: %w", err)
-	}
-	return nil
-}
-
-func (s *Server) Shutdown(ctx context.Context) error {
-	if s == nil || s.server == nil {
-		return nil
-	}
-	return s.server.Shutdown(ctx)
+	return s.withMiddleware(mux)
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {

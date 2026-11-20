@@ -13,7 +13,7 @@ infra/repo/     syncrepo — snapshot persistence (sync-run lifecycle +
 app/app.go      syncapp.New(iikoClient, db, queries, interval)
 ```
 
-No domain and no HTTP: sync is a background capability of the worker.
+No domain and no HTTP: sync is a background capability of the app.
 
 ## Ports
 
@@ -27,13 +27,13 @@ No domain and no HTTP: sync is a background capability of the worker.
 
 ## Behavior
 
-- `Run(ctx)` loops on `SYNC_INTERVAL` (worker goroutine); `SyncOnce(ctx)`
+- `Run(ctx)` loops on `SYNC_INTERVAL` (background goroutine); `SyncOnce(ctx)`
   performs a single fetch-and-save: authenticate against iiko → fetch
   nomenclature and charts → `SaveSnapshot` → logout.
 - Snapshot tables include `iiko_prepared_chart_items`, which the monitor's
   prepared-chart math reads directly (never `raw_json`).
 - iiko credentials come from `IIKO_HOST`, `IIKO_PORT`, `IIKO_LOGIN`,
-  `IIKO_PASSWORD`; the worker fails to start when they are missing
+  `IIKO_PASSWORD`; the app fails to start when they are missing
   (`WithIikoClient` validates).
 - iiko integration tests skip automatically when those env vars are unset;
   recorded results live in `internal/outbound/iiko/testdata/results`.

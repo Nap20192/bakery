@@ -1,5 +1,3 @@
-// Package orderapp is the composition root of the order service: it wires the
-// use case with its repository, and the outbox relay with its publisher.
 package orderapp
 
 import (
@@ -17,7 +15,6 @@ func New(queries *sqlc.Queries, db *pgxpool.Pool) orderuc.UseCase {
 	return orderuc.NewService(orderrepo.New(queries, db))
 }
 
-// NewOutboxRelay builds the relay that publishes persisted order events.
-func NewOutboxRelay(queries *sqlc.Queries, db *pgxpool.Pool, publisher orderoutbox.Publisher, interval time.Duration) *orderoutbox.Relay {
-	return orderoutbox.NewRelay(queries, db, publisher, interval)
+func NewOutboxRelay(queries *sqlc.Queries, handler orderoutbox.Handler, interval time.Duration) *orderoutbox.Relay {
+	return orderoutbox.NewRelay(queries, handler, interval)
 }
