@@ -89,7 +89,7 @@ The two binaries select different option sets. Dependency order matters: declare
 - `frontend/FRONTEND_BEHAVIOR.md` — full route + behavior spec for the BFF.
 - `CLAUDE.md` (this file) — architecture, conventions, domain rules.
 
-Every behavior change updates the relevant doc **in the same change** as the code. If a doc and the code disagree, treat it as a bug: fix whichever is wrong and reconcile them — never leave them drifted. Use the `sdd` skill for spec-first work (write/adjust the spec, then the code) and to audit a spec against the implementation.
+Every behavior change updates the relevant doc **in the same change** as the code. If a doc and the code disagree, treat it as a bug: fix whichever is wrong and reconcile them — never leave them drifted.
 
 ## Authentication
 

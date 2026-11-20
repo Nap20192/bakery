@@ -477,8 +477,7 @@ make frontend-check                                # typed client + templates
 ### Frontend delivery workflow
 
 Any task that changes `frontend/`, frontend behavior, responsive layout,
-interaction, accessibility, or frontend-facing API code must use the repo-local
-`bakery-frontend-workflow` skill and follow
+interaction, accessibility, or frontend-facing API code must follow
 `docs/frontend/development-workflow.md`:
 
 1. inspect the relevant route, handler, template, CSS tokens, API client and
@@ -487,8 +486,7 @@ interaction, accessibility, or frontend-facing API code must use the repo-local
    visible UI changes. `DESIGN.md` is the source of truth for colors,
    typography, layout, grids, controls and component states; Figma remains
    secondary for anatomy and iconography;
-2. state design intent for visible changes using `interface-design` and
-   validate decisions with `typeui-fundamentals`;
+2. state design intent for visible changes;
 3. implement one small complete vertical flow;
 4. run gofmt, frontend tests/vet, relevant tests and production build;
 5. verify the real flow in a browser at 375×812, 768×1024, 1280×800 and
