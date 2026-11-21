@@ -24,7 +24,7 @@ simply omitted; `isset` tells an omitted parameter apart from a zero count.
 
 | Area | Bakery |
 |---|---|
-| Runtime | Go binary: `go run ./frontend` |
+| Runtime | served by the single binary: `go run ./cmd/bakery` |
 | Rendering | standard-library `html/template` + embedded templates |
 | Browser interaction | vendored HTMX 2.0.4 + plain JavaScript |
 | Styling | plain mobile-first CSS with semantic tokens |

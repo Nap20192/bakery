@@ -96,7 +96,11 @@ The setup before that ran `frontend`, `bakery` (worker), `bot` and RabbitMQ as
 separate services on Postgres. Switch to the single binary on Postgres first,
 then move to SQLite as above:
 
-1. Note the cutover start time (UTC).
+1. Check that the old bot has caught up: the `bakery.bot.order-events` queue
+   in the RabbitMQ management UI shows 0 messages ready and 0 unacked. Events
+   still sitting in the queue were marked published long before the cutover
+   and the replay below would not cover them. Then note the cutover start time
+   (UTC).
 2. Point the `bakery` service at `/railway.json` and give it the public
    domain (move it from `frontend`).
 3. Copy the bot variables (`BOT_ENV`, `PROD_BOT_TOKEN`,
