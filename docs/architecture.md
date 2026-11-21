@@ -13,7 +13,7 @@ Backend (`go.mod`, `docker-compose.yml`):
 |---|---|
 | Go | 1.26.1 |
 | SQLite | `modernc.org/sqlite` v1.62.0 (pure Go, no CGO) |
-| `github.com/jackc/pgx/v5` | v5.9.2 — only `cmd/pg2sqlite` (one-time import from the old Postgres) |
+| `github.com/jackc/pgx/v5` | v5.11.0 — only `internal/outbound/db/pgimport` (one-time import, used by `cmd/pg2sqlite` and by `cmd/bakery` when `IMPORT_POSTGRES_URL` is set) |
 | `gopkg.in/telebot.v3` | v3.3.8 |
 | `github.com/joho/godotenv` | v1.5.1 |
 | `github.com/google/uuid` | v1.6.0 |

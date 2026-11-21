@@ -66,9 +66,13 @@ and wiping the volume deletes its backups.
 Earlier versions stored data in a Railway PostgreSQL service. The first start
 with `IMPORT_POSTGRES_URL` set and no database file imports everything from
 Postgres, including undelivered order events, then starts normally. The
-import writes to a temporary file and moves it into place only after every
-table copied with matching row counts and foreign keys checked; on any error
-the process exits and leaves no database file, so the next start retries.
+import reads every table in one read-only `REPEATABLE READ` transaction, so it
+sees a single consistent snapshot, and carries each id sequence over so ids
+deleted in Postgres are not issued again. It writes to a temporary file and
+moves it into place only after every table copied with matching row counts and
+foreign keys checked; on any error the process exits and leaves no database
+file, so the next start retries. Writes made to Postgres after the snapshot
+are not imported — nothing may write to Postgres during the move.
 
 1. Attach the volume at `/data` and let that deploy finish. From now on Railway
    never runs two deployments of the service at once, so no write can land in
@@ -83,7 +87,8 @@ the process exits and leaves no database file, so the next start retries.
 5. Keep the Postgres service until you have checked the data, then delete it.
 
 The same import runs locally with
-`go run ./cmd/pg2sqlite -from <postgres-url> -to <file>`.
+`go run ./cmd/pg2sqlite -from <postgres-url> -to <file>`; stop every writer to
+that Postgres first.
 
 ## Moving from the three-service setup
 

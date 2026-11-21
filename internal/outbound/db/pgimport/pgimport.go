@@ -84,6 +84,11 @@ func copyInto(ctx context.Context, from, to, migrationsDir string) error {
 		return fmt.Errorf("connect postgres: %w", err)
 	}
 	defer func() { _ = source.Close(ctx) }()
+	snapshot, err := source.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+	if err != nil {
+		return fmt.Errorf("begin postgres snapshot: %w", err)
+	}
+	defer func() { _ = snapshot.Rollback(ctx) }()
 
 	target, err := outbounddb.OpenSQLite(ctx, to)
 	if err != nil {
@@ -106,11 +111,14 @@ func copyInto(ctx context.Context, from, to, migrationsDir string) error {
 		}
 	}
 	for _, table := range tables {
-		copied, err := copyTable(ctx, source, tx, table)
+		copied, err := copyTable(ctx, snapshot, tx, table)
 		if err != nil {
 			return err
 		}
-		if err := verifyCount(ctx, source, tx, table, copied); err != nil {
+		if err := verifyCount(ctx, snapshot, tx, table, copied); err != nil {
+			return err
+		}
+		if err := carrySequence(ctx, snapshot, tx, table); err != nil {
 			return err
 		}
 		slog.Info("table copied", "table", table, "rows", copied)
@@ -127,7 +135,7 @@ func copyInto(ctx context.Context, from, to, migrationsDir string) error {
 	return nil
 }
 
-func copyTable(ctx context.Context, source *pgx.Conn, tx *sql.Tx, table string) (int64, error) {
+func copyTable(ctx context.Context, source pgx.Tx, tx *sql.Tx, table string) (int64, error) {
 	columns, err := targetColumns(ctx, tx, table)
 	if err != nil {
 		return 0, err
@@ -193,7 +201,7 @@ func targetColumns(ctx context.Context, tx *sql.Tx, table string) ([]string, err
 	return columns, nil
 }
 
-func verifyCount(ctx context.Context, source *pgx.Conn, tx *sql.Tx, table string, copied int64) error {
+func verifyCount(ctx context.Context, source pgx.Tx, tx *sql.Tx, table string, copied int64) error {
 	var sourceCount, targetCount int64
 	if err := source.QueryRow(ctx, "SELECT COUNT(*) FROM "+table).Scan(&sourceCount); err != nil {
 		return fmt.Errorf("count source %s: %w", table, err)
@@ -203,6 +211,41 @@ func verifyCount(ctx context.Context, source *pgx.Conn, tx *sql.Tx, table string
 	}
 	if sourceCount != targetCount || copied != targetCount {
 		return fmt.Errorf("row count mismatch in %s: postgres=%d copied=%d sqlite=%d", table, sourceCount, copied, targetCount)
+	}
+	return nil
+}
+
+func carrySequence(ctx context.Context, source pgx.Tx, tx *sql.Tx, table string) error {
+	var autoincrement bool
+	if err := tx.QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? AND sql LIKE '%AUTOINCREMENT%')`,
+		table,
+	).Scan(&autoincrement); err != nil {
+		return fmt.Errorf("inspect %s: %w", table, err)
+	}
+	if !autoincrement {
+		return nil
+	}
+	var position int64
+	err := source.QueryRow(ctx,
+		`SELECT COALESCE(s.last_value, 0) FROM pg_sequences s
+		 WHERE format('%I.%I', s.schemaname, s.sequencename) = pg_get_serial_sequence($1, 'id')`,
+		table,
+	).Scan(&position)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return fmt.Errorf("sequence of %s.id not found in postgres", table)
+	}
+	if err != nil {
+		return fmt.Errorf("read sequence of %s: %w", table, err)
+	}
+	if _, err := tx.ExecContext(ctx,
+		`INSERT INTO sqlite_sequence(name, seq) SELECT ?, 0 WHERE NOT EXISTS (SELECT 1 FROM sqlite_sequence WHERE name = ?)`,
+		table, table,
+	); err != nil {
+		return fmt.Errorf("init sequence of %s: %w", table, err)
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE sqlite_sequence SET seq = MAX(seq, ?) WHERE name = ?`, position, table); err != nil {
+		return fmt.Errorf("carry sequence of %s: %w", table, err)
 	}
 	return nil
 }
