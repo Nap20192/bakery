@@ -1,31 +1,33 @@
-{{/* Order tiles. order-card takes {Order, LinkSheet}; LinkSheet turns the
-      production-sheet stamp into a link to /production/{id} (only for viewers
-      who can open it — the matrix, not the shop list). */}}
+{{/* Order tiles. order-card takes {Order, LinkSheet, Short}; LinkSheet turns
+      the production-sheet stamp into a link to /production/{id} (only for
+      viewers who can open it — the matrix, not the shop list); Short shows the
+      order's sequence number only, where the matrix axes already give its shop
+      and date. */}}
 
 {{define "order-card"}}
 {{$o := .Order}}
-<article class="order-card category-border-{{categoryTone $o.Category}}{{if $o.Cancelled}} is-cancelled{{end}}{{if $o.ProductionSheetID}} {{sheetTone $o.ProductionSheetID}}{{end}}" data-select-order data-number="{{$o.Number}}" data-category="{{if $o.Category}}{{$o.Category.ID}}{{else}}0{{end}}" data-category-name="{{if $o.Category}}{{$o.Category.Name}}{{else}}Без типа{{end}}" data-sheet="{{if $o.ProductionSheetID}}{{$o.ProductionSheetID}}{{end}}" data-cancelled="{{$o.Cancelled}}">
-  <a class="order-card-link" href="/orders/{{urlquery $o.Number}}" aria-label="{{if $o.Category}}{{$o.Category.Name}}{{else}}Без типа{{end}}, заказ {{$o.Number}}"></a>
-  <span class="order-card-head">
-    <strong class="order-card-title">{{$o.Number}}{{if $o.Favorite}} <span class="order-card-star" aria-label="Избранный">★</span>{{end}}</strong>
-  </span>
-  <div class="order-card-meta-row">
-    <span class="order-card-count"><strong>{{len $o.Items}}</strong> поз.</span>
-    {{if $o.Cancelled}}<span class="status status-danger" title="Отменён" aria-label="Отменён">✕</span>
-    {{else if $o.ProductionSheetID}}{{template "sheet-stamp" (dict "ID" $o.ProductionSheetID "Link" .LinkSheet)}}{{end}}
+<article class="order-card{{if $o.Cancelled}} is-cancelled{{end}}{{if $o.ProductionSheetID}} {{sheetTone $o.ProductionSheetID}}{{end}}" data-select-order data-number="{{$o.Number}}" data-category="{{if $o.Category}}{{$o.Category.ID}}{{else}}0{{end}}" data-category-name="{{if $o.Category}}{{$o.Category.Name}}{{else}}Без типа{{end}}" data-sheet="{{if $o.ProductionSheetID}}{{$o.ProductionSheetID}}{{end}}" data-cancelled="{{$o.Cancelled}}">
+  <a class="order-card-link" href="/orders/{{urlquery $o.Number}}" aria-label="{{if $o.Category}}{{$o.Category.Name}}{{else}}Без типа{{end}}, заказ {{$o.Number}}, {{len $o.Items}} поз., {{if $o.Cancelled}}отменён{{else if $o.ProductionSheetID}}отработан{{else}}ждёт отработки{{end}}"></a>
+  <div class="order-card-main">
+    <span class="order-card-count"><strong>{{len $o.Items}}</strong> поз.{{if $o.Favorite}} <span class="order-card-star" aria-label="Избранный">★</span>{{end}}</span>
+    {{if $o.Cancelled}}<span class="status status-danger" title="Отменён">{{template "status-icon" "cross"}}<span class="status-label">Отменён</span></span>
+    {{else if $o.ProductionSheetID}}{{template "sheet-stamp" (dict "ID" $o.ProductionSheetID "Link" .LinkSheet)}}
+    {{else}}<span class="status status-waiting" title="Ждёт отработки">{{template "status-icon" "clock"}}<span class="status-label">Ждёт</span></span>{{end}}
   </div>
   <div class="order-card-foot">
-    <span class="order-card-meta">@{{$o.CreatedByUsername}} · {{formatDayMonth $o.CreatedAt}}</span>
+    <span class="order-card-sub">{{if .Short}}<span class="order-card-number" title="{{$o.Number}}">№{{orderSeq $o.Number}}</span>{{else}}<span class="order-card-number">{{$o.Number}}</span>{{end}}<span class="order-card-meta">@{{$o.CreatedByUsername}} · {{formatDayMonth $o.CreatedAt}}</span></span>
     <button class="order-preview-action" type="button" hx-get="/fragments/orders/{{urlquery $o.Number}}" hx-target="#preview-slot" hx-select="unset" hx-swap="innerHTML" aria-label="Обзор заказа {{$o.Number}}" title="Обзор">{{template "navicon" "eye"}}</button>
   </div>
 </article>
 {{end}}
 
+{{define "status-icon"}}{{if eq . "check"}}<svg class="status-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>{{else if eq . "clock"}}<svg class="status-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>{{else}}<svg class="status-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>{{end}}{{end}}
+
 {{/* sheet-stamp: {ID, Link, Tone?}. A link to the отработка when Link is true,
       an inert chip otherwise. Tone overrides the default status-done colour. */}}
 {{define "sheet-stamp"}}
 {{$class := "status"}}{{if .Tone}}{{$class = printf "status %s" .Tone}}{{else}}{{$class = "status status-done"}}{{end}}
-{{if .Link}}<a class="{{$class}}" href="/production/{{.ID}}" title="Открыть отработку №{{.ID}}" aria-label="Отработка №{{.ID}}">✓</a>{{else}}<span class="{{$class}}" title="Отработка №{{.ID}}" aria-label="Отработка №{{.ID}}">✓</span>{{end}}
+{{if .Link}}<a class="{{$class}}" href="/production/{{.ID}}" title="Открыть отработку №{{.ID}}" aria-label="Отработка №{{.ID}}">{{template "status-icon" "check"}}<span class="status-label">Отработан</span></a>{{else}}<span class="{{$class}}" title="Отработка №{{.ID}}" aria-label="Отработка №{{.ID}}">{{template "status-icon" "check"}}<span class="status-label">Отработан</span></span>{{end}}
 {{end}}
 
 {{/* Rendered on its own as the /fragments/orders/{number} response.

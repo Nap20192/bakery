@@ -1,38 +1,39 @@
-@import url('https://fonts.googleapis.com/css2?family=Caprasimo:wght@400&family=Figtree:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=JetBrains+Mono:wght@500;600;700&display=swap');
 
 :root {
   color-scheme: light;
-  --paper: #f5ead8;
-  --paper-deep: #ebddc5;
-  --surface: #f9f4ed;
-  --surface-inset: #eee7db;
-  --ink: #201e1d;
-  --ink-soft: #474238;
-  --ink-muted: #82796a;
-  --ink-faint: rgba(71, 66, 56, 0.38);
-  --crust: #c67139;
-  --crust-dark: #8c491a;
-  --line: #dcd3c4;
-  --line-soft: #eee7db;
-  --success: #56633f;
-  --success-soft: #f0fae1;
-  --warning: #8a6412;
-  --warning-soft: #f8edd2;
-  --danger: #ad3838;
-  --danger-soft: #f8e2df;
-  --accent-teal: #8fa073;
-  --accent-amber: #d67f48;
-  --band-today: #f0fae1;
-  --band-tomorrow: #fff2eb;
-  --focus: #c67139;
+  --paper: #f4f3ee;
+  --paper-deep: #e8e5dc;
+  --surface: #fdfcf9;
+  --surface-inset: #efece4;
+  --ink: #191817;
+  --ink-soft: #4a463f;
+  --ink-muted: #6f6a62;
+  --ink-faint: rgba(74, 70, 63, 0.38);
+  --crust: #b0532f;
+  --crust-dark: #8f4222;
+  --crust-soft: #f6e2d6;
+  --line: #ddd8cd;
+  --line-soft: #ebe7de;
+  --success: #4f5d26;
+  --success-soft: #e4ebd3;
+  --warning: #6e4609;
+  --warning-soft: #f6e7cc;
+  --danger: #a53e2a;
+  --danger-soft: #f6ddd6;
+  --accent-teal: #6b7a3d;
+  --accent-amber: #c98a42;
+  --band-today: #eef2e2;
+  --band-tomorrow: #fbeee6;
+  --focus: #b0532f;
   /* Translucent chrome (top bar, bottom nav, sticky footer) + modal scrim. */
-  --surface-veil: rgba(249, 244, 237, 0.94);
-  --backdrop: rgba(46, 43, 37, 0.5);
+  --surface-veil: rgba(253, 252, 249, 0.94);
+  --backdrop: rgba(25, 24, 23, 0.5);
   --radius-control: 999px;
-  --radius-surface: 20px;
+  --radius-surface: 18px;
   --max: 1180px;
-  --font-serif: "Caprasimo", "Cormorant Garamond", Georgia, "Times New Roman", serif;
-  --font-sans: Figtree, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-serif: "Source Serif 4", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --font-sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
@@ -46,7 +47,7 @@ a { color: inherit; text-underline-offset: 3px; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: 0.55; }
 :where(button, a, input, select, textarea, summary):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-h1, h2 { margin: 0; font-family: var(--font-serif); font-weight: 400; line-height: 1.08; letter-spacing: -0.02em; text-wrap: balance; }
+h1, h2 { margin: 0; font-family: var(--font-serif); font-weight: 600; line-height: 1.1; letter-spacing: -0.01em; text-wrap: balance; }
 h1 { font-size: 3.15rem; }
 h2 { font-size: 1.65rem; }
 h3 { margin: 0; font-size: 0.86rem; font-weight: 700; line-height: 1.3; }
@@ -71,6 +72,7 @@ small { display: block; color: var(--ink-muted); font-size: 0.78rem; }
    the padding insets the 24-viewBox glyph inside the active pill. */
 .nav-ico { display: none; box-sizing: border-box; width: 44px; height: 30px; padding: 4px 11px; border-radius: 9px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .nav-label { line-height: 1; }
+.nav-label-short { display: none; }
 
 .page { width: min(100%, calc(var(--max) + 40px)); margin: 0 auto; padding: 32px 20px 64px; }
 .narrow-page { width: min(100%, 720px); }
@@ -140,48 +142,49 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .category-border-amber { --cat: #c69139; border-left-color: #c69139 !important; }.category-border-sky { --cat: #5d9ab7; border-left-color: #5d9ab7 !important; }.category-border-violet { --cat: #8a6ca2; border-left-color: #8a6ca2 !important; }.category-border-emerald { --cat: #5e9077; border-left-color: #5e9077 !important; }.category-border-rose { --cat: #b66b79; border-left-color: #b66b79 !important; }.category-border-stone { --cat: #948d84; border-left-color: #948d84 !important; }
 
 .shop-order-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.order-card { position: relative; display: grid; align-content: start; gap: 5px; padding: 8px 9px; border: 1px solid var(--line-soft); border-left: 6px solid var(--cat, var(--line-soft)); border-radius: var(--radius-surface); background: var(--surface); cursor: pointer; }
-.order-card:hover { border-color: var(--line); border-left-color: var(--cat, var(--line)); }
+.order-card { position: relative; display: grid; align-content: start; gap: 6px; min-width: 0; padding: 10px 12px; border: 1px solid var(--line-soft); border-radius: 14px; background: var(--surface); cursor: pointer; }
+.order-card:hover { border-color: var(--line); }
 /* Stretched link: an invisible full-card anchor navigates to the order; the
-   meta-row/foot's own controls (sheet stamp, preview) sit above it via z-index
-   so they stay independently clickable. */
+   status chip and the preview button sit above it via z-index so they stay
+   independently clickable. */
 .order-card-link { position: absolute; inset: 0; z-index: 1; }
-.order-card-meta-row a[href], .order-card-foot a[href], .order-preview-action { position: relative; z-index: 2; }
+.order-card-main a[href], .order-card-foot a[href], .order-preview-action { position: relative; z-index: 2; }
 /* In selection mode the whole card toggles the pick — controls must not steal clicks. */
-.selection-active .order-card-meta-row a[href], .selection-active .order-card-foot a[href], .selection-active .order-preview-action { pointer-events: none; }
-.order-card-head { display: grid; gap: 1px; min-width: 0; }
-.order-card-title { font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
-/* Count and the отработка/cancelled stamp share this line, so a stamp never
-   adds a row and grows the card. */
-.order-card-meta-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.order-card-count { display: inline-flex; align-items: baseline; gap: 4px; color: var(--ink-muted); font-size: 0.7rem; white-space: nowrap; }
-.order-card-count strong { color: var(--ink); font-family: var(--font-mono); font-size: 0.92rem; font-weight: 700; }
-.order-card-star { color: #c69139; font-size: 0.8rem; }
-.order-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 6px; border-top: 1px solid var(--line-soft); }
-.order-card-meta { flex: 1 1 auto; min-width: 0; overflow: hidden; color: var(--ink-muted); font-size: 0.74rem; text-overflow: ellipsis; white-space: nowrap; }
+.selection-active .order-card-main a[href], .selection-active .order-card-foot a[href], .selection-active .order-preview-action { pointer-events: none; }
+.order-card-main { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.order-card-count { display: inline-flex; align-items: baseline; gap: 4px; color: var(--ink-muted); font-size: 0.78rem; white-space: nowrap; }
+.order-card-count strong { color: var(--ink); font-family: var(--font-serif); font-size: 1.45rem; font-weight: 600; line-height: 1; }
+.order-card-star { color: #b7791f; font-size: 0.85rem; }
+.order-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; }
+.order-card-sub { display: flex; align-items: baseline; gap: 6px; min-width: 0; color: var(--ink-muted); font-size: 0.75rem; }
+.order-card-number { flex: none; color: var(--ink-soft); font-size: 0.75rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.order-card-meta { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.status { display: inline-flex; flex: none; align-items: center; gap: 4px; min-height: 24px; padding: 0 8px 0 6px; border-radius: var(--radius-control); font-size: 0.72rem; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.status-ico { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; }
 .status-done { color: var(--success); background: var(--success-soft); }
-.order-preview-action { display: inline-grid; width: 30px; height: 30px; min-height: 30px; padding: 0; border: 0; border-radius: var(--radius-control); color: var(--ink-soft); background: transparent; place-items: center; }
+.status-waiting { color: var(--warning); background: var(--warning-soft); }
+.order-preview-action { display: inline-grid; flex: none; width: 30px; height: 30px; min-height: 30px; padding: 0; border: 0; border-radius: var(--radius-control); color: var(--ink-muted); background: transparent; place-items: center; }
 .order-preview-action .nav-ico { display: block; width: 18px; height: 18px; padding: 0; }
 .order-preview-action:hover { color: var(--ink); background: var(--line-soft); }
 .order-card.is-cancelled { opacity: 0.54; }
-.order-card.is-cancelled .order-card-title { text-decoration: line-through; }
-.order-card.is-cancelled { border-left-color: var(--ink-muted) !important; }
+.order-card.is-cancelled .order-card-number { text-decoration: line-through; }
 /* Inset, because an outline on a matrix card is clipped by the scroll container. */
 /* Selection mode is unmistakable: every selectable card wears a checkbox, and
    picking one fills the box and rings the whole card in the accent colour —
    the category stripe included, so the outline stays square instead of lopsided. */
-.selection-active .order-card { cursor: pointer; user-select: none; padding-right: 34px; transition: box-shadow 120ms ease, background 120ms ease; }
-/* visibility, not display: none — keeps the count's box (and thus card height,
-   even stacked on mobile) so entering selection mode never reflows the grid. */
-.selection-active .order-card::after { position: absolute; top: 8px; right: 9px; display: grid; width: 20px; height: 20px; border: 2px solid var(--line); border-radius: 50%; background: var(--surface); color: transparent; content: "✓"; font-size: 0.68rem; font-weight: 700; line-height: 1; place-items: center; transition: background 120ms ease, border-color 120ms ease, color 120ms ease; }
+.selection-active .order-card { cursor: pointer; user-select: none; transition: box-shadow 120ms ease, background 120ms ease; }
+/* The tick takes the preview button's place (hidden, not removed), so entering
+   selection mode never changes the card's size or truncates its text. */
+.selection-active .order-preview-action { visibility: hidden; }
+.selection-active .order-card::after { position: absolute; right: 12px; bottom: 10px; display: grid; width: 20px; height: 20px; border: 2px solid var(--line); border-radius: 50%; background: var(--surface); color: transparent; content: "✓"; font-size: 0.68rem; font-weight: 700; line-height: 1; place-items: center; transition: background 120ms ease, border-color 120ms ease, color 120ms ease; }
 .selection-active .order-card:hover::after { border-color: var(--crust); }
-.order-card.is-selected { border-color: var(--crust) !important; box-shadow: inset 0 0 0 2px var(--crust); background: #f6e5db; }
+.order-card.is-selected { border-color: var(--crust) !important; box-shadow: inset 0 0 0 2px var(--crust); background: var(--crust-soft); }
 .order-card.is-selected::after { border-color: var(--crust); background: var(--crust); color: #ffffff; }
 .order-card.is-selected .order-card-star { display: none; }
 .selection-active .order-card[data-cancelled="true"], .selection-active .order-card[data-sheet]:not([data-sheet=""]) { cursor: not-allowed; opacity: 0.45; }
 .selection-active .order-card[data-cancelled="true"]::after, .selection-active .order-card[data-sheet]:not([data-sheet=""])::after { display: none; }
 /* The toggle itself flips to an active look so the mode is obvious from the bar. */
-[data-selection-toggle][aria-pressed="true"] { border-color: var(--crust); color: var(--crust-dark); background: #f6e5db; }
+[data-selection-toggle][aria-pressed="true"] { border-color: var(--crust); color: var(--crust-dark); background: var(--crust-soft); }
 .sheet-olive { background-color: #e9eddc !important; }.sheet-copper { background-color: #f1e3d8 !important; }.sheet-blue { background-color: #e2eaf0 !important; }.sheet-plum { background-color: #ece2ec !important; }.sheet-moss { background-color: #e3ebe2 !important; }.sheet-clay { background-color: #eee2dc !important; }
 .selection-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .table-hint { color: var(--ink-soft); font-size: 0.85rem; }
@@ -207,8 +210,12 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .order-matrix thead th { position: sticky; z-index: 20; top: 0; padding: 10px 12px; color: var(--ink-soft); background: var(--paper); font-size: 0.75rem; text-align: left; }
 .order-matrix .matrix-axis { position: sticky; z-index: 30; left: 0; width: 92px; padding: 12px 10px; background: var(--paper); }
 .matrix-axis strong, .matrix-axis small { display: block; }
-.matrix-cell { display: grid; gap: 6px; min-height: 100px; padding: 6px; }
-.matrix-cell .order-card { min-height: 0; padding: 7px 8px; }
+.matrix-cell { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; min-height: 92px; padding: 6px; }
+.matrix-cell .order-card { min-height: 0; }
+.matrix-cell-shop { display: none; }
+/* Matrix columns are narrow: the status chip shows its icon only there. */
+.matrix-cell .status-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.matrix-cell .status { padding: 0; width: 24px; justify-content: center; }
 .pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 24px; color: var(--ink-soft); }
 
 /* One white card of «label — value» rows, per the mini-app design. */
@@ -231,7 +238,6 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .history { margin-top: 28px; }
 .history details, .batch-order { border-top: 1px solid var(--line); }
 .history summary, .batch-order summary { min-height: 48px; padding: 12px 4px; cursor: pointer; }
-.status { display: inline-flex; align-items: center; min-height: 26px; padding: 2px 8px; border-radius: var(--radius-control); font-size: 0.75rem; font-weight: 700; text-decoration: none; }
 .status-danger { color: var(--danger); background: var(--danger-soft); }
 .monitor-results { display: grid; gap: 10px; }
 .monitor-report { padding: 12px 0; border-top: 1px solid var(--line); }
@@ -358,7 +364,7 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .order-matrix .tone-tomorrow > th, .order-matrix .tone-tomorrow > td { background: var(--band-tomorrow); }
 .order-matrix .tone-today .matrix-axis small::after { content: " · сегодня"; color: var(--success); font-weight: 700; }
 .order-matrix .tone-tomorrow .matrix-axis small::after { content: " · завтра"; color: var(--accent-amber); font-weight: 700; }
-.matrix-shop { display: inline-block; width: 100%; padding: 5px 10px; border-radius: var(--radius-control); background: var(--surface-inset); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; font-weight: 700; }
+.matrix-shop { display: block; overflow: hidden; color: var(--ink-soft); text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
 
 .calculator-catalog { max-height: 58vh; overflow-y: auto; }
 .calculator-row { display: grid; grid-template-columns: minmax(0, 1fr) 92px; gap: 10px; align-items: center; min-height: 50px; border-bottom: 1px solid var(--line-soft); }
@@ -426,6 +432,15 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .profile-list { display: grid; margin: 24px 0; border-block: 1px solid var(--line); }
 .profile-list div { display: grid; grid-template-columns: 160px 1fr; gap: 18px; padding: 14px 0; border-bottom: 1px solid var(--line-soft); }.profile-list div:last-child { border: 0; }.profile-list dt { color: var(--ink-muted); }.profile-list dd { margin: 0; font-weight: 700; }
 
+.more-links { display: grid; margin: 0 0 24px; overflow: hidden; border: 1px solid var(--line-soft); border-radius: var(--radius-surface); background: var(--surface); }
+.more-links-title { padding: 14px 16px 6px; color: var(--ink-muted); font-family: var(--font-sans); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.more-link { display: flex; align-items: center; gap: 14px; min-height: 60px; padding: 10px 16px; border-top: 1px solid var(--line-soft); color: var(--ink); text-decoration: none; }
+.more-link:first-of-type { border-top: 0; }
+.more-link .nav-ico { display: block; flex: none; width: 40px; height: 40px; padding: 9px; border-radius: 12px; background: var(--surface-inset); }
+.more-link span { display: grid; gap: 2px; min-width: 0; }
+.more-link small { font-size: 0.8rem; }
+.more-link:hover { background: var(--paper); }
+
 .toast-region { position: fixed; z-index: 300; right: 16px; bottom: 16px; display: grid; gap: 8px; width: min(360px, calc(100% - 32px)); }
 .toast { padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--paper); background: var(--ink); }
 .confirm-dialog { width: min(440px, calc(100% - 32px)); padding: 0; border: 0; border-radius: var(--radius-surface); color: var(--ink); background: var(--surface); box-shadow: 0 8px 24px rgba(20, 20, 19, 0.12); }
@@ -449,13 +464,22 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .topbar { min-height: 0; padding: 0; border-bottom: 0; }
   .brand { display: none; }
   /* Nav leaves the header and becomes a fixed bottom tab bar in the thumb zone. */
-  .main-nav { position: fixed; z-index: 90; right: 0; bottom: 0; left: 0; display: flex; justify-content: space-around; gap: 2px; margin: 0; padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--surface-veil); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
-  .main-nav a { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; min-height: 52px; padding: 4px 2px; color: var(--ink-soft); font-size: 0.72rem; font-weight: 600; }
+  /* At most five tabs: the admin-only sections (.nav-secondary) live on the
+     profile page, which the bar labels «Ещё» for admins. «Создать» is the
+     raised round button in the middle. */
+  .main-nav { position: fixed; z-index: 90; right: 0; bottom: 0; left: 0; display: flex; align-items: flex-end; justify-content: space-around; gap: 2px; margin: 0; padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line-soft); background: var(--surface-veil); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+  .main-nav .nav-secondary { display: none; }
+  .main-nav a { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px; min-width: 0; min-height: 52px; padding: 4px 2px; color: var(--ink-soft); font-size: 0.72rem; font-weight: 600; }
   .main-nav a::after { display: none; }
-  .main-nav a[aria-current="page"] { color: var(--ink); }
+  .main-nav a[aria-current="page"], .main-nav a.nav-more-active { color: var(--crust-dark); }
   .nav-ico { display: block; }
-  .main-nav a[aria-current="page"] .nav-ico { color: #ffffff; background: var(--crust); }
+  .main-nav a[aria-current="page"] .nav-ico, .main-nav a.nav-more-active .nav-ico { color: var(--crust-dark); background: var(--crust-soft); }
+  .main-nav .nav-create .nav-ico { width: 52px; height: 52px; margin-top: -24px; padding: 13px; border-radius: 50%; color: #ffffff; background: var(--crust); box-shadow: 0 6px 16px rgba(176, 83, 47, 0.35); stroke-width: 2.2; }
+  .main-nav .nav-create[aria-current="page"] .nav-ico { color: #ffffff; background: var(--crust-dark); }
+  .main-nav .nav-create { color: var(--ink); }
   .nav-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nav-label-full { display: none; }
+  .nav-label-short { display: inline; }
   /* Clear the fixed bar. */
   .page { padding-bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom) + 24px); }
   .sticky-submit { bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom) + 8px); }
@@ -503,14 +527,53 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .login-page { grid-template-columns: 1fr; }
   .login-form-wrap { width: 100%; }
   .brand small { display: none; }
-  .window-nav { display: grid; grid-template-columns: auto 1fr auto; text-align: center; }
-  .window-nav span { align-self: center; font-size: 0.7rem; }
-  .order-matrix { min-width: 400px; }
-  .order-matrix .matrix-axis { width: 60px; }
-  /* Phone: empty days collapse instead of eating a screen of blank cells. */
-  .matrix-cell { min-height: 56px; }
-  .matrix-cell .order-card-title { overflow-wrap: normal; word-break: normal; }
-  .matrix-cell .order-card-meta, .matrix-cell .order-preview-action { font-size: 0.68rem; }
+  .window-nav { flex: 1 1 auto; display: flex; flex-wrap: nowrap; justify-content: space-between; gap: 6px; text-align: center; }
+  .window-nav span { align-self: center; font-size: 0.8rem; font-weight: 600; white-space: nowrap; }
+  .window-nav .button { min-height: 40px; padding-inline: 12px; }
+  .view-switch .view-tab { padding: 7px 10px; }
+  .view-switch .view-tab span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .page-toolbar { flex-wrap: nowrap; }
+  .page-toolbar .category-tabs { flex: 1 1 auto; min-width: 0; }
+  /* Portrait phone: the matrix becomes a day feed. Rows are days, each cell is a
+     shop panel (its name from .matrix-cell-shop) holding that shop's cards, so
+     nothing scrolls sideways; the same DOM keeps selection mode working. */
+  .matrix-scroll { max-height: none; overflow: visible; }
+  .scroll-frame::after { display: none; }
+  .order-matrix, .order-matrix tbody, .order-matrix tr, .order-matrix th, .order-matrix td { display: block; width: auto; }
+  .order-matrix { min-width: 0; table-layout: auto; }
+  .order-matrix thead { display: none; }
+  .order-matrix tr { margin-bottom: 18px; background: transparent !important; }
+  .order-matrix th, .order-matrix td { border: 0; }
+  .order-matrix tbody .matrix-axis { position: static; display: flex; align-items: baseline; gap: 8px; width: auto; padding: 4px 4px 8px; background: transparent !important; box-shadow: none; }
+  .order-matrix tbody .matrix-axis strong { font-family: var(--font-serif); font-size: 1.3rem; }
+  .order-matrix tbody .matrix-axis small { font-size: 0.85rem; }
+  .order-matrix td { margin-bottom: 8px; padding: 12px 14px; border: 1px solid var(--line-soft); border-radius: var(--radius-surface); background: var(--surface) !important; }
+  .matrix-cell-shop { display: block; overflow: hidden; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+  .matrix-cell { min-height: 0; padding: 6px 0 0; }
+  .matrix-cell .order-card { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "foot main"; align-items: center; padding: 8px 0 0; border: 0; border-top: 1px solid var(--line-soft); border-radius: 0; background: transparent; }
+  .matrix-cell .order-card:first-child { padding-top: 2px; border-top: 0; }
+  .matrix-cell .order-card.is-selected { margin: 0 -8px; padding-inline: 8px; border-radius: 12px; }
+  .matrix-cell .order-card-main { grid-area: main; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .matrix-cell .order-card-foot { grid-area: foot; }
+  .matrix-cell .order-card-count strong { font-size: 1.6rem; }
+  .matrix-cell .status { width: auto; padding: 0 8px 0 6px; }
+  .matrix-cell .status-label { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+  .order-matrix td.is-empty { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-color: transparent; background: rgba(232, 229, 220, 0.5) !important; color: var(--ink-muted); }
+  .order-matrix td.is-empty .matrix-cell-shop { color: var(--ink-soft); font-weight: 600; }
+  .order-matrix td.is-empty .matrix-cell { padding: 0; }
+  .order-matrix td.is-empty .empty-cell::before { content: "заявки нет"; }
+  .order-matrix td.is-empty .empty-cell { font-size: 0; }
+  .order-matrix td.is-empty .empty-cell::before { font-size: 0.9rem; }
+  .selection-active .matrix-cell .order-card { padding-left: 32px; }
+  .selection-active .matrix-cell .order-card::after { top: 50%; right: auto; bottom: auto; left: 0; transform: translateY(-50%); }
+  .selection-active .matrix-cell .order-card.is-selected { padding-left: 40px; }
+  .selection-active .matrix-cell .order-card.is-selected::after { left: 8px; }
+  /* While picking a batch, Отмена / Продолжить ride above the tab bar under the
+     thumb instead of squeezing the category chips off the toolbar. */
+  .selection-active .selection-actions { position: fixed; z-index: 85; right: 12px; bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom) + 14px); left: 12px; flex-wrap: nowrap; padding: 8px; border: 1px solid var(--line-soft); border-radius: var(--radius-surface); background: var(--surface-veil); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: 0 8px 24px rgba(25, 24, 23, 0.12); }
+  .selection-active .selection-actions > * { flex: 1 1 0; }
+  .selection-active .selection-actions > .button-primary { flex-grow: 2; }
+  .selection-active .matrix-scroll { padding-bottom: 72px; }
   .shop-order-list { grid-template-columns: 1fr; }
   .drafts-grid { grid-template-columns: 1fr; }
   .meta-grid div { grid-template-columns: 96px minmax(0, 1fr); }
@@ -524,15 +587,16 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .catalog-row { grid-template-columns: minmax(130px, 1fr) 76px 76px; gap: 6px; }
   .catalog-row input { padding-inline: 4px; }
   .sticky-submit { right: 0; bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom)); left: 0; flex-wrap: wrap; justify-content: stretch; gap: 6px; padding: 8px; }
-  /* Bar stacks to two rows at this width, so it's taller than the ≤900px estimate. */
-  .editor-form { padding-bottom: 132px; }
+  .editor-form { padding-bottom: 76px; }
+  .editor-form:has(.sticky-submit > :nth-child(3)) { padding-bottom: 132px; }
   /* min-width:0 + nowrap (from .button) let a box shrink past its own text,
      spilling the label outside the pill — three buttons (Отменить/Сохранить
      черновик/Создать заказ) never fit one row at phone width regardless.
      Give the primary action its own full row and let the rest share the row
      below evenly; wrap as a safety net if a label still doesn't fit. */
   .sticky-submit > * { flex: 1 1 0; min-width: 0; min-height: 38px; padding: 6px 8px; white-space: normal; text-align: center; }
-  .sticky-submit > .button-primary { order: -1; flex-basis: 100%; }
+  .sticky-submit > .button-primary { flex-grow: 2; }
+  .sticky-submit:has(> :nth-child(3)) > .button-primary { order: -1; flex-basis: 100%; }
   .journal-table .journal-axis { width: 60px; }
   .summary-table .summary-axis { min-width: 112px; max-width: 130px; }
   .summary-table th, .summary-table td, .journal-table th, .journal-table td { padding: 7px; }
@@ -542,8 +606,39 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .sheet-link-facts { display: grid; justify-content: start; gap: 2px; }
   .calculator-catalog { max-height: none; }
   .admin-row > summary { grid-template-columns: 1fr; }
+  .user-table-wrap { overflow: visible; border: 0; background: transparent; }
+  .user-table, .user-table tbody, .user-table tr { display: block; }
+  .user-table thead { display: none; }
+  .user-table tr { padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--radius-surface); background: var(--surface); }
+  .user-table tr + tr { margin-top: 8px; }
+  .user-table td, .user-table tbody tr:last-child td { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; padding: 4px 0; border: 0; white-space: normal; overflow-wrap: anywhere; }
+  .user-table td[data-label]::before { color: var(--ink-muted); content: attr(data-label); font-size: 0.85rem; }
+  .user-table .col-actions, .user-table tbody tr:last-child .col-actions { display: block; width: auto; padding-top: 8px; text-align: left; }
+  .user-edit { display: block; }
+  .user-edit > summary { width: 100%; }
+  .user-edit-panel { position: static; width: auto; margin-top: 10px; box-shadow: none; }
   .available-row { grid-template-columns: 1fr; }
   .profile-list div { grid-template-columns: 1fr; gap: 3px; }
+}
+
+/* Phone held sideways: height is the scarce axis, so the tab bar becomes a
+   narrow rail on the left and the page chrome tightens. */
+@media (max-width: 900px) and (max-height: 520px) and (orientation: landscape) {
+  :root { --bottom-bar: 0px; --side-rail: 76px; }
+  .main-nav { top: 0; right: auto; width: var(--side-rail); flex-direction: column; justify-content: center; align-items: center; gap: 4px; padding: 8px 4px calc(8px + env(safe-area-inset-bottom)) calc(4px + env(safe-area-inset-left)); border-top: 0; border-right: 1px solid var(--line-soft); }
+  .main-nav a { flex: 0 0 auto; width: 64px; min-height: 48px; justify-content: center; }
+  .main-nav .nav-create .nav-ico { width: 46px; height: 46px; margin-top: 0; padding: 11px; }
+  .main-nav .nav-create .nav-label { display: none; }
+  .app-shell { padding-left: calc(var(--side-rail) + env(safe-area-inset-left)); }
+  .page { padding: 10px 14px 16px; }
+  .page-heading { margin-bottom: 8px; }
+  .page-heading h1 { font-size: 1.4rem; }
+  .orders-page .page-heading { display: none; }
+  .page-toolbar { margin-bottom: 8px; }
+  .flash { width: auto; margin: 10px 14px 0; }
+  .matrix-scroll, .summary-scroll, .journal-scroll { max-height: calc(min(100dvh, var(--tg-viewport-stable-height, 100dvh)) - 16px); }
+  .sticky-submit { bottom: 8px; }
+  .toast-region { bottom: 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
