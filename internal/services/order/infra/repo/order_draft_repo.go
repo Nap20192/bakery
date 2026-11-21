@@ -19,7 +19,7 @@ func (r *OrderRepository) SaveOrderDraft(ctx context.Context, input orderuc.Save
 		CreatedByUsername: strings.TrimSpace(input.CreatedByUsername),
 		CategoryID:        input.CategoryID,
 		FromDepartmentID:  &fromDepartmentID,
-		FulfillmentDate:   helpers.DateOf(input.FulfillmentDate),
+		FulfillmentDate:   helpers.DateString(input.FulfillmentDate),
 		Comments:          marshalComments(input.Comments),
 		Items:             marshalDraftItems(input.Items),
 	})
@@ -54,7 +54,7 @@ func (r *OrderRepository) DeleteOrderDraft(ctx context.Context, username string,
 }
 
 func (r *OrderRepository) DeleteOrderDraftsOlderThan(ctx context.Context, cutoff time.Time) (int64, error) {
-	return r.queries.DeleteOrderDraftsOlderThan(ctx, helpers.Timestamptz(cutoff))
+	return r.queries.DeleteOrderDraftsOlderThan(ctx, cutoff.UTC())
 }
 
 func draftFromRow(row sqlc.OrderDraft) orderdomain.OrderDraft {
@@ -64,30 +64,28 @@ func draftFromRow(row sqlc.OrderDraft) orderdomain.OrderDraft {
 		FromDepartmentID:  row.FromDepartmentID,
 		Items:             parseDraftItems(row.Items),
 		Comments:          parseComments(row.Comments),
-		UpdatedAt:         row.UpdatedAt.Time,
-	}
-	if row.FulfillmentDate.Valid {
-		draft.FulfillmentDate = row.FulfillmentDate.Time
+		UpdatedAt:         row.UpdatedAt,
+		FulfillmentDate:   parseStoredDate(row.FulfillmentDate),
 	}
 	return draft
 }
 
 // marshalDraftItems/parseDraftItems store a draft's items as a JSON array —
 // unlike real orders, a draft has no order_items rows of its own.
-func marshalDraftItems(items []orderdomain.OrderItem) []byte {
+func marshalDraftItems(items []orderdomain.OrderItem) string {
 	data, err := json.Marshal(items)
 	if err != nil {
-		return []byte("[]")
+		return "[]"
 	}
-	return data
+	return string(data)
 }
 
-func parseDraftItems(raw []byte) []orderdomain.OrderItem {
-	if len(raw) == 0 {
+func parseDraftItems(raw string) []orderdomain.OrderItem {
+	if raw == "" {
 		return nil
 	}
 	var items []orderdomain.OrderItem
-	if err := json.Unmarshal(raw, &items); err != nil {
+	if err := json.Unmarshal([]byte(raw), &items); err != nil {
 		return nil
 	}
 	return items

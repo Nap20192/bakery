@@ -38,3 +38,6 @@ skills-lock.json
 .playwright-mcp/
 output/playwright/
 internal/outbound/iiko/testdata/results/
+
+# Local SQLite database (SQLITE_PATH default)
+/data/

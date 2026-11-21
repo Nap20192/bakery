@@ -12,8 +12,8 @@ Backend (`go.mod`, `docker-compose.yml`):
 | Component | Version |
 |---|---|
 | Go | 1.26.1 |
-| PostgreSQL | 17 (`postgres:17`) |
-| `github.com/jackc/pgx/v5` | v5.9.2 (+ pgxpool) |
+| SQLite | `modernc.org/sqlite` v1.62.0 (pure Go, no CGO) |
+| `github.com/jackc/pgx/v5` | v5.9.2 — only `cmd/pg2sqlite` (one-time import from the old Postgres) |
 | `gopkg.in/telebot.v3` | v3.3.8 |
 | `github.com/joho/godotenv` | v1.5.1 |
 | `github.com/google/uuid` | v1.6.0 |
@@ -38,7 +38,9 @@ frontend build.
 
 ## Binary
 
-`cmd/bakery` is the only deployable. On startup it applies DB migrations,
+`cmd/bakery` is the only deployable. On startup it imports the old Postgres
+data if `IMPORT_POSTGRES_URL` is set and the database file does not exist yet,
+applies DB migrations,
 ensures the admin user and seeds the dish catalog from `templates/`, then runs
 in one process:
 
@@ -101,9 +103,9 @@ Package naming: `usecase/<svc>` → `package <svc>uc`, `domain/` → `package
 
 Two-phase wiring in `internal/deps`:
 
-1. **`InfraDeps`** (`infra.go`) — config, `pgxpool` connection, sqlc
+1. **`InfraDeps`** (`infra.go`) — config, SQLite `*sql.DB`, sqlc
    `*Queries`, iiko client. Built with
-   `NewInfraDeps(WithConfig, WithPostgres, WithRepositories, WithIikoClient)`.
+   `NewInfraDeps(WithConfig, WithDatabase, WithRepositories, WithIikoClient)`.
 2. **`AppDeps`** (`deps.go`) — services and transport. Each
    `WithXService(infra)` option delegates to `<svc>app.New(...)`.
 
@@ -213,14 +215,24 @@ The order service is the only event producer. Flow:
 
 ## Database
 
-- PostgreSQL via `pgx/v5` + `pgxpool`; queries written in `queries/*.sql` and
-  compiled by **sqlc** into `internal/outbound/db/sqlc/`. After editing any
-  `.sql` file run `make sqlc` (or `sqlc generate`) before building. Every
-  query is documented in [database.md](database.md).
+- SQLite in one file (`SQLITE_PATH`, default `data/bakery.db`; on Railway a
+  volume at `/data`). Queries written in `queries/*.sql` are compiled by
+  **sqlc** (engine `sqlite`) into `internal/outbound/db/sqlc/`. After editing
+  any `.sql` file run `make sqlc` before building. Every query and the SQL
+  conventions are documented in [database.md](database.md).
+- Connection (`internal/outbound/db/sqlite.go`): WAL journal,
+  `synchronous=NORMAL`, `busy_timeout=5000`, foreign keys on, transactions
+  start with `BEGIN IMMEDIATE`, times written and read in UTC, and **one
+  open connection**. Every statement is serialized, so order counters
+  cannot race. Inside a transaction, use only the transaction's queries:
+  a call through the pool would wait for the connection the transaction
+  holds and block until the request times out.
+- Unique-constraint violations are recognized by table and column list
+  (`outbounddb.IsUniqueViolation`), which is how duplicate orders,
+  `order.production_exists` and duplicate logins become domain errors.
 - Migrations in `migrations/NNNNN_name.sql` (goose format), applied
-  automatically on startup (`internal/pkg/dbmigrate`).
-- `DATABASE_URL` takes priority; otherwise the DSN is assembled from
-  `POSTGRES_*` variables.
+  automatically on startup (`internal/pkg/dbmigrate`). `00001_init.sql` is
+  the SQLite baseline; history before it lived in Postgres.
 - Seed data: the dish catalog is seeded on startup —
   `templates/dishes.txt` → category «Булочки», `templates/bread.txt` →
   «Хлеб». Seeding is non-destructive: a category already assigned by the
@@ -234,7 +246,7 @@ The order service is the only event producer. Flow:
 | `enum` | Roles, department types, iiko product types. Never hardcode these strings. |
 | `authtoken` | HMAC-signed web session tokens (issue/parse). |
 | `sharedkernel` | `AggregateRoot`, `DomainEvent`, `Event` base for domain events. |
-| `helpers` | pgtype conversion helpers (`Timestamptz`, `DateOf`, …). |
+| `helpers` | Date helpers (`DateString`, `ParseDate`). |
 | `correlation` | Correlation-ID propagation for logs and event metadata. |
 | `dbmigrate` | Goose-style migration runner applied on startup. |
 
@@ -246,7 +258,7 @@ via `config.LoadDotenv()`; see `.env.example`):
 | Area | Variables |
 |---|---|
 | HTTP | `HTTP_HOST`, `HTTP_PORT` (or `PORT`), `HTTP_SHUTDOWN_TIMEOUT` |
-| Database | `DATABASE_URL` **or** `POSTGRES_HOST/PORT/USER/PASSWORD/DB/SSLMODE` |
+| Database | `SQLITE_PATH`, `IMPORT_POSTGRES_URL` (one-time import on first start, see [deployment.md](deployment.md#moving-from-postgres)) |
 | Telegram | `BOT_ENV` (+ `TEST_BOT_TOKEN`/`PROD_BOT_TOKEN` or `BOT_TOKEN`), `MINI_APP_URL`, `TELEGRAM_WORKSHOP_CHAT_ID` |
 | iiko | `IIKO_HOST`, `IIKO_PORT`, `IIKO_LOGIN`, `IIKO_PASSWORD` |
 | Admin bootstrap | `ADMIN_USERNAME`, `ADMIN_PASSWORD` |
@@ -259,8 +271,8 @@ initData validation and web session tokens.
 
 ## Deployment
 
-Railway runs two services: `bakery` (the root `Dockerfile`, config in
-`railway.json`) and PostgreSQL. Only `bakery` gets a public domain; templates,
+Railway runs one service, `bakery` (the root `Dockerfile`, config in
+`railway.json`), with a volume for the SQLite file. Templates,
 CSS, JavaScript and HTMX are embedded in the binary. See
 [deployment.md](deployment.md) for the setup and
 [frontend/ui-kit.md](frontend/ui-kit.md) for interface conventions.

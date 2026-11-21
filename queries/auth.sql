@@ -40,7 +40,7 @@ ORDER BY id;
 -- name: GetAuthUserByTelegramUsername :one
 SELECT *
 FROM auth_users
-WHERE telegram_username = sqlc.arg(telegram_username)::text
+WHERE telegram_username = sqlc.arg(telegram_username)
 ORDER BY id
 LIMIT 1;
 

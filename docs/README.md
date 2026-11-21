@@ -1,7 +1,7 @@
 # Bakery — Technical Documentation
 
 Documentation for the bakery order-management system: a Go 1.26 modular
-monolith over PostgreSQL 17, shipped as one binary that runs the API, the
+monolith over SQLite, shipped as one binary that runs the API, the
 Telegram bot, the background jobs and the Go HTML/HTMX Telegram Mini App
 frontend. Exact pinned
 versions: [architecture.md → Technology stack](architecture.md#technology-stack).

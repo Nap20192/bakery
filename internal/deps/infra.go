@@ -1,19 +1,18 @@
 package deps
 
 import (
+	"database/sql"
 	"fmt"
 	"strconv"
 
 	"bakery/internal/config"
 	"bakery/internal/outbound/db/sqlc"
 	"bakery/internal/outbound/iiko"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type InfraDeps struct {
 	config     *config.Config
-	DB         *pgxpool.Pool
+	DB         *sql.DB
 	iikoClient *iiko.Client
 	queries    *sqlc.Queries
 }
@@ -40,13 +39,13 @@ func WithConfig(cfg *config.Config) infraOption {
 	}
 }
 
-func WithPostgres(db *pgxpool.Pool) infraOption {
+func WithDatabase(db *sql.DB) infraOption {
 	return func(deps *InfraDeps) error {
 		if deps.config == nil {
-			return fmt.Errorf("missing dependencies for Postgres")
+			return fmt.Errorf("missing dependencies for database")
 		}
 		if db == nil {
-			return fmt.Errorf("missing postgres db")
+			return fmt.Errorf("missing database")
 		}
 		deps.DB = db
 		return nil

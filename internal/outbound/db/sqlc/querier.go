@@ -6,8 +6,7 @@ package sqlc
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"time"
 )
 
 type Querier interface {
@@ -31,9 +30,9 @@ type Querier interface {
 	DeleteIikoPreparedChartItemsByChartID(ctx context.Context, preparedChartID string) error
 	DeleteOrderCategory(ctx context.Context, id int64) error
 	DeleteOrderDraft(ctx context.Context, arg DeleteOrderDraftParams) error
-	DeleteOrderDraftsOlderThan(ctx context.Context, updatedAtBefore pgtype.Timestamptz) (int64, error)
+	DeleteOrderDraftsOlderThan(ctx context.Context, updatedAtBefore time.Time) (int64, error)
 	DeleteOrderItemsByOrderID(ctx context.Context, orderID int64) error
-	DeleteOrdersCreatedBefore(ctx context.Context, createdAtBefore pgtype.Timestamptz) (int64, error)
+	DeleteOrdersCreatedBefore(ctx context.Context, createdAtBefore time.Time) (int64, error)
 	DeleteProductionSheet(ctx context.Context, id int64) error
 	DeleteProductionSheetItems(ctx context.Context, sheetID int64) error
 	DeleteProductionSheetLoads(ctx context.Context, sheetID int64) error
@@ -41,9 +40,6 @@ type Querier interface {
 	DishExistsByCode(ctx context.Context, code string) (int64, error)
 	// Find-or-create a group by (category, name); returns its id. The repo resolves
 	// a dish's group name to this id before upserting the dish.
-	// ponytail: UNIQUE(category_id, name) does not dedupe NULL-category groups
-	// (Postgres treats NULLs as distinct), so uncategorized groups can duplicate.
-	// Harmless — the UI groups by name — upgrade to NULLS NOT DISTINCT (PG15+) if it matters.
 	EnsureDishGroup(ctx context.Context, arg EnsureDishGroupParams) (int64, error)
 	FinishIikoSyncRun(ctx context.Context, arg FinishIikoSyncRunParams) (IikoSyncRun, error)
 	GetActiveAssemblyChartByProductID(ctx context.Context, arg GetActiveAssemblyChartByProductIDParams) (GetActiveAssemblyChartByProductIDRow, error)
@@ -52,7 +48,7 @@ type Querier interface {
 	GetActivePreparedChartFullByProductID(ctx context.Context, arg GetActivePreparedChartFullByProductIDParams) (IikoPreparedChart, error)
 	GetAuthUserByID(ctx context.Context, id int64) (AuthUser, error)
 	GetAuthUserByTelegramID(ctx context.Context, telegramID *int64) (AuthUser, error)
-	GetAuthUserByTelegramUsername(ctx context.Context, telegramUsername string) (AuthUser, error)
+	GetAuthUserByTelegramUsername(ctx context.Context, telegramUsername *string) (AuthUser, error)
 	GetAuthUserByUsername(ctx context.Context, username string) (AuthUser, error)
 	GetDepartmentByCode(ctx context.Context, code string) (Department, error)
 	GetDepartmentByID(ctx context.Context, id int64) (Department, error)
@@ -62,16 +58,16 @@ type Querier interface {
 	GetOrderByNumber(ctx context.Context, number string) (Order, error)
 	GetOrderCategoryByID(ctx context.Context, id int64) (OrderCategory, error)
 	GetOrderDraft(ctx context.Context, arg GetOrderDraftParams) (OrderDraft, error)
-	// Позиции хранят только заявку. Факт отработки живёт в журнале и
-	// декорируется при чтении (GetOrderProductionFacts + мердж в репозитории).
+	// Items store only the request. The production fact lives in the journal and
+	// is decorated at read time (GetOrderProductionFacts + merge in the repository).
 	GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]GetOrderItemsByOrderIDRow, error)
 	GetOrderItemsByOrderIDs(ctx context.Context, orderIds []int64) ([]GetOrderItemsByOrderIDsRow, error)
-	// Read-time декоратор: факт выпечки для позиций заказов из журнала (по
-	// каждой позиции побеждает самый свежий лист). Ключ — нормализованное имя.
+	// Read-time decorator: production fact for order items from the journal (the
+	// newest sheet wins per item). The key is the normalized product name.
 	GetOrderProductionFacts(ctx context.Context, orderIds []int64) ([]GetOrderProductionFactsRow, error)
-	// Заказ принадлежит максимум одному листу отработки (1:N от листа к
-	// заказам); на случай исторических пересечений берётся самый свежий лист.
-	// Принадлежность определяется сохранённым выбором, не отклонениями.
+	// An order belongs to at most one production sheet (1:N from sheet to
+	// orders); the newest sheet is taken in case of historical overlaps.
+	// Membership is defined by the saved selection, not by deviations.
 	GetOrderProductionSheetID(ctx context.Context, orderID int64) (int64, error)
 	GetProductionSheet(ctx context.Context, id int64) (ProductionSheet, error)
 	InsertIikoAssemblyChartItem(ctx context.Context, arg InsertIikoAssemblyChartItemParams) error
@@ -92,18 +88,18 @@ type Querier interface {
 	ListOrderDrafts(ctx context.Context, createdByUsername string) ([]OrderDraft, error)
 	ListOrderHistoryByOrderID(ctx context.Context, orderID int64) ([]OrderHistory, error)
 	ListOrderHistoryItemsByHistoryID(ctx context.Context, historyID int64) ([]OrderHistoryItem, error)
-	// Пакетная версия для списка заказов: матрица должна видеть принадлежность
-	// к отработке без отдельного запроса на каждую карточку.
+	// Batch version for order lists: the matrix must see production membership
+	// without a separate query per card.
 	ListOrderProductionSheetIDs(ctx context.Context, orderIds []int64) ([]ListOrderProductionSheetIDsRow, error)
 	ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order, error)
 	ListPreparedChartItemsByChartID(ctx context.Context, preparedChartID string) ([]ListPreparedChartItemsByChartIDRow, error)
 	ListProductionSheetItems(ctx context.Context, sheetID int64) ([]ListProductionSheetItemsRow, error)
 	ListProductionSheetOrderIDs(ctx context.Context, sheetID int64) ([]int64, error)
 	ListProductionSheetOrderNumbers(ctx context.Context, sheetID int64) ([]string, error)
-	// order_numbers — сохранённый выбор партии (production_sheet_orders), а не
-	// заказы с отклонениями: лист покрывает партию целиком.
+	// order_numbers_json is the saved batch selection (production_sheet_orders), not
+	// the orders with deviations: a sheet covers its whole batch.
 	ListProductionSheets(ctx context.Context) ([]ListProductionSheetsRow, error)
-	ListUnpublishedOrderOutboxEvents(ctx context.Context, maxEvents int32) ([]ListUnpublishedOrderOutboxEventsRow, error)
+	ListUnpublishedOrderOutboxEvents(ctx context.Context, maxEvents int64) ([]ListUnpublishedOrderOutboxEventsRow, error)
 	MarkOrderOutboxEventPublished(ctx context.Context, id int64) error
 	NextOrderCounter(ctx context.Context, arg NextOrderCounterParams) (int64, error)
 	RestoreOrder(ctx context.Context, number string) (Order, error)

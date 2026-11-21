@@ -7,27 +7,26 @@ package sqlc
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"time"
 )
 
 const assignUserDepartment = `-- name: AssignUserDepartment :one
 UPDATE auth_users
 SET
-    department_id = $1,
-    updated_at = $2
-WHERE id = $3
+    department_id = ?1,
+    updated_at = ?2
+WHERE id = ?3
 RETURNING id, telegram_id, username, password_hash, metadata_json, role, created_at, updated_at, department_id, telegram_username
 `
 
 type AssignUserDepartmentParams struct {
-	DepartmentID *int64             `json:"department_id"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
-	UserID       int64              `json:"user_id"`
+	DepartmentID *int64    `json:"department_id"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	UserID       int64     `json:"user_id"`
 }
 
 func (q *Queries) AssignUserDepartment(ctx context.Context, arg AssignUserDepartmentParams) (AuthUser, error) {
-	row := q.db.QueryRow(ctx, assignUserDepartment, arg.DepartmentID, arg.UpdatedAt, arg.UserID)
+	row := q.db.QueryRowContext(ctx, assignUserDepartment, arg.DepartmentID, arg.UpdatedAt, arg.UserID)
 	var i AuthUser
 	err := row.Scan(
 		&i.ID,
@@ -47,11 +46,11 @@ func (q *Queries) AssignUserDepartment(ctx context.Context, arg AssignUserDepart
 const getDepartmentByCode = `-- name: GetDepartmentByCode :one
 SELECT id, type, code, name, iiko_department_id, metadata_json, is_active, created_at, updated_at
 FROM departments
-WHERE code = $1
+WHERE code = ?1
 `
 
 func (q *Queries) GetDepartmentByCode(ctx context.Context, code string) (Department, error) {
-	row := q.db.QueryRow(ctx, getDepartmentByCode, code)
+	row := q.db.QueryRowContext(ctx, getDepartmentByCode, code)
 	var i Department
 	err := row.Scan(
 		&i.ID,
@@ -70,11 +69,11 @@ func (q *Queries) GetDepartmentByCode(ctx context.Context, code string) (Departm
 const getDepartmentByID = `-- name: GetDepartmentByID :one
 SELECT id, type, code, name, iiko_department_id, metadata_json, is_active, created_at, updated_at
 FROM departments
-WHERE id = $1
+WHERE id = ?1
 `
 
 func (q *Queries) GetDepartmentByID(ctx context.Context, id int64) (Department, error) {
-	row := q.db.QueryRow(ctx, getDepartmentByID, id)
+	row := q.db.QueryRowContext(ctx, getDepartmentByID, id)
 	var i Department
 	err := row.Scan(
 		&i.ID,
@@ -93,12 +92,12 @@ func (q *Queries) GetDepartmentByID(ctx context.Context, id int64) (Department, 
 const listDepartments = `-- name: ListDepartments :many
 SELECT id, type, code, name, iiko_department_id, metadata_json, is_active, created_at, updated_at
 FROM departments
-WHERE type = COALESCE($1, type)
+WHERE type = COALESCE(?1, type)
 ORDER BY type, name, id
 `
 
 func (q *Queries) ListDepartments(ctx context.Context, type_ *string) ([]Department, error) {
-	rows, err := q.db.Query(ctx, listDepartments, type_)
+	rows, err := q.db.QueryContext(ctx, listDepartments, type_)
 	if err != nil {
 		return nil, err
 	}
@@ -120,6 +119,9 @@ func (q *Queries) ListDepartments(ctx context.Context, type_ *string) ([]Departm
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

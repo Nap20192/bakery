@@ -11,11 +11,8 @@ import (
 )
 
 func formatDate(value string) string {
-	for _, layout := range []string{"2006-01-02", time.RFC3339, "2006-01-02T15:04:05.999999Z07:00"} {
-		parsed, err := time.Parse(layout, value)
-		if err == nil {
-			return parsed.Format("02.01.2006")
-		}
+	if parsed, ok := parseDisplayTime(value); ok {
+		return parsed.Format("02.01.2006")
 	}
 	return value
 }
@@ -23,10 +20,8 @@ func formatDate(value string) string {
 // formatDayMonth renders "21.07" for the date grids, where the weekday sits
 // right above and the year never varies within a visible window.
 func formatDayMonth(value string) string {
-	for _, layout := range []string{"2006-01-02", time.RFC3339, "2006-01-02T15:04:05.999999Z07:00"} {
-		if parsed, err := time.Parse(layout, value); err == nil {
-			return parsed.Format("02.01")
-		}
+	if parsed, ok := parseDisplayTime(value); ok {
+		return parsed.Format("02.01")
 	}
 	return value
 }
@@ -39,6 +34,18 @@ func formatDateTime(value string) string {
 		}
 	}
 	return value
+}
+
+func parseDisplayTime(value string) (time.Time, bool) {
+	if parsed, err := time.Parse("2006-01-02", value); err == nil {
+		return parsed, true
+	}
+	for _, layout := range []string{time.RFC3339, "2006-01-02T15:04:05.999999Z07:00"} {
+		if parsed, err := time.Parse(layout, value); err == nil {
+			return parsed.Local(), true
+		}
+	}
+	return time.Time{}, false
 }
 
 func formatQuantity(value any) string {

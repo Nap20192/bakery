@@ -5,43 +5,41 @@ import (
 	"errors"
 	"testing"
 
+	"bakery/internal/outbound/db/dbtest"
 	sqlc "bakery/internal/outbound/db/sqlc"
 	authuc "bakery/internal/services/auth/usecase/auth"
-
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 )
 
 func TestCreatePasswordUserMapsIdentityConflicts(t *testing.T) {
 	tests := []struct {
-		name       string
-		constraint string
-		want       error
+		name     string
+		existing authuc.CreatePasswordUserInput
+		create   authuc.CreatePasswordUserInput
+		want     error
 	}{
 		{
-			name:       "username",
-			constraint: "idx_auth_users_username",
-			want:       authuc.ErrUsernameTaken,
+			name:     "username",
+			existing: authuc.CreatePasswordUserInput{Username: "existing"},
+			create:   authuc.CreatePasswordUserInput{Username: "existing"},
+			want:     authuc.ErrUsernameTaken,
 		},
 		{
-			name:       "telegram username",
-			constraint: "idx_auth_users_telegram_username",
-			want:       authuc.ErrTelegramUsernameTaken,
+			name:     "telegram username",
+			existing: authuc.CreatePasswordUserInput{Username: "first", TelegramUsername: "baker"},
+			create:   authuc.CreatePasswordUserInput{Username: "second", TelegramUsername: "baker"},
+			want:     authuc.ErrTelegramUsernameTaken,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo := New(sqlc.New(errorDB{
-				err: &pgconn.PgError{Code: "23505", ConstraintName: tt.constraint},
-			}))
+			ctx := context.Background()
+			repo := New(sqlc.New(dbtest.Open(t)))
+			if _, err := repo.CreatePasswordUser(ctx, withDefaults(tt.existing)); err != nil {
+				t.Fatalf("create existing user: %v", err)
+			}
 
-			_, err := repo.CreatePasswordUser(context.Background(), authuc.CreatePasswordUserInput{
-				Username:     "existing",
-				PasswordHash: "hash",
-				MetadataJSON: "{}",
-				Role:         "shop",
-			})
+			_, err := repo.CreatePasswordUser(ctx, withDefaults(tt.create))
 			if !errors.Is(err, tt.want) {
 				t.Fatalf("CreatePasswordUser error = %v, want %v", err, tt.want)
 			}
@@ -49,26 +47,17 @@ func TestCreatePasswordUserMapsIdentityConflicts(t *testing.T) {
 	}
 }
 
-type errorDB struct {
-	err error
+func TestGetByTelegramUsernameReturnsNotFound(t *testing.T) {
+	repo := New(sqlc.New(dbtest.Open(t)))
+	_, err := repo.GetByTelegramUsername(context.Background(), "nobody")
+	if !errors.Is(err, authuc.ErrAuthUserNotFound) {
+		t.Fatalf("GetByTelegramUsername error = %v, want %v", err, authuc.ErrAuthUserNotFound)
+	}
 }
 
-func (db errorDB) Exec(context.Context, string, ...interface{}) (pgconn.CommandTag, error) {
-	return pgconn.CommandTag{}, errors.New("unexpected Exec call")
-}
-
-func (db errorDB) Query(context.Context, string, ...interface{}) (pgx.Rows, error) {
-	return nil, errors.New("unexpected Query call")
-}
-
-func (db errorDB) QueryRow(context.Context, string, ...interface{}) pgx.Row {
-	return errorRow(db)
-}
-
-type errorRow struct {
-	err error
-}
-
-func (row errorRow) Scan(...interface{}) error {
-	return row.err
+func withDefaults(input authuc.CreatePasswordUserInput) authuc.CreatePasswordUserInput {
+	input.PasswordHash = "hash"
+	input.MetadataJSON = "{}"
+	input.Role = "shop"
+	return input
 }

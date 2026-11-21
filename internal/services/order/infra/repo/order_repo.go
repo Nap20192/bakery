@@ -1,11 +1,12 @@
 // Package orderrepo is the persistence adapter of the order service. It
-// implements the orderuc.Repository port over sqlc + pgx and contains all SQL
+// implements the orderuc.Repository port over sqlc and contains all SQL
 // and transaction handling. The use-case layer depends on the port, not on
 // this package (dependency inversion); the composition root binds them.
 package orderrepo
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	outbounddb "bakery/internal/outbound/db"
 	sqlc "bakery/internal/outbound/db/sqlc"
 	"bakery/internal/pkg/apperr"
 	"bakery/internal/pkg/correlation"
@@ -20,23 +22,18 @@ import (
 	sharedkernel "bakery/internal/pkg/sharedkernel"
 	orderdomain "bakery/internal/services/order/domain"
 	orderuc "bakery/internal/services/order/usecase/order"
-
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // OrderRepository persists orders, history and the dish catalog.
 type OrderRepository struct {
 	queries *sqlc.Queries
-	db      *pgxpool.Pool
+	db      *sql.DB
 	domain  *orderdomain.OrderService
 }
 
 var _ orderuc.Repository = (*OrderRepository)(nil)
 
-func New(queries *sqlc.Queries, db *pgxpool.Pool) *OrderRepository {
+func New(queries *sqlc.Queries, db *sql.DB) *OrderRepository {
 	return &OrderRepository{
 		queries: queries,
 		db:      db,
@@ -45,37 +42,18 @@ func New(queries *sqlc.Queries, db *pgxpool.Pool) *OrderRepository {
 }
 
 func (r *OrderRepository) CreateOrder(ctx context.Context, input orderuc.CreateOrderRepositoryInput) (orderdomain.Order, error) {
-	if r.db == nil {
-		order, err := r.createOrderWithQueries(ctx, r.queries, input)
-		if errors.Is(err, errDuplicateOrder) {
-			return r.existingOrderByDedupKey(ctx, input.DedupKey)
-		}
-		return order, err
+	var order orderdomain.Order
+	err := r.withTx(ctx, func(tx *sql.Tx, q *sqlc.Queries) error {
+		var err error
+		order, err = r.createOrderInTx(ctx, tx, q, input)
+		return err
+	})
+	if errors.Is(err, errDuplicateOrder) {
+		return r.existingOrderByDedupKey(ctx, input.DedupKey)
 	}
-	tx, err := r.db.Begin(ctx)
 	if err != nil {
-		return orderdomain.Order{}, fmt.Errorf("begin order tx: %w", err)
-	}
-	committed := false
-	defer func() {
-		if !committed {
-			_ = tx.Rollback(ctx)
-		}
-	}()
-
-	order, err := r.createOrderWithQueries(ctx, r.queries.WithTx(tx), input)
-	if err != nil {
-		// The losing side of a concurrent duplicate: this tx rolled back, the
-		// winner committed, so return the order it created.
-		if errors.Is(err, errDuplicateOrder) {
-			return r.existingOrderByDedupKey(ctx, input.DedupKey)
-		}
 		return orderdomain.Order{}, err
 	}
-	if err := tx.Commit(ctx); err != nil {
-		return orderdomain.Order{}, fmt.Errorf("commit order tx: %w", err)
-	}
-	committed = true
 	return order, nil
 }
 
@@ -94,17 +72,15 @@ func (r *OrderRepository) existingOrderByDedupKey(ctx context.Context, dedupKey 
 // double-submit is a no-op instead of an error.
 var errDuplicateOrder = errors.New("duplicate order")
 
-const orderDedupUniqueConstraint = "orders_dedup_key_active_uniq"
-
-func (r *OrderRepository) createOrderWithQueries(ctx context.Context, q sqlc.Querier, input orderuc.CreateOrderRepositoryInput) (orderdomain.Order, error) {
+func (r *OrderRepository) createOrderInTx(ctx context.Context, tx *sql.Tx, q *sqlc.Queries, input orderuc.CreateOrderRepositoryInput) (orderdomain.Order, error) {
 	// Fast path: an identical active order already exists (a sequential
 	// double-submit whose first request has committed). Return it without
 	// touching the counter, inserting, or emitting events — so no duplicate
 	// order number is burned and the bot does not notify twice.
 	if input.DedupKey != "" {
 		if existing, err := q.GetActiveOrderByDedupKey(ctx, &input.DedupKey); err == nil {
-			return r.GetOrderByNumber(ctx, existing.Number)
-		} else if !errors.Is(err, pgx.ErrNoRows) {
+			return r.getOrderByNumber(ctx, q, existing.Number)
+		} else if !errors.Is(err, sql.ErrNoRows) {
 			return orderdomain.Order{}, fmt.Errorf("check duplicate order: %w", err)
 		}
 	}
@@ -128,8 +104,8 @@ func (r *OrderRepository) createOrderWithQueries(ctx context.Context, q sqlc.Que
 		FromDepartmentID:  input.Input.FromDepartmentID,
 		ToDepartmentID:    input.Input.ToDepartmentID,
 		CategoryID:        &input.Category.ID,
-		CreatedAt:         helpers.Timestamptz(input.CreatedAt),
-		FulfillmentDate:   helpers.DateOf(input.FulfillmentDate),
+		CreatedAt:         input.CreatedAt,
+		FulfillmentDate:   helpers.DateString(input.FulfillmentDate),
 		CreatedByUsername: strings.TrimSpace(input.Input.CreatedByUsername),
 		Comments:          marshalComments(input.Input.Comments),
 		DedupKey:          dedupKey,
@@ -137,8 +113,7 @@ func (r *OrderRepository) createOrderWithQueries(ctx context.Context, q sqlc.Que
 	if err != nil {
 		// Concurrent duplicate: two identical creates raced, neither saw the
 		// other in the fast path, and the UNIQUE index rejected this one.
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" && pgErr.ConstraintName == orderDedupUniqueConstraint {
+		if outbounddb.IsUniqueViolation(err, "orders", "dedup_key") {
 			return orderdomain.Order{}, errDuplicateOrder
 		}
 		return orderdomain.Order{}, fmt.Errorf("create order: %w", err)
@@ -162,9 +137,6 @@ func (r *OrderRepository) createOrderWithQueries(ctx context.Context, q sqlc.Que
 // inside the caller's transaction, so events are committed atomically with the
 // order change.
 func (r *OrderRepository) persistOutbox(ctx context.Context, q sqlc.Querier, aggregateID string, events []sharedkernel.DomainEvent) error {
-	if len(events) == 0 {
-		return nil
-	}
 	correlationID := correlation.FromContext(ctx)
 	for _, event := range events {
 		payload, err := json.Marshal(event)
@@ -174,7 +146,7 @@ func (r *OrderRepository) persistOutbox(ctx context.Context, q sqlc.Querier, agg
 		if _, err := q.InsertOrderOutboxEvent(ctx, sqlc.InsertOrderOutboxEventParams{
 			AggregateID:   aggregateID,
 			EventType:     event.Identity(),
-			Payload:       payload,
+			Payload:       string(payload),
 			CorrelationID: correlationID,
 		}); err != nil {
 			return fmt.Errorf("insert outbox event: %w", err)
@@ -183,41 +155,45 @@ func (r *OrderRepository) persistOutbox(ctx context.Context, q sqlc.Querier, agg
 	return nil
 }
 
-func (r *OrderRepository) UpdateOrder(ctx context.Context, input orderuc.UpdateOrderRepositoryInput) (orderdomain.Order, error) {
-	if r.db == nil {
-		return r.updateOrderWithQueries(ctx, r.queries, input)
-	}
-	return r.updateOrderTx(ctx, input)
-}
-
-func (r *OrderRepository) updateOrderTx(ctx context.Context, input orderuc.UpdateOrderRepositoryInput) (orderdomain.Order, error) {
-	tx, err := r.db.Begin(ctx)
+func (r *OrderRepository) withTx(ctx context.Context, fn func(tx *sql.Tx, q *sqlc.Queries) error) error {
+	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return orderdomain.Order{}, fmt.Errorf("begin order tx: %w", err)
+		return fmt.Errorf("begin tx: %w", err)
 	}
 	committed := false
 	defer func() {
 		if !committed {
-			_ = tx.Rollback(ctx)
+			_ = tx.Rollback()
 		}
 	}()
+	if err := fn(tx, r.queries.WithTx(tx)); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit tx: %w", err)
+	}
+	committed = true
+	return nil
+}
 
-	order, err := r.updateOrderWithQueries(ctx, r.queries.WithTx(tx), input)
+func (r *OrderRepository) UpdateOrder(ctx context.Context, input orderuc.UpdateOrderRepositoryInput) (orderdomain.Order, error) {
+	var order orderdomain.Order
+	err := r.withTx(ctx, func(tx *sql.Tx, q *sqlc.Queries) error {
+		var err error
+		order, err = r.updateOrderInTx(ctx, tx, q, input)
+		return err
+	})
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
-	if err := tx.Commit(ctx); err != nil {
-		return orderdomain.Order{}, fmt.Errorf("commit order tx: %w", err)
-	}
-	committed = true
 	return order, nil
 }
 
-func (r *OrderRepository) updateOrderWithQueries(ctx context.Context, q sqlc.Querier, input orderuc.UpdateOrderRepositoryInput) (orderdomain.Order, error) {
+func (r *OrderRepository) updateOrderInTx(ctx context.Context, tx *sql.Tx, q *sqlc.Queries, input orderuc.UpdateOrderRepositoryInput) (orderdomain.Order, error) {
 	row, err := q.UpdateOrder(ctx, sqlc.UpdateOrderParams{
 		FromDepartmentID: input.FromDepartmentID,
 		ToDepartmentID:   input.ToDepartmentID,
-		FulfillmentDate:  helpers.DateOf(input.FulfillmentDate),
+		FulfillmentDate:  helpers.DateString(input.FulfillmentDate),
 		Number:           input.Number,
 		Comments:         marshalComments(input.Comments),
 	})
@@ -240,7 +216,7 @@ func (r *OrderRepository) updateOrderWithQueries(ctx context.Context, q sqlc.Que
 		return orderdomain.Order{}, err
 	}
 	order := orderFromRow(row, input.Items, history)
-	if err := r.attachCategory(ctx, &order); err != nil {
+	if err := attachCategory(ctx, q, &order); err != nil {
 		return orderdomain.Order{}, err
 	}
 	order.RecordUpdated()
@@ -251,39 +227,36 @@ func (r *OrderRepository) updateOrderWithQueries(ctx context.Context, q sqlc.Que
 }
 
 func (r *OrderRepository) GetOrderByNumber(ctx context.Context, number string) (orderdomain.Order, error) {
-	order, err := r.queries.GetOrderByNumber(ctx, number)
+	return r.getOrderByNumber(ctx, r.queries, number)
+}
+
+func (r *OrderRepository) getOrderByNumber(ctx context.Context, q sqlc.Querier, number string) (orderdomain.Order, error) {
+	order, err := q.GetOrderByNumber(ctx, number)
 	if err != nil {
 		return orderdomain.Order{}, fmt.Errorf("get order by number: %w", err)
 	}
-	items, err := loadOrderItems(ctx, r.queries, order.ID)
+	items, err := loadOrderItems(ctx, q, order.ID)
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
-	history, err := r.listOrderHistory(ctx, r.queries, order.ID)
+	history, err := r.listOrderHistory(ctx, q, order.ID)
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
 	result := orderFromRow(order, items, history)
-	if err := r.attachCategory(ctx, &result); err != nil {
+	if err := attachCategory(ctx, q, &result); err != nil {
 		return orderdomain.Order{}, err
 	}
-	if err := attachProductionSheet(ctx, r.queries, order.ID, &result); err != nil {
+	if err := attachProductionSheet(ctx, q, order.ID, &result); err != nil {
 		return orderdomain.Order{}, err
 	}
 	return result, nil
 }
 
 func (r *OrderRepository) ListOrders(ctx context.Context, input orderuc.ListOrdersInput) (orderuc.ListOrdersResult, error) {
-	var fulfillmentDate, fulfillmentFrom, fulfillmentTo pgtype.Date
-	if !input.FulfillmentDate.IsZero() {
-		fulfillmentDate = helpers.DateOf(input.FulfillmentDate)
-	}
-	if !input.FulfillmentFrom.IsZero() {
-		fulfillmentFrom = helpers.DateOf(input.FulfillmentFrom)
-	}
-	if !input.FulfillmentTo.IsZero() {
-		fulfillmentTo = helpers.DateOf(input.FulfillmentTo)
-	}
+	fulfillmentDate := optionalDate(input.FulfillmentDate)
+	fulfillmentFrom := optionalDate(input.FulfillmentFrom)
+	fulfillmentTo := optionalDate(input.FulfillmentTo)
 	total, err := r.queries.CountOrders(ctx, sqlc.CountOrdersParams{
 		FromDepartmentID: input.FromDepartmentID,
 		FulfillmentDate:  fulfillmentDate,
@@ -300,8 +273,8 @@ func (r *OrderRepository) ListOrders(ctx context.Context, input orderuc.ListOrde
 		FulfillmentFrom:  fulfillmentFrom,
 		FulfillmentTo:    fulfillmentTo,
 		CategoryID:       input.CategoryID,
-		OrderLimit:       input.Limit,
-		OrderOffset:      input.Offset,
+		OrderLimit:       int64(input.Limit),
+		OrderOffset:      int64(input.Offset),
 	})
 	if err != nil {
 		return orderuc.ListOrdersResult{}, fmt.Errorf("list orders: %w", err)
@@ -421,44 +394,23 @@ func (r *OrderRepository) UpsertDishCatalogItem(ctx context.Context, item orderu
 }
 
 // UpsertDishCatalogItems upserts every dish in one transaction so startup
-// seeding is all-or-nothing. With no pool (tests) it runs directly.
+// seeding is all-or-nothing.
 func (r *OrderRepository) UpsertDishCatalogItems(ctx context.Context, items []orderuc.DishCatalogItem) error {
 	if len(items) == 0 {
 		return nil
 	}
-	if r.db == nil {
+	return r.withTx(ctx, func(_ *sql.Tx, q *sqlc.Queries) error {
 		for _, item := range items {
-			if err := upsertDishCatalogItem(ctx, r.queries, item); err != nil {
+			if err := upsertDishCatalogItem(ctx, q, item); err != nil {
 				return err
 			}
 		}
 		return nil
-	}
-	tx, err := r.db.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("begin catalog seed tx: %w", err)
-	}
-	committed := false
-	defer func() {
-		if !committed {
-			_ = tx.Rollback(ctx)
-		}
-	}()
-	q := r.queries.WithTx(tx)
-	for _, item := range items {
-		if err := upsertDishCatalogItem(ctx, q, item); err != nil {
-			return err
-		}
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("commit catalog seed tx: %w", err)
-	}
-	committed = true
-	return nil
+	})
 }
 
 func upsertDishCatalogItem(ctx context.Context, q sqlc.Querier, item orderuc.DishCatalogItem) error {
-	now := helpers.TimestamptzNow()
+	now := time.Now().UTC()
 	groupID, err := resolveDishGroupID(ctx, q, item.Theme, item.CategoryID)
 	if err != nil {
 		return err
@@ -479,14 +431,13 @@ func upsertDishCatalogItem(ctx context.Context, q sqlc.Querier, item orderuc.Dis
 }
 
 func (r *OrderRepository) SearchAvailableDishes(ctx context.Context, query string, limit int) ([]orderdomain.AvailableDish, error) {
-	var q *string
-	if query != "" {
-		q = &query
+	if query == "" {
+		return []orderdomain.AvailableDish{}, nil
 	}
 	if limit < 0 || limit > math.MaxInt32 {
 		limit = math.MaxInt32
 	}
-	rows, err := r.queries.SearchIikoDishes(ctx, sqlc.SearchIikoDishesParams{Query: q, Lim: int32(limit)})
+	rows, err := r.queries.SearchIikoDishes(ctx, sqlc.SearchIikoDishesParams{Query: query, Lim: int64(limit)})
 	if err != nil {
 		return nil, fmt.Errorf("search iiko dishes: %w", err)
 	}
@@ -501,7 +452,7 @@ func (r *OrderRepository) SetDishCatalogSortOrder(ctx context.Context, code stri
 	return r.queries.SetDishCatalogSortOrder(ctx, sqlc.SetDishCatalogSortOrderParams{
 		Code:      code,
 		SortOrder: sortOrder,
-		UpdatedAt: helpers.TimestamptzNow(),
+		UpdatedAt: time.Now().UTC(),
 	})
 }
 
@@ -517,10 +468,10 @@ func (r *OrderRepository) UpdateDishCatalogItem(ctx context.Context, code string
 		GroupID:    groupID,
 		CategoryID: item.CategoryID,
 		SortOrder:  item.SortOrder,
-		UpdatedAt:  helpers.TimestamptzNow(),
+		UpdatedAt:  time.Now().UTC(),
 	})
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return orderuc.DishCatalogItem{}, orderuc.ErrDishCatalogItemNotFound
 		}
 		return orderuc.DishCatalogItem{}, fmt.Errorf("update dish catalog item: %w", err)
@@ -533,7 +484,7 @@ func (r *OrderRepository) DeleteDishCatalogItem(ctx context.Context, code string
 }
 
 func (r *OrderRepository) DeleteOrdersOlderThan(ctx context.Context, cutoff time.Time) (int64, error) {
-	return r.queries.DeleteOrdersCreatedBefore(ctx, helpers.Timestamptz(cutoff))
+	return r.queries.DeleteOrdersCreatedBefore(ctx, cutoff.UTC())
 }
 
 func (r *OrderRepository) createOrderItems(ctx context.Context, q sqlc.Querier, orderID int64, items []orderdomain.OrderItem) error {
@@ -544,7 +495,7 @@ func (r *OrderRepository) createOrderItems(ctx context.Context, q sqlc.Querier, 
 		var productID *string
 		if item.Code != "" {
 			product, err := q.GetIikoProductByCode(ctx, item.Code)
-			if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			if err != nil && !errors.Is(err, sql.ErrNoRows) {
 				return fmt.Errorf("resolve product by code %s: %w", item.Code, err)
 			}
 			if err == nil {
@@ -568,7 +519,7 @@ func (r *OrderRepository) createOrderHistory(ctx context.Context, q sqlc.Querier
 	history, err := q.CreateOrderHistory(ctx, sqlc.CreateOrderHistoryParams{
 		OrderID:           orderID,
 		ChangedByUsername: strings.TrimSpace(changedBy),
-		ChangedAt:         helpers.TimestamptzNow(),
+		ChangedAt:         time.Now().UTC(),
 	})
 	if err != nil {
 		return fmt.Errorf("create order history: %w", err)
@@ -616,7 +567,7 @@ func (r *OrderRepository) listOrderHistory(ctx context.Context, q sqlc.Querier, 
 		result = append(result, orderdomain.OrderHistory{
 			ID:                row.ID,
 			ChangedByUsername: row.ChangedByUsername,
-			ChangedAt:         row.ChangedAt.Time,
+			ChangedAt:         row.ChangedAt,
 			Items:             items,
 		})
 	}
@@ -633,11 +584,11 @@ func orderFromRow(row sqlc.Order, items []orderdomain.OrderItem, history []order
 		CategoryID:          row.CategoryID,
 		CreatedByUsername:   row.CreatedByUsername,
 		Items:               items,
-		CreatedAt:           row.CreatedAt.Time,
-		FulfillmentDate:     row.FulfillmentDate.Time,
+		CreatedAt:           row.CreatedAt,
+		FulfillmentDate:     parseStoredDate(row.FulfillmentDate),
 		Comments:            parseComments(row.Comments),
 		Favorite:            row.IsFavorite,
-		Cancelled:           row.CancelledAt.Valid,
+		Cancelled:           row.CancelledAt != nil,
 		CancelledByUsername: row.CancelledByUsername,
 		History:             history,
 	}
@@ -646,7 +597,7 @@ func orderFromRow(row sqlc.Order, items []orderdomain.OrderItem, history []order
 func (r *OrderRepository) SetOrderFavorite(ctx context.Context, number string, favorite bool) (orderdomain.Order, error) {
 	row, err := r.queries.SetOrderFavorite(ctx, sqlc.SetOrderFavoriteParams{Number: number, IsFavorite: favorite})
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return orderdomain.Order{}, apperr.NotFound("order.not_found", "Заказ не найден.")
 		}
 		return orderdomain.Order{}, fmt.Errorf("set order favorite: %w", err)
@@ -660,23 +611,24 @@ func (r *OrderRepository) SetOrderFavorite(ctx context.Context, number string, f
 		return orderdomain.Order{}, err
 	}
 	order := orderFromRow(row, items, history)
-	if err := r.attachCategory(ctx, &order); err != nil {
+	if err := attachCategory(ctx, r.queries, &order); err != nil {
 		return orderdomain.Order{}, err
 	}
 	return order, nil
 }
 
 // CancelOrder soft-cancels the order, recording who cancelled it, and emits an
-// order-cancelled event to the outbox in the same transaction.
+// order-cancelled event job in the same transaction.
 func (r *OrderRepository) CancelOrder(ctx context.Context, number, by string) (orderdomain.Order, error) {
-	return r.withOrderTx(ctx, func(q sqlc.Querier) (orderdomain.Order, error) {
+	cancelledAt := time.Now().UTC()
+	return r.withOrderTx(ctx, func(tx *sql.Tx, q *sqlc.Queries) (orderdomain.Order, error) {
 		row, err := q.CancelOrder(ctx, sqlc.CancelOrderParams{
 			Number:              number,
-			CancelledAt:         helpers.TimestamptzNow(),
+			CancelledAt:         &cancelledAt,
 			CancelledByUsername: strings.TrimSpace(by),
 		})
 		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
+			if errors.Is(err, sql.ErrNoRows) {
 				return orderdomain.Order{}, apperr.NotFound("order.not_found", "Заказ не найден.")
 			}
 			return orderdomain.Order{}, fmt.Errorf("cancel order: %w", err)
@@ -694,12 +646,12 @@ func (r *OrderRepository) CancelOrder(ctx context.Context, number, by string) (o
 }
 
 // RestoreOrder clears an order's cancelled state and emits an order-restored
-// event to the outbox in the same transaction.
+// event job in the same transaction.
 func (r *OrderRepository) RestoreOrder(ctx context.Context, number string) (orderdomain.Order, error) {
-	return r.withOrderTx(ctx, func(q sqlc.Querier) (orderdomain.Order, error) {
+	return r.withOrderTx(ctx, func(tx *sql.Tx, q *sqlc.Queries) (orderdomain.Order, error) {
 		row, err := q.RestoreOrder(ctx, number)
 		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
+			if errors.Is(err, sql.ErrNoRows) {
 				return orderdomain.Order{}, apperr.NotFound("order.not_found", "Заказ не найден.")
 			}
 			return orderdomain.Order{}, fmt.Errorf("restore order: %w", err)
@@ -716,30 +668,16 @@ func (r *OrderRepository) RestoreOrder(ctx context.Context, number string) (orde
 	})
 }
 
-// withOrderTx runs fn inside a transaction (or directly when no pool is set, as
-// in tests), committing on success.
-func (r *OrderRepository) withOrderTx(ctx context.Context, fn func(q sqlc.Querier) (orderdomain.Order, error)) (orderdomain.Order, error) {
-	if r.db == nil {
-		return fn(r.queries)
-	}
-	tx, err := r.db.Begin(ctx)
-	if err != nil {
-		return orderdomain.Order{}, fmt.Errorf("begin order tx: %w", err)
-	}
-	committed := false
-	defer func() {
-		if !committed {
-			_ = tx.Rollback(ctx)
-		}
-	}()
-	order, err := fn(r.queries.WithTx(tx))
+func (r *OrderRepository) withOrderTx(ctx context.Context, fn func(tx *sql.Tx, q *sqlc.Queries) (orderdomain.Order, error)) (orderdomain.Order, error) {
+	var order orderdomain.Order
+	err := r.withTx(ctx, func(tx *sql.Tx, q *sqlc.Queries) error {
+		var err error
+		order, err = fn(tx, q)
+		return err
+	})
 	if err != nil {
 		return orderdomain.Order{}, err
 	}
-	if err := tx.Commit(ctx); err != nil {
-		return orderdomain.Order{}, fmt.Errorf("commit order tx: %w", err)
-	}
-	committed = true
 	return order, nil
 }
 
@@ -754,7 +692,7 @@ func (r *OrderRepository) hydrateOrder(ctx context.Context, q sqlc.Querier, row 
 		return orderdomain.Order{}, err
 	}
 	order := orderFromRow(row, items, history)
-	if err := r.attachCategory(ctx, &order); err != nil {
+	if err := attachCategory(ctx, q, &order); err != nil {
 		return orderdomain.Order{}, err
 	}
 	if err := attachProductionSheet(ctx, q, row.ID, &order); err != nil {
@@ -767,7 +705,7 @@ func (r *OrderRepository) hydrateOrder(ctx context.Context, q sqlc.Querier, row 
 // so delivery can link заказ → отработка.
 func attachProductionSheet(ctx context.Context, q sqlc.Querier, orderID int64, order *orderdomain.Order) error {
 	sheetID, err := q.GetOrderProductionSheetID(ctx, orderID)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil
 	}
 	if err != nil {
@@ -785,7 +723,7 @@ func categoryFromRow(row sqlc.OrderCategory) orderdomain.OrderCategory {
 		Name:         row.Name,
 		Color:        row.Color,
 		SortOrder:    row.SortOrder,
-		MonitorCodes: row.MonitorCodes,
+		MonitorCodes: parseMonitorCodes(row.MonitorCodes),
 	}
 }
 
@@ -811,12 +749,12 @@ func (r *OrderRepository) attachCategories(ctx context.Context, orders []orderdo
 	return nil
 }
 
-func (r *OrderRepository) attachCategory(ctx context.Context, order *orderdomain.Order) error {
+func attachCategory(ctx context.Context, q sqlc.Querier, order *orderdomain.Order) error {
 	if order.CategoryID == nil {
 		return nil
 	}
-	row, err := r.queries.GetOrderCategoryByID(ctx, *order.CategoryID)
-	if errors.Is(err, pgx.ErrNoRows) {
+	row, err := q.GetOrderCategoryByID(ctx, *order.CategoryID)
+	if errors.Is(err, sql.ErrNoRows) {
 		// Категория могла быть удалена — заказ остаётся валидным без неё.
 		return nil
 	}
@@ -855,7 +793,7 @@ func (r *OrderRepository) CreateOrderCategory(ctx context.Context, input orderdo
 		Name:         input.Name,
 		Color:        input.Color,
 		SortOrder:    input.SortOrder,
-		MonitorCodes: input.MonitorCodes,
+		MonitorCodes: marshalMonitorCodes(input.MonitorCodes),
 	})
 	if err != nil {
 		return orderdomain.OrderCategory{}, fmt.Errorf("create order category: %w", err)
@@ -870,7 +808,7 @@ func (r *OrderRepository) UpdateOrderCategory(ctx context.Context, id int64, inp
 		Name:         input.Name,
 		Color:        input.Color,
 		SortOrder:    input.SortOrder,
-		MonitorCodes: input.MonitorCodes,
+		MonitorCodes: marshalMonitorCodes(input.MonitorCodes),
 	})
 	if err != nil {
 		return orderdomain.OrderCategory{}, fmt.Errorf("update order category %d: %w", id, err)
@@ -888,7 +826,7 @@ func (r *OrderRepository) CountDishesByCategoryID(ctx context.Context, id int64)
 
 // marshalComments serializes order comments to JSON, returning nil (SQL NULL)
 // when there is nothing to store.
-func marshalComments(comments orderdomain.OrderComments) []byte {
+func marshalComments(comments orderdomain.OrderComments) *string {
 	if strings.TrimSpace(comments.General) == "" && len(comments.Items) == 0 {
 		return nil
 	}
@@ -896,18 +834,54 @@ func marshalComments(comments orderdomain.OrderComments) []byte {
 	if err != nil {
 		return nil
 	}
-	return data
+	encoded := string(data)
+	return &encoded
 }
 
-func parseComments(raw []byte) orderdomain.OrderComments {
-	if len(raw) == 0 {
+func parseComments(raw *string) orderdomain.OrderComments {
+	if raw == nil || *raw == "" {
 		return orderdomain.OrderComments{}
 	}
 	var comments orderdomain.OrderComments
-	if err := json.Unmarshal(raw, &comments); err != nil {
+	if err := json.Unmarshal([]byte(*raw), &comments); err != nil {
 		return orderdomain.OrderComments{}
 	}
 	return comments
+}
+
+func marshalMonitorCodes(codes []string) string {
+	if codes == nil {
+		codes = []string{}
+	}
+	data, err := json.Marshal(codes)
+	if err != nil {
+		return "[]"
+	}
+	return string(data)
+}
+
+func parseMonitorCodes(raw string) []string {
+	codes := []string{}
+	if err := json.Unmarshal([]byte(raw), &codes); err != nil {
+		return []string{}
+	}
+	return codes
+}
+
+func optionalDate(t time.Time) *string {
+	if t.IsZero() {
+		return nil
+	}
+	date := helpers.DateString(t)
+	return &date
+}
+
+func parseStoredDate(value string) time.Time {
+	date, err := helpers.ParseDate(value)
+	if err != nil {
+		return time.Time{}
+	}
+	return date
 }
 
 // orderItemsByOrderIDs loads items for many orders in a single query and groups

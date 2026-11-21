@@ -12,6 +12,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -21,11 +22,9 @@ import (
 
 	"bakery/internal/config"
 	outbounddb "bakery/internal/outbound/db"
+	"bakery/internal/pkg/helpers"
 	orderdomain "bakery/internal/services/order/domain"
 	"bakery/pkg/logger"
-
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 const days = 7
@@ -66,12 +65,12 @@ func main() {
 	}
 
 	ctx := context.Background()
-	db, err := outbounddb.OpenPostgres(ctx, "postgresql://postgres:vMAXeJzHskkOUzjNshcGSzqfuIlamzQb@hayabusa.proxy.rlwy.net:43995/railway")
+	db, err := outbounddb.OpenSQLite(ctx, cfg.Database.Path)
 	if err != nil {
 		log.Error("open db failed", "error", err)
 		os.Exit(1)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	if err := run(ctx, db); err != nil {
 		log.Error("testingorders failed", "error", err)
@@ -79,12 +78,17 @@ func main() {
 	}
 }
 
-func run(ctx context.Context, db *pgxpool.Pool) error {
-	// 1. Полная очистка: отработки первыми (FK на заказы), затем заказы,
+func run(ctx context.Context, db *sql.DB) error {
+	// 1. Полная очистка: отработки первыми (FK на заказы), затем заказы и
 	// счётчики номеров и невыгребенный outbox.
-	for _, table := range []string{"production_sheets", "orders", "order_counters", "order_outbox"} {
-		if _, err := db.Exec(ctx, "DELETE FROM "+table); err != nil {
-			return fmt.Errorf("clear %s: %w", table, err)
+	for _, statement := range []string{
+		"DELETE FROM production_sheets",
+		"DELETE FROM orders",
+		"DELETE FROM order_counters",
+		"DELETE FROM order_outbox",
+	} {
+		if _, err := db.ExecContext(ctx, statement); err != nil {
+			return fmt.Errorf("%s: %w", statement, err)
 		}
 	}
 	slog.Info("cleared orders, production sheets, counters, outbox")
@@ -135,79 +139,61 @@ func run(ctx context.Context, db *pgxpool.Pool) error {
 	return nil
 }
 
-func loadShops(ctx context.Context, db *pgxpool.Pool) ([]shop, error) {
-	rows, err := db.Query(ctx, "SELECT id, code, name FROM departments WHERE type = 'shop' ORDER BY id")
-	if err != nil {
-		return nil, fmt.Errorf("load shops: %w", err)
-	}
-	shops, err := pgx.CollectRows(rows, pgx.RowToStructByPos[shop])
-	if err != nil {
-		return nil, fmt.Errorf("collect shops: %w", err)
-	}
-	return shops, nil
+func loadShops(ctx context.Context, db *sql.DB) ([]shop, error) {
+	return collect(ctx, db, "load shops",
+		"SELECT id, code, name FROM departments WHERE type = 'shop' ORDER BY id",
+		func(rows *sql.Rows, s *shop) error { return rows.Scan(&s.ID, &s.Code, &s.Name) })
 }
 
-func loadWorkshopID(ctx context.Context, db *pgxpool.Pool) (int64, error) {
+func loadWorkshopID(ctx context.Context, db *sql.DB) (int64, error) {
 	var id int64
-	if err := db.QueryRow(ctx, "SELECT id FROM departments WHERE code = 'pekari'").Scan(&id); err != nil {
+	if err := db.QueryRowContext(ctx, "SELECT id FROM departments WHERE code = 'pekari'").Scan(&id); err != nil {
 		return 0, fmt.Errorf("load workshop: %w", err)
 	}
 	return id, nil
 }
 
-func loadCategories(ctx context.Context, db *pgxpool.Pool) ([]category, error) {
-	rows, err := db.Query(ctx, "SELECT id, letter, name FROM order_categories ORDER BY sort_order, id")
-	if err != nil {
-		return nil, fmt.Errorf("load categories: %w", err)
-	}
-	categories, err := pgx.CollectRows(rows, pgx.RowToStructByPos[category])
-	if err != nil {
-		return nil, fmt.Errorf("collect categories: %w", err)
-	}
-	return categories, nil
+func loadCategories(ctx context.Context, db *sql.DB) ([]category, error) {
+	return collect(ctx, db, "load categories",
+		"SELECT id, letter, name FROM order_categories ORDER BY sort_order, id",
+		func(rows *sql.Rows, c *category) error { return rows.Scan(&c.ID, &c.Letter, &c.Name) })
 }
 
-func loadDishes(ctx context.Context, db *pgxpool.Pool, categoryID int64) ([]dish, error) {
-	rows, err := db.Query(ctx, `
+func loadDishes(ctx context.Context, db *sql.DB, categoryID int64) ([]dish, error) {
+	return collect(ctx, db, "load dishes", `
 		SELECT dc.name, p.id
 		FROM dish_catalog dc
 		LEFT JOIN iiko_products p ON p.code = dc.code AND p.type = 'DISH'
-		WHERE dc.category_id = $1`, categoryID)
-	if err != nil {
-		return nil, fmt.Errorf("load dishes: %w", err)
-	}
-	dishes, err := pgx.CollectRows(rows, pgx.RowToStructByPos[dish])
-	if err != nil {
-		return nil, fmt.Errorf("collect dishes: %w", err)
-	}
-	return dishes, nil
+		WHERE dc.category_id = ?`,
+		func(rows *sql.Rows, d *dish) error { return rows.Scan(&d.Name, &d.ProductID) },
+		categoryID)
 }
 
-func nextCounter(ctx context.Context, db *pgxpool.Pool, day string, shopID, categoryID int64) (int64, error) {
-	if _, err := db.Exec(ctx, `
+func nextCounter(ctx context.Context, db *sql.DB, day string, shopID, categoryID int64) (int64, error) {
+	if _, err := db.ExecContext(ctx, `
 		INSERT INTO order_counters(day, department_id, category_id, counter)
-		VALUES ($1, $2, $3, 0)
+		VALUES (?, ?, ?, 0)
 		ON CONFLICT (day, department_id, category_id) DO NOTHING`, day, shopID, categoryID); err != nil {
 		return 0, fmt.Errorf("init counter: %w", err)
 	}
 	var counter int64
-	if err := db.QueryRow(ctx, `
+	if err := db.QueryRowContext(ctx, `
 		UPDATE order_counters SET counter = counter + 1
-		WHERE day = $1 AND department_id = $2 AND category_id = $3
+		WHERE day = ? AND department_id = ? AND category_id = ?
 		RETURNING counter`, day, shopID, categoryID).Scan(&counter); err != nil {
 		return 0, fmt.Errorf("increment counter: %w", err)
 	}
 	return counter, nil
 }
 
-func insertOrder(ctx context.Context, db *pgxpool.Pool, number string, s shop, workshopID, categoryID int64, fulfillment time.Time, dishes []dish) error {
+func insertOrder(ctx context.Context, db *sql.DB, number string, s shop, workshopID, categoryID int64, fulfillment time.Time, dishes []dish) error {
 	var orderID int64
-	err := db.QueryRow(ctx, `
+	err := db.QueryRowContext(ctx, `
 		INSERT INTO orders (number, location, from_department_id, to_department_id, category_id,
 		                    created_at, fulfillment_date, created_by_username)
-		VALUES ($1, $2, $3, $4, $5, now(), $6, 'admin')
+		VALUES (?, ?, ?, ?, ?, ?, ?, 'admin')
 		RETURNING id`,
-		number, s.Name, s.ID, workshopID, categoryID, fulfillment.Format("2006-01-02")).Scan(&orderID)
+		number, s.Name, s.ID, workshopID, categoryID, time.Now().UTC(), helpers.DateString(fulfillment)).Scan(&orderID)
 	if err != nil {
 		return fmt.Errorf("insert order row: %w", err)
 	}
@@ -224,12 +210,32 @@ func insertOrder(ctx context.Context, db *pgxpool.Pool, number string, s shop, w
 		if rand.IntN(10) < 3 { //nolint:gosec
 			reserved = 1 + rand.IntN(5) //nolint:gosec
 		}
-		if _, err := db.Exec(ctx, `
+		if _, err := db.ExecContext(ctx, `
 			INSERT INTO order_items (order_id, iiko_product_id, product_name, quantity, reserved_quantity)
-			VALUES ($1, $2, $3, $4, $5)`,
+			VALUES (?, ?, ?, ?, ?)`,
 			orderID, d.ProductID, d.Name, 5+rand.IntN(26), reserved); err != nil { //nolint:gosec
 			return fmt.Errorf("insert order item: %w", err)
 		}
 	}
 	return nil
+}
+
+func collect[T any](ctx context.Context, db *sql.DB, what, query string, scan func(*sql.Rows, *T) error, args ...any) ([]T, error) {
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", what, err)
+	}
+	defer func() { _ = rows.Close() }()
+	var result []T
+	for rows.Next() {
+		var item T
+		if err := scan(rows, &item); err != nil {
+			return nil, fmt.Errorf("%s: scan: %w", what, err)
+		}
+		result = append(result, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%s: %w", what, err)
+	}
+	return result, nil
 }

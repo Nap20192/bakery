@@ -61,3 +61,24 @@ func TestActivePathSeparatesNewOrderFromOrders(t *testing.T) {
 		t.Fatal("new-order tab is not active")
 	}
 }
+
+func TestTimestampFormattingIgnoresSerializedOffset(t *testing.T) {
+	t.Parallel()
+	utc := "2026-11-20T23:51:39.993716Z"
+	shifted := "2026-11-21T04:51:39.993716+05:00"
+	for name, format := range map[string]func(string) string{
+		"formatDate":     formatDate,
+		"formatDayMonth": formatDayMonth,
+		"formatDateTime": formatDateTime,
+	} {
+		if a, b := format(utc), format(shifted); a != b {
+			t.Errorf("%s: %q vs %q for the same instant", name, a, b)
+		}
+	}
+	if got := formatDate("2026-11-25"); got != "25.11.2026" {
+		t.Errorf("formatDate(date) = %q", got)
+	}
+	if got := formatDayMonth("2026-11-25"); got != "25.11" {
+		t.Errorf("formatDayMonth(date) = %q", got)
+	}
+}

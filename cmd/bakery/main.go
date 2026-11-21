@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -16,6 +17,7 @@ import (
 	"bakery/internal/config"
 	"bakery/internal/deps"
 	outbounddb "bakery/internal/outbound/db"
+	"bakery/internal/outbound/db/pgimport"
 	"bakery/internal/pkg/dbmigrate"
 	orderoutbox "bakery/internal/services/order/infra/outbox"
 	"bakery/pkg/logger"
@@ -44,18 +46,21 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	db, err := outbounddb.OpenPostgres(ctx, cfg.Database.URL)
+	if err := importPostgresOnce(ctx, cfg); err != nil {
+		return err
+	}
+	db, err := outbounddb.OpenSQLite(ctx, cfg.Database.Path)
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	if err := dbmigrate.ApplyMigrations(ctx, db, log, cfg.Migration.Dir); err != nil {
 		return err
 	}
 
 	infra, err := deps.NewInfraDeps(
 		deps.WithConfig(cfg),
-		deps.WithPostgres(db),
+		deps.WithDatabase(db),
 		deps.WithRepositories(),
 		deps.WithIikoClient(),
 	)
@@ -145,6 +150,21 @@ func run() error {
 		return httpServer.Shutdown(shutdownCtx)
 	})
 	return group.Wait()
+}
+
+func importPostgresOnce(ctx context.Context, cfg *config.Config) error {
+	if cfg.Database.ImportPostgresURL == "" {
+		return nil
+	}
+	_, err := os.Stat(cfg.Database.Path)
+	switch {
+	case err == nil:
+		slog.WarnContext(ctx, "IMPORT_POSTGRES_URL is set but the database already exists; import skipped", "path", cfg.Database.Path)
+		return nil
+	case !errors.Is(err, os.ErrNotExist):
+		return fmt.Errorf("stat sqlite database: %w", err)
+	}
+	return pgimport.Import(ctx, cfg.Database.ImportPostgresURL, cfg.Database.Path, cfg.Migration.Dir)
 }
 
 type droppedOrderEvents struct{}

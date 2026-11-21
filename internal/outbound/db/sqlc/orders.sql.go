@@ -7,26 +7,26 @@ package sqlc
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"strings"
+	"time"
 )
 
 const cancelOrder = `-- name: CancelOrder :one
 UPDATE orders
-SET cancelled_at = $1,
-    cancelled_by_username = $2
-WHERE number = $3
+SET cancelled_at = ?1,
+    cancelled_by_username = ?2
+WHERE number = ?3
 RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id, dedup_key
 `
 
 type CancelOrderParams struct {
-	CancelledAt         pgtype.Timestamptz `json:"cancelled_at"`
-	CancelledByUsername string             `json:"cancelled_by_username"`
-	Number              string             `json:"number"`
+	CancelledAt         *time.Time `json:"cancelled_at"`
+	CancelledByUsername string     `json:"cancelled_by_username"`
+	Number              string     `json:"number"`
 }
 
 func (q *Queries) CancelOrder(ctx context.Context, arg CancelOrderParams) (Order, error) {
-	row := q.db.QueryRow(ctx, cancelOrder, arg.CancelledAt, arg.CancelledByUsername, arg.Number)
+	row := q.db.QueryRowContext(ctx, cancelOrder, arg.CancelledAt, arg.CancelledByUsername, arg.Number)
 	var i Order
 	err := row.Scan(
 		&i.ID,
@@ -51,23 +51,23 @@ const countOrders = `-- name: CountOrders :one
 SELECT COUNT(*)
 FROM orders
 WHERE
-    ($1::BIGINT IS NULL OR from_department_id = $1::BIGINT)
-    AND ($2::DATE IS NULL OR fulfillment_date = $2::DATE)
-    AND ($3::DATE IS NULL OR fulfillment_date >= $3::DATE)
-    AND ($4::DATE IS NULL OR fulfillment_date <= $4::DATE)
-    AND ($5::BIGINT IS NULL OR category_id = $5::BIGINT)
+    (CAST(?1 AS INTEGER) IS NULL OR from_department_id = CAST(?1 AS INTEGER))
+    AND (CAST(?2 AS TEXT) IS NULL OR fulfillment_date = CAST(?2 AS TEXT))
+    AND (CAST(?3 AS TEXT) IS NULL OR fulfillment_date >= CAST(?3 AS TEXT))
+    AND (CAST(?4 AS TEXT) IS NULL OR fulfillment_date <= CAST(?4 AS TEXT))
+    AND (CAST(?5 AS INTEGER) IS NULL OR category_id = CAST(?5 AS INTEGER))
 `
 
 type CountOrdersParams struct {
-	FromDepartmentID *int64      `json:"from_department_id"`
-	FulfillmentDate  pgtype.Date `json:"fulfillment_date"`
-	FulfillmentFrom  pgtype.Date `json:"fulfillment_from"`
-	FulfillmentTo    pgtype.Date `json:"fulfillment_to"`
-	CategoryID       *int64      `json:"category_id"`
+	FromDepartmentID *int64  `json:"from_department_id"`
+	FulfillmentDate  *string `json:"fulfillment_date"`
+	FulfillmentFrom  *string `json:"fulfillment_from"`
+	FulfillmentTo    *string `json:"fulfillment_to"`
+	CategoryID       *int64  `json:"category_id"`
 }
 
 func (q *Queries) CountOrders(ctx context.Context, arg CountOrdersParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countOrders,
+	row := q.db.QueryRowContext(ctx, countOrders,
 		arg.FromDepartmentID,
 		arg.FulfillmentDate,
 		arg.FulfillmentFrom,
@@ -92,35 +92,35 @@ INSERT INTO orders (
     comments,
     dedup_key
 ) VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6,
-    $7,
-    $8,
-    $9,
-    $10
+    ?1,
+    ?2,
+    ?3,
+    ?4,
+    ?5,
+    ?6,
+    ?7,
+    ?8,
+    ?9,
+    ?10
 )
 RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id, dedup_key
 `
 
 type CreateOrderParams struct {
-	Number            string             `json:"number"`
-	Location          string             `json:"location"`
-	FromDepartmentID  *int64             `json:"from_department_id"`
-	ToDepartmentID    *int64             `json:"to_department_id"`
-	CategoryID        *int64             `json:"category_id"`
-	CreatedAt         pgtype.Timestamptz `json:"created_at"`
-	FulfillmentDate   pgtype.Date        `json:"fulfillment_date"`
-	CreatedByUsername string             `json:"created_by_username"`
-	Comments          []byte             `json:"comments"`
-	DedupKey          *string            `json:"dedup_key"`
+	Number            string    `json:"number"`
+	Location          string    `json:"location"`
+	FromDepartmentID  *int64    `json:"from_department_id"`
+	ToDepartmentID    *int64    `json:"to_department_id"`
+	CategoryID        *int64    `json:"category_id"`
+	CreatedAt         time.Time `json:"created_at"`
+	FulfillmentDate   string    `json:"fulfillment_date"`
+	CreatedByUsername string    `json:"created_by_username"`
+	Comments          *string   `json:"comments"`
+	DedupKey          *string   `json:"dedup_key"`
 }
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
-	row := q.db.QueryRow(ctx, createOrder,
+	row := q.db.QueryRowContext(ctx, createOrder,
 		arg.Number,
 		arg.Location,
 		arg.FromDepartmentID,
@@ -154,7 +154,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 
 const createOrderCounterDay = `-- name: CreateOrderCounterDay :exec
 INSERT INTO order_counters(day, department_id, category_id, counter)
-VALUES ($1, $2, $3, 0)
+VALUES (?1, ?2, ?3, 0)
 ON CONFLICT(day, department_id, category_id) DO NOTHING
 `
 
@@ -165,7 +165,7 @@ type CreateOrderCounterDayParams struct {
 }
 
 func (q *Queries) CreateOrderCounterDay(ctx context.Context, arg CreateOrderCounterDayParams) error {
-	_, err := q.db.Exec(ctx, createOrderCounterDay, arg.Day, arg.DepartmentID, arg.CategoryID)
+	_, err := q.db.ExecContext(ctx, createOrderCounterDay, arg.Day, arg.DepartmentID, arg.CategoryID)
 	return err
 }
 
@@ -175,21 +175,21 @@ INSERT INTO order_history (
     changed_by_username,
     changed_at
 ) VALUES (
-    $1,
-    $2,
-    $3
+    ?1,
+    ?2,
+    ?3
 )
 RETURNING id, order_id, changed_by_username, changed_at
 `
 
 type CreateOrderHistoryParams struct {
-	OrderID           int64              `json:"order_id"`
-	ChangedByUsername string             `json:"changed_by_username"`
-	ChangedAt         pgtype.Timestamptz `json:"changed_at"`
+	OrderID           int64     `json:"order_id"`
+	ChangedByUsername string    `json:"changed_by_username"`
+	ChangedAt         time.Time `json:"changed_at"`
 }
 
 func (q *Queries) CreateOrderHistory(ctx context.Context, arg CreateOrderHistoryParams) (OrderHistory, error) {
-	row := q.db.QueryRow(ctx, createOrderHistory, arg.OrderID, arg.ChangedByUsername, arg.ChangedAt)
+	row := q.db.QueryRowContext(ctx, createOrderHistory, arg.OrderID, arg.ChangedByUsername, arg.ChangedAt)
 	var i OrderHistory
 	err := row.Scan(
 		&i.ID,
@@ -211,14 +211,14 @@ INSERT INTO order_history_items (
     old_reserved_quantity,
     new_reserved_quantity
 ) VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6,
-    $7,
-    $8
+    ?1,
+    ?2,
+    ?3,
+    ?4,
+    ?5,
+    ?6,
+    ?7,
+    ?8
 )
 RETURNING id, history_id, change_type, product_code, product_name, old_quantity, new_quantity, old_reserved_quantity, new_reserved_quantity
 `
@@ -235,7 +235,7 @@ type CreateOrderHistoryItemParams struct {
 }
 
 func (q *Queries) CreateOrderHistoryItem(ctx context.Context, arg CreateOrderHistoryItemParams) (OrderHistoryItem, error) {
-	row := q.db.QueryRow(ctx, createOrderHistoryItem,
+	row := q.db.QueryRowContext(ctx, createOrderHistoryItem,
 		arg.HistoryID,
 		arg.ChangeType,
 		arg.ProductCode,
@@ -268,11 +268,11 @@ INSERT INTO order_items (
     quantity,
     reserved_quantity
 ) VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5
+    ?1,
+    ?2,
+    ?3,
+    ?4,
+    ?5
 )
 RETURNING id, order_id, iiko_product_id, product_name, quantity, reserved_quantity
 `
@@ -286,7 +286,7 @@ type CreateOrderItemParams struct {
 }
 
 func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) (OrderItem, error) {
-	row := q.db.QueryRow(ctx, createOrderItem,
+	row := q.db.QueryRowContext(ctx, createOrderItem,
 		arg.OrderID,
 		arg.IikoProductID,
 		arg.ProductName,
@@ -307,40 +307,36 @@ func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams
 
 const deleteOrderItemsByOrderID = `-- name: DeleteOrderItemsByOrderID :exec
 DELETE FROM order_items
-WHERE order_id = $1
+WHERE order_id = ?1
 `
 
 func (q *Queries) DeleteOrderItemsByOrderID(ctx context.Context, orderID int64) error {
-	_, err := q.db.Exec(ctx, deleteOrderItemsByOrderID, orderID)
+	_, err := q.db.ExecContext(ctx, deleteOrderItemsByOrderID, orderID)
 	return err
 }
 
-const deleteOrdersCreatedBefore = `-- name: DeleteOrdersCreatedBefore :one
-WITH deleted AS (
-    DELETE FROM orders
-    WHERE created_at < $1
-      AND is_favorite = FALSE
-    RETURNING id
-)
-SELECT COUNT(*)::BIGINT
-FROM deleted
+const deleteOrdersCreatedBefore = `-- name: DeleteOrdersCreatedBefore :execrows
+DELETE FROM orders
+WHERE created_at < ?1
+  AND is_favorite = FALSE
 `
 
-func (q *Queries) DeleteOrdersCreatedBefore(ctx context.Context, createdAtBefore pgtype.Timestamptz) (int64, error) {
-	row := q.db.QueryRow(ctx, deleteOrdersCreatedBefore, createdAtBefore)
-	var column_1 int64
-	err := row.Scan(&column_1)
-	return column_1, err
+func (q *Queries) DeleteOrdersCreatedBefore(ctx context.Context, createdAtBefore time.Time) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteOrdersCreatedBefore, createdAtBefore)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const getActiveOrderByDedupKey = `-- name: GetActiveOrderByDedupKey :one
 SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id, dedup_key FROM orders
-WHERE dedup_key = $1 AND cancelled_at IS NULL
+WHERE dedup_key = ?1 AND cancelled_at IS NULL
 LIMIT 1
 `
 
 func (q *Queries) GetActiveOrderByDedupKey(ctx context.Context, dedupKey *string) (Order, error) {
-	row := q.db.QueryRow(ctx, getActiveOrderByDedupKey, dedupKey)
+	row := q.db.QueryRowContext(ctx, getActiveOrderByDedupKey, dedupKey)
 	var i Order
 	err := row.Scan(
 		&i.ID,
@@ -364,11 +360,11 @@ func (q *Queries) GetActiveOrderByDedupKey(ctx context.Context, dedupKey *string
 const getOrderByID = `-- name: GetOrderByID :one
 SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id, dedup_key
 FROM orders
-WHERE id = $1
+WHERE id = ?1
 `
 
 func (q *Queries) GetOrderByID(ctx context.Context, id int64) (Order, error) {
-	row := q.db.QueryRow(ctx, getOrderByID, id)
+	row := q.db.QueryRowContext(ctx, getOrderByID, id)
 	var i Order
 	err := row.Scan(
 		&i.ID,
@@ -392,11 +388,11 @@ func (q *Queries) GetOrderByID(ctx context.Context, id int64) (Order, error) {
 const getOrderByNumber = `-- name: GetOrderByNumber :one
 SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id, dedup_key
 FROM orders
-WHERE number = $1
+WHERE number = ?1
 `
 
 func (q *Queries) GetOrderByNumber(ctx context.Context, number string) (Order, error) {
-	row := q.db.QueryRow(ctx, getOrderByNumber, number)
+	row := q.db.QueryRowContext(ctx, getOrderByNumber, number)
 	var i Order
 	err := row.Scan(
 		&i.ID,
@@ -428,7 +424,7 @@ SELECT
     COALESCE(p.code, '') AS product_code
 FROM order_items AS oi
 LEFT JOIN iiko_products AS p ON p.id = oi.iiko_product_id
-WHERE oi.order_id = $1
+WHERE oi.order_id = ?1
 ORDER BY oi.id
 `
 
@@ -442,10 +438,10 @@ type GetOrderItemsByOrderIDRow struct {
 	ProductCode      string  `json:"product_code"`
 }
 
-// Позиции хранят только заявку. Факт отработки живёт в журнале и
-// декорируется при чтении (GetOrderProductionFacts + мердж в репозитории).
+// Items store only the request. The production fact lives in the journal and
+// is decorated at read time (GetOrderProductionFacts + merge in the repository).
 func (q *Queries) GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]GetOrderItemsByOrderIDRow, error) {
-	rows, err := q.db.Query(ctx, getOrderItemsByOrderID, orderID)
+	rows, err := q.db.QueryContext(ctx, getOrderItemsByOrderID, orderID)
 	if err != nil {
 		return nil, err
 	}
@@ -466,6 +462,9 @@ func (q *Queries) GetOrderItemsByOrderID(ctx context.Context, orderID int64) ([]
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -483,7 +482,7 @@ SELECT
     COALESCE(p.code, '') AS product_code
 FROM order_items AS oi
 LEFT JOIN iiko_products AS p ON p.id = oi.iiko_product_id
-WHERE oi.order_id = ANY($1::BIGINT[])
+WHERE oi.order_id IN (/*SLICE:order_ids*/?)
 ORDER BY oi.order_id, oi.id
 `
 
@@ -498,7 +497,17 @@ type GetOrderItemsByOrderIDsRow struct {
 }
 
 func (q *Queries) GetOrderItemsByOrderIDs(ctx context.Context, orderIds []int64) ([]GetOrderItemsByOrderIDsRow, error) {
-	rows, err := q.db.Query(ctx, getOrderItemsByOrderIDs, orderIds)
+	query := getOrderItemsByOrderIDs
+	var queryParams []interface{}
+	if len(orderIds) > 0 {
+		for _, v := range orderIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:order_ids*/?", strings.Repeat(",?", len(orderIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:order_ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -519,6 +528,9 @@ func (q *Queries) GetOrderItemsByOrderIDs(ctx context.Context, orderIds []int64)
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -528,12 +540,12 @@ func (q *Queries) GetOrderItemsByOrderIDs(ctx context.Context, orderIds []int64)
 const listOrderHistoryByOrderID = `-- name: ListOrderHistoryByOrderID :many
 SELECT id, order_id, changed_by_username, changed_at
 FROM order_history
-WHERE order_id = $1
+WHERE order_id = ?1
 ORDER BY changed_at DESC, id DESC
 `
 
 func (q *Queries) ListOrderHistoryByOrderID(ctx context.Context, orderID int64) ([]OrderHistory, error) {
-	rows, err := q.db.Query(ctx, listOrderHistoryByOrderID, orderID)
+	rows, err := q.db.QueryContext(ctx, listOrderHistoryByOrderID, orderID)
 	if err != nil {
 		return nil, err
 	}
@@ -551,6 +563,9 @@ func (q *Queries) ListOrderHistoryByOrderID(ctx context.Context, orderID int64) 
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -560,12 +575,12 @@ func (q *Queries) ListOrderHistoryByOrderID(ctx context.Context, orderID int64) 
 const listOrderHistoryItemsByHistoryID = `-- name: ListOrderHistoryItemsByHistoryID :many
 SELECT id, history_id, change_type, product_code, product_name, old_quantity, new_quantity, old_reserved_quantity, new_reserved_quantity
 FROM order_history_items
-WHERE history_id = $1
+WHERE history_id = ?1
 ORDER BY id
 `
 
 func (q *Queries) ListOrderHistoryItemsByHistoryID(ctx context.Context, historyID int64) ([]OrderHistoryItem, error) {
-	rows, err := q.db.Query(ctx, listOrderHistoryItemsByHistoryID, historyID)
+	rows, err := q.db.QueryContext(ctx, listOrderHistoryItemsByHistoryID, historyID)
 	if err != nil {
 		return nil, err
 	}
@@ -588,6 +603,9 @@ func (q *Queries) ListOrderHistoryItemsByHistoryID(ctx context.Context, historyI
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -598,28 +616,28 @@ const listOrders = `-- name: ListOrders :many
 SELECT id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id, dedup_key
 FROM orders
 WHERE
-    ($1::BIGINT IS NULL OR from_department_id = $1::BIGINT)
-    AND ($2::DATE IS NULL OR fulfillment_date = $2::DATE)
-    AND ($3::DATE IS NULL OR fulfillment_date >= $3::DATE)
-    AND ($4::DATE IS NULL OR fulfillment_date <= $4::DATE)
-    AND ($5::BIGINT IS NULL OR category_id = $5::BIGINT)
+    (CAST(?1 AS INTEGER) IS NULL OR from_department_id = CAST(?1 AS INTEGER))
+    AND (CAST(?2 AS TEXT) IS NULL OR fulfillment_date = CAST(?2 AS TEXT))
+    AND (CAST(?3 AS TEXT) IS NULL OR fulfillment_date >= CAST(?3 AS TEXT))
+    AND (CAST(?4 AS TEXT) IS NULL OR fulfillment_date <= CAST(?4 AS TEXT))
+    AND (CAST(?5 AS INTEGER) IS NULL OR category_id = CAST(?5 AS INTEGER))
 ORDER BY id DESC
-LIMIT $7
-OFFSET $6
+LIMIT ?7
+OFFSET ?6
 `
 
 type ListOrdersParams struct {
-	FromDepartmentID *int64      `json:"from_department_id"`
-	FulfillmentDate  pgtype.Date `json:"fulfillment_date"`
-	FulfillmentFrom  pgtype.Date `json:"fulfillment_from"`
-	FulfillmentTo    pgtype.Date `json:"fulfillment_to"`
-	CategoryID       *int64      `json:"category_id"`
-	OrderOffset      int32       `json:"order_offset"`
-	OrderLimit       int32       `json:"order_limit"`
+	FromDepartmentID *int64  `json:"from_department_id"`
+	FulfillmentDate  *string `json:"fulfillment_date"`
+	FulfillmentFrom  *string `json:"fulfillment_from"`
+	FulfillmentTo    *string `json:"fulfillment_to"`
+	CategoryID       *int64  `json:"category_id"`
+	OrderOffset      int64   `json:"order_offset"`
+	OrderLimit       int64   `json:"order_limit"`
 }
 
 func (q *Queries) ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order, error) {
-	rows, err := q.db.Query(ctx, listOrders,
+	rows, err := q.db.QueryContext(ctx, listOrders,
 		arg.FromDepartmentID,
 		arg.FulfillmentDate,
 		arg.FulfillmentFrom,
@@ -655,6 +673,9 @@ func (q *Queries) ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -664,7 +685,7 @@ func (q *Queries) ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order
 const nextOrderCounter = `-- name: NextOrderCounter :one
 UPDATE order_counters
 SET counter = counter + 1
-WHERE day = $1 AND department_id = $2 AND category_id = $3
+WHERE day = ?1 AND department_id = ?2 AND category_id = ?3
 RETURNING counter
 `
 
@@ -675,7 +696,7 @@ type NextOrderCounterParams struct {
 }
 
 func (q *Queries) NextOrderCounter(ctx context.Context, arg NextOrderCounterParams) (int64, error) {
-	row := q.db.QueryRow(ctx, nextOrderCounter, arg.Day, arg.DepartmentID, arg.CategoryID)
+	row := q.db.QueryRowContext(ctx, nextOrderCounter, arg.Day, arg.DepartmentID, arg.CategoryID)
 	var counter int64
 	err := row.Scan(&counter)
 	return counter, err
@@ -685,12 +706,12 @@ const restoreOrder = `-- name: RestoreOrder :one
 UPDATE orders
 SET cancelled_at = NULL,
     cancelled_by_username = ''
-WHERE number = $1
+WHERE number = ?1
 RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id, dedup_key
 `
 
 func (q *Queries) RestoreOrder(ctx context.Context, number string) (Order, error) {
-	row := q.db.QueryRow(ctx, restoreOrder, number)
+	row := q.db.QueryRowContext(ctx, restoreOrder, number)
 	var i Order
 	err := row.Scan(
 		&i.ID,
@@ -713,8 +734,8 @@ func (q *Queries) RestoreOrder(ctx context.Context, number string) (Order, error
 
 const setOrderFavorite = `-- name: SetOrderFavorite :one
 UPDATE orders
-SET is_favorite = $1
-WHERE number = $2
+SET is_favorite = ?1
+WHERE number = ?2
 RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id, dedup_key
 `
 
@@ -724,7 +745,7 @@ type SetOrderFavoriteParams struct {
 }
 
 func (q *Queries) SetOrderFavorite(ctx context.Context, arg SetOrderFavoriteParams) (Order, error) {
-	row := q.db.QueryRow(ctx, setOrderFavorite, arg.IsFavorite, arg.Number)
+	row := q.db.QueryRowContext(ctx, setOrderFavorite, arg.IsFavorite, arg.Number)
 	var i Order
 	err := row.Scan(
 		&i.ID,
@@ -748,26 +769,26 @@ func (q *Queries) SetOrderFavorite(ctx context.Context, arg SetOrderFavoritePara
 const updateOrder = `-- name: UpdateOrder :one
 UPDATE orders
 SET
-    from_department_id = $1,
-    to_department_id = $2,
-    fulfillment_date = $3,
-    comments = $4
-WHERE number = $5
+    from_department_id = ?1,
+    to_department_id = ?2,
+    fulfillment_date = ?3,
+    comments = ?4
+WHERE number = ?5
 RETURNING id, number, location, created_at, from_department_id, to_department_id, fulfillment_date, created_by_username, comments, is_favorite, cancelled_at, cancelled_by_username, category_id, dedup_key
 `
 
 type UpdateOrderParams struct {
-	FromDepartmentID *int64      `json:"from_department_id"`
-	ToDepartmentID   *int64      `json:"to_department_id"`
-	FulfillmentDate  pgtype.Date `json:"fulfillment_date"`
-	Comments         []byte      `json:"comments"`
-	Number           string      `json:"number"`
+	FromDepartmentID *int64  `json:"from_department_id"`
+	ToDepartmentID   *int64  `json:"to_department_id"`
+	FulfillmentDate  string  `json:"fulfillment_date"`
+	Comments         *string `json:"comments"`
+	Number           string  `json:"number"`
 }
 
 // created_by_username is intentionally left untouched: editing an order keeps
 // its original author; who made each change is recorded in order_history.
 func (q *Queries) UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order, error) {
-	row := q.db.QueryRow(ctx, updateOrder,
+	row := q.db.QueryRowContext(ctx, updateOrder,
 		arg.FromDepartmentID,
 		arg.ToDepartmentID,
 		arg.FulfillmentDate,

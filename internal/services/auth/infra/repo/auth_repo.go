@@ -1,21 +1,20 @@
 // Package authrepo is the persistence adapter of the auth service. It
-// implements the authuc.Repository port over sqlc + pgx, maps rows to the
+// implements the authuc.Repository port over sqlc, maps rows to the
 // access domain model, and owns row timestamps. The use case depends on the
 // port, not on this package.
 package authrepo
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
+	outbounddb "bakery/internal/outbound/db"
 	sqlc "bakery/internal/outbound/db/sqlc"
-	"bakery/internal/pkg/helpers"
 	accessdomain "bakery/internal/services/auth/domain"
 	authuc "bakery/internal/services/auth/usecase/auth"
-
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type AuthRepository struct {
@@ -29,7 +28,7 @@ func New(queries *sqlc.Queries) *AuthRepository {
 }
 
 func (r *AuthRepository) CreatePasswordUser(ctx context.Context, input authuc.CreatePasswordUserInput) (accessdomain.AuthUser, error) {
-	now := helpers.TimestamptzNow()
+	now := time.Now().UTC()
 	user, err := r.queries.CreatePasswordAuthUser(ctx, sqlc.CreatePasswordAuthUserParams{
 		DepartmentID:     input.DepartmentID,
 		Username:         input.Username,
@@ -52,7 +51,7 @@ func (r *AuthRepository) CreatePasswordUser(ctx context.Context, input authuc.Cr
 func (r *AuthRepository) GetByUsername(ctx context.Context, username string) (accessdomain.AuthUser, string, error) {
 	user, err := r.queries.GetAuthUserByUsername(ctx, username)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return accessdomain.AuthUser{}, "", authuc.ErrAuthUserNotFound
 		}
 		return accessdomain.AuthUser{}, "", fmt.Errorf("get auth user by username: %w", err)
@@ -63,7 +62,7 @@ func (r *AuthRepository) GetByUsername(ctx context.Context, username string) (ac
 func (r *AuthRepository) GetByID(ctx context.Context, id int64) (accessdomain.AuthUser, error) {
 	user, err := r.queries.GetAuthUserByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return accessdomain.AuthUser{}, authuc.ErrAuthUserNotFound
 		}
 		return accessdomain.AuthUser{}, fmt.Errorf("get auth user by id: %w", err)
@@ -86,11 +85,11 @@ func (r *AuthRepository) ListAll(ctx context.Context) ([]accessdomain.AuthUser, 
 func (r *AuthRepository) SetRole(ctx context.Context, id int64, role string) (accessdomain.AuthUser, error) {
 	user, err := r.queries.UpdateAuthUserRole(ctx, sqlc.UpdateAuthUserRoleParams{
 		Role:      role,
-		UpdatedAt: helpers.TimestamptzNow(),
+		UpdatedAt: time.Now().UTC(),
 		ID:        id,
 	})
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return accessdomain.AuthUser{}, authuc.ErrAuthUserNotFound
 		}
 		return accessdomain.AuthUser{}, fmt.Errorf("update auth user role: %w", err)
@@ -101,11 +100,11 @@ func (r *AuthRepository) SetRole(ctx context.Context, id int64, role string) (ac
 func (r *AuthRepository) SetUsername(ctx context.Context, id int64, username string) (accessdomain.AuthUser, error) {
 	user, err := r.queries.UpdateAuthUserUsername(ctx, sqlc.UpdateAuthUserUsernameParams{
 		Username:  username,
-		UpdatedAt: helpers.TimestamptzNow(),
+		UpdatedAt: time.Now().UTC(),
 		ID:        id,
 	})
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return accessdomain.AuthUser{}, authuc.ErrAuthUserNotFound
 		}
 		if conflict := authUserUniqueConflict(err); conflict != nil {
@@ -119,7 +118,7 @@ func (r *AuthRepository) SetUsername(ctx context.Context, id int64, username str
 func (r *AuthRepository) GetByTelegramID(ctx context.Context, telegramID int64) (accessdomain.AuthUser, error) {
 	user, err := r.queries.GetAuthUserByTelegramID(ctx, &telegramID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return accessdomain.AuthUser{}, authuc.ErrAuthUserNotFound
 		}
 		return accessdomain.AuthUser{}, fmt.Errorf("get auth user by telegram id: %w", err)
@@ -128,9 +127,9 @@ func (r *AuthRepository) GetByTelegramID(ctx context.Context, telegramID int64) 
 }
 
 func (r *AuthRepository) GetByTelegramUsername(ctx context.Context, telegramUsername string) (accessdomain.AuthUser, error) {
-	user, err := r.queries.GetAuthUserByTelegramUsername(ctx, telegramUsername)
+	user, err := r.queries.GetAuthUserByTelegramUsername(ctx, &telegramUsername)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return accessdomain.AuthUser{}, authuc.ErrAuthUserNotFound
 		}
 		return accessdomain.AuthUser{}, fmt.Errorf("get auth user by telegram username: %w", err)
@@ -165,11 +164,11 @@ func (r *AuthRepository) ListByDepartmentID(ctx context.Context, departmentID in
 func (r *AuthRepository) BindTelegramID(ctx context.Context, id, telegramID int64) (accessdomain.AuthUser, error) {
 	user, err := r.queries.BindTelegramID(ctx, sqlc.BindTelegramIDParams{
 		TelegramID: &telegramID,
-		UpdatedAt:  helpers.TimestamptzNow(),
+		UpdatedAt:  time.Now().UTC(),
 		ID:         id,
 	})
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return accessdomain.AuthUser{}, authuc.ErrAuthUserNotFound
 		}
 		return accessdomain.AuthUser{}, fmt.Errorf("bind telegram id: %w", err)
@@ -180,11 +179,11 @@ func (r *AuthRepository) BindTelegramID(ctx context.Context, id, telegramID int6
 func (r *AuthRepository) SetPasswordHash(ctx context.Context, id int64, passwordHash string) (accessdomain.AuthUser, error) {
 	user, err := r.queries.UpdateAuthUserPassword(ctx, sqlc.UpdateAuthUserPasswordParams{
 		PasswordHash: passwordHash,
-		UpdatedAt:    helpers.TimestamptzNow(),
+		UpdatedAt:    time.Now().UTC(),
 		ID:           id,
 	})
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return accessdomain.AuthUser{}, authuc.ErrAuthUserNotFound
 		}
 		return accessdomain.AuthUser{}, fmt.Errorf("update password: %w", err)
@@ -202,7 +201,7 @@ func (r *AuthRepository) Delete(ctx context.Context, id int64) error {
 func (r *AuthRepository) AssignUserDepartment(ctx context.Context, userID int64, departmentID *int64) (accessdomain.AuthUser, error) {
 	user, err := r.queries.AssignUserDepartment(ctx, sqlc.AssignUserDepartmentParams{
 		DepartmentID: departmentID,
-		UpdatedAt:    helpers.TimestamptzNow(),
+		UpdatedAt:    time.Now().UTC(),
 		UserID:       userID,
 	})
 	if err != nil {
@@ -220,8 +219,8 @@ func authUserToDomain(user sqlc.AuthUser) accessdomain.AuthUser {
 		Username:         user.Username,
 		MetadataJSON:     user.MetadataJson,
 		Role:             accessdomain.NormalizeRole(user.Role),
-		CreatedAt:        user.CreatedAt.Time,
-		UpdatedAt:        user.UpdatedAt.Time,
+		CreatedAt:        user.CreatedAt,
+		UpdatedAt:        user.UpdatedAt,
 	}
 }
 
@@ -233,14 +232,10 @@ func optionalTelegramUsername(value string) *string {
 }
 
 func authUserUniqueConflict(err error) error {
-	var pgErr *pgconn.PgError
-	if !errors.As(err, &pgErr) || pgErr.Code != "23505" {
-		return nil
-	}
-	switch pgErr.ConstraintName {
-	case "idx_auth_users_username":
+	switch {
+	case outbounddb.IsUniqueViolation(err, "auth_users", "username"):
 		return authuc.ErrUsernameTaken
-	case "idx_auth_users_telegram_username":
+	case outbounddb.IsUniqueViolation(err, "auth_users", "telegram_username"):
 		return authuc.ErrTelegramUsernameTaken
 	default:
 		return nil
