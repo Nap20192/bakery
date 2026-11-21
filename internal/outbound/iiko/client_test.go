@@ -21,8 +21,6 @@ func init() {
 }
 
 func TestClient_AllMethods(t *testing.T) {
-	resultsDir := testResultsDir(t)
-
 	requireEnv := func(name string) string {
 		t.Helper()
 		v := os.Getenv(name)
@@ -37,6 +35,7 @@ func TestClient_AllMethods(t *testing.T) {
 	iikoLogin := requireEnv("IIKO_LOGIN")
 	iikoPassword := requireEnv("IIKO_PASSWORD")
 	depID := os.Getenv("IIKO_DEPARTMENT_ID")
+	resultsDir := testResultsDir(t)
 
 	api := NewApi(iikoHost, iikoPort)
 	client, err := NewClient(iikoLogin, iikoPassword, api)
