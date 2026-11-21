@@ -4,6 +4,7 @@ import (
 	"io"
 	"io/fs"
 	"log/slog"
+	"net/http"
 	"net/http/httptest"
 	"regexp"
 	"strings"
@@ -129,5 +130,26 @@ func TestSafeNextRejectsExternalURL(t *testing.T) {
 	}
 	if got := safeNext("/orders/table?start=2026-07-22"); got != "/orders/table?start=2026-07-22" {
 		t.Errorf("safe local next = %q", got)
+	}
+}
+
+func TestHomeOpensOrderFromBotLink(t *testing.T) {
+	t.Parallel()
+	client := backend.New("http://127.0.0.1:1", time.Second)
+	handler, err := New(client, client, slog.New(slog.DiscardHandler))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	for target, want := range map[string]string{
+		"/":                                  "/orders",
+		"/?order=":                           "/orders",
+		"/?order=%D0%93.%D0%A5.21.11.26.001": "/orders/%D0%93.%D0%A5.21.11.26.001",
+		"/?order=%20%D0%93.%D0%A5.21.11.26.001%20": "/orders/%D0%93.%D0%A5.21.11.26.001",
+	} {
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, target, nil))
+		if response.Code != http.StatusSeeOther || response.Header().Get("Location") != want {
+			t.Errorf("GET %s = %d %q, want 303 %q", target, response.Code, response.Header().Get("Location"), want)
+		}
 	}
 }

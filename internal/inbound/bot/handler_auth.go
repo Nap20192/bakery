@@ -122,7 +122,7 @@ func (b *OrderBot) userInfoMessage(user accessdomain.AuthUser) string {
 		sb.WriteString("\n<b>Как создавать заказы:</b>\n")
 		sb.WriteString("1. Откройте приложение (ссылка ниже).\n")
 		sb.WriteString("2. Выберите магазин, из которого отправляете заказ, и дату.\n")
-		sb.WriteString("3. Укажите количество у нужных блюд (можно «Вставить списком»).\n")
+		sb.WriteString("3. Укажите количество у нужных блюд.\n")
 		sb.WriteString("4. Нажмите «Создать заказ» — он уйдёт в цех, уведомление придёт сюда.\n")
 	case accessdomain.RoleBaker:
 		sb.WriteString("\n<b>Что делать дальше:</b>\n")

@@ -136,6 +136,10 @@ func (s *server) home(w http.ResponseWriter, r *http.Request) {
 		s.renderError(w, r, http.StatusNotFound, "Страница не найдена.")
 		return
 	}
+	if number := strings.TrimSpace(r.URL.Query().Get("order")); number != "" {
+		http.Redirect(w, r, "/orders/"+url.PathEscape(number), http.StatusSeeOther)
+		return
+	}
 	http.Redirect(w, r, "/orders", http.StatusSeeOther)
 }
 
