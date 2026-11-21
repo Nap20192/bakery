@@ -17,7 +17,6 @@ import (
 	"bakery/internal/deps"
 	outbounddb "bakery/internal/outbound/db"
 	"bakery/internal/pkg/dbmigrate"
-	orderoutbox "bakery/internal/services/order/infra/outbox"
 	"bakery/pkg/logger"
 )
 
@@ -93,11 +92,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	var eventHandler orderoutbox.Handler = droppedOrderEvents{}
-	if runner != nil {
-		eventHandler = runner
-	}
-	relay, err := deps.NewOrderOutboxRelay(infra, eventHandler)
+	relay, err := deps.NewOrderOutboxRelay(infra, runner)
 	if err != nil {
 		return err
 	}
@@ -132,12 +127,9 @@ func run() error {
 		}
 		return nil
 	})
-	if runner != nil {
-		group.Go(func() error {
-			runner.Run(groupCtx)
-			return nil
-		})
-	}
+	group.Go(func() error {
+		return runner.Run(groupCtx)
+	})
 	group.Go(func() error {
 		<-groupCtx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
@@ -145,11 +137,4 @@ func run() error {
 		return httpServer.Shutdown(shutdownCtx)
 	})
 	return group.Wait()
-}
-
-type droppedOrderEvents struct{}
-
-func (droppedOrderEvents) HandleOrderEvent(ctx context.Context, eventType string, _ []byte) error {
-	slog.DebugContext(ctx, "order event dropped: telegram bot disabled", "type", eventType)
-	return nil
 }

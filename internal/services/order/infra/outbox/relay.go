@@ -2,6 +2,7 @@ package orderoutbox
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -14,6 +15,8 @@ const (
 	defaultInterval = 2 * time.Second
 	defaultBatch    = 100
 )
+
+var ErrHandlerNotReady = errors.New("order event handler is not ready")
 
 type Handler interface {
 	HandleOrderEvent(ctx context.Context, eventType string, payload []byte) error
@@ -56,6 +59,10 @@ func (r *Relay) drain(ctx context.Context) error {
 	for _, row := range rows {
 		eventCtx := correlation.WithID(ctx, row.CorrelationID)
 		if err := r.handler.HandleOrderEvent(eventCtx, row.EventType, row.Payload); err != nil {
+			if errors.Is(err, ErrHandlerNotReady) {
+				slog.DebugContext(ctx, "outbox waits for its handler", "component", "order.outbox", "pending_from", row.ID)
+				return nil
+			}
 			return fmt.Errorf("handle outbox event %d: %w", row.ID, err)
 		}
 		if err := r.queries.MarkOrderOutboxEventPublished(ctx, row.ID); err != nil {

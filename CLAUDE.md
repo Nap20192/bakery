@@ -32,7 +32,7 @@ After editing any `.sql` file in `queries/`, run `make sqlc` before building.
 - HTML/HTMX frontend — the only HTTP listener; calls the API through an in-process transport and never the database
 - JSON API — not mounted on any port
 - iiko sync, order cleanup, outbox relay
-- Telegram bot — connects in the background; Telegram being down never stops the web UI (`docs/constraints.md` C4)
+- Telegram bot — connects in the background; Telegram being down never stops the web UI, but configuration errors (no token, bad `MINI_APP_URL`, rejected token) stop the process (`docs/constraints.md` C4)
 
 It applies DB migrations on startup and creates the admin user. Deployment: `docs/deployment.md`.
 

@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"log/slog"
 	"sync/atomic"
 	"time"
@@ -10,11 +10,10 @@ import (
 	"bakery/internal/config"
 	"bakery/internal/deps"
 	"bakery/internal/inbound/bot"
+	orderoutbox "bakery/internal/services/order/infra/outbox"
 )
 
 const botConnectRetryDelay = 30 * time.Second
-
-var errBotNotReady = errors.New("telegram bot is not connected yet")
 
 type botRunner struct {
 	cfg     *config.Config
@@ -24,11 +23,10 @@ type botRunner struct {
 
 func newBotRunner(cfg *config.Config, appDeps *deps.AppDeps) (*botRunner, error) {
 	if cfg.Telegram.BotToken == "" {
-		if cfg.Telegram.BotEnv == "prod" || cfg.Telegram.BotEnv == "production" {
-			return nil, errors.New("PROD_BOT_TOKEN is not set")
-		}
-		slog.Warn("telegram bot disabled: no bot token", "bot_env", cfg.Telegram.BotEnv)
-		return nil, nil
+		return nil, fmt.Errorf("telegram bot token is not set for BOT_ENV=%s: it signs web sessions and runs the bot", cfg.Telegram.BotEnv)
+	}
+	if err := bot.ValidateMiniAppURL(cfg.Telegram.MiniAppURL); err != nil {
+		return nil, fmt.Errorf("MINI_APP_URL: %w", err)
 	}
 	return &botRunner{cfg: cfg, appDeps: appDeps}, nil
 }
@@ -36,12 +34,12 @@ func newBotRunner(cfg *config.Config, appDeps *deps.AppDeps) (*botRunner, error)
 func (r *botRunner) HandleOrderEvent(ctx context.Context, eventType string, payload []byte) error {
 	orderBot := r.bot.Load()
 	if orderBot == nil {
-		return errBotNotReady
+		return orderoutbox.ErrHandlerNotReady
 	}
 	return orderBot.HandleOrderEvent(ctx, eventType, payload)
 }
 
-func (r *botRunner) Run(ctx context.Context) {
+func (r *botRunner) Run(ctx context.Context) error {
 	for {
 		orderBot, err := bot.NewOrderBot(
 			r.cfg.Telegram.BotToken,
@@ -52,12 +50,15 @@ func (r *botRunner) Run(ctx context.Context) {
 		)
 		if err == nil {
 			r.serve(ctx, orderBot)
-			return
+			return nil
+		}
+		if bot.IsRejectedToken(err) {
+			return fmt.Errorf("telegram rejected the bot token: %w", err)
 		}
 		slog.ErrorContext(ctx, "telegram bot connect failed", "error", err, "retry_in", botConnectRetryDelay)
 		select {
 		case <-ctx.Done():
-			return
+			return nil
 		case <-time.After(botConnectRetryDelay):
 		}
 	}

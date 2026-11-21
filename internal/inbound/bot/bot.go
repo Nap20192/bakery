@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -32,11 +33,8 @@ func NewOrderBot(
 	workshopChatID int64,
 ) (*OrderBot, error) {
 	miniAppURL = strings.TrimSpace(miniAppURL)
-	if miniAppURL != "" {
-		parsed, err := url.Parse(miniAppURL)
-		if err != nil || parsed.Scheme != "https" || parsed.Host == "" {
-			return nil, fmt.Errorf("orderbot: mini app URL must be a valid https URL")
-		}
+	if err := ValidateMiniAppURL(miniAppURL); err != nil {
+		return nil, err
 	}
 
 	b, err := newTelegramBot(token)
@@ -56,6 +54,22 @@ func NewOrderBot(
 	}
 	bot.register()
 	return bot, nil
+}
+
+func ValidateMiniAppURL(raw string) error {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.Scheme != "https" || parsed.Host == "" {
+		return fmt.Errorf("orderbot: mini app URL must be a valid https URL")
+	}
+	return nil
+}
+
+func IsRejectedToken(err error) bool {
+	return errors.Is(err, tele.ErrUnauthorized) || errors.Is(err, tele.ErrNotFound)
 }
 
 func newTelegramBot(token string) (*tele.Bot, error) {
