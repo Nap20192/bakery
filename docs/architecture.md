@@ -206,12 +206,16 @@ The order service is the only event producer. Flow:
    role (DM), and the workshop group chat (`TELEGRAM_WORKSHOP_CHAT_ID`). Sends
    are best-effort — a failed send is logged, never retried. An event whose
    payload cannot be decoded is logged and dropped.
-5. While the bot is not connected to Telegram (it reconnects every 30s), the
-   relay stops at the first undelivered row and retries on the next tick:
-   events wait in the outbox and are delivered in order once the bot is up.
-   The web UI and the API keep working regardless of Telegram.
-6. Without a bot token (allowed only outside `BOT_ENV=prod`) the bot is
-   disabled and events are marked delivered without notifications.
+5. While the bot is not connected to Telegram (it reconnects every 30s after
+   a network or 5xx failure), the handler answers
+   `orderoutbox.ErrHandlerNotReady`; the relay stops at the first undelivered
+   row and retries on the next tick without logging an error. Events wait in
+   the outbox and are delivered in order once the bot is up. The web UI and
+   the API keep working regardless of Telegram.
+6. The bot token is required in every `BOT_ENV`: it also signs web sessions.
+   The process refuses to start without it or with an invalid `MINI_APP_URL`,
+   and exits when Telegram rejects the token (401/404) — retrying cannot fix
+   configuration.
 
 ## Database
 

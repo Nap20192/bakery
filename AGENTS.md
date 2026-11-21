@@ -187,8 +187,10 @@ Order of options matters: a service that depends on another (e.g. `admin`
 needs `auth` + `department`) must be declared after its dependencies.
 
 `cmd/bakery` builds all services, then the bot runner, then the outbox relay
-with `deps.NewOrderOutboxRelay(infra, handler)` — the handler is the bot, or a
-no-op when the bot is disabled (no token outside `BOT_ENV=prod`).
+with `deps.NewOrderOutboxRelay(infra, runner)` — the handler is the bot runner.
+The bot token is required in every `BOT_ENV`; configuration errors (no token,
+invalid `MINI_APP_URL`, token rejected with 401/404) stop the process, only
+network and 5xx failures are retried.
 
 ---
 
@@ -283,7 +285,8 @@ Event-driven flow from the order service to the bot:
   the handler must tolerate duplicates.
 - The handler is `bot.OrderBot.HandleOrderEvent` (via `botRunner` in
   `cmd/bakery`). A handler error stops the batch and the row is retried on the
-  next tick: while the bot is not connected to Telegram, events wait in the
+  next tick; `orderoutbox.ErrHandlerNotReady` (bot not connected yet) does so
+  without logging an error, and events wait in the
   outbox (`docs/constraints.md` C4). An undecodable payload is logged and
   dropped, not retried.
 

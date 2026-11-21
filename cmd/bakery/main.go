@@ -19,7 +19,6 @@ import (
 	outbounddb "bakery/internal/outbound/db"
 	"bakery/internal/outbound/db/pgimport"
 	"bakery/internal/pkg/dbmigrate"
-	orderoutbox "bakery/internal/services/order/infra/outbox"
 	"bakery/pkg/logger"
 )
 
@@ -98,11 +97,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	var eventHandler orderoutbox.Handler = droppedOrderEvents{}
-	if runner != nil {
-		eventHandler = runner
-	}
-	relay, err := deps.NewOrderOutboxRelay(infra, eventHandler)
+	relay, err := deps.NewOrderOutboxRelay(infra, runner)
 	if err != nil {
 		return err
 	}
@@ -137,12 +132,9 @@ func run() error {
 		}
 		return nil
 	})
-	if runner != nil {
-		group.Go(func() error {
-			runner.Run(groupCtx)
-			return nil
-		})
-	}
+	group.Go(func() error {
+		return runner.Run(groupCtx)
+	})
 	group.Go(func() error {
 		<-groupCtx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
@@ -165,11 +157,4 @@ func importPostgresOnce(ctx context.Context, cfg *config.Config) error {
 		return fmt.Errorf("stat sqlite database: %w", err)
 	}
 	return pgimport.Import(ctx, cfg.Database.ImportPostgresURL, cfg.Database.Path, cfg.Migration.Dir)
-}
-
-type droppedOrderEvents struct{}
-
-func (droppedOrderEvents) HandleOrderEvent(ctx context.Context, eventType string, _ []byte) error {
-	slog.DebugContext(ctx, "order event dropped: telegram bot disabled", "type", eventType)
-	return nil
 }

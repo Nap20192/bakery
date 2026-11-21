@@ -58,9 +58,9 @@ go run ./cmd/bakery          # http://localhost:8080
 ```
 
 Migrations apply automatically on startup; the admin user and dish catalog
-are ensured/seeded on every start. Without a bot token (and `BOT_ENV` other
-than `prod`) the bot is disabled and web login is unavailable — set
-`TEST_BOT_TOKEN` in `.env` to log in.
+are ensured/seeded on every start. A bot token is required (`TEST_BOT_TOKEN`
+with the default `BOT_ENV=test`): it runs the bot and signs web sessions, and
+the app refuses to start without it.
 
 **Run in background + restart cycle** (the pattern used during development):
 

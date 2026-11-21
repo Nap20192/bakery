@@ -42,7 +42,8 @@ IIKO_PASSWORD=...
 - Railway mounts volumes as `root`, while the image runs as an unprivileged
   user; `RAILWAY_RUN_UID=0` lets the process write to the volume.
 - Railway sets `PORT`; the binary listens on it.
-- With `BOT_ENV=prod` the process refuses to start without `PROD_BOT_TOKEN`.
+- The process refuses to start without the bot token for its `BOT_ENV` or
+  with an invalid `MINI_APP_URL`, and exits when Telegram rejects the token.
 
 ## One replica, short downtime on deploy
 
