@@ -41,13 +41,10 @@ func (r *botRunner) HandleOrderEvent(ctx context.Context, eventType string, payl
 
 func (r *botRunner) Run(ctx context.Context) error {
 	for {
-		orderBot, err := bot.NewOrderBot(
-			r.cfg.Telegram.BotToken,
-			r.appDeps.AuthService,
-			r.appDeps.DepartmentService,
-			r.cfg.Telegram.MiniAppURL,
-			r.cfg.Telegram.WorkshopChatID,
-		)
+		orderBot, err := r.connect(ctx)
+		if ctx.Err() != nil {
+			return nil
+		}
 		if err == nil {
 			r.serve(ctx, orderBot)
 			return nil
@@ -61,6 +58,31 @@ func (r *botRunner) Run(ctx context.Context) error {
 			return nil
 		case <-time.After(botConnectRetryDelay):
 		}
+	}
+}
+
+type connectResult struct {
+	bot *bot.OrderBot
+	err error
+}
+
+func (r *botRunner) connect(ctx context.Context) (*bot.OrderBot, error) {
+	done := make(chan connectResult, 1)
+	go func() {
+		orderBot, err := bot.NewOrderBot(
+			r.cfg.Telegram.BotToken,
+			r.appDeps.AuthService,
+			r.appDeps.DepartmentService,
+			r.cfg.Telegram.MiniAppURL,
+			r.cfg.Telegram.WorkshopChatID,
+		)
+		done <- connectResult{bot: orderBot, err: err}
+	}()
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case result := <-done:
+		return result.bot, result.err
 	}
 }
 
