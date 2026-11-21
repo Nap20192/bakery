@@ -1081,6 +1081,11 @@ components:
       required: [id, created_by_username, created_at, updated_at, order_numbers, item_count]
       properties:
         id: { type: integer, format: int64 }
+        category_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: Returned in the sheet list; category of the first saved batch order sorted by order number. Absent or null if the batch is empty or that order has no category.
         created_by_username: { type: string }
         created_at: { type: string }
         updated_at: { type: string }

@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"encoding/base64"
 	"io"
 	"log/slog"
 	"net/http"
@@ -37,6 +38,7 @@ type fakeBackend struct {
 	orderFilters    application.OrderFilters
 	orderPages      map[int]contract.OrdersPage
 	orderCalls      []application.OrderFilters
+	orderQueryCalls []string
 	drafts          []contract.OrderDraft
 	draftByCategory map[int64]contract.OrderDraft
 
@@ -90,6 +92,7 @@ func (f *fakeBackend) Orders(_ context.Context, _ application.Credentials, filte
 	return contract.OrdersPage{Items: nil, Total: 0}, nil
 }
 func (f *fakeBackend) Order(_ context.Context, _ application.Credentials, number string) (contract.Order, error) {
+	f.orderQueryCalls = append(f.orderQueryCalls, number)
 	return f.orders[number], nil
 }
 func (f *fakeBackend) ProductionSheets(context.Context, application.Credentials) ([]contract.ProductionSheet, error) {
@@ -638,38 +641,56 @@ func TestE2ERBACBakerReachesProductionNotAdmin(t *testing.T) {
 	}
 }
 
-func TestE2EProductionJournalOmitsSheetsWithoutCategory(t *testing.T) {
+func TestE2EProductionJournalUsesSheetCategoryWithoutOrderQueries(t *testing.T) {
 	t.Parallel()
 	category := contract.Category{ID: 1, Name: "Хлеб", Letter: "Х", Color: "amber"}
+	unknownCategoryID := int64(99)
 	back := &fakeBackend{
-		loginToken: "baker-token",
 		viewers: map[application.Credentials]contract.Me{
 			"Bearer baker-token": {Role: "baker", TelegramUsername: "bakeruser"},
 		},
-		orders: map[string]contract.Order{
-			"typed":  {Number: "typed", Category: &category},
-			"legacy": {Number: "legacy"},
+		categories: []contract.Category{
+			{ID: 2, Name: "Булочки", Letter: "Б", Color: "sky"},
+			category,
 		},
 		sheets: []contract.ProductionSheet{
-			{ID: 1, CreatedAt: "2026-07-24T08:00:00Z", CreatedByUsername: "bakeruser", OrderNumbers: []string{"typed"}},
+			{ID: 1, CategoryID: &category.ID, CreatedAt: "2026-07-24T08:00:00Z", CreatedByUsername: "bakeruser", OrderNumbers: []string{"typed"}},
 			{ID: 2, CreatedAt: "2026-07-24T09:00:00Z", CreatedByUsername: "bakeruser", OrderNumbers: []string{"legacy"}},
+			{ID: 3, CategoryID: &unknownCategoryID, CreatedAt: "2026-07-24T09:00:00Z", OrderNumbers: []string{"unknown"}},
+			{ID: 4, CategoryID: &category.ID, CreatedAt: "2026-07-24T09:00:00Z"},
 		},
 	}
-	srv, client := newE2E(t, back)
-	login(t, client, srv.URL, "bakeruser")
-
-	resp, err := client.Get(srv.URL + "/production")
+	handler, err := New(back, back, slog.New(slog.DiscardHandler))
 	if err != nil {
-		t.Fatalf("get production: %v", err)
+		t.Fatalf("New: %v", err)
 	}
-	body, _ := io.ReadAll(resp.Body)
-	_ = resp.Body.Close()
-	html := string(body)
-	if resp.StatusCode != http.StatusOK || !strings.Contains(html, "№1") {
-		t.Fatalf("production journal = %d, categorized sheet missing", resp.StatusCode)
+	request := httptest.NewRequest(http.MethodGet, "/production", nil)
+	request.AddCookie(&http.Cookie{
+		Name:     sessionCookie,
+		Value:    base64.RawURLEncoding.EncodeToString([]byte("Bearer baker-token")),
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	html := response.Body.String()
+	if response.Code != http.StatusOK || !strings.Contains(html, "№1") {
+		t.Fatalf("production journal = %d, categorized sheet missing", response.Code)
 	}
-	if strings.Contains(html, "№2") || strings.Contains(html, "Без типа") {
+	if strings.Contains(html, "№2") || strings.Contains(html, "№3") || strings.Contains(html, "№4") || strings.Contains(html, "Без типа") {
 		t.Fatal("uncategorized production sheet reached the journal")
+	}
+	row := strings.SplitN(strings.SplitN(html, "<tbody>", 2)[1], "</tbody>", 2)[0]
+	cells := strings.Split(row, "<td>")
+	if len(cells) != 3 || strings.Contains(cells[1], "sheet-link") || !strings.Contains(cells[2], "№1") {
+		t.Fatalf("sheet is not in its category column: %s", row)
+	}
+	if !strings.Contains(cells[2], `class="sheet-link sheet-copper"`) || !strings.Contains(html, `<span class="count">1</span>`) {
+		t.Fatalf("sheet tone or journal count changed: %s", html)
+	}
+	if len(back.orderQueryCalls) != 0 {
+		t.Fatalf("journal queried individual orders: %v", back.orderQueryCalls)
 	}
 }
 

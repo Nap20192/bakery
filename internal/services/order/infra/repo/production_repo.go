@@ -168,6 +168,7 @@ func (r *OrderRepository) ListProductionSheets(ctx context.Context) ([]orderdoma
 		}
 		sheets = append(sheets, orderdomain.ProductionSheet{
 			ID:                row.ID,
+			CategoryID:        row.CategoryID,
 			CreatedByUsername: row.CreatedByUsername,
 			CreatedAt:         row.CreatedAt,
 			UpdatedAt:         row.UpdatedAt,

@@ -74,6 +74,7 @@ type OrderHistory struct {
 // выход декорирует его позиции при чтении (свежий лист побеждает).
 type ProductionSheet struct {
 	ID                int64                 `json:"id"`
+	CategoryID        *int64                `json:"category_id,omitempty"`
 	CreatedByUsername string                `json:"created_by_username"`
 	CreatedAt         time.Time             `json:"created_at"`
 	UpdatedAt         time.Time             `json:"updated_at"`

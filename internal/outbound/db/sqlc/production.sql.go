@@ -412,6 +412,14 @@ SELECT
     ps.created_by_username,
     ps.created_at,
     ps.updated_at,
+    (
+        SELECT o.category_id
+        FROM production_sheet_orders pso
+        JOIN orders o ON o.id = pso.order_id
+        WHERE pso.sheet_id = ps.id
+        ORDER BY o.number
+        LIMIT 1
+    ) AS category_id,
     CAST((
         SELECT COUNT(*)
         FROM production_sheet_items psi
@@ -436,6 +444,7 @@ type ListProductionSheetsRow struct {
 	CreatedByUsername string    `json:"created_by_username"`
 	CreatedAt         time.Time `json:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at"`
+	CategoryID        *int64    `json:"category_id"`
 	ItemCount         int64     `json:"item_count"`
 	OrderNumbersJson  string    `json:"order_numbers_json"`
 }
@@ -456,6 +465,7 @@ func (q *Queries) ListProductionSheets(ctx context.Context) ([]ListProductionShe
 			&i.CreatedByUsername,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.CategoryID,
 			&i.ItemCount,
 			&i.OrderNumbersJson,
 		); err != nil {
