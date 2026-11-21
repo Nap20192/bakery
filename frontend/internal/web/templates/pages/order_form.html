@@ -35,8 +35,8 @@
         {{range $item := $group.Items}}<div class="catalog-row" data-catalog-row data-category="{{deref $item.Dish.CategoryID}}" data-name="{{$item.Dish.Name}}">
           <input type="hidden" name="item_name" value="{{$item.Dish.Name}}">
           <div class="catalog-name"><strong>{{$item.Dish.Name}}</strong><button class="text-action" type="button" data-comment-toggle>Комментарий</button></div>
-          <label><span>Заявка</span><input class="quantity-input" type="number" name="quantity" min="0" step="1" inputmode="numeric" placeholder="0" value="{{inputQty $item.Quantity}}"></label>
-          <label><span>Заказ</span><input class="quantity-input" type="number" name="reserved_quantity" min="0" step="1" inputmode="numeric" placeholder="0" value="{{inputQty $item.Reserved}}"></label>
+          <div class="qty-field qty-field-shelf"><span class="qty-label" aria-hidden="true">Заявка</span>{{template "stepper" (dict "Name" "quantity" "Value" (inputQty $item.Quantity) "Placeholder" "0" "Label" (printf "Заявка: %s" $item.Dish.Name))}}</div>
+          <div class="qty-field qty-field-reserve"><span class="qty-label" aria-hidden="true">Заказ</span>{{template "stepper" (dict "Name" "reserved_quantity" "Value" (inputQty $item.Reserved) "Placeholder" "0" "Label" (printf "Заказ: %s" $item.Dish.Name))}}</div>
           <label class="item-comment" hidden><span>Комментарий к позиции</span><input name="item_comment" value="{{$item.Comment}}" maxlength="500"></label>
         </div>{{end}}
       </div></section>{{end}}
@@ -44,6 +44,7 @@
     </section>
     <section class="editor-step"><label class="field"><span>Общий комментарий</span><textarea name="general_comment" rows="3" maxlength="1000">{{$data.GeneralComment}}</textarea></label></section>
     <div class="sticky-submit">
+      <output class="sticky-summary" data-editor-summary aria-live="polite">0 поз.</output>
       <a class="button" href="{{$back}}" data-confirm="Уйти без сохранения? Введённые данные не сохранятся.">Отменить</a>
       {{if and (not $update) (isShop .Viewer)}}<button class="button" type="submit" formaction="/orders/draft">Сохранить черновик</button>{{end}}
       <button class="button button-primary" type="submit">{{$submit}}</button>

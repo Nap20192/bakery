@@ -6,6 +6,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/joho/godotenv v1.5.1
+	golang.org/x/net v0.47.0
 	golang.org/x/sync v0.24.0
 	gopkg.in/telebot.v3 v3.3.8
 	modernc.org/sqlite v1.62.0

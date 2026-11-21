@@ -76,6 +76,9 @@ Rules:
 - Status chips: `Отработан` (success, check icon), `Ждёт` (warning, clock
   icon), `Отменён` (danger, cross icon). In narrow matrix columns the chip
   shows its icon only; the label stays for screen readers.
+- Quantity steppers: `−` value `+`, 44px buttons around a borderless number
+  field on `--surface-inset`; a filled value tints the stepper (shelf order
+  green, reserve amber). Used for every quantity a person enters on a phone.
 - Mobile navigation: at most five tabs in the bottom bar, «Создать» as the
   raised round accent button in the middle; rarely used admin sections live
   on the profile page («Ещё»). A phone held sideways gets a left rail instead
