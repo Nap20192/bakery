@@ -93,35 +93,29 @@ that Postgres first.
 ## Moving from the three-service setup
 
 The setup before that ran `frontend`, `bakery` (worker), `bot` and RabbitMQ as
-separate services on Postgres. Switch to the single binary on Postgres first,
-then move to SQLite as above:
+separate services on Postgres; every service deploys from `main`. Go straight
+to the single binary on SQLite, reusing the public frontend service so its
+domain — and the Mini App URL registered in BotFather — stay the same:
 
 1. Check that the old bot has caught up: the `bakery.bot.order-events` queue
-   in the RabbitMQ management UI shows 0 messages ready and 0 unacked. Events
-   still sitting in the queue were marked published long before the cutover
-   and the replay below would not cover them. Then note the cutover start time
-   (UTC).
-2. Point the `bakery` service at `/railway.json` and give it the public
-   domain (move it from `frontend`).
-3. Copy the bot variables (`BOT_ENV`, `PROD_BOT_TOKEN`,
-   `TELEGRAM_WORKSHOP_CHAT_ID`) to `bakery` and set `MINI_APP_URL` to its
-   domain. If the domain changed, update the Mini App / menu button URL in
-   BotFather as well, or the Mini App keeps opening the deleted service.
-4. Delete the `bot` service before the new deploy goes live, so two pollers
-   never share the token.
-5. Once `/health` on the new deploy answers, replay in Postgres the events the
-   old worker relayed into RabbitMQ after the bot was gone (they are marked
-   published but nobody consumed them):
-
-   ```sql
-   UPDATE order_outbox SET published_at = NULL
-   WHERE published_at >= '<cutover start>';
-   ```
-
-   Delivery is at-least-once, so an event notified twice is acceptable.
-6. Delete the `frontend` and RabbitMQ services.
-7. Remove the obsolete variables: `RABBITMQ_URL`, `BACKEND_URL`,
-   `FRONTEND_ADDR`, `HTTP_ALLOWED_ORIGINS`.
+   in the RabbitMQ management UI shows 0 messages ready and 0 unacked.
+2. On the frontend service, without deploying (`--skip-deploys`): attach the
+   volume at `/data`; copy the worker and bot variables (`ADMIN_PASSWORD`,
+   `BOT_ENV`, `PROD_BOT_TOKEN`, `TELEGRAM_WORKSHOP_CHAT_ID`, `IIKO_*`,
+   `LOG_*`); set `MINI_APP_URL` to its own domain, `SQLITE_PATH`,
+   `RAILWAY_RUN_UID=0` and `IMPORT_POSTGRES_URL=${{Postgres.DATABASE_URL}}`;
+   remove `BACKEND_URL`. Railway reads `/railway.json` from the repository
+   root, which switches the build to the root `Dockerfile`.
+3. Delete the worker and `bot` services. From here until step 4 finishes the
+   site is down. With no worker left, nothing relays order events into
+   RabbitMQ: they stay unpublished in Postgres, get imported, and the new
+   process sends them — no replay is needed.
+4. Merge to `main`. The frontend service builds the new image, imports
+   Postgres on its first start and serves on the old domain. Check
+   `postgres import complete` in the log, `/health`, login, the orders list
+   and the production journal.
+5. Remove `IMPORT_POSTGRES_URL`, enable volume backups, delete the RabbitMQ
+   services. Keep Postgres until the data is checked, then delete it.
 
 ## Verify
 
