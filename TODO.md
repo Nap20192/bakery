@@ -22,7 +22,6 @@ ports + DTO) + `infra/repo`. Delivery depends on interfaces, never on sqlc.
         (httpx.WriteAppError). Sentinels carry kinds; errors.Is + KindOf both work. DTO mappers
         already live per-service (orderhttp.OrderPresenter, adminhttp.toUserResponse, departmentResponse).
 - [ ] 6. Transactional outbox for order events + correlation id in envelope/logs
-- [ ] 7. Bot → pure API client (add missing endpoints, http client, per-user bearer); cmd/bot drops DB
 - [ ] 8. Tests: usecase (fake repos) for auth/admin/monitor/notify; repo integration (testcontainers)
 
 ## Known gaps / pre-deploy

@@ -27,7 +27,6 @@ type AppDeps struct {
 	DepartmentService departmentuc.UseCase
 	MonitorService    monitoruc.UseCase
 	OrderService      orderuc.UseCase
-	OrderOutboxRelay  *orderoutbox.Relay
 	SyncService       syncuc.UseCase
 	TechCardService   techcarduc.UseCase
 	APIServer         *api.Server
@@ -75,14 +74,11 @@ func WithOrderService(infra *InfraDeps) appOption {
 	}
 }
 
-func WithOrderOutboxRelay(infra *InfraDeps) appOption {
-	return func(deps *AppDeps) error {
-		if infra == nil || infra.queries == nil || infra.DB == nil || infra.eventPublisher == nil {
-			return fmt.Errorf("missing dependencies for OrderOutboxRelay")
-		}
-		deps.OrderOutboxRelay = orderapp.NewOutboxRelay(infra.queries, infra.DB, infra.eventPublisher, infra.config.Outbox.Interval)
-		return nil
+func NewOrderOutboxRelay(infra *InfraDeps, handler orderoutbox.Handler) (*orderoutbox.Relay, error) {
+	if infra == nil || infra.queries == nil || infra.config == nil || handler == nil {
+		return nil, fmt.Errorf("missing dependencies for OrderOutboxRelay")
 	}
+	return orderapp.NewOutboxRelay(infra.queries, handler, infra.config.Outbox.Interval), nil
 }
 
 func WithDepartmentService(infra *InfraDeps) appOption {
@@ -134,9 +130,7 @@ func WithAPIServerConfig(infra *InfraDeps) appOption {
 			return fmt.Errorf("missing dependencies for APIServer")
 		}
 		deps.APIServer = api.NewServer(deps.OrderService, deps.MonitorService, deps.DepartmentService, deps.AuthService, deps.AdminService, deps.TechCardService, deps.SyncService, api.ServerConfig{
-			Addr:           infra.config.Server.Addr(),
-			AllowedOrigins: infra.config.Server.AllowedOrigins,
-			BotToken:       infra.config.Telegram.BotToken,
+			BotToken: infra.config.Telegram.BotToken,
 		})
 		return nil
 	}

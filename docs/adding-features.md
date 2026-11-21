@@ -1,10 +1,10 @@
 # Adding Features & Keeping Frontend/Backend in Sync
 
-`docs/api/openapi.yaml` is the boundary between the worker API and the Go
+`docs/api/openapi.yaml` is the boundary between the API and the Go
 HTML/HTMX BFF.
 
 ```text
-worker handler <-> shared Go DTOs <-> backend adapter <-> Query/Command <-> web
+API handler    <-> shared Go DTOs <-> backend adapter <-> Query/Command <-> web
 route-sync test    OpenAPI contract       Go compiler + template smoke tests
 ```
 
@@ -20,7 +20,7 @@ go test ./internal/inbound/api
 make frontend-check
 ```
 
-The backend adapter never exposes raw worker errors. `application.Error`
+The backend adapter never exposes raw API errors. `application.Error`
 contains the safe API message; web handlers own the fallback for transport
 and malformed responses.
 
@@ -35,7 +35,7 @@ and malformed responses.
    method in `frontend/internal/backend`, and its application Query or Command
    gateway.
 6. Add the BFF route, handler, view model, and template under
-   `frontend/internal/web`. Business rules remain in the worker; BFF
+   `frontend/internal/web`. Business rules remain in the API; BFF
    validation is only ergonomic.
 7. Run `make frontend-check` and the full validation loop.
 
@@ -63,7 +63,7 @@ route -> handler -> Query/Command -> typed view model -> template -> CSS/JS enha
 
 - Full pages render through `layout`; reusable partials are named templates.
 - Browser API calls are forbidden except the Telegram session exchange to
-  the same BFF. Worker reads and writes belong behind application Queries and
+  the same BFF. API reads and writes belong behind application Queries and
   Commands, implemented by `frontend/internal/backend`.
 - Use semantic CSS tokens and existing structural classes before adding new
   primitives.
@@ -82,7 +82,7 @@ make frontend-check
 git diff --check
 ```
 
-For visible work, run the real worker and frontend and verify 375x812,
+For visible work, run the real app (`go run ./cmd/bakery`) and verify 375x812,
 768x1024, 1280x800, and 1440x900 with keyboard, console/network inspection,
 and axe. See [frontend/development-workflow.md](frontend/development-workflow.md).
 
@@ -91,7 +91,7 @@ and axe. See [frontend/development-workflow.md](frontend/development-workflow.md
 | Symptom | Cause / fix |
 |---|---|
 | Route-sync test reports missing operation | Update `docs/api/openapi.yaml` or register the route. |
-| Backend adapter decode fails | Shared DTO no longer matches OpenAPI or the worker response; update `internal/inbound/api/contract`. |
+| Backend adapter decode fails | Shared DTO no longer matches OpenAPI or the API response; update `internal/inbound/api/contract`. |
 | Template smoke test fails | Template field/function no longer matches its view model. |
 | HTMX error response is blank | Return safe HTML and keep the `htmx:beforeSwap` error handling. |
 | Mutation returns 403 before API call | CSRF cookie/form token is missing or stale; render through `layout`. |

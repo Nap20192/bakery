@@ -3,9 +3,9 @@
 Server-rendered Telegram Mini App and web UI.
 
 ```text
-main.go                         composition root and process lifecycle
+frontend.go                     NewHandler: wires the API adapter into the web UI
 internal/application/          CQRS ports and Queries/Commands facades
-internal/backend/              worker HTTP API adapter
+internal/backend/              API adapter (in-process transport)
 internal/web/                  routes, middleware and view-model projection
 internal/web/templates.go      template set, FuncMap and component helpers
 internal/web/templates/        layout.html — the shell
@@ -16,15 +16,15 @@ internal/web/static/app.js     Telegram bridge and browser interactions
 internal/web/static/vendor/    vendored HTMX 2.0.4
 ```
 
-The worker handlers and the backend adapter share JSON DTOs from
+The API handlers and the backend adapter share JSON DTOs from
 `internal/inbound/api/contract`; frontend-specific query parameters and errors
 remain in `frontend/internal/application`.
 
-Run the worker API first, then:
+The UI is served by the single binary:
 
 ```bash
-FRONTEND_ADDR=:5173 BACKEND_URL=http://127.0.0.1:8080 go run ./frontend
+go run ./cmd/bakery
 ```
 
-Open <http://localhost:5173>. The default BFF health endpoint is `/health`.
+Open <http://localhost:8080>. The health endpoint is `/health`.
 See `docs/frontend/development-workflow.md` for implementation and QA rules.

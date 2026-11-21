@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"net/url"
 	"strings"
-	"time"
 
 	"bakery/internal/inbound/bot/response"
 	"bakery/internal/pkg/enum"
@@ -18,64 +17,21 @@ import (
 	tele "gopkg.in/telebot.v3"
 )
 
-// consumerRetryDelay is the pause before re-subscribing after the RabbitMQ
-// channel drops.
-const consumerRetryDelay = 5 * time.Second
-
-// ConsumeOrderEvents runs the RabbitMQ consumer that delivers order events to
-// the workshop chat. Blocks until ctx is cancelled; a dropped channel or
-// connection is retried instead of stopping the bot (the connection re-dials
-// on the next Channel call).
-func (b *OrderBot) ConsumeOrderEvents(ctx context.Context) error {
-	if b == nil || b.eventConsumer == nil {
-		<-ctx.Done()
-		return nil
-	}
-	retryUntilDone(ctx, consumerRetryDelay, func(ctx context.Context) error {
-		return b.eventConsumer.StartConsumer(ctx, b.handleOrderEvent)
-	})
-	return nil
-}
-
-// retryUntilDone reruns run until ctx is cancelled, waiting delay between runs.
-func retryUntilDone(ctx context.Context, delay time.Duration, run func(context.Context) error) {
-	for {
-		err := run(ctx)
-		if ctx.Err() != nil {
-			return
-		}
-		slog.ErrorContext(ctx, "order events consumer stopped, reconnecting", "error", err, "retry_in", delay)
-		select {
-		case <-ctx.Done():
-			return
-		case <-time.After(delay): // ponytail: fixed backoff, make exponential if RabbitMQ flaps
-		}
-	}
-}
-
-type orderEventEnvelope struct {
-	Type    string          `json:"type"`
-	Payload json.RawMessage `json:"payload"`
-}
-
 type orderEventPayload struct {
 	Order              orderdomain.Order `json:"order"`
 	ProducedByUsername string            `json:"produced_by_username"`
 }
 
-func (b *OrderBot) handleOrderEvent(ctx context.Context, body []byte) error {
-	var env orderEventEnvelope
-	if err := json.Unmarshal(body, &env); err != nil {
-		return fmt.Errorf("decode order event envelope: %w", err)
-	}
+func (b *OrderBot) HandleOrderEvent(ctx context.Context, eventType string, body []byte) error {
 	var payload orderEventPayload
-	if err := json.Unmarshal(env.Payload, &payload); err != nil {
-		return fmt.Errorf("decode order event payload: %w", err)
+	if err := json.Unmarshal(body, &payload); err != nil {
+		slog.ErrorContext(ctx, "drop undecodable order event", "component", "bot.events", "type", eventType, "error", err)
+		return nil
 	}
 	order := payload.Order
 	slog.DebugContext(ctx, "bot received order event",
-		"component", "bot.consumer",
-		"type", env.Type,
+		"component", "bot.events",
+		"type", eventType,
 		"order_number", order.Number,
 		"created_by", order.CreatedByUsername,
 	)
@@ -83,7 +39,7 @@ func (b *OrderBot) handleOrderEvent(ctx context.Context, body []byte) error {
 	toName := b.departmentDisplayName(ctx, order.ToDepartmentID)
 
 	var message string
-	switch env.Type {
+	switch eventType {
 	case orderdomain.EventOrderCreated:
 		message = response.OrderSummary(order, fromName, toName)
 	case orderdomain.EventOrderUpdated:
@@ -97,7 +53,7 @@ func (b *OrderBot) handleOrderEvent(ctx context.Context, body []byte) error {
 		// только на создание, обновление и удаление/отмену заказа.
 		return nil
 	default:
-		slog.WarnContext(ctx, "unknown order event type", "type", env.Type)
+		slog.WarnContext(ctx, "unknown order event type", "type", eventType)
 		return nil
 	}
 	b.notifyOrder(ctx, order, message)

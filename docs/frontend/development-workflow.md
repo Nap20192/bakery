@@ -24,7 +24,7 @@ simply omitted; `isset` tells an omitted parameter apart from a zero count.
 
 | Area | Bakery |
 |---|---|
-| Runtime | Go binary: `go run ./frontend` |
+| Runtime | served by the single binary: `go run ./cmd/bakery` |
 | Rendering | standard-library `html/template` + embedded templates |
 | Browser interaction | vendored HTMX 2.0.4 + plain JavaScript |
 | Styling | plain mobile-first CSS with semantic tokens |
@@ -35,7 +35,7 @@ simply omitted; `isset` tells an omitted parameter apart from a zero count.
 
 The frontend is a BFF, not a second backend. It owns presentation, cookies,
 HTML routes, CSRF protection, and view-model projection. Business validation,
-authorization, persistence, and calculations remain in the worker API.
+authorization, persistence, and calculations remain in the API.
 
 ## Required loop
 
@@ -49,7 +49,7 @@ authorization, persistence, and calculations remain in the worker API.
    Command -> web handler -> view model -> template -> CSS/JS enhancement.
 5. Run `gofmt`, `go test ./frontend/...`, `go vet ./frontend/...`, then the
    repository checks for any backend changes.
-6. Start worker and frontend, then exercise the real flow at 375x812,
+6. Start the app (`go run ./cmd/bakery`), then exercise the real flow at 375x812,
    768x1024, 1280x800, and 1440x900.
 7. Check keyboard focus, native dialogs, horizontal table overflow, long
    Russian values, loading/error/success states, console, network, and axe.
@@ -92,14 +92,10 @@ rules do not belong in `app.js`.
 ## Commands
 
 ```bash
-# terminal 1
-go run ./cmd/worker
-
-# terminal 2
-FRONTEND_ADDR=:5173 BACKEND_URL=http://127.0.0.1:8080 go run ./frontend
+go run ./cmd/bakery          # http://localhost:8080
 
 # static checks
-gofmt -w frontend/main.go frontend/internal
+gofmt -w frontend
 go test ./frontend/...
 go vet ./frontend/...
 ```

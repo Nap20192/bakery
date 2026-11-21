@@ -160,7 +160,7 @@ func (r *OrderRepository) createOrderWithQueries(ctx context.Context, q sqlc.Que
 
 // persistOutbox writes the aggregate's domain events to the order_outbox table
 // inside the caller's transaction, so events are committed atomically with the
-// order change. A relay later publishes them to RabbitMQ.
+// order change.
 func (r *OrderRepository) persistOutbox(ctx context.Context, q sqlc.Querier, aggregateID string, events []sharedkernel.DomainEvent) error {
 	if len(events) == 0 {
 		return nil

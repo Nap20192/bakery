@@ -24,7 +24,7 @@ usecase/order/     package orderuc — UseCase + Repository ports, DTOs, service
 infra/repo/        orderrepo — order_repo.go, production_repo.go (sqlc adapter)
 infra/http/        orderhttp — handler.go (reads), handler_write.go,
                    handler_production.go, handler_admin.go, presenter.go
-infra/outbox/      orderoutbox — outbox relay (worker only)
+infra/outbox/      orderoutbox — outbox relay
 app/app.go         orderapp.New(queries, db) → orderuc.UseCase
 ```
 
@@ -231,7 +231,7 @@ Other roles get `403 «Отработку ведёт пекарь или адм�
 | `order.production_cancelled` | conflict | Fact for a cancelled order. |
 | `order.production_item_unknown` / `_duplicate` / `_name` / `_quantity` / `_reason_too_long` | invalid | Per-item sheet validation. |
 
-## Background jobs (worker)
+## Background jobs
 
 - **Cleanup ticker** — `RunCleanupTicker(interval, retention)` deletes orders
   older than `ORDER_RETENTION` every `ORDER_CLEANUP_INTERVAL`.

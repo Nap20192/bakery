@@ -2,29 +2,41 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"golang.org/x/sync/errgroup"
 
+	"bakery/frontend"
 	"bakery/internal/config"
 	"bakery/internal/deps"
 	outbounddb "bakery/internal/outbound/db"
 	"bakery/internal/pkg/dbmigrate"
 	"bakery/pkg/logger"
-	"bakery/pkg/rabbitmq"
 )
 
-func main() {
-	config.LoadDotenv()
+const apiCallTimeout = 20 * time.Second
 
+func main() {
+	if err := run(); err != nil {
+		slog.Error("bakery stopped with error", "error", err)
+		os.Exit(1)
+	}
+	slog.Info("bakery stopped")
+}
+
+func run() error {
+	config.LoadDotenv()
 	cfg := config.New()
 
 	log, err := logger.InitLogger(cfg.Log.Level, cfg.Log.Pretty, cfg.Log.Dir)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	slog.SetDefault(log)
 
@@ -33,38 +45,26 @@ func main() {
 
 	db, err := outbounddb.OpenPostgres(ctx, cfg.Database.URL)
 	if err != nil {
-		log.Error("open db failed", "error", err)
-		os.Exit(1)
+		return err
 	}
 	defer db.Close()
-	if err = dbmigrate.ApplyMigrations(ctx, db, log, cfg.Migration.Dir); err != nil {
-		log.Error("apply db migrations failed", "error", err, "dir", cfg.Migration.Dir)
-		os.Exit(1)
+	if err := dbmigrate.ApplyMigrations(ctx, db, log, cfg.Migration.Dir); err != nil {
+		return err
 	}
-
-	rabbitConn, err := rabbitmq.NewConn(rabbitmq.ConnString(cfg.RabbitMQ.URL))
-	if err != nil {
-		log.Error("connect rabbitmq failed", "error", err)
-		os.Exit(1)
-	}
-	defer func() { _ = rabbitConn.Close() }()
 
 	infra, err := deps.NewInfraDeps(
 		deps.WithConfig(cfg),
 		deps.WithPostgres(db),
 		deps.WithRepositories(),
-		deps.WithRabbitMQ(rabbitConn),
 		deps.WithIikoClient(),
 	)
 	if err != nil {
-		log.Error("build infra deps failed", "error", err)
-		os.Exit(1)
+		return err
 	}
 
 	appDeps, err := deps.NewAppDeps(
 		deps.WithAuthService(infra),
 		deps.WithOrderService(infra),
-		deps.WithOrderOutboxRelay(infra),
 		deps.WithDepartmentService(infra),
 		deps.WithMonitorService(infra),
 		deps.WithTechCardService(infra),
@@ -73,60 +73,68 @@ func main() {
 		deps.WithAPIServerConfig(infra),
 	)
 	if err != nil {
-		log.Error("build app deps failed", "error", err)
-		os.Exit(1)
+		return err
 	}
 
-	admin, created, err := appDeps.AuthService.EnsureAdminUser(
-		ctx,
-		cfg.Admin.Username,
-		cfg.Admin.Password,
-	)
+	admin, created, err := appDeps.AuthService.EnsureAdminUser(ctx, cfg.Admin.Username, cfg.Admin.Password)
 	if err != nil {
-		log.Error("ensure admin failed", "error", err)
-		os.Exit(1)
+		return err
 	}
 	log.Info("admin user ready", "username", admin.Username, "role", admin.Role, "created", created)
 
-	// Сидит каталог из templates/: dishes.txt → «Булочки», bread.txt → «Хлеб».
 	templateSeed, err := appDeps.OrderService.EnsureDefaultOrderTemplates(ctx)
 	if err != nil {
-		log.Error("ensure default templates failed", "error", err)
-		os.Exit(1)
+		return err
 	}
 	log.Info("dish catalog ready", "catalog_items", templateSeed.CatalogItems)
 
+	runner, err := newBotRunner(cfg, appDeps)
+	if err != nil {
+		return err
+	}
+	relay, err := deps.NewOrderOutboxRelay(infra, runner)
+	if err != nil {
+		return err
+	}
+
+	uiHandler, err := frontend.NewHandler(appDeps.APIServer.Handler(), apiCallTimeout, log)
+	if err != nil {
+		return err
+	}
+	httpServer := &http.Server{
+		Addr:              cfg.Server.Addr(),
+		Handler:           uiHandler,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       90 * time.Second,
+	}
+
 	group, groupCtx := errgroup.WithContext(ctx)
 	group.Go(func() error {
-		log.Info("sync service started")
 		return appDeps.SyncService.Run(groupCtx)
 	})
 	group.Go(func() error {
-		log.Info(
-			"order cleanup started",
-			"interval", cfg.OrderCleanup.Interval.String(),
-			"retention", cfg.OrderCleanup.Retention.String(),
-		)
 		return appDeps.OrderService.RunCleanupTicker(groupCtx, cfg.OrderCleanup.Interval, cfg.OrderCleanup.Retention)
 	})
 	group.Go(func() error {
-		log.Info("order outbox relay started", "interval", cfg.Outbox.Interval.String())
-		return appDeps.OrderOutboxRelay.Run(groupCtx)
+		return relay.Run(groupCtx)
 	})
 	group.Go(func() error {
-		log.Info("http api started", "addr", cfg.Server.Addr())
-		return appDeps.APIServer.Start()
+		log.Info("http server started", "addr", httpServer.Addr)
+		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			return err
+		}
+		return nil
+	})
+	group.Go(func() error {
+		return runner.Run(groupCtx)
 	})
 	group.Go(func() error {
 		<-groupCtx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
 		defer cancel()
-		return appDeps.APIServer.Shutdown(shutdownCtx)
+		return httpServer.Shutdown(shutdownCtx)
 	})
-
-	if err := group.Wait(); err != nil {
-		log.Error("worker stopped with error", "error", err)
-		os.Exit(1)
-	}
-	log.Info("worker stopped")
+	return group.Wait()
 }

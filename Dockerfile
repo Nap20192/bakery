@@ -1,10 +1,8 @@
 ARG GO_IMAGE=golang:1.26-alpine
-ARG RUNTIME_IMAGE=alpine:3.20
+ARG RUNTIME_IMAGE=alpine:3.23
 
 FROM ${GO_IMAGE} AS builder
 WORKDIR /src
-
-RUN apk add --no-cache git
 
 COPY go.mod go.sum ./
 RUN go mod download
@@ -14,7 +12,7 @@ COPY . .
 RUN CGO_ENABLED=0 go build \
     -trimpath \
     -ldflags="-s -w" \
-    -o /out/bakery ./cmd/bot
+    -o /out/bakery ./cmd/bakery
 
 FROM ${RUNTIME_IMAGE}
 
@@ -32,5 +30,6 @@ ENV LOG_PRETTY=false \
     MIGRATIONS_DIR=/app/migrations
 
 USER app
+EXPOSE 8080
 
-ENTRYPOINT ["./bakery"]
+ENTRYPOINT ["/app/bakery"]

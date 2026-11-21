@@ -25,7 +25,7 @@ node_modules/
 
 # Local binaries
 cmd/iiko
-bakery
+/bakery
 
 # Understand Anything knowledge graph (local analysis artifacts)
 .understand-anything/

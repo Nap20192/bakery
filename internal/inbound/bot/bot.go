@@ -1,13 +1,12 @@
 package bot
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
 	"sync"
 	"time"
-
-	"bakery/pkg/rabbitmq/consumer"
 
 	tele "gopkg.in/telebot.v3"
 )
@@ -16,7 +15,6 @@ type baseBot struct {
 	tele           *tele.Bot
 	authSvc        AuthBackend
 	departmentSvc  DepartmentBackend
-	eventConsumer  *consumer.Consumer
 	miniAppURL     string
 	workshopChatID int64
 }
@@ -31,16 +29,12 @@ func NewOrderBot(
 	token string,
 	authSvc AuthBackend,
 	departmentSvc DepartmentBackend,
-	eventConsumer *consumer.Consumer,
 	miniAppURL string,
 	workshopChatID int64,
 ) (*OrderBot, error) {
 	miniAppURL = strings.TrimSpace(miniAppURL)
-	if miniAppURL != "" {
-		parsed, err := url.Parse(miniAppURL)
-		if err != nil || parsed.Scheme != "https" || parsed.Host == "" {
-			return nil, fmt.Errorf("orderbot: mini app URL must be a valid https URL")
-		}
+	if err := ValidateMiniAppURL(miniAppURL); err != nil {
+		return nil, err
 	}
 
 	b, err := newTelegramBot(token)
@@ -53,7 +47,6 @@ func NewOrderBot(
 			tele:           b,
 			authSvc:        authSvc,
 			departmentSvc:  departmentSvc,
-			eventConsumer:  eventConsumer,
 			miniAppURL:     miniAppURL,
 			workshopChatID: workshopChatID,
 		},
@@ -61,6 +54,22 @@ func NewOrderBot(
 	}
 	bot.register()
 	return bot, nil
+}
+
+func ValidateMiniAppURL(raw string) error {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.Scheme != "https" || parsed.Host == "" {
+		return fmt.Errorf("orderbot: mini app URL must be a valid https URL")
+	}
+	return nil
+}
+
+func IsRejectedToken(err error) bool {
+	return errors.Is(err, tele.ErrUnauthorized) || errors.Is(err, tele.ErrNotFound)
 }
 
 func newTelegramBot(token string) (*tele.Bot, error) {

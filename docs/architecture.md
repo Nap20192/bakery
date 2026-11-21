@@ -1,9 +1,9 @@
 # Architecture
 
 The system is a **modular monolith** with clean architecture and strict
-dependency inversion. One Go module produces the worker, bot, and frontend
-binaries. The worker and bot share service code; the frontend is an HTTP
-client of the worker API.
+dependency inversion. One Go module produces one binary, `cmd/bakery`, which
+runs the API, the background jobs, the Telegram bot and the HTML frontend in a
+single process.
 
 ## Technology stack
 
@@ -13,9 +13,7 @@ Backend (`go.mod`, `docker-compose.yml`):
 |---|---|
 | Go | 1.26.1 |
 | PostgreSQL | 17 (`postgres:17`) |
-| RabbitMQ | 3.x (`rabbitmq:3-management-alpine`) |
 | `github.com/jackc/pgx/v5` | v5.9.2 (+ pgxpool) |
-| `github.com/rabbitmq/amqp091-go` | v1.12.0 |
 | `gopkg.in/telebot.v3` | v3.3.8 |
 | `github.com/joho/godotenv` | v1.5.1 |
 | `github.com/google/uuid` | v1.6.0 |
@@ -38,18 +36,23 @@ Frontend (`frontend/`):
 There is no Node runtime, bundler, package manager, or client framework in the
 frontend build.
 
-## Binaries
+## Binary
 
-| Binary | Responsibilities |
+`cmd/bakery` is the only deployable. On startup it applies DB migrations,
+ensures the admin user and seeds the dish catalog from `templates/`, then runs
+in one process:
+
+| Component | Responsibility |
 |---|---|
-| `cmd/worker` | HTTP API, iiko sync loop, order cleanup ticker, outbox relay. Applies DB migrations on startup, ensures the admin user, seeds the dish catalog from `templates/`. |
-| `cmd/bot` | Telegram bot (login/info commands, Mini App entry) and the RabbitMQ consumer that turns order events into Telegram notifications. |
-| `frontend` | HTML/HTMX BFF. Renders the Mini App, owns browser cookies and CSRF, and calls the worker API over HTTP. |
+| HTTP server | The only listener (`PORT`). Serves the HTML/HTMX frontend: Mini App pages, browser cookies, CSRF. |
+| API | JSON API (`docs/api/openapi.yaml`). Not mounted on any listener: the frontend calls it through an in-process `http.RoundTripper`, so it is unreachable from the network. |
+| iiko sync | Periodic catalog/tech-card sync (`SYNC_INTERVAL`). |
+| Order cleanup | Prunes old orders and drafts (`ORDER_CLEANUP_INTERVAL`, `ORDER_RETENTION`). |
+| Outbox relay | Delivers persisted order events to the Telegram bot. |
+| Telegram bot | Login/info commands, Mini App entry, order notifications. |
 
-The bot binary contains **no** HTTP API and the worker contains **no**
-Telegram polling; the only channel between them is RabbitMQ (plus the shared
-database). The frontend contains no repositories or service use cases and
-never accesses the database directly.
+The frontend contains no repositories or service use cases and never accesses
+the database directly: every read and write goes through the API.
 
 ## Layering
 
@@ -99,20 +102,19 @@ Package naming: `usecase/<svc>` → `package <svc>uc`, `domain/` → `package
 Two-phase wiring in `internal/deps`:
 
 1. **`InfraDeps`** (`infra.go`) — config, `pgxpool` connection, sqlc
-   `*Queries`, RabbitMQ publisher/consumer, iiko client. Built with
-   `NewInfraDeps(WithConfig, WithPostgres, WithRepositories, WithRabbitMQ,
-   WithIikoClient)`.
+   `*Queries`, iiko client. Built with
+   `NewInfraDeps(WithConfig, WithPostgres, WithRepositories, WithIikoClient)`.
 2. **`AppDeps`** (`deps.go`) — services and transport. Each
    `WithXService(infra)` option delegates to `<svc>app.New(...)`.
 
-The two binaries select different option sets. **Declaration order matters**:
+**Declaration order matters**:
 a service must appear after its dependencies (e.g. `WithAdminService()` needs
 `AuthService` and `DepartmentService` already set). Options fail fast with a
 clear error when a dependency is missing.
 
 `api.NewServer` receives the use-cases that have HTTP routes and registers
 each handler's `RegisterRoutes` on a single `http.ServeMux`, plus
-`GET /health`.
+`GET /health`, and exposes it as an `http.Handler`.
 
 ## Frontend CQRS boundary
 
@@ -124,13 +126,14 @@ web handlers -> application Queries / Commands <- backend HTTP adapter
 
 - `application` owns the gateway ports, read/write facades, frontend filters,
   and safe transport errors;
-- `backend` implements both ports over the worker HTTP API;
+- `backend` implements both ports over the API, through the in-process
+  transport;
 - `web` owns cookies, CSRF, routes, view-model projection and HTML rendering;
-- `frontend/main.go` is the composition root and is the only place that wires
-  the concrete adapter into Queries and Commands.
+- `frontend.NewHandler` is the only place that wires the concrete adapter into
+  Queries and Commands.
 
 Web handlers do not import the backend adapter. The application layer does not
-know about HTTP, templates, cookies, or worker implementation details.
+know about HTTP, templates, cookies, or API implementation details.
 
 ## API contract (OpenAPI)
 
@@ -140,7 +143,7 @@ of truth for both sides:
 - **Backend**: `internal/inbound/api/openapi_test.go` fails when a route
   registered in the mux is missing from the spec or vice versa (it scans the
   `mux.Handle("METHOD /path"` patterns in the delivery adapters).
-- **Shared Go DTOs**: `internal/inbound/api/contract` is used by worker HTTP
+- **Shared Go DTOs**: `internal/inbound/api/contract` is used by API HTTP
   handlers and the frontend backend adapter, so request and response structs
   are not duplicated.
 - **Frontend**: `frontend/internal/backend` implements application query and
@@ -180,9 +183,9 @@ the workshop as their source; only baker/admin write production sheets) are
 enforced inside the handlers on top of these middlewares.
 
 The frontend BFF receives Telegram initData or a web password once, validates
-it through the worker, and stores the resulting API credential in an
+it through the API, and stores the resulting API credential in an
 `HttpOnly`, `SameSite=Lax` cookie. Mutating HTML routes require a separate
-CSRF token. Browser code never stores or sends the worker bearer token.
+CSRF token. Browser code never stores or sends the API bearer token.
 
 ## Events and messaging
 
@@ -193,18 +196,24 @@ The order service is the only event producer. Flow:
    recorded on the `Order` aggregate via `sharedkernel.AggregateRoot`.
 2. The repository persists them into the **transactional outbox** table
    (`order_outbox`) atomically with the write.
-3. The **outbox relay** (`order/infra/outbox`, runs in the worker) polls
-   unpublished rows every `OUTBOX_INTERVAL` (default 2s, batch 100) and
-   publishes them to the fanout exchange **`bakery.order-events`**.
-   Publish-then-mark gives **at-least-once** delivery — consumers must
-   tolerate duplicates.
-4. The bot consumes the durable queue **`bakery.bot.order-events`** and
-   notifies: the order's creator (DM), every user with the `baker` role (DM),
-   and the workshop group chat (`TELEGRAM_WORKSHOP_CHAT_ID`). Sends are
-   best-effort — a failed send is logged, never requeued.
-
-Exchange/queue names live in `internal/pkg/enum/rabbitmq.go`; never hardcode
-the strings.
+3. The **outbox relay** (`order/infra/outbox`) polls unpublished rows every
+   `OUTBOX_INTERVAL` (default 2s, batch 100), in id order, and hands each one
+   to the bot in-process. Handle-then-mark gives **at-least-once** delivery —
+   the handler must tolerate duplicates. There is no message broker.
+4. The bot notifies: the order's creator (DM), every user with the `baker`
+   role (DM), and the workshop group chat (`TELEGRAM_WORKSHOP_CHAT_ID`). Sends
+   are best-effort — a failed send is logged, never retried. An event whose
+   payload cannot be decoded is logged and dropped.
+5. While the bot is not connected to Telegram (it reconnects every 30s after
+   a network or 5xx failure), the handler answers
+   `orderoutbox.ErrHandlerNotReady`; the relay stops at the first undelivered
+   row and retries on the next tick without logging an error. Events wait in
+   the outbox and are delivered in order once the bot is up. The web UI and
+   the API keep working regardless of Telegram.
+6. The bot token is required in every `BOT_ENV`: it also signs web sessions.
+   The process refuses to start without it or with an invalid `MINI_APP_URL`,
+   and exits when Telegram rejects the token (401/404) — retrying cannot fix
+   configuration.
 
 ## Database
 
@@ -213,10 +222,10 @@ the strings.
   `.sql` file run `make sqlc` (or `sqlc generate`) before building. Every
   query is documented in [database.md](database.md).
 - Migrations in `migrations/NNNNN_name.sql` (goose format), applied
-  automatically by the worker on startup (`internal/pkg/dbmigrate`).
+  automatically on startup (`internal/pkg/dbmigrate`).
 - `DATABASE_URL` takes priority; otherwise the DSN is assembled from
   `POSTGRES_*` variables.
-- Seed data: the worker seeds the dish catalog on startup —
+- Seed data: the dish catalog is seeded on startup —
   `templates/dishes.txt` → category «Булочки», `templates/bread.txt` →
   «Хлеб». Seeding is non-destructive: a category already assigned by the
   admin is never overwritten.
@@ -226,12 +235,12 @@ the strings.
 | Package | Purpose |
 |---|---|
 | `apperr` | Transport-agnostic error taxonomy: `*Error{Kind, Code, Message}`. Use cases return `apperr` sentinels; the HTTP layer maps `Kind` → status code in one place. `errors.Is` works by identity even through wrapping. |
-| `enum` | Roles, department types, iiko product types, RabbitMQ names. Never hardcode these strings. |
+| `enum` | Roles, department types, iiko product types. Never hardcode these strings. |
 | `authtoken` | HMAC-signed web session tokens (issue/parse). |
 | `sharedkernel` | `AggregateRoot`, `DomainEvent`, `Event` base for domain events. |
 | `helpers` | pgtype conversion helpers (`Timestamptz`, `DateOf`, …). |
 | `correlation` | Correlation-ID propagation for logs and event metadata. |
-| `dbmigrate` | Goose-style migration runner used by the worker. |
+| `dbmigrate` | Goose-style migration runner applied on startup. |
 
 ## Configuration
 
@@ -240,9 +249,8 @@ via `config.LoadDotenv()`; see `.env.example`):
 
 | Area | Variables |
 |---|---|
-| HTTP | `HTTP_HOST`, `HTTP_PORT` (or `PORT`), `HTTP_ALLOWED_ORIGINS`, `HTTP_SHUTDOWN_TIMEOUT` |
+| HTTP | `HTTP_HOST`, `HTTP_PORT` (or `PORT`), `HTTP_SHUTDOWN_TIMEOUT` |
 | Database | `DATABASE_URL` **or** `POSTGRES_HOST/PORT/USER/PASSWORD/DB/SSLMODE` |
-| RabbitMQ | `RABBITMQ_URL` |
 | Telegram | `BOT_ENV` (+ `TEST_BOT_TOKEN`/`PROD_BOT_TOKEN` or `BOT_TOKEN`), `MINI_APP_URL`, `TELEGRAM_WORKSHOP_CHAT_ID` |
 | iiko | `IIKO_HOST`, `IIKO_PORT`, `IIKO_LOGIN`, `IIKO_PASSWORD` |
 | Admin bootstrap | `ADMIN_USERNAME`, `ADMIN_PASSWORD` |
@@ -253,13 +261,13 @@ via `config.LoadDotenv()`; see `.env.example`):
 The bot token is dual-use: Telegram API access **and** the HMAC secret for
 initData validation and web session tokens.
 
-## Frontend deployment
+## Deployment
 
-The frontend (`frontend/`) is a Go HTML/HTMX Telegram Mini App deployed on
-Railway as a separate public service. Its BFF calls the worker over Railway's
-private network (`http://<service>.railway.internal:8080`), while templates,
-CSS, JavaScript, and HTMX are embedded into one static binary. See
-[frontend/ui-kit.md](frontend/ui-kit.md) for its interface conventions.
+Railway runs two services: `bakery` (the root `Dockerfile`, config in
+`railway.json`) and PostgreSQL. Only `bakery` gets a public domain; templates,
+CSS, JavaScript and HTMX are embedded in the binary. See
+[deployment.md](deployment.md) for the setup and
+[frontend/ui-kit.md](frontend/ui-kit.md) for interface conventions.
 
 ## Error-handling policy
 
