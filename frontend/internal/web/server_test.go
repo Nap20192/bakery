@@ -71,6 +71,7 @@ func viewFixtures(t *testing.T) (*server, []page) {
 		{View: "error", Viewer: viewer, Error: "Ошибка"},
 		{View: "me", Viewer: viewer},
 		{View: "orders", Viewer: shopViewer, Data: ordersData{Page: contract.OrdersPage{Items: []contract.Order{order}, Page: 2, TotalPages: 3}, Categories: []contract.Category{category}}},
+		{View: "orders", Viewer: shopViewer, Data: ordersData{Page: contract.OrdersPage{Items: []contract.Order{order}, Page: 2, TotalPages: 3}, Categories: []contract.Category{category}, Shops: shops[:1], Filters: orderFiltersView{CategoryID: categoryID, FromDepartmentID: 1, FulfillmentDate: "2026-07-23"}}},
 		{View: "orders", Viewer: viewer, Data: ordersData{Categories: []contract.Category{category}, Shops: shops, Matrix: []matrixRow{{Date: "2026-07-22", Label: "Ср", Cells: []matrixCell{{Shop: shops[0], Orders: []contract.Order{order}}, {Shop: shops[1]}}}}}},
 		{View: "order-detail", Viewer: viewer, Data: orderDetailData{Order: order, Groups: []orderItemGroup{{Name: "Хлеб", Items: order.Items}}}},
 		{View: "order-form", Viewer: viewer, Data: orderFormData{Mode: "create", Categories: []contract.Category{category}, Groups: []editorGroup{{Name: "Хлеб", Items: []editorItem{{Dish: dish}}}}}},

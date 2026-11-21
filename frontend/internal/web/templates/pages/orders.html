@@ -50,20 +50,20 @@
   <nav class="category-tabs" aria-label="Тип заявки">
     {{range $data.Categories}}<a class="category-tab category-tab-{{categoryTone .}} {{if eq .ID $data.Filters.CategoryID}}is-active{{end}}" href="/orders?category_id={{.ID}}&from_department_id={{$data.Filters.FromDepartmentID}}&fulfillment_date={{$data.Filters.FulfillmentDate}}" {{if eq .ID $data.Filters.CategoryID}}aria-current="page"{{end}}>{{.Name}}</a>{{end}}
   </nav>
-  <form class="filters" action="/orders" method="get" aria-label="Фильтры заказов">
+  <form class="filters shop-filters" action="/orders" method="get" aria-label="Фильтры заказов" data-autosubmit>
     <input type="hidden" name="category_id" value="{{$data.Filters.CategoryID}}">
-    <label class="field compact"><span>Магазин</span><select name="from_department_id"><option value="">Все</option>{{template "id-options" (dict "Items" $data.Shops "Selected" $data.Filters.FromDepartmentID)}}</select></label>
-    <label class="field compact"><span>Дата</span><input type="date" name="fulfillment_date" value="{{$data.Filters.FulfillmentDate}}"></label>
-    <button class="button" type="submit">Применить</button>
-    <a class="button button-ghost" href="/orders?category_id={{$data.Filters.CategoryID}}">Сбросить</a>
+    <label class="field compact"><span>Магазин</span><select name="from_department_id"><option value="">Все магазины</option>{{template "id-options" (dict "Items" $data.Shops "Selected" $data.Filters.FromDepartmentID)}}</select></label>
+    <label class="field compact date-filter{{if not $data.Filters.FulfillmentDate}} is-empty{{end}}"><span>Выполнить</span><input type="date" name="fulfillment_date" value="{{$data.Filters.FulfillmentDate}}"><span class="date-filter-placeholder" aria-hidden="true">Любая дата</span></label>
+    <noscript><button class="button" type="submit">Показать</button></noscript>
+    {{if or $data.Filters.FromDepartmentID $data.Filters.FulfillmentDate}}<a class="filters-reset" href="/orders?category_id={{$data.Filters.CategoryID}}">Сбросить фильтры</a>{{end}}
   </form>
   <div class="shop-order-list">
     {{range $data.Page.Items}}{{template "order-card" (dict "Order" . "LinkSheet" false)}}{{else}}{{template "empty-state" (dict "Text" "Заказов пока нет. Создайте первую заявку.")}}{{end}}
   </div>
   {{if gt $data.Page.TotalPages 1}}<nav class="pagination" aria-label="Страницы заказов">
-    {{if gt $data.Page.Page 1}}<a class="button" href="/orders?page={{pageOffset $data.Page.Page -1}}&category_id={{$data.Filters.CategoryID}}">← Назад</a>{{end}}
+    {{if gt $data.Page.Page 1}}<a class="button" href="/orders?page={{pageOffset $data.Page.Page -1}}&category_id={{$data.Filters.CategoryID}}&from_department_id={{$data.Filters.FromDepartmentID}}&fulfillment_date={{$data.Filters.FulfillmentDate}}">← Назад</a>{{end}}
     <span>Страница {{$data.Page.Page}} из {{$data.Page.TotalPages}}</span>
-    {{if lt $data.Page.Page $data.Page.TotalPages}}<a class="button" href="/orders?page={{pageOffset $data.Page.Page 1}}&category_id={{$data.Filters.CategoryID}}">Дальше →</a>{{end}}
+    {{if lt $data.Page.Page $data.Page.TotalPages}}<a class="button" href="/orders?page={{pageOffset $data.Page.Page 1}}&category_id={{$data.Filters.CategoryID}}&from_department_id={{$data.Filters.FromDepartmentID}}&fulfillment_date={{$data.Filters.FulfillmentDate}}">Дальше →</a>{{end}}
   </nav>{{end}}
 {{end}}
 </section>

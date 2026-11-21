@@ -127,6 +127,14 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .action-field { justify-content: end; }
 .filters { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-bottom: 24px; padding: 16px 0; border-block: 1px solid var(--line-soft); }
 .search-field { max-width: 420px; margin-bottom: 16px; }
+.shop-filters { align-items: end; }
+.date-filter { position: relative; }
+.date-filter-placeholder { position: absolute; left: 13px; bottom: 0; display: flex; align-items: center; height: 44px; color: var(--ink-muted); font-size: 16px; pointer-events: none; visibility: hidden; }
+.date-filter.is-empty .date-filter-placeholder { visibility: visible; }
+.date-filter.is-empty input::-webkit-datetime-edit { color: transparent; }
+.date-filter.is-empty input:focus::-webkit-datetime-edit { color: var(--ink); }
+.date-filter.is-empty input:focus + .date-filter-placeholder { visibility: hidden; }
+.filters-reset { align-self: center; min-height: 44px; display: inline-flex; align-items: center; color: var(--crust); font-size: 0.9rem; font-weight: 650; text-decoration: none; }
 .date-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .date-chip { min-height: 38px; padding: 6px 14px; border: 1.5px solid var(--line); border-radius: var(--radius-control); color: var(--success); background: var(--surface); font-weight: 700; }
 .date-chip[aria-pressed="true"] { border-color: var(--accent-teal); color: #ffffff; background: var(--accent-teal); }
@@ -537,6 +545,9 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .surface { padding: 16px 12px; }
   .filters { display: grid; grid-template-columns: 1fr 1fr; padding-top: 8px; }
   .filters .field { grid-column: 1 / -1; }
+  .shop-filters { gap: 10px; margin-bottom: 16px; padding: 4px 0 12px; border-top: 0; }
+  .shop-filters .field { grid-column: auto; }
+  .shop-filters .filters-reset { grid-column: 1 / -1; justify-self: start; min-height: 32px; }
   .field.compact { min-width: 0; }
   .form-grid.three { grid-template-columns: minmax(0, 1fr); }
   .login-page { grid-template-columns: 1fr; }
