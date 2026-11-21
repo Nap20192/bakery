@@ -1,0 +1,65 @@
+schema = "af.task-catalog/2"
+code_policy = ".af/code-policy.toml"
+no_match = "refuse"
+
+[review]
+generation = 2
+gate = "major"
+clean_rounds = 1
+max_rounds = 2
+allow_targeted_repairs = false
+
+[review.reviewers]
+bugs = "required"
+correctness = "required"
+
+[independence]
+command_workers_by_package = true
+distinct_principals = false
+distinct_providers = false
+distinct_models = true
+
+[provider_admission]
+tokens = 32768
+wall_ms = 45000
+
+[packages."onboard/implementer"]
+version = "1.7.0"
+digest = "sha256:172abb7e7d07f31debe03f49b613176e068cfcbde19741600d6526b62f4161ee"
+path = ".af/task-packages/onboard/implementer"
+
+[packages."onboard/bugs"]
+version = "1.5.0"
+digest = "sha256:6686e09174806b35a9e423cdc851aeacdaf25bc3c38045a26eaa6fa4a2c31d67"
+path = ".af/task-packages/onboard/bugs"
+
+[packages."onboard/correctness"]
+version = "1.3.0"
+digest = "sha256:5d34dfc04af0eb18f5dc4db1a82367222e1ea45c86422ba0ab6f72b5bfd7d4c1"
+path = ".af/task-packages/onboard/correctness"
+
+[packages."onboard/evaluator"]
+version = "1.2.0"
+digest = "sha256:2d3c41d8d08d2b183a0aac219558b362c8136c5f06da0a6c23e70954b9cb162c"
+path = ".af/task-packages/onboard/evaluator"
+
+[packages."onboard/review-code"]
+version = "1.1.0"
+digest = "sha256:d9c615bf0209a45820150140300808eb32752ffe3ceece4c785042c80b150b82"
+path = ".af/task-packages/onboard/review-code"
+
+[packages."onboard/review-decisions"]
+version = "1.0.0"
+digest = "sha256:074fa528b03979afbb8f972b948cb30a31ed0b3729417e001a1eae70ebd19181"
+path = ".af/task-packages/onboard/review-decisions"
+
+[packages."onboard/implementation-reviewed"]
+version = "1.4.0"
+digest = "sha256:80402d995e2839753e5abb8f0fc32f40675a9405e590bb4e03da0a6e86f15bd5"
+path = ".af/task-packages/onboard/implementation-reviewed"
+
+[providers]
+"onboard/implementer" = "codex-main"
+"onboard/bugs" = "codex-main"
+"onboard/correctness" = "claude-main"
+"onboard/evaluator" = "codex-main"

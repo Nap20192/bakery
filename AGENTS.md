@@ -551,3 +551,11 @@ After SQL changes run `make sqlc` before building.
   `cmd/testingorders` takes its database from `SQLITE_PATH`.
 - Keep build / vet / test / lint green (and the spec sync test) before
   declaring done.
+
+<!-- af-agent-help:start -->
+For work with af in this repository, run `af help agents` first: it is the whole loop
+(plan, run, status, findings, diff, deliver, report).
+Add `--json` to each command: it then prints one versioned document.
+Branch on `state.outcome` and run `state.next_action`; never guess a next command.
+Never add `--login` in an agent session: a login is the person's and is done privately.
+<!-- af-agent-help:end -->
