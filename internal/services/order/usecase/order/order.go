@@ -872,9 +872,15 @@ func (s *Service) RunCleanupTicker(ctx context.Context, interval, retention time
 		draftsDeleted, err := s.repo.DeleteOrderDraftsOlderThan(ctx, cutoff)
 		if err != nil {
 			slog.ErrorContext(ctx, "old order drafts cleanup failed", "error", err)
+		} else {
+			slog.InfoContext(ctx, "old order drafts cleanup finished", "deleted", draftsDeleted, "retention", retention.String())
+		}
+		eventsDeleted, err := s.repo.DeletePublishedOrderEventsBefore(ctx, cutoff)
+		if err != nil {
+			slog.ErrorContext(ctx, "delivered order events cleanup failed", "error", err)
 			return
 		}
-		slog.InfoContext(ctx, "old order drafts cleanup finished", "deleted", draftsDeleted, "retention", retention.String())
+		slog.InfoContext(ctx, "delivered order events cleanup finished", "deleted", eventsDeleted, "retention", retention.String())
 	}
 
 	run()

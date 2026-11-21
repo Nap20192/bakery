@@ -642,6 +642,10 @@ func (f *fakeRepo) DeleteOrderDraft(_ context.Context, username string, category
 	return nil
 }
 
+func (f *fakeRepo) DeletePublishedOrderEventsBefore(_ context.Context, _ time.Time) (int64, error) {
+	return 0, nil
+}
+
 func (f *fakeRepo) DeleteOrderDraftsOlderThan(_ context.Context, cutoff time.Time) (int64, error) {
 	f.draftDeleteCutoff = cutoff
 	var deleted int64

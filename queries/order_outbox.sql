@@ -24,3 +24,7 @@ UPDATE order_outbox
 SET published_at = strftime('%Y-%m-%d %H:%M:%f+00:00', 'now')
 WHERE id = sqlc.arg(id);
 
+-- name: DeleteOrderOutboxEventsPublishedBefore :execrows
+DELETE FROM order_outbox
+WHERE published_at IS NOT NULL
+  AND published_at < sqlc.arg(cutoff);

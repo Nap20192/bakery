@@ -574,3 +574,55 @@ func TestDeletedIDsAreNeverReused(t *testing.T) {
 		t.Fatalf("order id %d reused after delete", orderID)
 	}
 }
+
+func TestDeletePublishedOrderEventsKeepsRecentAndUndelivered(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	now := time.Now().UTC()
+	old := now.Add(-40 * 24 * time.Hour)
+	recent := now.Add(-24 * time.Hour)
+	rows := []struct {
+		aggregate string
+		created   time.Time
+		published *time.Time
+	}{
+		{"delivered-old", old, &old},
+		{"delivered-recent", recent, &recent},
+		{"undelivered-old", old, nil},
+	}
+	for _, row := range rows {
+		if _, err := f.db.ExecContext(ctx,
+			`INSERT INTO order_outbox (aggregate_id, event_type, payload, created_at, published_at) VALUES (?, 'order.created', '{}', ?, ?)`,
+			row.aggregate, row.created, row.published,
+		); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	deleted, err := f.repo.DeletePublishedOrderEventsBefore(ctx, now.Add(-31*24*time.Hour))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if deleted != 1 {
+		t.Fatalf("deleted = %d, want 1", deleted)
+	}
+	remaining, err := f.db.QueryContext(ctx, `SELECT aggregate_id FROM order_outbox ORDER BY id`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = remaining.Close() }()
+	var got []string
+	for remaining.Next() {
+		var aggregate string
+		if err := remaining.Scan(&aggregate); err != nil {
+			t.Fatal(err)
+		}
+		got = append(got, aggregate)
+	}
+	if err := remaining.Err(); err != nil {
+		t.Fatal(err)
+	}
+	if fmt.Sprint(got) != fmt.Sprint([]string{"delivered-recent", "undelivered-old"}) {
+		t.Fatalf("remaining = %v", got)
+	}
+}
