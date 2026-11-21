@@ -294,3 +294,64 @@ func TestStylesheetKeepsTouchTargets(t *testing.T) {
 		t.Error("the card's «Обзор» button is below a 44px touch target on phones")
 	}
 }
+
+func TestShopOrderFiltersApplyOnChangeAndSurvivePaging(t *testing.T) {
+	t.Parallel()
+	forms := 0
+	for _, doc := range renderedViews(t)["orders"] {
+		walk(doc, func(n *html.Node) {
+			if n.Type != html.ElementNode || n.Data != "form" || !hasClass(n, "shop-filters") {
+				return
+			}
+			forms++
+			if _, ok := attr(n, "data-autosubmit"); !ok {
+				t.Error("shop filters must apply on change: data-autosubmit is missing")
+			}
+			filtered := false
+			walk(n, func(child *html.Node) {
+				if child.Type != html.ElementNode {
+					return
+				}
+				if child.Data == "button" {
+					t.Errorf("shop filters render a %q button outside <noscript>", text(child))
+				}
+				if child.Data == "input" {
+					if name, _ := attr(child, "name"); name == "fulfillment_date" {
+						value, _ := attr(child, "value")
+						filtered = filtered || value != ""
+					}
+				}
+			})
+			resets := 0
+			walk(n, func(child *html.Node) {
+				if child.Type == html.ElementNode && hasClass(child, "filters-reset") {
+					resets++
+				}
+			})
+			if filtered && resets != 1 {
+				t.Errorf("filtered list shows %d reset links, want 1", resets)
+			}
+			if !filtered && resets != 0 {
+				t.Errorf("unfiltered list shows %d reset links, want 0", resets)
+			}
+		})
+	}
+	if forms < 2 {
+		t.Fatalf("rendered %d shop filter forms, want the filtered and the unfiltered fixture", forms)
+	}
+	pagingKeepsFilter := false
+	for _, doc := range renderedViews(t)["orders"] {
+		walk(doc, func(n *html.Node) {
+			if n.Type != html.ElementNode || n.Data != "a" {
+				return
+			}
+			href, _ := attr(n, "href")
+			if strings.Contains(href, "page=") && strings.Contains(href, "from_department_id=1") && strings.Contains(href, "fulfillment_date=2026-07-23") {
+				pagingKeepsFilter = true
+			}
+		})
+	}
+	if !pagingKeepsFilter {
+		t.Error("pagination links drop the shop and date filters")
+	}
+}

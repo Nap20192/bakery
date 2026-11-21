@@ -593,6 +593,16 @@
     input.dispatchEvent(new Event('input', { bubbles: true }));
   });
 
+  document.addEventListener('input', (event) => {
+    const field = event.target.closest('.date-filter');
+    if (field) field.classList.toggle('is-empty', event.target.value === '');
+  });
+
+  document.addEventListener('change', (event) => {
+    const form = event.target.closest('form[data-autosubmit]');
+    if (form) form.requestSubmit();
+  });
+
   function initializeProduction(root) {
     root.querySelectorAll('[data-production-form]:not([data-ready])').forEach((form) => {
       form.dataset.ready = 'true';
