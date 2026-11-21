@@ -233,8 +233,11 @@ Other roles get `403 «Отработку ведёт пекарь или адм�
 
 ## Background jobs
 
-- **Cleanup ticker** — `RunCleanupTicker(interval, retention)` deletes orders
-  older than `ORDER_RETENTION` every `ORDER_CLEANUP_INTERVAL`.
+- **Cleanup ticker** — `RunCleanupTicker(interval, retention)` deletes, every
+  `ORDER_CLEANUP_INTERVAL`, orders and drafts older than `ORDER_RETENTION` and
+  outbox events delivered more than `ORDER_RETENTION` ago (undelivered events
+  stay until the relay hands them over). Each step runs even if an earlier one
+  failed.
 - **Outbox relay** — see [architecture.md](../architecture.md#events-and-messaging).
 - **Catalog seeding** — `EnsureDefaultOrderTemplates` on startup parses
   `templates/dishes.txt` (→ `buns`) and `templates/bread.txt` (→ `bread`),

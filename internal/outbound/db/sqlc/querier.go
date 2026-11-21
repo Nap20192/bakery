@@ -32,6 +32,7 @@ type Querier interface {
 	DeleteOrderDraft(ctx context.Context, arg DeleteOrderDraftParams) error
 	DeleteOrderDraftsOlderThan(ctx context.Context, updatedAtBefore time.Time) (int64, error)
 	DeleteOrderItemsByOrderID(ctx context.Context, orderID int64) error
+	DeleteOrderOutboxEventsPublishedBefore(ctx context.Context, cutoff *time.Time) (int64, error)
 	DeleteOrdersCreatedBefore(ctx context.Context, createdAtBefore time.Time) (int64, error)
 	DeleteProductionSheet(ctx context.Context, id int64) error
 	DeleteProductionSheetItems(ctx context.Context, sheetID int64) error

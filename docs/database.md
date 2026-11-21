@@ -93,6 +93,7 @@ SQL conventions for SQLite:
 | `InsertOrderOutboxEvent` | one | Stores a domain event (aggregate id = order number, type, JSON payload, correlation id) **in the same transaction as the write** that produced it. |
 | `ListUnpublishedOrderOutboxEvents` | many | Relay poll: rows with `published_at IS NULL`, oldest first, batch-limited (100). |
 | `MarkOrderOutboxEventPublished` | exec | Stamps `published_at` after a successful publish. Publish-then-mark ⇒ at-least-once delivery. |
+| `DeleteOrderOutboxEventsPublishedBefore` | execrows | Cleanup ticker: deletes **delivered** events whose `published_at` is older than the cutoff (`ORDER_RETENTION`). Undelivered rows are never deleted. |
 
 ## queries/products.sql — dish catalog + iiko product lookup (order service)
 

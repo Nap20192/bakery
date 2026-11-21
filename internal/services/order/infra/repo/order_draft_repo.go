@@ -57,6 +57,11 @@ func (r *OrderRepository) DeleteOrderDraftsOlderThan(ctx context.Context, cutoff
 	return r.queries.DeleteOrderDraftsOlderThan(ctx, cutoff.UTC())
 }
 
+func (r *OrderRepository) DeletePublishedOrderEventsBefore(ctx context.Context, cutoff time.Time) (int64, error) {
+	utc := cutoff.UTC()
+	return r.queries.DeleteOrderOutboxEventsPublishedBefore(ctx, &utc)
+}
+
 func draftFromRow(row sqlc.OrderDraft) orderdomain.OrderDraft {
 	draft := orderdomain.OrderDraft{
 		CreatedByUsername: row.CreatedByUsername,

@@ -10,6 +10,20 @@ import (
 	"time"
 )
 
+const deleteOrderOutboxEventsPublishedBefore = `-- name: DeleteOrderOutboxEventsPublishedBefore :execrows
+DELETE FROM order_outbox
+WHERE published_at IS NOT NULL
+  AND published_at < ?1
+`
+
+func (q *Queries) DeleteOrderOutboxEventsPublishedBefore(ctx context.Context, cutoff *time.Time) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteOrderOutboxEventsPublishedBefore, cutoff)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const insertOrderOutboxEvent = `-- name: InsertOrderOutboxEvent :one
 INSERT INTO order_outbox (
     aggregate_id,

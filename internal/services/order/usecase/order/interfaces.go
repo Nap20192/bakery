@@ -90,6 +90,7 @@ type Repository interface {
 	ListOrderDrafts(ctx context.Context, username string) ([]orderdomain.OrderDraft, error)
 	DeleteOrderDraft(ctx context.Context, username string, categoryID int64) error
 	DeleteOrderDraftsOlderThan(ctx context.Context, cutoff time.Time) (int64, error)
+	DeletePublishedOrderEventsBefore(ctx context.Context, cutoff time.Time) (int64, error)
 }
 
 // Department is the persistence view of a department needed to create an order.
