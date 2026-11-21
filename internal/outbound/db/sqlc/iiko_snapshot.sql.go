@@ -7,8 +7,7 @@ package sqlc
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"time"
 )
 
 const createIikoSyncRun = `-- name: CreateIikoSyncRun :one
@@ -22,31 +21,31 @@ INSERT INTO iiko_sync_runs (
     started_at,
     finished_at
 ) VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6,
-    $7,
-    $8
+    ?1,
+    ?2,
+    ?3,
+    ?4,
+    ?5,
+    ?6,
+    ?7,
+    ?8
 )
 RETURNING id, source, date_from, date_to, known_revision, status, error, started_at, finished_at
 `
 
 type CreateIikoSyncRunParams struct {
-	Source        string             `json:"source"`
-	DateFrom      string             `json:"date_from"`
-	DateTo        string             `json:"date_to"`
-	KnownRevision int64              `json:"known_revision"`
-	Status        string             `json:"status"`
-	Error         string             `json:"error"`
-	StartedAt     pgtype.Timestamptz `json:"started_at"`
-	FinishedAt    pgtype.Timestamptz `json:"finished_at"`
+	Source        string     `json:"source"`
+	DateFrom      string     `json:"date_from"`
+	DateTo        string     `json:"date_to"`
+	KnownRevision int64      `json:"known_revision"`
+	Status        string     `json:"status"`
+	Error         string     `json:"error"`
+	StartedAt     time.Time  `json:"started_at"`
+	FinishedAt    *time.Time `json:"finished_at"`
 }
 
 func (q *Queries) CreateIikoSyncRun(ctx context.Context, arg CreateIikoSyncRunParams) (IikoSyncRun, error) {
-	row := q.db.QueryRow(ctx, createIikoSyncRun,
+	row := q.db.QueryRowContext(ctx, createIikoSyncRun,
 		arg.Source,
 		arg.DateFrom,
 		arg.DateTo,
@@ -73,45 +72,45 @@ func (q *Queries) CreateIikoSyncRun(ctx context.Context, arg CreateIikoSyncRunPa
 
 const deleteIikoAssemblyChartItemsByChartID = `-- name: DeleteIikoAssemblyChartItemsByChartID :exec
 DELETE FROM iiko_assembly_chart_items
-WHERE chart_id = $1
+WHERE chart_id = ?1
 `
 
 func (q *Queries) DeleteIikoAssemblyChartItemsByChartID(ctx context.Context, chartID string) error {
-	_, err := q.db.Exec(ctx, deleteIikoAssemblyChartItemsByChartID, chartID)
+	_, err := q.db.ExecContext(ctx, deleteIikoAssemblyChartItemsByChartID, chartID)
 	return err
 }
 
 const deleteIikoPreparedChartItemsByChartID = `-- name: DeleteIikoPreparedChartItemsByChartID :exec
 DELETE FROM iiko_prepared_chart_items
-WHERE prepared_chart_id = $1
+WHERE prepared_chart_id = ?1
 `
 
 func (q *Queries) DeleteIikoPreparedChartItemsByChartID(ctx context.Context, preparedChartID string) error {
-	_, err := q.db.Exec(ctx, deleteIikoPreparedChartItemsByChartID, preparedChartID)
+	_, err := q.db.ExecContext(ctx, deleteIikoPreparedChartItemsByChartID, preparedChartID)
 	return err
 }
 
 const finishIikoSyncRun = `-- name: FinishIikoSyncRun :one
 UPDATE iiko_sync_runs
 SET
-    known_revision = $1,
-    status = $2,
-    error = $3,
-    finished_at = $4
-WHERE id = $5
+    known_revision = ?1,
+    status = ?2,
+    error = ?3,
+    finished_at = ?4
+WHERE id = ?5
 RETURNING id, source, date_from, date_to, known_revision, status, error, started_at, finished_at
 `
 
 type FinishIikoSyncRunParams struct {
-	KnownRevision int64              `json:"known_revision"`
-	Status        string             `json:"status"`
-	Error         string             `json:"error"`
-	FinishedAt    pgtype.Timestamptz `json:"finished_at"`
-	ID            int64              `json:"id"`
+	KnownRevision int64      `json:"known_revision"`
+	Status        string     `json:"status"`
+	Error         string     `json:"error"`
+	FinishedAt    *time.Time `json:"finished_at"`
+	ID            int64      `json:"id"`
 }
 
 func (q *Queries) FinishIikoSyncRun(ctx context.Context, arg FinishIikoSyncRunParams) (IikoSyncRun, error) {
-	row := q.db.QueryRow(ctx, finishIikoSyncRun,
+	row := q.db.QueryRowContext(ctx, finishIikoSyncRun,
 		arg.KnownRevision,
 		arg.Status,
 		arg.Error,
@@ -154,24 +153,24 @@ INSERT INTO iiko_assembly_chart_items (
     package_type_id,
     raw_json
 ) VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6,
-    $7,
-    $8,
-    $9,
-    $10,
-    $11,
-    $12,
-    $13,
-    $14,
-    $15,
-    $16,
-    $17,
-    $18
+    ?1,
+    ?2,
+    ?3,
+    ?4,
+    ?5,
+    ?6,
+    ?7,
+    ?8,
+    ?9,
+    ?10,
+    ?11,
+    ?12,
+    ?13,
+    ?14,
+    ?15,
+    ?16,
+    ?17,
+    ?18
 )
 `
 
@@ -197,7 +196,7 @@ type InsertIikoAssemblyChartItemParams struct {
 }
 
 func (q *Queries) InsertIikoAssemblyChartItem(ctx context.Context, arg InsertIikoAssemblyChartItemParams) error {
-	_, err := q.db.Exec(ctx, insertIikoAssemblyChartItem,
+	_, err := q.db.ExecContext(ctx, insertIikoAssemblyChartItem,
 		arg.ID,
 		arg.ChartID,
 		arg.SortWeight,
@@ -231,14 +230,14 @@ INSERT INTO iiko_prepared_chart_items (
     amount,
     raw_json
 ) VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6,
-    $7,
-    $8
+    ?1,
+    ?2,
+    ?3,
+    ?4,
+    ?5,
+    ?6,
+    ?7,
+    ?8
 )
 `
 
@@ -254,7 +253,7 @@ type InsertIikoPreparedChartItemParams struct {
 }
 
 func (q *Queries) InsertIikoPreparedChartItem(ctx context.Context, arg InsertIikoPreparedChartItemParams) error {
-	_, err := q.db.Exec(ctx, insertIikoPreparedChartItem,
+	_, err := q.db.ExecContext(ctx, insertIikoPreparedChartItem,
 		arg.ID,
 		arg.PreparedChartID,
 		arg.SortWeight,
@@ -280,16 +279,16 @@ INSERT INTO iiko_assembly_charts (
     raw_json,
     updated_at
 ) VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6,
-    $7,
-    $8,
-    $9,
-    $10
+    ?1,
+    ?2,
+    ?3,
+    ?4,
+    ?5,
+    ?6,
+    ?7,
+    ?8,
+    ?9,
+    ?10
 )
 ON CONFLICT(id) DO UPDATE SET
     assembled_product_id = excluded.assembled_product_id,
@@ -304,20 +303,20 @@ ON CONFLICT(id) DO UPDATE SET
 `
 
 type UpsertIikoAssemblyChartParams struct {
-	ID                                   string             `json:"id"`
-	AssembledProductID                   string             `json:"assembled_product_id"`
-	DateFrom                             string             `json:"date_from"`
-	DateTo                               *string            `json:"date_to"`
-	AssembledAmount                      float64            `json:"assembled_amount"`
-	ProductWriteoffStrategy              string             `json:"product_writeoff_strategy"`
-	ProductSizeAssemblyStrategy          string             `json:"product_size_assembly_strategy"`
-	EffectiveDirectWriteoffStoreSpecJson string             `json:"effective_direct_writeoff_store_spec_json"`
-	RawJson                              string             `json:"raw_json"`
-	UpdatedAt                            pgtype.Timestamptz `json:"updated_at"`
+	ID                                   string    `json:"id"`
+	AssembledProductID                   string    `json:"assembled_product_id"`
+	DateFrom                             string    `json:"date_from"`
+	DateTo                               *string   `json:"date_to"`
+	AssembledAmount                      float64   `json:"assembled_amount"`
+	ProductWriteoffStrategy              string    `json:"product_writeoff_strategy"`
+	ProductSizeAssemblyStrategy          string    `json:"product_size_assembly_strategy"`
+	EffectiveDirectWriteoffStoreSpecJson string    `json:"effective_direct_writeoff_store_spec_json"`
+	RawJson                              string    `json:"raw_json"`
+	UpdatedAt                            time.Time `json:"updated_at"`
 }
 
 func (q *Queries) UpsertIikoAssemblyChart(ctx context.Context, arg UpsertIikoAssemblyChartParams) error {
-	_, err := q.db.Exec(ctx, upsertIikoAssemblyChart,
+	_, err := q.db.ExecContext(ctx, upsertIikoAssemblyChart,
 		arg.ID,
 		arg.AssembledProductID,
 		arg.DateFrom,
@@ -343,14 +342,14 @@ INSERT INTO iiko_prepared_charts (
     raw_json,
     updated_at
 ) VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6,
-    $7,
-    $8
+    ?1,
+    ?2,
+    ?3,
+    ?4,
+    ?5,
+    ?6,
+    ?7,
+    ?8
 )
 ON CONFLICT(id) DO UPDATE SET
     assembled_product_id = excluded.assembled_product_id,
@@ -363,18 +362,18 @@ ON CONFLICT(id) DO UPDATE SET
 `
 
 type UpsertIikoPreparedChartParams struct {
-	ID                                   string             `json:"id"`
-	AssembledProductID                   string             `json:"assembled_product_id"`
-	DateFrom                             string             `json:"date_from"`
-	DateTo                               *string            `json:"date_to"`
-	ProductSizeAssemblyStrategy          string             `json:"product_size_assembly_strategy"`
-	EffectiveDirectWriteoffStoreSpecJson string             `json:"effective_direct_writeoff_store_spec_json"`
-	RawJson                              string             `json:"raw_json"`
-	UpdatedAt                            pgtype.Timestamptz `json:"updated_at"`
+	ID                                   string    `json:"id"`
+	AssembledProductID                   string    `json:"assembled_product_id"`
+	DateFrom                             string    `json:"date_from"`
+	DateTo                               *string   `json:"date_to"`
+	ProductSizeAssemblyStrategy          string    `json:"product_size_assembly_strategy"`
+	EffectiveDirectWriteoffStoreSpecJson string    `json:"effective_direct_writeoff_store_spec_json"`
+	RawJson                              string    `json:"raw_json"`
+	UpdatedAt                            time.Time `json:"updated_at"`
 }
 
 func (q *Queries) UpsertIikoPreparedChart(ctx context.Context, arg UpsertIikoPreparedChartParams) error {
-	_, err := q.db.Exec(ctx, upsertIikoPreparedChart,
+	_, err := q.db.ExecContext(ctx, upsertIikoPreparedChart,
 		arg.ID,
 		arg.AssembledProductID,
 		arg.DateFrom,
@@ -397,13 +396,13 @@ INSERT INTO iiko_products (
     raw_json,
     updated_at
 ) VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6,
-    $7
+    ?1,
+    ?2,
+    ?3,
+    ?4,
+    ?5,
+    ?6,
+    ?7
 )
 ON CONFLICT(id) DO UPDATE SET
     code = excluded.code,
@@ -415,17 +414,17 @@ ON CONFLICT(id) DO UPDATE SET
 `
 
 type UpsertIikoProductParams struct {
-	ID          string             `json:"id"`
-	Code        string             `json:"code"`
-	Name        string             `json:"name"`
-	Type        *string            `json:"type"`
-	MeasureUnit string             `json:"measure_unit"`
-	RawJson     string             `json:"raw_json"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	ID          string    `json:"id"`
+	Code        string    `json:"code"`
+	Name        string    `json:"name"`
+	Type        *string   `json:"type"`
+	MeasureUnit string    `json:"measure_unit"`
+	RawJson     string    `json:"raw_json"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 func (q *Queries) UpsertIikoProduct(ctx context.Context, arg UpsertIikoProductParams) error {
-	_, err := q.db.Exec(ctx, upsertIikoProduct,
+	_, err := q.db.ExecContext(ctx, upsertIikoProduct,
 		arg.ID,
 		arg.Code,
 		arg.Name,

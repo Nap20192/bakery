@@ -5,65 +5,65 @@
 package sqlc
 
 import (
-	"github.com/jackc/pgx/v5/pgtype"
+	"time"
 )
 
 type AuthUser struct {
-	ID               int64              `json:"id"`
-	TelegramID       *int64             `json:"telegram_id"`
-	Username         string             `json:"username"`
-	PasswordHash     string             `json:"password_hash"`
-	MetadataJson     string             `json:"metadata_json"`
-	Role             string             `json:"role"`
-	CreatedAt        pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
-	DepartmentID     *int64             `json:"department_id"`
-	TelegramUsername *string            `json:"telegram_username"`
+	ID               int64     `json:"id"`
+	TelegramID       *int64    `json:"telegram_id"`
+	Username         string    `json:"username"`
+	PasswordHash     string    `json:"password_hash"`
+	MetadataJson     string    `json:"metadata_json"`
+	Role             string    `json:"role"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
+	DepartmentID     *int64    `json:"department_id"`
+	TelegramUsername *string   `json:"telegram_username"`
 }
 
 type Department struct {
-	ID               int64              `json:"id"`
-	Type             string             `json:"type"`
-	Code             string             `json:"code"`
-	Name             string             `json:"name"`
-	IikoDepartmentID *string            `json:"iiko_department_id"`
-	MetadataJson     string             `json:"metadata_json"`
-	IsActive         bool               `json:"is_active"`
-	CreatedAt        pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	ID               int64     `json:"id"`
+	Type             string    `json:"type"`
+	Code             string    `json:"code"`
+	Name             string    `json:"name"`
+	IikoDepartmentID *string   `json:"iiko_department_id"`
+	MetadataJson     string    `json:"metadata_json"`
+	IsActive         bool      `json:"is_active"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
 }
 
 type DishCatalog struct {
-	ID         int64              `json:"id"`
-	Code       string             `json:"code"`
-	Name       string             `json:"name"`
-	CreatedAt  pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
-	SortOrder  int64              `json:"sort_order"`
-	CategoryID *int64             `json:"category_id"`
-	GroupID    *int64             `json:"group_id"`
+	ID         int64     `json:"id"`
+	Code       string    `json:"code"`
+	Name       string    `json:"name"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	SortOrder  int64     `json:"sort_order"`
+	CategoryID *int64    `json:"category_id"`
+	GroupID    *int64    `json:"group_id"`
 }
 
 type DishGroup struct {
-	ID         int64              `json:"id"`
-	CategoryID *int64             `json:"category_id"`
-	Name       string             `json:"name"`
-	SortOrder  int64              `json:"sort_order"`
-	CreatedAt  pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	ID         int64     `json:"id"`
+	CategoryID *int64    `json:"category_id"`
+	Name       string    `json:"name"`
+	SortOrder  int64     `json:"sort_order"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 type IikoAssemblyChart struct {
-	ID                                   string             `json:"id"`
-	AssembledProductID                   string             `json:"assembled_product_id"`
-	DateFrom                             string             `json:"date_from"`
-	DateTo                               *string            `json:"date_to"`
-	AssembledAmount                      float64            `json:"assembled_amount"`
-	ProductWriteoffStrategy              string             `json:"product_writeoff_strategy"`
-	ProductSizeAssemblyStrategy          string             `json:"product_size_assembly_strategy"`
-	EffectiveDirectWriteoffStoreSpecJson string             `json:"effective_direct_writeoff_store_spec_json"`
-	RawJson                              string             `json:"raw_json"`
-	UpdatedAt                            pgtype.Timestamptz `json:"updated_at"`
+	ID                                   string    `json:"id"`
+	AssembledProductID                   string    `json:"assembled_product_id"`
+	DateFrom                             string    `json:"date_from"`
+	DateTo                               *string   `json:"date_to"`
+	AssembledAmount                      float64   `json:"assembled_amount"`
+	ProductWriteoffStrategy              string    `json:"product_writeoff_strategy"`
+	ProductSizeAssemblyStrategy          string    `json:"product_size_assembly_strategy"`
+	EffectiveDirectWriteoffStoreSpecJson string    `json:"effective_direct_writeoff_store_spec_json"`
+	RawJson                              string    `json:"raw_json"`
+	UpdatedAt                            time.Time `json:"updated_at"`
 }
 
 type IikoAssemblyChartItem struct {
@@ -88,14 +88,14 @@ type IikoAssemblyChartItem struct {
 }
 
 type IikoPreparedChart struct {
-	ID                                   string             `json:"id"`
-	AssembledProductID                   string             `json:"assembled_product_id"`
-	DateFrom                             string             `json:"date_from"`
-	DateTo                               *string            `json:"date_to"`
-	ProductSizeAssemblyStrategy          string             `json:"product_size_assembly_strategy"`
-	EffectiveDirectWriteoffStoreSpecJson string             `json:"effective_direct_writeoff_store_spec_json"`
-	RawJson                              string             `json:"raw_json"`
-	UpdatedAt                            pgtype.Timestamptz `json:"updated_at"`
+	ID                                   string    `json:"id"`
+	AssembledProductID                   string    `json:"assembled_product_id"`
+	DateFrom                             string    `json:"date_from"`
+	DateTo                               *string   `json:"date_to"`
+	ProductSizeAssemblyStrategy          string    `json:"product_size_assembly_strategy"`
+	EffectiveDirectWriteoffStoreSpecJson string    `json:"effective_direct_writeoff_store_spec_json"`
+	RawJson                              string    `json:"raw_json"`
+	UpdatedAt                            time.Time `json:"updated_at"`
 }
 
 type IikoPreparedChartItem struct {
@@ -110,54 +110,54 @@ type IikoPreparedChartItem struct {
 }
 
 type IikoProduct struct {
-	ID          string             `json:"id"`
-	Code        string             `json:"code"`
-	Name        string             `json:"name"`
-	Type        *string            `json:"type"`
-	MeasureUnit string             `json:"measure_unit"`
-	RawJson     string             `json:"raw_json"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	ID          string    `json:"id"`
+	Code        string    `json:"code"`
+	Name        string    `json:"name"`
+	Type        *string   `json:"type"`
+	MeasureUnit string    `json:"measure_unit"`
+	RawJson     string    `json:"raw_json"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type IikoSyncRun struct {
-	ID            int64              `json:"id"`
-	Source        string             `json:"source"`
-	DateFrom      string             `json:"date_from"`
-	DateTo        string             `json:"date_to"`
-	KnownRevision int64              `json:"known_revision"`
-	Status        string             `json:"status"`
-	Error         string             `json:"error"`
-	StartedAt     pgtype.Timestamptz `json:"started_at"`
-	FinishedAt    pgtype.Timestamptz `json:"finished_at"`
+	ID            int64      `json:"id"`
+	Source        string     `json:"source"`
+	DateFrom      string     `json:"date_from"`
+	DateTo        string     `json:"date_to"`
+	KnownRevision int64      `json:"known_revision"`
+	Status        string     `json:"status"`
+	Error         string     `json:"error"`
+	StartedAt     time.Time  `json:"started_at"`
+	FinishedAt    *time.Time `json:"finished_at"`
 }
 
 type Order struct {
-	ID                  int64              `json:"id"`
-	Number              string             `json:"number"`
-	Location            string             `json:"location"`
-	CreatedAt           pgtype.Timestamptz `json:"created_at"`
-	FromDepartmentID    *int64             `json:"from_department_id"`
-	ToDepartmentID      *int64             `json:"to_department_id"`
-	FulfillmentDate     pgtype.Date        `json:"fulfillment_date"`
-	CreatedByUsername   string             `json:"created_by_username"`
-	Comments            []byte             `json:"comments"`
-	IsFavorite          bool               `json:"is_favorite"`
-	CancelledAt         pgtype.Timestamptz `json:"cancelled_at"`
-	CancelledByUsername string             `json:"cancelled_by_username"`
-	CategoryID          *int64             `json:"category_id"`
-	DedupKey            *string            `json:"dedup_key"`
+	ID                  int64      `json:"id"`
+	Number              string     `json:"number"`
+	Location            string     `json:"location"`
+	CreatedAt           time.Time  `json:"created_at"`
+	FromDepartmentID    *int64     `json:"from_department_id"`
+	ToDepartmentID      *int64     `json:"to_department_id"`
+	FulfillmentDate     string     `json:"fulfillment_date"`
+	CreatedByUsername   string     `json:"created_by_username"`
+	Comments            *string    `json:"comments"`
+	IsFavorite          bool       `json:"is_favorite"`
+	CancelledAt         *time.Time `json:"cancelled_at"`
+	CancelledByUsername string     `json:"cancelled_by_username"`
+	CategoryID          *int64     `json:"category_id"`
+	DedupKey            *string    `json:"dedup_key"`
 }
 
 type OrderCategory struct {
-	ID           int64              `json:"id"`
-	Code         string             `json:"code"`
-	Letter       string             `json:"letter"`
-	Name         string             `json:"name"`
-	Color        string             `json:"color"`
-	SortOrder    int64              `json:"sort_order"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
-	MonitorCodes []string           `json:"monitor_codes"`
+	ID           int64     `json:"id"`
+	Code         string    `json:"code"`
+	Letter       string    `json:"letter"`
+	Name         string    `json:"name"`
+	Color        string    `json:"color"`
+	SortOrder    int64     `json:"sort_order"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	MonitorCodes string    `json:"monitor_codes"`
 }
 
 type OrderCounter struct {
@@ -168,21 +168,21 @@ type OrderCounter struct {
 }
 
 type OrderDraft struct {
-	ID                int64              `json:"id"`
-	CreatedByUsername string             `json:"created_by_username"`
-	CategoryID        int64              `json:"category_id"`
-	FromDepartmentID  *int64             `json:"from_department_id"`
-	FulfillmentDate   pgtype.Date        `json:"fulfillment_date"`
-	Comments          []byte             `json:"comments"`
-	Items             []byte             `json:"items"`
-	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+	ID                int64     `json:"id"`
+	CreatedByUsername string    `json:"created_by_username"`
+	CategoryID        int64     `json:"category_id"`
+	FromDepartmentID  *int64    `json:"from_department_id"`
+	FulfillmentDate   string    `json:"fulfillment_date"`
+	Comments          *string   `json:"comments"`
+	Items             string    `json:"items"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 type OrderHistory struct {
-	ID                int64              `json:"id"`
-	OrderID           int64              `json:"order_id"`
-	ChangedByUsername string             `json:"changed_by_username"`
-	ChangedAt         pgtype.Timestamptz `json:"changed_at"`
+	ID                int64     `json:"id"`
+	OrderID           int64     `json:"order_id"`
+	ChangedByUsername string    `json:"changed_by_username"`
+	ChangedAt         time.Time `json:"changed_at"`
 }
 
 type OrderHistoryItem struct {
@@ -207,20 +207,20 @@ type OrderItem struct {
 }
 
 type OrderOutbox struct {
-	ID            int64              `json:"id"`
-	AggregateID   string             `json:"aggregate_id"`
-	EventType     string             `json:"event_type"`
-	Payload       []byte             `json:"payload"`
-	CorrelationID string             `json:"correlation_id"`
-	CreatedAt     pgtype.Timestamptz `json:"created_at"`
-	PublishedAt   pgtype.Timestamptz `json:"published_at"`
+	ID            int64      `json:"id"`
+	AggregateID   string     `json:"aggregate_id"`
+	EventType     string     `json:"event_type"`
+	Payload       string     `json:"payload"`
+	CorrelationID string     `json:"correlation_id"`
+	CreatedAt     time.Time  `json:"created_at"`
+	PublishedAt   *time.Time `json:"published_at"`
 }
 
 type ProductionSheet struct {
-	ID                int64              `json:"id"`
-	CreatedByUsername string             `json:"created_by_username"`
-	CreatedAt         pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+	ID                int64     `json:"id"`
+	CreatedByUsername string    `json:"created_by_username"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 type ProductionSheetItem struct {

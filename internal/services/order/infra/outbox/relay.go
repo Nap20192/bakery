@@ -26,7 +26,7 @@ type Relay struct {
 	queries  *sqlc.Queries
 	handler  Handler
 	interval time.Duration
-	batch    int32
+	batch    int64
 }
 
 func NewRelay(queries *sqlc.Queries, handler Handler, interval time.Duration) *Relay {
@@ -58,7 +58,7 @@ func (r *Relay) drain(ctx context.Context) error {
 	}
 	for _, row := range rows {
 		eventCtx := correlation.WithID(ctx, row.CorrelationID)
-		if err := r.handler.HandleOrderEvent(eventCtx, row.EventType, row.Payload); err != nil {
+		if err := r.handler.HandleOrderEvent(eventCtx, row.EventType, []byte(row.Payload)); err != nil {
 			if errors.Is(err, ErrHandlerNotReady) {
 				slog.DebugContext(ctx, "outbox waits for its handler", "component", "order.outbox", "pending_from", row.ID)
 				return nil

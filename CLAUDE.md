@@ -116,7 +116,8 @@ Order service records domain events (`order.created`, `order.updated`, …) on t
 
 - `queries/*.sql` → run `sqlc generate` → `internal/outbound/db/sqlc/`
 - Migrations in `migrations/NNNNN_name.sql` (goose-style); applied automatically on startup
-- `DATABASE_URL` takes priority over individual `POSTGRES_*` vars
+- SQLite file at `SQLITE_PATH` (`modernc.org/sqlite`, sqlc engine `sqlite`); `migrations/00001_init.sql` is the baseline. One open connection, WAL, `BEGIN IMMEDIATE`: inside a transaction use only the tx-bound queries — a pool call deadlocks. Times are UTC text; `lower()` is a Unicode-aware Go override. Conventions: `docs/database.md`
+- `cmd/pg2sqlite` — one-time import from the old Postgres (`docs/deployment.md`)
 - Seed data for dish catalog: `templates/dishes.txt` → «Булочки», `templates/bread.txt` → «Хлеб» (приложение сидит оба на старте; категория, назначенная админом, и ручной `sort_order` не затираются — `sort_order` задаётся шаблоном только при первой вставке). Формат шаблона: строка-заголовок «группа» (заглавными) + строки `<код> <название>`.
 - Normalized catalog model: `order_categories` → `dish_groups` (группа, FK на категорию) → `dish_catalog` (блюдо, FK `group_id` + `category_id`). Слой repo мапит `group_id` обратно в строку «группа» (поле `Theme` в domain/DTO осталось — это имя группы).
 

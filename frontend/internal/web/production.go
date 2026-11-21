@@ -365,8 +365,8 @@ func (s *server) buildProductionJournal(r *http.Request, cred application.Creden
 			continue
 		}
 		date := sheet.CreatedAt
-		if len(date) >= 10 {
-			date = date[:10]
+		if parsed, ok := parseDisplayTime(date); ok {
+			date = parsed.Format("2006-01-02")
 		}
 		row := rows[date]
 		if row == nil {

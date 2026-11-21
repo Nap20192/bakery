@@ -2,16 +2,15 @@
 package syncapp
 
 import (
+	"database/sql"
 	"time"
 
 	sqlc "bakery/internal/outbound/db/sqlc"
 	"bakery/internal/outbound/iiko"
 	syncrepo "bakery/internal/services/sync/infra/repo"
 	syncuc "bakery/internal/services/sync/usecase/sync"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func New(client *iiko.Client, db *pgxpool.Pool, queries *sqlc.Queries, interval time.Duration) syncuc.UseCase {
+func New(client *iiko.Client, db *sql.DB, queries *sqlc.Queries, interval time.Duration) syncuc.UseCase {
 	return syncuc.NewService(client, syncrepo.New(db, queries), interval)
 }

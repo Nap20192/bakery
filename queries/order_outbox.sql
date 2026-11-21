@@ -21,5 +21,6 @@ LIMIT sqlc.arg(max_events);
 
 -- name: MarkOrderOutboxEventPublished :exec
 UPDATE order_outbox
-SET published_at = now()
+SET published_at = strftime('%Y-%m-%d %H:%M:%f+00:00', 'now')
 WHERE id = sqlc.arg(id);
+

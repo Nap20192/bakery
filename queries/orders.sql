@@ -62,8 +62,8 @@ FROM orders
 WHERE number = sqlc.arg(number);
 
 -- name: GetOrderItemsByOrderID :many
--- Позиции хранят только заявку. Факт отработки живёт в журнале и
--- декорируется при чтении (GetOrderProductionFacts + мердж в репозитории).
+-- Items store only the request. The production fact lives in the journal and
+-- is decorated at read time (GetOrderProductionFacts + merge in the repository).
 SELECT
     oi.id,
     oi.order_id,
@@ -88,7 +88,7 @@ SELECT
     COALESCE(p.code, '') AS product_code
 FROM order_items AS oi
 LEFT JOIN iiko_products AS p ON p.id = oi.iiko_product_id
-WHERE oi.order_id = ANY(sqlc.arg(order_ids)::BIGINT[])
+WHERE oi.order_id IN (sqlc.slice(order_ids))
 ORDER BY oi.order_id, oi.id;
 
 -- name: GetOrderByID :one
@@ -162,11 +162,11 @@ RETURNING *;
 SELECT *
 FROM orders
 WHERE
-    (sqlc.narg(from_department_id)::BIGINT IS NULL OR from_department_id = sqlc.narg(from_department_id)::BIGINT)
-    AND (sqlc.narg(fulfillment_date)::DATE IS NULL OR fulfillment_date = sqlc.narg(fulfillment_date)::DATE)
-    AND (sqlc.narg(fulfillment_from)::DATE IS NULL OR fulfillment_date >= sqlc.narg(fulfillment_from)::DATE)
-    AND (sqlc.narg(fulfillment_to)::DATE IS NULL OR fulfillment_date <= sqlc.narg(fulfillment_to)::DATE)
-    AND (sqlc.narg(category_id)::BIGINT IS NULL OR category_id = sqlc.narg(category_id)::BIGINT)
+    (CAST(sqlc.narg(from_department_id) AS INTEGER) IS NULL OR from_department_id = CAST(sqlc.narg(from_department_id) AS INTEGER))
+    AND (CAST(sqlc.narg(fulfillment_date) AS TEXT) IS NULL OR fulfillment_date = CAST(sqlc.narg(fulfillment_date) AS TEXT))
+    AND (CAST(sqlc.narg(fulfillment_from) AS TEXT) IS NULL OR fulfillment_date >= CAST(sqlc.narg(fulfillment_from) AS TEXT))
+    AND (CAST(sqlc.narg(fulfillment_to) AS TEXT) IS NULL OR fulfillment_date <= CAST(sqlc.narg(fulfillment_to) AS TEXT))
+    AND (CAST(sqlc.narg(category_id) AS INTEGER) IS NULL OR category_id = CAST(sqlc.narg(category_id) AS INTEGER))
 ORDER BY id DESC
 LIMIT sqlc.arg(order_limit)
 OFFSET sqlc.arg(order_offset);
@@ -175,11 +175,11 @@ OFFSET sqlc.arg(order_offset);
 SELECT COUNT(*)
 FROM orders
 WHERE
-    (sqlc.narg(from_department_id)::BIGINT IS NULL OR from_department_id = sqlc.narg(from_department_id)::BIGINT)
-    AND (sqlc.narg(fulfillment_date)::DATE IS NULL OR fulfillment_date = sqlc.narg(fulfillment_date)::DATE)
-    AND (sqlc.narg(fulfillment_from)::DATE IS NULL OR fulfillment_date >= sqlc.narg(fulfillment_from)::DATE)
-    AND (sqlc.narg(fulfillment_to)::DATE IS NULL OR fulfillment_date <= sqlc.narg(fulfillment_to)::DATE)
-    AND (sqlc.narg(category_id)::BIGINT IS NULL OR category_id = sqlc.narg(category_id)::BIGINT);
+    (CAST(sqlc.narg(from_department_id) AS INTEGER) IS NULL OR from_department_id = CAST(sqlc.narg(from_department_id) AS INTEGER))
+    AND (CAST(sqlc.narg(fulfillment_date) AS TEXT) IS NULL OR fulfillment_date = CAST(sqlc.narg(fulfillment_date) AS TEXT))
+    AND (CAST(sqlc.narg(fulfillment_from) AS TEXT) IS NULL OR fulfillment_date >= CAST(sqlc.narg(fulfillment_from) AS TEXT))
+    AND (CAST(sqlc.narg(fulfillment_to) AS TEXT) IS NULL OR fulfillment_date <= CAST(sqlc.narg(fulfillment_to) AS TEXT))
+    AND (CAST(sqlc.narg(category_id) AS INTEGER) IS NULL OR category_id = CAST(sqlc.narg(category_id) AS INTEGER));
 
 -- name: SetOrderFavorite :one
 UPDATE orders
@@ -201,12 +201,7 @@ SET cancelled_at = NULL,
 WHERE number = sqlc.arg(number)
 RETURNING *;
 
--- name: DeleteOrdersCreatedBefore :one
-WITH deleted AS (
-    DELETE FROM orders
-    WHERE created_at < sqlc.arg(created_at_before)
-      AND is_favorite = FALSE
-    RETURNING id
-)
-SELECT COUNT(*)::BIGINT
-FROM deleted;
+-- name: DeleteOrdersCreatedBefore :execrows
+DELETE FROM orders
+WHERE created_at < sqlc.arg(created_at_before)
+  AND is_favorite = FALSE;

@@ -10,7 +10,24 @@ nothing. `sqlc.arg` is a required parameter, `sqlc.narg` is nullable
 (optional filter / NULLable column).
 
 Tables are created by goose migrations in `migrations/` (applied on
-startup).
+startup). The engine is SQLite; see [architecture.md → Database](architecture.md#database)
+for connection settings and the rules below.
+
+SQL conventions for SQLite:
+
+- Timestamps are `DATETIME` text in UTC, `YYYY-MM-DD HH:MM:SS[.fff…]+00:00`.
+  Column defaults use `strftime('%Y-%m-%d %H:%M:%f+00:00', 'now')`; the
+  driver writes Go `time.Time` values in the same shape. Comparisons are
+  textual, so never store another format or offset.
+- Dates are `TEXT` `YYYY-MM-DD` with a `CHECK (col = date(col))`.
+- JSON columns are `TEXT`.
+- `lower()` is replaced by a Go function that folds Unicode case, so
+  case-insensitive matching works for Cyrillic (`lower(x) LIKE lower(?)`).
+  SQLite's built-in `lower` only folds ASCII. No index is built on `lower()`.
+- Batched lookups use `IN (sqlc.slice(ids))`.
+- Integer ids are `INTEGER PRIMARY KEY AUTOINCREMENT`: like Postgres serials,
+  an id is never handed out again after its row is deleted (production sheet
+  `№N` and user ids appear in URLs and forms).
 
 ## queries/orders.sql — orders, items, history (order service)
 
@@ -23,7 +40,7 @@ startup).
 | `GetOrderByNumber` | one | Header by human-facing number (the aggregate identity). |
 | `GetOrderByID` | one | Header by surrogate id (used by production re-projection). |
 | `GetOrderItemsByOrderID` | many | Items of one order (заявка only), LEFT JOIN to `iiko_products` for the display `product_code`. Production facts are **not** stored here — the repo decorates items from the journal (`GetOrderProductionFacts`). |
-| `GetOrderItemsByOrderIDs` | many | Same, batched via `= ANY(bigint[])` — hydrates order lists without N+1. |
+| `GetOrderItemsByOrderIDs` | many | Same, batched via `IN (sqlc.slice(order_ids))` — hydrates order lists without N+1. |
 | `DeleteOrderItemsByOrderID` | exec | Clears items before re-inserting on order update (full replace). |
 | `CreateOrderHistory` | one | History header: who changed and when. |
 | `CreateOrderHistoryItem` | one | One diff row: `change_type` (`added`/`updated`/`removed`), old/new quantity and reserve. Nullable old/new match the change type. Production writes no history. |
@@ -52,7 +69,7 @@ startup).
 
 | Query | Kind | What it does |
 |---|---|---|
-| `CreateProductionSheet` | one | New journal document header (author; timestamps default to `now()`). |
+| `CreateProductionSheet` | one | New journal document header (author; timestamps default to the current UTC time). |
 | `GetProductionSheet` | one | Header by id. |
 | `TouchProductionSheet` | exec | Bumps `updated_at` when a sheet is replaced. |
 | `DeleteProductionSheet` | exec | Deletes the document; its batch rows and items cascade. |
@@ -67,7 +84,7 @@ startup).
 | `ListProductionSheetItems` | many | All loaded items joined with optional output deviations and order numbers, sorted by product then order. |
 | `ListProductionSheetOrderIDs` | many | Orders in a sheet's batch — the "affected set" for change detection. |
 | `GetOrderProductionSheetID` | one | The sheet whose **batch** covers an order (newest wins on historical overlaps). Backs both the `production_sheet_id` in API responses and the one-sheet-per-order conflict check. |
-| `GetOrderProductionFacts` | many | **The read-time decorator**: per (order, normalized product name) the newest sheet's fact (`DISTINCT ON … ORDER BY sheet_id DESC`). The repo overlays these onto order items at read time and diffs before/after journal writes to decide whether to emit `order.produced`/`production_cleared`. |
+| `GetOrderProductionFacts` | many | **The read-time decorator**: per (order, normalized product name) the newest sheet's fact (`ROW_NUMBER() OVER (PARTITION BY order, product ORDER BY sheet_id DESC)`, first row). The repo overlays these onto order items at read time and diffs before/after journal writes to decide whether to emit `order.produced`/`production_cleared`. |
 
 ## queries/order_outbox.sql — transactional outbox (order service + relay)
 
@@ -85,7 +102,7 @@ startup).
 | `GetIikoProductByCode` | one | Product by code, preferring `DISH` over other types, then the freshest snapshot row. |
 | `GetIikoProductByID` | one | Product by iiko UUID. |
 | `UpsertDishCatalogItem` | one | Catalog seed/add. Takes a `group_id` (the repo find-or-creates the group from the dish's «группа» name first). On conflict by `code` updates name/group, but `category_id = COALESCE(existing, new)` and `sort_order` is left untouched — **re-seeding never clobbers an admin-assigned category or the manual ordering**. |
-| `SearchIikoDishes` | many | `ILIKE` search over DISH products by name or code (admin "add dish" picker), limited. |
+| `SearchIikoDishes` | many | Case-insensitive (`lower(…) LIKE`, Cyrillic-aware) search over DISH products by name or code (admin "add dish" picker), limited. |
 | `SetDishCatalogSortOrder` | exec | One position of the admin drag-and-drop reorder. |
 | `UpdateDishCatalogItem` | one | Edits a catalog row, including renaming its `code` (`new_code`); resolves the group name to a `group_id`. |
 | `DeleteDishCatalogItem` | exec | Removes a dish from the catalog. |

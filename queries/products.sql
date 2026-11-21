@@ -1,5 +1,5 @@
 -- name: DishExistsByCode :one
-SELECT COUNT(*)::bigint
+SELECT COUNT(*)
 FROM iiko_products
 WHERE code = sqlc.arg(code)
   AND type = 'DISH';
@@ -64,7 +64,7 @@ SELECT id, code, name, measure_unit
 FROM iiko_products
 WHERE type = 'DISH'
   AND trim(code) <> ''
-  AND (name ILIKE '%' || sqlc.arg(query) || '%' OR code ILIKE '%' || sqlc.arg(query) || '%')
+  AND (lower(name) LIKE '%' || lower(sqlc.arg(query)) || '%' OR lower(code) LIKE '%' || lower(sqlc.arg(query)) || '%')
 ORDER BY name, code
 LIMIT sqlc.arg(lim);
 
@@ -108,10 +108,7 @@ ORDER BY sort_order, id;
 -- name: EnsureDishGroup :one
 -- Find-or-create a group by (category, name); returns its id. The repo resolves
 -- a dish's group name to this id before upserting the dish.
--- ponytail: UNIQUE(category_id, name) does not dedupe NULL-category groups
--- (Postgres treats NULLs as distinct), so uncategorized groups can duplicate.
--- Harmless — the UI groups by name — upgrade to NULLS NOT DISTINCT (PG15+) if it matters.
 INSERT INTO dish_groups (category_id, name)
 VALUES (sqlc.narg(category_id), sqlc.arg(name))
-ON CONFLICT (category_id, name) DO UPDATE SET updated_at = now()
+ON CONFLICT (category_id, name) DO UPDATE SET updated_at = strftime('%Y-%m-%d %H:%M:%f+00:00', 'now')
 RETURNING id;

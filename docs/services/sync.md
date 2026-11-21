@@ -1,7 +1,7 @@
 # Sync Service
 
 `internal/services/sync/` — pulls the product catalog and tech cards from
-**iiko** (the restaurant ERP) and stores a snapshot in Postgres. Everything
+**iiko** (the restaurant ERP) and stores a snapshot in the database. Everything
 that monitoring and tech-card lookup compute is based on this snapshot.
 
 ## Layout

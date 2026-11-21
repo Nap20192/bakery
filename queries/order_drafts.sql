@@ -14,14 +14,14 @@ INSERT INTO order_drafts (
     sqlc.arg(fulfillment_date),
     sqlc.narg(comments),
     sqlc.arg(items),
-    now()
+    strftime('%Y-%m-%d %H:%M:%f+00:00', 'now')
 )
 ON CONFLICT (created_by_username, category_id) DO UPDATE SET
     from_department_id = EXCLUDED.from_department_id,
     fulfillment_date = EXCLUDED.fulfillment_date,
     comments = EXCLUDED.comments,
     items = EXCLUDED.items,
-    updated_at = now()
+    updated_at = strftime('%Y-%m-%d %H:%M:%f+00:00', 'now')
 RETURNING *;
 
 -- name: GetOrderDraft :one
@@ -41,11 +41,6 @@ DELETE FROM order_drafts
 WHERE created_by_username = sqlc.arg(created_by_username)
   AND category_id = sqlc.arg(category_id);
 
--- name: DeleteOrderDraftsOlderThan :one
-WITH deleted AS (
-    DELETE FROM order_drafts
-    WHERE updated_at < sqlc.arg(updated_at_before)
-    RETURNING id
-)
-SELECT COUNT(*)::BIGINT
-FROM deleted;
+-- name: DeleteOrderDraftsOlderThan :execrows
+DELETE FROM order_drafts
+WHERE updated_at < sqlc.arg(updated_at_before);

@@ -5,6 +5,7 @@ package techcardrepo
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,11 +13,9 @@ import (
 
 	sqlc "bakery/internal/outbound/db/sqlc"
 	"bakery/internal/outbound/iiko"
+	"bakery/internal/pkg/helpers"
 	techcarddomain "bakery/internal/services/techcard/domain"
 	techcarduc "bakery/internal/services/techcard/usecase/techcard"
-
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type TechCardRepository struct {
@@ -32,7 +31,7 @@ func New(queries *sqlc.Queries) *TechCardRepository {
 func (r *TechCardRepository) GetByCode(ctx context.Context, code string, date time.Time) (techcarddomain.TechCard, error) {
 	product, err := r.queries.GetIikoProductByCode(ctx, code)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return techcarddomain.TechCard{}, fmt.Errorf("product with code %s not found", code)
 		}
 		return techcarddomain.TechCard{}, fmt.Errorf("get product by code: %w", err)
@@ -48,7 +47,7 @@ func (r *TechCardRepository) GetByCode(ctx context.Context, code string, date ti
 		card.Type = *product.Type
 	}
 
-	dateParam := pgtype.Date{Time: date, Valid: true}
+	dateParam := helpers.DateString(date)
 	if err := r.attachAssembly(ctx, &card, product.ID, dateParam); err != nil {
 		return techcarddomain.TechCard{}, err
 	}
@@ -60,12 +59,12 @@ func (r *TechCardRepository) GetByCode(ctx context.Context, code string, date ti
 	return card, nil
 }
 
-func (r *TechCardRepository) attachAssembly(ctx context.Context, card *techcarddomain.TechCard, productID string, date pgtype.Date) error {
+func (r *TechCardRepository) attachAssembly(ctx context.Context, card *techcarddomain.TechCard, productID string, date string) error {
 	row, err := r.queries.GetActiveAssemblyChartFullByProductID(ctx, sqlc.GetActiveAssemblyChartFullByProductIDParams{
 		AssembledProductID: productID,
 		OrderDate:          date,
 	})
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil
 	}
 	if err != nil {
@@ -83,12 +82,12 @@ func (r *TechCardRepository) attachAssembly(ctx context.Context, card *techcardd
 	return nil
 }
 
-func (r *TechCardRepository) attachPrepared(ctx context.Context, card *techcarddomain.TechCard, productID string, date pgtype.Date) error {
+func (r *TechCardRepository) attachPrepared(ctx context.Context, card *techcarddomain.TechCard, productID string, date string) error {
 	row, err := r.queries.GetActivePreparedChartFullByProductID(ctx, sqlc.GetActivePreparedChartFullByProductIDParams{
 		AssembledProductID: productID,
 		OrderDate:          date,
 	})
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil
 	}
 	if err != nil {

@@ -5,6 +5,7 @@ package monitorrepo
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -12,12 +13,10 @@ import (
 
 	sqlc "bakery/internal/outbound/db/sqlc"
 	"bakery/internal/pkg/enum"
+	"bakery/internal/pkg/helpers"
 	monitoringdomain "bakery/internal/services/monitor/domain"
 	monitoruc "bakery/internal/services/monitor/usecase/monitor"
 	orderdomain "bakery/internal/services/order/domain"
-
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type MonitorRepository struct {
@@ -34,7 +33,7 @@ func (r *MonitorRepository) ResolveIngredient(ctx context.Context, code string) 
 	code = strings.TrimSpace(code)
 	product, err := r.queries.GetIikoProductByCode(ctx, code)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return monitoruc.Ingredient{}, fmt.Errorf("ingredient not found by code %s", code)
 		}
 		return monitoruc.Ingredient{}, fmt.Errorf("get ingredient by code %s: %w", code, err)
@@ -52,7 +51,7 @@ func (r *MonitorRepository) ResolveIngredient(ctx context.Context, code string) 
 }
 
 func (r *MonitorRepository) LoadOrderGraph(ctx context.Context, order orderdomain.Order) (monitoruc.OrderGraph, error) {
-	orderDateParam := pgDate(monitorOrderDate(order))
+	orderDateParam := helpers.DateString(monitorOrderDate(order))
 	result := monitoruc.OrderGraph{
 		Graph: monitoringdomain.ProductGraph{},
 		Items: make([]monitoruc.OrderGraphItem, 0, len(order.Items)),
@@ -65,7 +64,7 @@ func (r *MonitorRepository) LoadOrderGraph(ctx context.Context, order orderdomai
 			var err error
 			product, err = r.queries.GetIikoProductByCode(ctx, code)
 			if err != nil {
-				if errors.Is(err, pgx.ErrNoRows) {
+				if errors.Is(err, sql.ErrNoRows) {
 					continue
 				}
 				return result, fmt.Errorf("get product by code %s: %w", item.Code, err)
@@ -80,7 +79,7 @@ func (r *MonitorRepository) LoadOrderGraph(ctx context.Context, order orderdomai
 	return result, nil
 }
 
-func (r *MonitorRepository) loadGraph(ctx context.Context, graph monitoringdomain.ProductGraph, productID string, orderDate pgtype.Date, path map[string]bool) error {
+func (r *MonitorRepository) loadGraph(ctx context.Context, graph monitoringdomain.ProductGraph, productID string, orderDate string, path map[string]bool) error {
 	if productID == "" {
 		return nil
 	}
@@ -125,7 +124,7 @@ func (r *MonitorRepository) loadGraph(ctx context.Context, graph monitoringdomai
 		}
 		return nil
 	}
-	if !errors.Is(err, pgx.ErrNoRows) {
+	if !errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("get active assembly chart: %w", err)
 	}
 
@@ -133,7 +132,7 @@ func (r *MonitorRepository) loadGraph(ctx context.Context, graph monitoringdomai
 		AssembledProductID: productID,
 		OrderDate:          orderDate,
 	})
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		graph[productID] = monitoringdomain.ProductRecipe{}
 		return nil
 	}
@@ -175,8 +174,4 @@ func monitorOrderDate(order orderdomain.Order) time.Time {
 		orderDate = time.Now().UTC()
 	}
 	return orderDate
-}
-
-func pgDate(t time.Time) pgtype.Date {
-	return pgtype.Date{Time: t, Valid: true}
 }

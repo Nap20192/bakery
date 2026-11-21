@@ -2,6 +2,7 @@ package dbmigrate
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"os"
@@ -9,11 +10,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func ApplyMigrations(ctx context.Context, db *pgxpool.Pool, log *slog.Logger, migrationsDir string) error {
+func ApplyMigrations(ctx context.Context, db *sql.DB, log *slog.Logger, migrationsDir string) error {
 	if db == nil {
 		return fmt.Errorf("db is nil")
 	}
@@ -28,10 +27,10 @@ func ApplyMigrations(ctx context.Context, db *pgxpool.Pool, log *slog.Logger, mi
 		return fmt.Errorf("no migrations found in %s", migrationsDir)
 	}
 
-	if _, err := db.Exec(ctx, `
+	if _, err := db.ExecContext(ctx, `
 CREATE TABLE IF NOT EXISTS schema_migrations (
-	version BIGINT PRIMARY KEY,
-	applied_at TEXT NOT NULL DEFAULT (now()::text)
+	version INTEGER PRIMARY KEY,
+	applied_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f+00:00', 'now'))
 );`); err != nil {
 		return fmt.Errorf("create schema_migrations: %w", err)
 	}
@@ -50,14 +49,14 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 	return nil
 }
 
-func applyMigration(ctx context.Context, db *pgxpool.Pool, log *slog.Logger, file string) error {
+func applyMigration(ctx context.Context, db *sql.DB, log *slog.Logger, file string) error {
 	version, err := migrationVersion(file)
 	if err != nil {
 		return err
 	}
 
 	var exists bool
-	if err := db.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version = $1)`, version).Scan(&exists); err != nil {
+	if err := db.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version = ?)`, version).Scan(&exists); err != nil {
 		return fmt.Errorf("check migration %d: %w", version, err)
 	}
 	if exists {
@@ -73,24 +72,24 @@ func applyMigration(ctx context.Context, db *pgxpool.Pool, log *slog.Logger, fil
 		return fmt.Errorf("parse migration %s: %w", file, err)
 	}
 
-	tx, err := db.Begin(ctx)
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("begin migration %d: %w", version, err)
 	}
 	committed := false
 	defer func() {
 		if !committed {
-			_ = tx.Rollback(ctx)
+			_ = tx.Rollback()
 		}
 	}()
 
-	if _, err := tx.Exec(ctx, upSQL); err != nil {
+	if _, err := tx.ExecContext(ctx, upSQL); err != nil {
 		return fmt.Errorf("apply migration %s: %w", file, err)
 	}
-	if _, err := tx.Exec(ctx, `INSERT INTO schema_migrations (version) VALUES ($1)`, version); err != nil {
+	if _, err := tx.ExecContext(ctx, `INSERT INTO schema_migrations (version) VALUES (?)`, version); err != nil {
 		return fmt.Errorf("record migration %d: %w", version, err)
 	}
-	if err := tx.Commit(ctx); err != nil {
+	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit migration %d: %w", version, err)
 	}
 	committed = true

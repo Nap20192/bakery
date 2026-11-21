@@ -27,7 +27,7 @@ SET letter = sqlc.arg(letter),
     color = sqlc.arg(color),
     sort_order = sqlc.arg(sort_order),
     monitor_codes = sqlc.arg(monitor_codes),
-    updated_at = now()
+    updated_at = strftime('%Y-%m-%d %H:%M:%f+00:00', 'now')
 WHERE id = sqlc.arg(id)
 RETURNING *;
 

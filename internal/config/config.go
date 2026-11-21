@@ -36,13 +36,8 @@ func (c ServerConfig) Addr() string {
 }
 
 type DatabaseConfig struct {
-	URL      string
-	Host     string
-	Port     int
-	Name     string
-	User     string
-	Password string
-	SSLMode  string
+	Path              string
+	ImportPostgresURL string
 }
 
 type MigrationConfig struct {
@@ -92,14 +87,16 @@ func New() *Config {
 	testBotToken := helpers.Env("TEST_BOT_TOKEN", "")
 	prodBotToken := helpers.Env("PROD_BOT_TOKEN", "")
 	botToken := helpers.Env("BOT_TOKEN", "")
-	database := databaseConfig()
 
 	return &Config{
 		Admin: AdminConfig{
 			Username: helpers.Env("ADMIN_USERNAME", "admin"),
 			Password: helpers.Env("ADMIN_PASSWORD", ""),
 		},
-		Database: database,
+		Database: DatabaseConfig{
+			Path:              helpers.Env("SQLITE_PATH", "data/bakery.db"),
+			ImportPostgresURL: helpers.Env("IMPORT_POSTGRES_URL", ""),
+		},
 		Telegram: TelegramConfig{
 			BotEnv:       botEnv,
 			TestBotToken: testBotToken,
@@ -141,31 +138,6 @@ func New() *Config {
 			Interval: helpers.EnvDuration("OUTBOX_INTERVAL", 2*time.Second),
 		},
 	}
-}
-
-func databaseConfig() DatabaseConfig {
-	cfg := DatabaseConfig{
-		Host:     helpers.Env("POSTGRES_HOST", "localhost"),
-		Port:     helpers.EnvInt("POSTGRES_PORT", 5432),
-		Name:     helpers.Env("POSTGRES_DB", "bakery"),
-		User:     helpers.Env("POSTGRES_USER", "postgres"),
-		Password: helpers.Env("POSTGRES_PASSWORD", "postgres"),
-		SSLMode:  helpers.Env("POSTGRES_SSLMODE", "disable"),
-	}
-	if value := helpers.Env("DATABASE_URL", ""); value != "" {
-		cfg.URL = value
-		return cfg
-	}
-	cfg.URL = fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=%s",
-		cfg.User,
-		cfg.Password,
-		cfg.Host,
-		cfg.Port,
-		cfg.Name,
-		cfg.SSLMode,
-	)
-	return cfg
 }
 
 func serverPort() int {

@@ -17,7 +17,8 @@ RUN CGO_ENABLED=0 go build \
 FROM ${RUNTIME_IMAGE}
 
 RUN apk add --no-cache ca-certificates tzdata && \
-    addgroup -S app && adduser -S -G app app
+    addgroup -S app && adduser -S -G app app && \
+    mkdir /data && chown app:app /data
 
 WORKDIR /app
 
@@ -27,7 +28,8 @@ COPY templates ./templates
 
 ENV LOG_PRETTY=false \
     LOG_LEVEL=INFO \
-    MIGRATIONS_DIR=/app/migrations
+    MIGRATIONS_DIR=/app/migrations \
+    SQLITE_PATH=/data/bakery.db
 
 USER app
 EXPOSE 8080

@@ -2,20 +2,18 @@ package orderrepo
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 
+	outbounddb "bakery/internal/outbound/db"
 	sqlc "bakery/internal/outbound/db/sqlc"
 	"bakery/internal/pkg/apperr"
 	orderdomain "bakery/internal/services/order/domain"
 	orderuc "bakery/internal/services/order/usecase/order"
-
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 )
-
-const productionSheetOrderUniqueConstraint = "production_sheet_orders_order_id_key"
 
 // Журнал отработок — единственное место, где живёт факт выпечки. Лист
 // фиксирует партию: сохранённый выбор заказов (production_sheet_orders) плюс
@@ -27,7 +25,7 @@ const productionSheetOrderUniqueConstraint = "production_sheet_orders_order_id_k
 
 func (r *OrderRepository) SaveProductionSheet(ctx context.Context, input orderuc.SaveProductionSheetInput) (orderdomain.ProductionSheet, error) {
 	var sheetID int64
-	err := r.withTx(ctx, func(q sqlc.Querier) error {
+	err := r.withTx(ctx, func(tx *sql.Tx, q *sqlc.Queries) error {
 		affected := make(map[int64]struct{})
 
 		if input.SheetID == 0 {
@@ -58,7 +56,7 @@ func (r *OrderRepository) SaveProductionSheet(ctx context.Context, input orderuc
 			// Заказ принадлежит максимум одному листу: пересечение с чужим
 			// документом — конфликт, пусть правят существующую отработку.
 			existingSheet, err := q.GetOrderProductionSheetID(ctx, row.ID)
-			if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			if err != nil && !errors.Is(err, sql.ErrNoRows) {
 				return fmt.Errorf("check order production sheet: %w", err)
 			}
 			if err == nil && existingSheet != sheetID {
@@ -120,7 +118,7 @@ func (r *OrderRepository) SaveProductionSheet(ctx context.Context, input orderuc
 			}
 		}
 
-		return r.notifyProductionChanges(ctx, q, affected, before, input.ProducedByUsername)
+		return r.notifyProductionChanges(ctx, tx, q, affected, before, input.ProducedByUsername)
 	})
 	if err != nil {
 		return orderdomain.ProductionSheet{}, err
@@ -129,10 +127,7 @@ func (r *OrderRepository) SaveProductionSheet(ctx context.Context, input orderuc
 }
 
 func productionSheetOrderInsertError(err error, orderNumber string) error {
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) &&
-		pgErr.Code == "23505" &&
-		pgErr.ConstraintName == productionSheetOrderUniqueConstraint {
+	if outbounddb.IsUniqueViolation(err, "production_sheet_orders", "order_id") {
 		return apperr.Conflict("order.production_exists",
 			fmt.Sprintf("По заказу %s уже есть отработка — измените её в журнале.", orderNumber))
 	}
@@ -140,7 +135,7 @@ func productionSheetOrderInsertError(err error, orderNumber string) error {
 }
 
 func (r *OrderRepository) DeleteProductionSheet(ctx context.Context, id int64, byUsername string) error {
-	return r.withTx(ctx, func(q sqlc.Querier) error {
+	return r.withTx(ctx, func(tx *sql.Tx, q *sqlc.Queries) error {
 		prev, err := q.ListProductionSheetOrderIDs(ctx, id)
 		if err != nil {
 			return fmt.Errorf("list production sheet orders: %w", err)
@@ -156,7 +151,7 @@ func (r *OrderRepository) DeleteProductionSheet(ctx context.Context, id int64, b
 		if err := q.DeleteProductionSheet(ctx, id); err != nil {
 			return fmt.Errorf("delete production sheet: %w", err)
 		}
-		return r.notifyProductionChanges(ctx, q, affected, before, byUsername)
+		return r.notifyProductionChanges(ctx, tx, q, affected, before, byUsername)
 	})
 }
 
@@ -167,12 +162,16 @@ func (r *OrderRepository) ListProductionSheets(ctx context.Context) ([]orderdoma
 	}
 	sheets := make([]orderdomain.ProductionSheet, 0, len(rows))
 	for _, row := range rows {
+		var orderNumbers []string
+		if err := json.Unmarshal([]byte(row.OrderNumbersJson), &orderNumbers); err != nil {
+			return nil, fmt.Errorf("decode production sheet %d order numbers: %w", row.ID, err)
+		}
 		sheets = append(sheets, orderdomain.ProductionSheet{
 			ID:                row.ID,
 			CreatedByUsername: row.CreatedByUsername,
-			CreatedAt:         row.CreatedAt.Time,
-			UpdatedAt:         row.UpdatedAt.Time,
-			OrderNumbers:      row.OrderNumbers,
+			CreatedAt:         row.CreatedAt,
+			UpdatedAt:         row.UpdatedAt,
+			OrderNumbers:      orderNumbers,
 			ItemCount:         row.ItemCount,
 		})
 	}
@@ -182,7 +181,7 @@ func (r *OrderRepository) ListProductionSheets(ctx context.Context) ([]orderdoma
 func (r *OrderRepository) GetProductionSheet(ctx context.Context, id int64) (orderdomain.ProductionSheet, error) {
 	row, err := r.queries.GetProductionSheet(ctx, id)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return orderdomain.ProductionSheet{}, orderuc.ErrProductionSheetNotFound
 		}
 		return orderdomain.ProductionSheet{}, fmt.Errorf("get production sheet %d: %w", id, err)
@@ -199,8 +198,8 @@ func (r *OrderRepository) GetProductionSheet(ctx context.Context, id int64) (ord
 	sheet := orderdomain.ProductionSheet{
 		ID:                row.ID,
 		CreatedByUsername: row.CreatedByUsername,
-		CreatedAt:         row.CreatedAt.Time,
-		UpdatedAt:         row.UpdatedAt.Time,
+		CreatedAt:         row.CreatedAt,
+		UpdatedAt:         row.UpdatedAt,
 		OrderNumbers:      orderNumbers,
 		Items:             make([]orderdomain.ProductionSheetItem, 0, len(itemRows)),
 		ItemCount:         int64(len(itemRows)),
@@ -251,11 +250,12 @@ func productionFactsByOrder(ctx context.Context, q sqlc.Querier, orderIDs map[in
 }
 
 // notifyProductionChanges сравнивает факт до/после изменения журнала и кладёт
-// события produced/production_cleared в outbox только для заказов, чей
+// события produced/production_cleared в очередь задач только для заказов, чей
 // видимый факт изменился. Историю заказа отработка не пишет — она не является
 // изменением заказа.
 func (r *OrderRepository) notifyProductionChanges(
 	ctx context.Context,
+	tx *sql.Tx,
 	q sqlc.Querier,
 	affected map[int64]struct{},
 	before map[int64]map[string]productionFact,
@@ -299,30 +299,4 @@ func equalFacts(a, b map[string]productionFact) bool {
 		}
 	}
 	return true
-}
-
-// withTx runs fn inside a transaction (or directly without a pool, as in
-// tests), committing on success.
-func (r *OrderRepository) withTx(ctx context.Context, fn func(q sqlc.Querier) error) error {
-	if r.db == nil {
-		return fn(r.queries)
-	}
-	tx, err := r.db.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("begin tx: %w", err)
-	}
-	committed := false
-	defer func() {
-		if !committed {
-			_ = tx.Rollback(ctx)
-		}
-	}()
-	if err := fn(r.queries.WithTx(tx)); err != nil {
-		return err
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("commit tx: %w", err)
-	}
-	committed = true
-	return nil
 }

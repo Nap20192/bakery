@@ -35,26 +35,18 @@ go test ./internal/services/order/... -run TestFoo
 go test ./internal/services/order/usecase/order/ -v
 ```
 
-## Infrastructure (Postgres)
+## Database (SQLite)
 
-Docker runs through **colima** on this machine — start it first:
-
-```bash
-colima start                 # start the docker VM
-docker compose up -d db      # Postgres 17 :5432
-docker compose ps            # check status
-docker compose logs -f db    # follow logs
-docker compose down          # stop everything (data volumes survive)
-colima stop                  # stop the VM when done
-```
-
-Connect to the local database:
+No database server: the app opens the file at `SQLITE_PATH` (default
+`data/bakery.db`, created on first start). Inspect it with the `sqlite3` CLI:
 
 ```bash
-docker compose exec db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"
-# or from the host:
-psql "$DATABASE_URL"
+sqlite3 data/bakery.db
 ```
+
+The app overrides `lower()` with a Unicode-aware version; in the CLI
+`lower()` folds only ASCII, so Cyrillic case-insensitive matches differ
+there.
 
 ## Run the app
 
@@ -109,7 +101,7 @@ ls migrations/                          # NNNNN_name.sql, goose format
 make test-orders
 
 # quick data peek
-psql "$DATABASE_URL" -c "select number, fulfillment_date, cancelled_at from orders order by created_at desc limit 10;"
+sqlite3 data/bakery.db "select number, fulfillment_date, cancelled_at from orders order by created_at desc limit 10;"
 ```
 
 After editing SQL in `queries/`: `make sqlc` → `make build`. Never edit
@@ -162,8 +154,6 @@ make build && make test
 **Fresh local environment from zero:**
 
 ```bash
-colima start
-docker compose up -d db
 cp .env.example .env          # fill in tokens/passwords
 go run ./cmd/bakery           # applies migrations, seeds admin + catalog
 ```
@@ -171,8 +161,7 @@ go run ./cmd/bakery           # applies migrations, seeds admin + catalog
 **Full reset of local data:**
 
 ```bash
-docker compose down -v        # ⚠ drops the Postgres volume
-docker compose up -d db
+rm -f data/bakery.db*         # ⚠ deletes the local database
 go run ./cmd/bakery           # re-migrates and re-seeds from scratch
 ```
 
@@ -180,5 +169,4 @@ go run ./cmd/bakery           # re-migrates and re-seeds from scratch
 
 ```bash
 git switch development        # main working branch; PRs target main
-git add -A -- . ':!cmd/testingorders/main.go'   # keep the local DSN hack out of commits
 ```

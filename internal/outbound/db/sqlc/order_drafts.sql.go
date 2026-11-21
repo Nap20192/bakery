@@ -7,14 +7,13 @@ package sqlc
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"time"
 )
 
 const deleteOrderDraft = `-- name: DeleteOrderDraft :exec
 DELETE FROM order_drafts
-WHERE created_by_username = $1
-  AND category_id = $2
+WHERE created_by_username = ?1
+  AND category_id = ?2
 `
 
 type DeleteOrderDraftParams struct {
@@ -23,32 +22,28 @@ type DeleteOrderDraftParams struct {
 }
 
 func (q *Queries) DeleteOrderDraft(ctx context.Context, arg DeleteOrderDraftParams) error {
-	_, err := q.db.Exec(ctx, deleteOrderDraft, arg.CreatedByUsername, arg.CategoryID)
+	_, err := q.db.ExecContext(ctx, deleteOrderDraft, arg.CreatedByUsername, arg.CategoryID)
 	return err
 }
 
-const deleteOrderDraftsOlderThan = `-- name: DeleteOrderDraftsOlderThan :one
-WITH deleted AS (
-    DELETE FROM order_drafts
-    WHERE updated_at < $1
-    RETURNING id
-)
-SELECT COUNT(*)::BIGINT
-FROM deleted
+const deleteOrderDraftsOlderThan = `-- name: DeleteOrderDraftsOlderThan :execrows
+DELETE FROM order_drafts
+WHERE updated_at < ?1
 `
 
-func (q *Queries) DeleteOrderDraftsOlderThan(ctx context.Context, updatedAtBefore pgtype.Timestamptz) (int64, error) {
-	row := q.db.QueryRow(ctx, deleteOrderDraftsOlderThan, updatedAtBefore)
-	var column_1 int64
-	err := row.Scan(&column_1)
-	return column_1, err
+func (q *Queries) DeleteOrderDraftsOlderThan(ctx context.Context, updatedAtBefore time.Time) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteOrderDraftsOlderThan, updatedAtBefore)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const getOrderDraft = `-- name: GetOrderDraft :one
 SELECT id, created_by_username, category_id, from_department_id, fulfillment_date, comments, items, updated_at
 FROM order_drafts
-WHERE created_by_username = $1
-  AND category_id = $2
+WHERE created_by_username = ?1
+  AND category_id = ?2
 `
 
 type GetOrderDraftParams struct {
@@ -57,7 +52,7 @@ type GetOrderDraftParams struct {
 }
 
 func (q *Queries) GetOrderDraft(ctx context.Context, arg GetOrderDraftParams) (OrderDraft, error) {
-	row := q.db.QueryRow(ctx, getOrderDraft, arg.CreatedByUsername, arg.CategoryID)
+	row := q.db.QueryRowContext(ctx, getOrderDraft, arg.CreatedByUsername, arg.CategoryID)
 	var i OrderDraft
 	err := row.Scan(
 		&i.ID,
@@ -75,12 +70,12 @@ func (q *Queries) GetOrderDraft(ctx context.Context, arg GetOrderDraftParams) (O
 const listOrderDrafts = `-- name: ListOrderDrafts :many
 SELECT id, created_by_username, category_id, from_department_id, fulfillment_date, comments, items, updated_at
 FROM order_drafts
-WHERE created_by_username = $1
+WHERE created_by_username = ?1
 ORDER BY updated_at DESC
 `
 
 func (q *Queries) ListOrderDrafts(ctx context.Context, createdByUsername string) ([]OrderDraft, error) {
-	rows, err := q.db.Query(ctx, listOrderDrafts, createdByUsername)
+	rows, err := q.db.QueryContext(ctx, listOrderDrafts, createdByUsername)
 	if err != nil {
 		return nil, err
 	}
@@ -102,6 +97,9 @@ func (q *Queries) ListOrderDrafts(ctx context.Context, createdByUsername string)
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -118,34 +116,34 @@ INSERT INTO order_drafts (
     items,
     updated_at
 ) VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6,
-    now()
+    ?1,
+    ?2,
+    ?3,
+    ?4,
+    ?5,
+    ?6,
+    strftime('%Y-%m-%d %H:%M:%f+00:00', 'now')
 )
 ON CONFLICT (created_by_username, category_id) DO UPDATE SET
     from_department_id = EXCLUDED.from_department_id,
     fulfillment_date = EXCLUDED.fulfillment_date,
     comments = EXCLUDED.comments,
     items = EXCLUDED.items,
-    updated_at = now()
+    updated_at = strftime('%Y-%m-%d %H:%M:%f+00:00', 'now')
 RETURNING id, created_by_username, category_id, from_department_id, fulfillment_date, comments, items, updated_at
 `
 
 type UpsertOrderDraftParams struct {
-	CreatedByUsername string      `json:"created_by_username"`
-	CategoryID        int64       `json:"category_id"`
-	FromDepartmentID  *int64      `json:"from_department_id"`
-	FulfillmentDate   pgtype.Date `json:"fulfillment_date"`
-	Comments          []byte      `json:"comments"`
-	Items             []byte      `json:"items"`
+	CreatedByUsername string  `json:"created_by_username"`
+	CategoryID        int64   `json:"category_id"`
+	FromDepartmentID  *int64  `json:"from_department_id"`
+	FulfillmentDate   string  `json:"fulfillment_date"`
+	Comments          *string `json:"comments"`
+	Items             string  `json:"items"`
 }
 
 func (q *Queries) UpsertOrderDraft(ctx context.Context, arg UpsertOrderDraftParams) (OrderDraft, error) {
-	row := q.db.QueryRow(ctx, upsertOrderDraft,
+	row := q.db.QueryRowContext(ctx, upsertOrderDraft,
 		arg.CreatedByUsername,
 		arg.CategoryID,
 		arg.FromDepartmentID,

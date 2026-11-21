@@ -7,38 +7,37 @@ package sqlc
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"time"
 )
 
 const deleteDishCatalogItem = `-- name: DeleteDishCatalogItem :exec
 DELETE FROM dish_catalog
-WHERE code = $1
+WHERE code = ?1
 `
 
 func (q *Queries) DeleteDishCatalogItem(ctx context.Context, code string) error {
-	_, err := q.db.Exec(ctx, deleteDishCatalogItem, code)
+	_, err := q.db.ExecContext(ctx, deleteDishCatalogItem, code)
 	return err
 }
 
 const dishExistsByCode = `-- name: DishExistsByCode :one
-SELECT COUNT(*)::bigint
+SELECT COUNT(*)
 FROM iiko_products
-WHERE code = $1
+WHERE code = ?1
   AND type = 'DISH'
 `
 
 func (q *Queries) DishExistsByCode(ctx context.Context, code string) (int64, error) {
-	row := q.db.QueryRow(ctx, dishExistsByCode, code)
-	var column_1 int64
-	err := row.Scan(&column_1)
-	return column_1, err
+	row := q.db.QueryRowContext(ctx, dishExistsByCode, code)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const ensureDishGroup = `-- name: EnsureDishGroup :one
 INSERT INTO dish_groups (category_id, name)
-VALUES ($1, $2)
-ON CONFLICT (category_id, name) DO UPDATE SET updated_at = now()
+VALUES (?1, ?2)
+ON CONFLICT (category_id, name) DO UPDATE SET updated_at = strftime('%Y-%m-%d %H:%M:%f+00:00', 'now')
 RETURNING id
 `
 
@@ -49,11 +48,8 @@ type EnsureDishGroupParams struct {
 
 // Find-or-create a group by (category, name); returns its id. The repo resolves
 // a dish's group name to this id before upserting the dish.
-// ponytail: UNIQUE(category_id, name) does not dedupe NULL-category groups
-// (Postgres treats NULLs as distinct), so uncategorized groups can duplicate.
-// Harmless — the UI groups by name — upgrade to NULLS NOT DISTINCT (PG15+) if it matters.
 func (q *Queries) EnsureDishGroup(ctx context.Context, arg EnsureDishGroupParams) (int64, error) {
-	row := q.db.QueryRow(ctx, ensureDishGroup, arg.CategoryID, arg.Name)
+	row := q.db.QueryRowContext(ctx, ensureDishGroup, arg.CategoryID, arg.Name)
 	var id int64
 	err := row.Scan(&id)
 	return id, err
@@ -68,7 +64,7 @@ SELECT
     measure_unit,
     raw_json
 FROM iiko_products
-WHERE code = $1
+WHERE code = ?1
 ORDER BY
     CASE WHEN type = 'DISH' THEN 0 ELSE 1 END,
     updated_at DESC,
@@ -86,7 +82,7 @@ type GetIikoProductByCodeRow struct {
 }
 
 func (q *Queries) GetIikoProductByCode(ctx context.Context, code string) (GetIikoProductByCodeRow, error) {
-	row := q.db.QueryRow(ctx, getIikoProductByCode, code)
+	row := q.db.QueryRowContext(ctx, getIikoProductByCode, code)
 	var i GetIikoProductByCodeRow
 	err := row.Scan(
 		&i.ID,
@@ -108,7 +104,7 @@ SELECT
     measure_unit,
     raw_json
 FROM iiko_products
-WHERE id = $1
+WHERE id = ?1
 `
 
 type GetIikoProductByIDRow struct {
@@ -121,7 +117,7 @@ type GetIikoProductByIDRow struct {
 }
 
 func (q *Queries) GetIikoProductByID(ctx context.Context, id string) (GetIikoProductByIDRow, error) {
-	row := q.db.QueryRow(ctx, getIikoProductByID, id)
+	row := q.db.QueryRowContext(ctx, getIikoProductByID, id)
 	var i GetIikoProductByIDRow
 	err := row.Scan(
 		&i.ID,
@@ -141,7 +137,7 @@ ORDER BY CASE WHEN sort_order = 0 THEN 1 ELSE 0 END, sort_order, id, name, code
 `
 
 func (q *Queries) ListDishCatalogItems(ctx context.Context) ([]DishCatalog, error) {
-	rows, err := q.db.Query(ctx, listDishCatalogItems)
+	rows, err := q.db.QueryContext(ctx, listDishCatalogItems)
 	if err != nil {
 		return nil, err
 	}
@@ -162,6 +158,9 @@ func (q *Queries) ListDishCatalogItems(ctx context.Context) ([]DishCatalog, erro
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -172,12 +171,12 @@ func (q *Queries) ListDishCatalogItems(ctx context.Context) ([]DishCatalog, erro
 const listDishCatalogItemsByName = `-- name: ListDishCatalogItemsByName :many
 SELECT id, code, name, created_at, updated_at, sort_order, category_id, group_id
 FROM dish_catalog
-WHERE lower(trim(name)) = lower(trim($1))
+WHERE lower(trim(name)) = lower(trim(?1))
 ORDER BY CASE WHEN sort_order = 0 THEN 1 ELSE 0 END, sort_order, id, name, code
 `
 
 func (q *Queries) ListDishCatalogItemsByName(ctx context.Context, name string) ([]DishCatalog, error) {
-	rows, err := q.db.Query(ctx, listDishCatalogItemsByName, name)
+	rows, err := q.db.QueryContext(ctx, listDishCatalogItemsByName, name)
 	if err != nil {
 		return nil, err
 	}
@@ -198,6 +197,9 @@ func (q *Queries) ListDishCatalogItemsByName(ctx context.Context, name string) (
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -219,7 +221,7 @@ type ListDishGroupsRow struct {
 }
 
 func (q *Queries) ListDishGroups(ctx context.Context) ([]ListDishGroupsRow, error) {
-	rows, err := q.db.Query(ctx, listDishGroups)
+	rows, err := q.db.QueryContext(ctx, listDishGroups)
 	if err != nil {
 		return nil, err
 	}
@@ -237,6 +239,9 @@ func (q *Queries) ListDishGroups(ctx context.Context) ([]ListDishGroupsRow, erro
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -248,14 +253,14 @@ SELECT id, code, name, measure_unit
 FROM iiko_products
 WHERE type = 'DISH'
   AND trim(code) <> ''
-  AND (name ILIKE '%' || $1 || '%' OR code ILIKE '%' || $1 || '%')
+  AND (lower(name) LIKE '%' || lower(?1) || '%' OR lower(code) LIKE '%' || lower(?1) || '%')
 ORDER BY name, code
-LIMIT $2
+LIMIT ?2
 `
 
 type SearchIikoDishesParams struct {
-	Query *string `json:"query"`
-	Lim   int32   `json:"lim"`
+	Query string `json:"query"`
+	Lim   int64  `json:"lim"`
 }
 
 type SearchIikoDishesRow struct {
@@ -266,7 +271,7 @@ type SearchIikoDishesRow struct {
 }
 
 func (q *Queries) SearchIikoDishes(ctx context.Context, arg SearchIikoDishesParams) ([]SearchIikoDishesRow, error) {
-	rows, err := q.db.Query(ctx, searchIikoDishes, arg.Query, arg.Lim)
+	rows, err := q.db.QueryContext(ctx, searchIikoDishes, arg.Query, arg.Lim)
 	if err != nil {
 		return nil, err
 	}
@@ -284,6 +289,9 @@ func (q *Queries) SearchIikoDishes(ctx context.Context, arg SearchIikoDishesPara
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -292,46 +300,46 @@ func (q *Queries) SearchIikoDishes(ctx context.Context, arg SearchIikoDishesPara
 
 const setDishCatalogSortOrder = `-- name: SetDishCatalogSortOrder :exec
 UPDATE dish_catalog SET
-    sort_order = $1,
-    updated_at = $2
-WHERE code = $3
+    sort_order = ?1,
+    updated_at = ?2
+WHERE code = ?3
 `
 
 type SetDishCatalogSortOrderParams struct {
-	SortOrder int64              `json:"sort_order"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	Code      string             `json:"code"`
+	SortOrder int64     `json:"sort_order"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Code      string    `json:"code"`
 }
 
 func (q *Queries) SetDishCatalogSortOrder(ctx context.Context, arg SetDishCatalogSortOrderParams) error {
-	_, err := q.db.Exec(ctx, setDishCatalogSortOrder, arg.SortOrder, arg.UpdatedAt, arg.Code)
+	_, err := q.db.ExecContext(ctx, setDishCatalogSortOrder, arg.SortOrder, arg.UpdatedAt, arg.Code)
 	return err
 }
 
 const updateDishCatalogItem = `-- name: UpdateDishCatalogItem :one
 UPDATE dish_catalog SET
-    code = $1,
-    name = $2,
-    group_id = $3,
-    category_id = $4,
-    sort_order = $5,
-    updated_at = $6
-WHERE code = $7
+    code = ?1,
+    name = ?2,
+    group_id = ?3,
+    category_id = ?4,
+    sort_order = ?5,
+    updated_at = ?6
+WHERE code = ?7
 RETURNING id, code, name, created_at, updated_at, sort_order, category_id, group_id
 `
 
 type UpdateDishCatalogItemParams struct {
-	NewCode    string             `json:"new_code"`
-	Name       string             `json:"name"`
-	GroupID    *int64             `json:"group_id"`
-	CategoryID *int64             `json:"category_id"`
-	SortOrder  int64              `json:"sort_order"`
-	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
-	Code       string             `json:"code"`
+	NewCode    string    `json:"new_code"`
+	Name       string    `json:"name"`
+	GroupID    *int64    `json:"group_id"`
+	CategoryID *int64    `json:"category_id"`
+	SortOrder  int64     `json:"sort_order"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	Code       string    `json:"code"`
 }
 
 func (q *Queries) UpdateDishCatalogItem(ctx context.Context, arg UpdateDishCatalogItemParams) (DishCatalog, error) {
-	row := q.db.QueryRow(ctx, updateDishCatalogItem,
+	row := q.db.QueryRowContext(ctx, updateDishCatalogItem,
 		arg.NewCode,
 		arg.Name,
 		arg.GroupID,
@@ -364,13 +372,13 @@ INSERT INTO dish_catalog (
     created_at,
     updated_at
 ) VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6,
-    $7
+    ?1,
+    ?2,
+    ?3,
+    ?4,
+    ?5,
+    ?6,
+    ?7
 )
 ON CONFLICT (code) DO UPDATE SET
     name = excluded.name,
@@ -381,20 +389,20 @@ RETURNING id, code, name, created_at, updated_at, sort_order, category_id, group
 `
 
 type UpsertDishCatalogItemParams struct {
-	Code       string             `json:"code"`
-	Name       string             `json:"name"`
-	GroupID    *int64             `json:"group_id"`
-	CategoryID *int64             `json:"category_id"`
-	SortOrder  int64              `json:"sort_order"`
-	CreatedAt  pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	Code       string    `json:"code"`
+	Name       string    `json:"name"`
+	GroupID    *int64    `json:"group_id"`
+	CategoryID *int64    `json:"category_id"`
+	SortOrder  int64     `json:"sort_order"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 // category_id keeps an already-assigned category on conflict, and sort_order
 // is only set on first insert, so re-seeding from templates/dishes.txt never
 // clobbers the admin's assignment or manual ordering.
 func (q *Queries) UpsertDishCatalogItem(ctx context.Context, arg UpsertDishCatalogItemParams) (DishCatalog, error) {
-	row := q.db.QueryRow(ctx, upsertDishCatalogItem,
+	row := q.db.QueryRowContext(ctx, upsertDishCatalogItem,
 		arg.Code,
 		arg.Name,
 		arg.GroupID,

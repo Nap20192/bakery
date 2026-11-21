@@ -7,8 +7,7 @@ package sqlc
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"time"
 )
 
 const insertOrderOutboxEvent = `-- name: InsertOrderOutboxEvent :one
@@ -18,10 +17,10 @@ INSERT INTO order_outbox (
     payload,
     correlation_id
 ) VALUES (
-    $1,
-    $2,
-    $3,
-    $4
+    ?1,
+    ?2,
+    ?3,
+    ?4
 )
 RETURNING id
 `
@@ -29,12 +28,12 @@ RETURNING id
 type InsertOrderOutboxEventParams struct {
 	AggregateID   string `json:"aggregate_id"`
 	EventType     string `json:"event_type"`
-	Payload       []byte `json:"payload"`
+	Payload       string `json:"payload"`
 	CorrelationID string `json:"correlation_id"`
 }
 
 func (q *Queries) InsertOrderOutboxEvent(ctx context.Context, arg InsertOrderOutboxEventParams) (int64, error) {
-	row := q.db.QueryRow(ctx, insertOrderOutboxEvent,
+	row := q.db.QueryRowContext(ctx, insertOrderOutboxEvent,
 		arg.AggregateID,
 		arg.EventType,
 		arg.Payload,
@@ -50,20 +49,20 @@ SELECT id, aggregate_id, event_type, payload, correlation_id, created_at
 FROM order_outbox
 WHERE published_at IS NULL
 ORDER BY id
-LIMIT $1
+LIMIT ?1
 `
 
 type ListUnpublishedOrderOutboxEventsRow struct {
-	ID            int64              `json:"id"`
-	AggregateID   string             `json:"aggregate_id"`
-	EventType     string             `json:"event_type"`
-	Payload       []byte             `json:"payload"`
-	CorrelationID string             `json:"correlation_id"`
-	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	ID            int64     `json:"id"`
+	AggregateID   string    `json:"aggregate_id"`
+	EventType     string    `json:"event_type"`
+	Payload       string    `json:"payload"`
+	CorrelationID string    `json:"correlation_id"`
+	CreatedAt     time.Time `json:"created_at"`
 }
 
-func (q *Queries) ListUnpublishedOrderOutboxEvents(ctx context.Context, maxEvents int32) ([]ListUnpublishedOrderOutboxEventsRow, error) {
-	rows, err := q.db.Query(ctx, listUnpublishedOrderOutboxEvents, maxEvents)
+func (q *Queries) ListUnpublishedOrderOutboxEvents(ctx context.Context, maxEvents int64) ([]ListUnpublishedOrderOutboxEventsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listUnpublishedOrderOutboxEvents, maxEvents)
 	if err != nil {
 		return nil, err
 	}
@@ -83,6 +82,9 @@ func (q *Queries) ListUnpublishedOrderOutboxEvents(ctx context.Context, maxEvent
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -91,11 +93,11 @@ func (q *Queries) ListUnpublishedOrderOutboxEvents(ctx context.Context, maxEvent
 
 const markOrderOutboxEventPublished = `-- name: MarkOrderOutboxEventPublished :exec
 UPDATE order_outbox
-SET published_at = now()
-WHERE id = $1
+SET published_at = strftime('%Y-%m-%d %H:%M:%f+00:00', 'now')
+WHERE id = ?1
 `
 
 func (q *Queries) MarkOrderOutboxEventPublished(ctx context.Context, id int64) error {
-	_, err := q.db.Exec(ctx, markOrderOutboxEventPublished, id)
+	_, err := q.db.ExecContext(ctx, markOrderOutboxEventPublished, id)
 	return err
 }

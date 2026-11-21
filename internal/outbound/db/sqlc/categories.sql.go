@@ -12,11 +12,11 @@ import (
 const countDishesByCategoryID = `-- name: CountDishesByCategoryID :one
 SELECT COUNT(*)
 FROM dish_catalog
-WHERE category_id = $1
+WHERE category_id = ?1
 `
 
 func (q *Queries) CountDishesByCategoryID(ctx context.Context, categoryID *int64) (int64, error) {
-	row := q.db.QueryRow(ctx, countDishesByCategoryID, categoryID)
+	row := q.db.QueryRowContext(ctx, countDishesByCategoryID, categoryID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -25,27 +25,27 @@ func (q *Queries) CountDishesByCategoryID(ctx context.Context, categoryID *int64
 const createOrderCategory = `-- name: CreateOrderCategory :one
 INSERT INTO order_categories (code, letter, name, color, sort_order, monitor_codes)
 VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6
+    ?1,
+    ?2,
+    ?3,
+    ?4,
+    ?5,
+    ?6
 )
 RETURNING id, code, letter, name, color, sort_order, created_at, updated_at, monitor_codes
 `
 
 type CreateOrderCategoryParams struct {
-	Code         string   `json:"code"`
-	Letter       string   `json:"letter"`
-	Name         string   `json:"name"`
-	Color        string   `json:"color"`
-	SortOrder    int64    `json:"sort_order"`
-	MonitorCodes []string `json:"monitor_codes"`
+	Code         string `json:"code"`
+	Letter       string `json:"letter"`
+	Name         string `json:"name"`
+	Color        string `json:"color"`
+	SortOrder    int64  `json:"sort_order"`
+	MonitorCodes string `json:"monitor_codes"`
 }
 
 func (q *Queries) CreateOrderCategory(ctx context.Context, arg CreateOrderCategoryParams) (OrderCategory, error) {
-	row := q.db.QueryRow(ctx, createOrderCategory,
+	row := q.db.QueryRowContext(ctx, createOrderCategory,
 		arg.Code,
 		arg.Letter,
 		arg.Name,
@@ -70,22 +70,22 @@ func (q *Queries) CreateOrderCategory(ctx context.Context, arg CreateOrderCatego
 
 const deleteOrderCategory = `-- name: DeleteOrderCategory :exec
 DELETE FROM order_categories
-WHERE id = $1
+WHERE id = ?1
 `
 
 func (q *Queries) DeleteOrderCategory(ctx context.Context, id int64) error {
-	_, err := q.db.Exec(ctx, deleteOrderCategory, id)
+	_, err := q.db.ExecContext(ctx, deleteOrderCategory, id)
 	return err
 }
 
 const getOrderCategoryByID = `-- name: GetOrderCategoryByID :one
 SELECT id, code, letter, name, color, sort_order, created_at, updated_at, monitor_codes
 FROM order_categories
-WHERE id = $1
+WHERE id = ?1
 `
 
 func (q *Queries) GetOrderCategoryByID(ctx context.Context, id int64) (OrderCategory, error) {
-	row := q.db.QueryRow(ctx, getOrderCategoryByID, id)
+	row := q.db.QueryRowContext(ctx, getOrderCategoryByID, id)
 	var i OrderCategory
 	err := row.Scan(
 		&i.ID,
@@ -108,7 +108,7 @@ ORDER BY sort_order, id
 `
 
 func (q *Queries) ListOrderCategories(ctx context.Context) ([]OrderCategory, error) {
-	rows, err := q.db.Query(ctx, listOrderCategories)
+	rows, err := q.db.QueryContext(ctx, listOrderCategories)
 	if err != nil {
 		return nil, err
 	}
@@ -131,6 +131,9 @@ func (q *Queries) ListOrderCategories(ctx context.Context) ([]OrderCategory, err
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -139,27 +142,27 @@ func (q *Queries) ListOrderCategories(ctx context.Context) ([]OrderCategory, err
 
 const updateOrderCategory = `-- name: UpdateOrderCategory :one
 UPDATE order_categories
-SET letter = $1,
-    name = $2,
-    color = $3,
-    sort_order = $4,
-    monitor_codes = $5,
-    updated_at = now()
-WHERE id = $6
+SET letter = ?1,
+    name = ?2,
+    color = ?3,
+    sort_order = ?4,
+    monitor_codes = ?5,
+    updated_at = strftime('%Y-%m-%d %H:%M:%f+00:00', 'now')
+WHERE id = ?6
 RETURNING id, code, letter, name, color, sort_order, created_at, updated_at, monitor_codes
 `
 
 type UpdateOrderCategoryParams struct {
-	Letter       string   `json:"letter"`
-	Name         string   `json:"name"`
-	Color        string   `json:"color"`
-	SortOrder    int64    `json:"sort_order"`
-	MonitorCodes []string `json:"monitor_codes"`
-	ID           int64    `json:"id"`
+	Letter       string `json:"letter"`
+	Name         string `json:"name"`
+	Color        string `json:"color"`
+	SortOrder    int64  `json:"sort_order"`
+	MonitorCodes string `json:"monitor_codes"`
+	ID           int64  `json:"id"`
 }
 
 func (q *Queries) UpdateOrderCategory(ctx context.Context, arg UpdateOrderCategoryParams) (OrderCategory, error) {
-	row := q.db.QueryRow(ctx, updateOrderCategory,
+	row := q.db.QueryRowContext(ctx, updateOrderCategory,
 		arg.Letter,
 		arg.Name,
 		arg.Color,

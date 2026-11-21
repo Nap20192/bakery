@@ -4,18 +4,16 @@ package syncrepo
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"time"
 
 	sqlc "bakery/internal/outbound/db/sqlc"
 	"bakery/internal/outbound/iiko"
 	"bakery/internal/pkg/enum"
-	"bakery/internal/pkg/helpers"
 	syncuc "bakery/internal/services/sync/usecase/sync"
-
-	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 const (
@@ -24,13 +22,13 @@ const (
 )
 
 type SyncRepository struct {
-	db      *pgxpool.Pool
+	db      *sql.DB
 	queries *sqlc.Queries
 }
 
 var _ syncuc.Repository = (*SyncRepository)(nil)
 
-func New(db *pgxpool.Pool, queries *sqlc.Queries) *SyncRepository {
+func New(db *sql.DB, queries *sqlc.Queries) *SyncRepository {
 	return &SyncRepository{db: db, queries: queries}
 }
 
@@ -52,8 +50,8 @@ func (r *SyncRepository) SaveSnapshot(ctx context.Context, catalog *iiko.Nomencl
 		KnownRevision: int64(charts.KnownRevision),
 		Status:        string(enum.SyncStatusRunning),
 		Error:         "",
-		StartedAt:     helpers.TimestamptzNow(),
-		FinishedAt:    pgtype.Timestamptz{},
+		StartedAt:     time.Now().UTC(),
+		FinishedAt:    nil,
 	})
 	if err != nil {
 		return fmt.Errorf("create sync run: %w", err)
@@ -69,11 +67,12 @@ func (r *SyncRepository) SaveSnapshot(ctx context.Context, catalog *iiko.Nomencl
 }
 
 func (r *SyncRepository) finishSyncRun(ctx context.Context, runID, revision int64, status enum.SyncStatus, message string) error {
+	finishedAt := time.Now().UTC()
 	_, err := r.queries.FinishIikoSyncRun(ctx, sqlc.FinishIikoSyncRunParams{
 		KnownRevision: revision,
 		Status:        string(status),
 		Error:         message,
-		FinishedAt:    helpers.TimestamptzNow(),
+		FinishedAt:    &finishedAt,
 		ID:            runID,
 	})
 	if err != nil {
@@ -83,21 +82,21 @@ func (r *SyncRepository) finishSyncRun(ctx context.Context, runID, revision int6
 }
 
 func (r *SyncRepository) saveSnapshotData(ctx context.Context, catalog *iiko.NomenclatureResponse, charts *iiko.ChartResultDto) error {
-	tx, err := r.db.Begin(ctx)
+	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
 	}
 	committed := false
 	defer func() {
 		if !committed {
-			if err := tx.Rollback(ctx); err != nil {
+			if err := tx.Rollback(); err != nil {
 				slog.Warn("rollback iiko sync tx failed", "error", err)
 			}
 		}
 	}()
 
 	q := r.queries.WithTx(tx)
-	updatedAt := helpers.TimestamptzNow()
+	updatedAt := time.Now().UTC()
 
 	for _, product := range catalog.Products {
 		if err := upsertIikoProduct(ctx, q, product, updatedAt); err != nil {
@@ -131,14 +130,14 @@ func (r *SyncRepository) saveSnapshotData(ctx context.Context, catalog *iiko.Nom
 		}
 	}
 
-	if err := tx.Commit(ctx); err != nil {
+	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit tx: %w", err)
 	}
 	committed = true
 	return nil
 }
 
-func upsertIikoProduct(ctx context.Context, q *sqlc.Queries, product iiko.Product, updatedAt pgtype.Timestamptz) error {
+func upsertIikoProduct(ctx context.Context, q *sqlc.Queries, product iiko.Product, updatedAt time.Time) error {
 	if err := q.UpsertIikoProduct(ctx, sqlc.UpsertIikoProductParams{
 		ID:          product.ID.String(),
 		Code:        product.Code,
@@ -153,7 +152,7 @@ func upsertIikoProduct(ctx context.Context, q *sqlc.Queries, product iiko.Produc
 	return nil
 }
 
-func upsertIikoAssemblyChart(ctx context.Context, q *sqlc.Queries, chart iiko.AssemblyChartDto, updatedAt pgtype.Timestamptz) error {
+func upsertIikoAssemblyChart(ctx context.Context, q *sqlc.Queries, chart iiko.AssemblyChartDto, updatedAt time.Time) error {
 	if err := q.UpsertIikoAssemblyChart(ctx, sqlc.UpsertIikoAssemblyChartParams{
 		ID:                                   chart.ID,
 		AssembledProductID:                   chart.AssembledProductID,
@@ -197,7 +196,7 @@ func insertIikoAssemblyChartItem(ctx context.Context, q *sqlc.Queries, chartID s
 	return nil
 }
 
-func upsertIikoPreparedChart(ctx context.Context, q *sqlc.Queries, chart iiko.PreparedChartDto, updatedAt pgtype.Timestamptz) error {
+func upsertIikoPreparedChart(ctx context.Context, q *sqlc.Queries, chart iiko.PreparedChartDto, updatedAt time.Time) error {
 	if err := q.UpsertIikoPreparedChart(ctx, sqlc.UpsertIikoPreparedChartParams{
 		ID:                                   chart.ID,
 		AssembledProductID:                   chart.AssembledProductID,

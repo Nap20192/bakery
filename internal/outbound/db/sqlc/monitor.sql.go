@@ -7,8 +7,6 @@ package sqlc
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const getActiveAssemblyChartByProductID = `-- name: GetActiveAssemblyChartByProductID :one
@@ -19,16 +17,16 @@ SELECT
     date_from,
     date_to
 FROM iiko_assembly_charts
-WHERE assembled_product_id = $1
-  AND date_from::date <= $2::date
-  AND (date_to IS NULL OR date_to::date >= $2::date)
-ORDER BY date_from::date DESC
+WHERE assembled_product_id = ?1
+  AND date(date_from) <= CAST(?2 AS TEXT)
+  AND (date_to IS NULL OR date(date_to) >= CAST(?2 AS TEXT))
+ORDER BY date(date_from) DESC
 LIMIT 1
 `
 
 type GetActiveAssemblyChartByProductIDParams struct {
-	AssembledProductID string      `json:"assembled_product_id"`
-	OrderDate          pgtype.Date `json:"order_date"`
+	AssembledProductID string `json:"assembled_product_id"`
+	OrderDate          string `json:"order_date"`
 }
 
 type GetActiveAssemblyChartByProductIDRow struct {
@@ -40,7 +38,7 @@ type GetActiveAssemblyChartByProductIDRow struct {
 }
 
 func (q *Queries) GetActiveAssemblyChartByProductID(ctx context.Context, arg GetActiveAssemblyChartByProductIDParams) (GetActiveAssemblyChartByProductIDRow, error) {
-	row := q.db.QueryRow(ctx, getActiveAssemblyChartByProductID, arg.AssembledProductID, arg.OrderDate)
+	row := q.db.QueryRowContext(ctx, getActiveAssemblyChartByProductID, arg.AssembledProductID, arg.OrderDate)
 	var i GetActiveAssemblyChartByProductIDRow
 	err := row.Scan(
 		&i.ID,
@@ -55,20 +53,20 @@ func (q *Queries) GetActiveAssemblyChartByProductID(ctx context.Context, arg Get
 const getActiveAssemblyChartFullByProductID = `-- name: GetActiveAssemblyChartFullByProductID :one
 SELECT id, assembled_product_id, date_from, date_to, assembled_amount, product_writeoff_strategy, product_size_assembly_strategy, effective_direct_writeoff_store_spec_json, raw_json, updated_at
 FROM iiko_assembly_charts
-WHERE assembled_product_id = $1
-  AND date_from::date <= $2::date
-  AND (date_to IS NULL OR date_to::date >= $2::date)
-ORDER BY date_from::date DESC
+WHERE assembled_product_id = ?1
+  AND date(date_from) <= CAST(?2 AS TEXT)
+  AND (date_to IS NULL OR date(date_to) >= CAST(?2 AS TEXT))
+ORDER BY date(date_from) DESC
 LIMIT 1
 `
 
 type GetActiveAssemblyChartFullByProductIDParams struct {
-	AssembledProductID string      `json:"assembled_product_id"`
-	OrderDate          pgtype.Date `json:"order_date"`
+	AssembledProductID string `json:"assembled_product_id"`
+	OrderDate          string `json:"order_date"`
 }
 
 func (q *Queries) GetActiveAssemblyChartFullByProductID(ctx context.Context, arg GetActiveAssemblyChartFullByProductIDParams) (IikoAssemblyChart, error) {
-	row := q.db.QueryRow(ctx, getActiveAssemblyChartFullByProductID, arg.AssembledProductID, arg.OrderDate)
+	row := q.db.QueryRowContext(ctx, getActiveAssemblyChartFullByProductID, arg.AssembledProductID, arg.OrderDate)
 	var i IikoAssemblyChart
 	err := row.Scan(
 		&i.ID,
@@ -88,20 +86,20 @@ func (q *Queries) GetActiveAssemblyChartFullByProductID(ctx context.Context, arg
 const getActivePreparedChartFullByProductID = `-- name: GetActivePreparedChartFullByProductID :one
 SELECT id, assembled_product_id, date_from, date_to, product_size_assembly_strategy, effective_direct_writeoff_store_spec_json, raw_json, updated_at
 FROM iiko_prepared_charts
-WHERE assembled_product_id = $1
-  AND date_from::date <= $2::date
-  AND (date_to IS NULL OR date_to::date >= $2::date)
-ORDER BY date_from::date DESC
+WHERE assembled_product_id = ?1
+  AND date(date_from) <= CAST(?2 AS TEXT)
+  AND (date_to IS NULL OR date(date_to) >= CAST(?2 AS TEXT))
+ORDER BY date(date_from) DESC
 LIMIT 1
 `
 
 type GetActivePreparedChartFullByProductIDParams struct {
-	AssembledProductID string      `json:"assembled_product_id"`
-	OrderDate          pgtype.Date `json:"order_date"`
+	AssembledProductID string `json:"assembled_product_id"`
+	OrderDate          string `json:"order_date"`
 }
 
 func (q *Queries) GetActivePreparedChartFullByProductID(ctx context.Context, arg GetActivePreparedChartFullByProductIDParams) (IikoPreparedChart, error) {
-	row := q.db.QueryRow(ctx, getActivePreparedChartFullByProductID, arg.AssembledProductID, arg.OrderDate)
+	row := q.db.QueryRowContext(ctx, getActivePreparedChartFullByProductID, arg.AssembledProductID, arg.OrderDate)
 	var i IikoPreparedChart
 	err := row.Scan(
 		&i.ID,
@@ -127,7 +125,7 @@ SELECT
     COALESCE(p.measure_unit, '') AS measure_unit
 FROM iiko_assembly_chart_items AS i
 LEFT JOIN iiko_products AS p ON p.id = i.product_id
-WHERE i.chart_id = $1
+WHERE i.chart_id = ?1
 ORDER BY i.sort_weight, i.id
 `
 
@@ -142,7 +140,7 @@ type ListAssemblyChartItemsByChartIDRow struct {
 }
 
 func (q *Queries) ListAssemblyChartItemsByChartID(ctx context.Context, chartID string) ([]ListAssemblyChartItemsByChartIDRow, error) {
-	rows, err := q.db.Query(ctx, listAssemblyChartItemsByChartID, chartID)
+	rows, err := q.db.QueryContext(ctx, listAssemblyChartItemsByChartID, chartID)
 	if err != nil {
 		return nil, err
 	}
@@ -163,6 +161,9 @@ func (q *Queries) ListAssemblyChartItemsByChartID(ctx context.Context, chartID s
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -179,7 +180,7 @@ SELECT
     COALESCE(p.measure_unit, '') AS measure_unit
 FROM iiko_prepared_chart_items AS i
 LEFT JOIN iiko_products AS p ON p.id = i.product_id
-WHERE i.prepared_chart_id = $1
+WHERE i.prepared_chart_id = ?1
 ORDER BY i.sort_weight, i.id
 `
 
@@ -193,7 +194,7 @@ type ListPreparedChartItemsByChartIDRow struct {
 }
 
 func (q *Queries) ListPreparedChartItemsByChartID(ctx context.Context, preparedChartID string) ([]ListPreparedChartItemsByChartIDRow, error) {
-	rows, err := q.db.Query(ctx, listPreparedChartItemsByChartID, preparedChartID)
+	rows, err := q.db.QueryContext(ctx, listPreparedChartItemsByChartID, preparedChartID)
 	if err != nil {
 		return nil, err
 	}
@@ -212,6 +213,9 @@ func (q *Queries) ListPreparedChartItemsByChartID(ctx context.Context, preparedC
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

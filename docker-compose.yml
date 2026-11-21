@@ -1,20 +1,4 @@
 services:
-  db:
-    image: postgres:17
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-bakery}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    volumes:
-      - ${POSTGRES_VOLUME:-postgres_data}:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-bakery}"]
-      interval: ${POSTGRES_HEALTHCHECK_INTERVAL:-5s}
-      timeout: ${POSTGRES_HEALTHCHECK_TIMEOUT:-5s}
-      retries: ${POSTGRES_HEALTHCHECK_RETRIES:-10}
-
   app:
     build:
       context: ${DOCKER_BUILD_CONTEXT:-.}
@@ -30,7 +14,8 @@ services:
       PROD_BOT_TOKEN: ${PROD_BOT_TOKEN:-}
       MINI_APP_URL: ${MINI_APP_URL:-}
       TELEGRAM_WORKSHOP_CHAT_ID: ${TELEGRAM_WORKSHOP_CHAT_ID:-}
-      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-bakery}?sslmode=${POSTGRES_SSLMODE:-disable}
+      SQLITE_PATH: /data/bakery.db
+      IMPORT_POSTGRES_URL: ${IMPORT_POSTGRES_URL:-}
       LOG_PRETTY: ${DOCKER_LOG_PRETTY:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       LOG_DIR: ${LOG_DIR:-}
@@ -40,13 +25,12 @@ services:
       IIKO_LOGIN: ${IIKO_LOGIN:-}
       IIKO_PASSWORD: ${IIKO_PASSWORD:-}
       SYNC_INTERVAL: ${SYNC_INTERVAL:-6h}
-    depends_on:
-      db:
-        condition: service_healthy
+    volumes:
+      - ${DATA_VOLUME:-bakery_data}:/data
     ports:
       - "${APP_PORT:-8080}:8080"
     restart: ${APP_RESTART:-unless-stopped}
 
 volumes:
-  postgres_data:
-    name: ${POSTGRES_VOLUME:-postgres_data}
+  bakery_data:
+    name: ${DATA_VOLUME:-bakery_data}
