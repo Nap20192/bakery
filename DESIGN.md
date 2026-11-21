@@ -18,19 +18,20 @@ matrices, sticky axes, and production workflow speed.
 ## 2. Color Palette
 
 ```css
---bg-primary: #f4f3ee;
---bg-secondary: #eeede6;
---bg-inverse: #191817;
---text-primary: #191817;
---text-secondary: #5a554e;
---text-muted: #8a847a;
---accent: #c96442;
---accent-hover: #b55738;
---accent-soft: #e89268;
---border: #d8d3c8;
---success: #6b7a3d;
---warning: #c98a42;
---danger: #a53e2a;
+--paper: #f4f3ee;        /* page */
+--surface: #fdfcf9;      /* cards, panels */
+--surface-inset: #efece4;
+--ink: #191817;
+--ink-soft: #4a463f;
+--ink-muted: #6f6a62;    /* passes 4.5:1 on --paper for small text */
+--crust: #b0532f;        /* accent; white text on it passes 4.5:1 */
+--crust-dark: #8f4222;
+--crust-soft: #f6e2d6;
+--line: #ddd8cd;
+--line-soft: #ebe7de;
+--success: #4f5d26;   --success-soft: #e4ebd3;
+--warning: #6e4609;   --warning-soft: #f6e7cc;
+--danger: #a53e2a;    --danger-soft: #f6ddd6;
 ```
 
 Rules:
@@ -42,10 +43,9 @@ Rules:
 
 ## 3. Typography
 
-- Display/headlines: serif, `Tiempos Headline`, `Iowan Old Style`, fallback
-  `Georgia`. Weight 500.
-- Body: humanist sans, `Styrene A`, fallback bundled `Inter`. Weight 400,
-  line-height 1.6.
+- Display/headlines and big numbers (order quantities): serif `Source Serif 4`
+  (Google Fonts), fallback `Iowan Old Style`, `Georgia`. Weight 600.
+- Body/UI: `Inter` (Google Fonts). Weight 400, line-height 1.55.
 - UI/labels: same sans, weight 500, letter-spacing +2% only for uppercase
   eyebrow labels.
 - Mono: `GT America Mono`, fallback bundled `JetBrains Mono`, then `SF Mono`.
@@ -67,9 +67,19 @@ Rules:
   terracotta outline with 2px offset. No glow.
 - Navigation: horizontal where space allows, underline-on-hover, active accent
   underline, no pill backgrounds.
-- Tables: zebra rows on `--bg-secondary`; headers are mono, uppercase, tracked.
-  Bakery production/order matrices keep their axes visible on mobile via
-  sticky labels or horizontal scroll instead of becoming generic cards.
+- Tables: zebra rows on `--surface-inset`; headers are mono, uppercase, tracked.
+  The order matrix keeps its axes on every screen: on desktop and on a phone
+  held sideways it stays a matrix with equal columns; on a portrait phone it
+  becomes a day feed where the date axis turns into day headings and the shop
+  axis into each panel's title. Production and summary tables keep sticky
+  labels and scroll sideways inside their own frame.
+- Status chips: `Отработан` (success, check icon), `Ждёт` (warning, clock
+  icon), `Отменён` (danger, cross icon). In narrow matrix columns the chip
+  shows its icon only; the label stays for screen readers.
+- Mobile navigation: at most five tabs in the bottom bar, «Создать» as the
+  raised round accent button in the middle; rarely used admin sections live
+  on the profile page («Ещё»). A phone held sideways gets a left rail instead
+  of the bottom bar.
 
 ## 5. Layout
 
@@ -106,5 +116,5 @@ Do not:
 - animate hover states with scale or lift;
 - mix more than two non-mono font families per page;
 - use emoji in UI chrome;
-- convert load-bearing tables into card stacks when the matrix axis is the
-  core workflow.
+- drop a matrix axis when converting it for a small screen: the portrait day
+  feed keeps both the day and the shop on screen.

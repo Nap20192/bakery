@@ -82,3 +82,17 @@ func TestTimestampFormattingIgnoresSerializedOffset(t *testing.T) {
 		t.Errorf("formatDayMonth(date) = %q", got)
 	}
 }
+
+func TestOrderSeqTakesLastNumberSegment(t *testing.T) {
+	t.Parallel()
+	for number, want := range map[string]string{
+		"Г.Х.21.11.26.001": "001",
+		"Ц.Б.01.02.26.120": "120",
+		"legacy":           "legacy",
+		"broken.":          "broken.",
+	} {
+		if got := orderSeq(number); got != want {
+			t.Errorf("orderSeq(%q) = %q, want %q", number, got, want)
+		}
+	}
+}

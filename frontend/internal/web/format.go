@@ -188,3 +188,10 @@ func effectiveQuantity(item contract.OrderItem) float64 {
 	}
 	return item.ProductionQuantity
 }
+
+func orderSeq(number string) string {
+	if index := strings.LastIndex(number, "."); index >= 0 && index < len(number)-1 {
+		return number[index+1:]
+	}
+	return number
+}

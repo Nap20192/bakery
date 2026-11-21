@@ -40,6 +40,7 @@ func parseTemplates() (*template.Template, error) {
 		"isset":            isset,
 		"join":             strings.Join,
 		"list":             func(values ...any) []any { return values },
+		"orderSeq":         orderSeq,
 		"pageOffset":       func(page, offset int32) int32 { return page + offset },
 		"profileInitials":  profileInitials,
 		"roleName":         roleName,

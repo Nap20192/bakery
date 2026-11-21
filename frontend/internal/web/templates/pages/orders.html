@@ -11,7 +11,7 @@
     {{template "view-switch" (dict "CurrentPath" .CurrentPath "CategoryID" $data.Filters.CategoryID)}}
     <div class="window-nav">
       <a class="button" href="/orders?fulfillment_from={{$data.PrevFrom}}&fulfillment_to={{$data.PrevTo}}&category_id={{$data.Filters.CategoryID}}">← Раньше</a>
-      <span>{{$data.Filters.FulfillmentFrom}} — {{$data.Filters.FulfillmentTo}}</span>
+      <span>{{formatDayMonth $data.Filters.FulfillmentFrom}} — {{formatDayMonth $data.Filters.FulfillmentTo}}</span>
       <a class="button" href="/orders?fulfillment_from={{$data.NextFrom}}&fulfillment_to={{$data.NextTo}}&category_id={{$data.Filters.CategoryID}}">Позже →</a>
     </div>
   </div>
@@ -31,9 +31,10 @@
       <tbody>
       {{range $row := $data.Matrix}}
         <tr {{if $row.Tone}}class="tone-{{$row.Tone}}"{{end}}><th class="matrix-axis"><strong>{{$row.Label}}</strong><small>{{formatDayMonth $row.Date}}</small></th>
-        {{range $cell := $row.Cells}}<td>
+        {{range $cell := $row.Cells}}<td{{if not $cell.Orders}} class="is-empty"{{end}}>
+          <span class="matrix-cell-shop">{{$cell.Shop.Name}}</span>
           <div class="matrix-cell">
-          {{range $order := $cell.Orders}}{{template "order-card" (dict "Order" $order "LinkSheet" true)}}{{else}}{{template "empty-cell"}}{{end}}
+          {{range $order := $cell.Orders}}{{template "order-card" (dict "Order" $order "LinkSheet" true "Short" true)}}{{else}}{{template "empty-cell"}}{{end}}
           </div>
         </td>{{end}}
         </tr>

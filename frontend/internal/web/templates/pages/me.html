@@ -13,6 +13,14 @@
     <div><dt>Telegram</dt><dd>{{if .Viewer.TelegramUsername}}@{{.Viewer.TelegramUsername}}{{else}}Не привязан{{end}}</dd></div>
     <div><dt>Подразделение</dt><dd>{{if .Viewer.DepartmentName}}{{.Viewer.DepartmentName}}{{else}}Не назначено{{end}}</dd></div>
   </dl>
+  {{if isAdmin .Viewer}}
+  <nav class="more-links" aria-label="Управление">
+    <h2 class="more-links-title">Управление</h2>
+    <a class="more-link" href="/admin/users">{{template "navicon" "users"}}<span><strong>Пользователи</strong><small>Аккаунты, роли и подразделения</small></span></a>
+    <a class="more-link" href="/admin/dishes">{{template "navicon" "book"}}<span><strong>Меню и типы заявок</strong><small>Блюда, группы и порядок</small></span></a>
+    <a class="more-link" href="/admin/techcards">{{template "navicon" "sheet"}}<span><strong>Техкарты iiko</strong><small>Состав блюд и синхронизация</small></span></a>
+  </nav>
+  {{end}}
   {{if .MiniApp}}<p class="muted">Вход выполнен через Telegram.</p>{{else}}<form action="/session/logout" method="post">{{template "csrf" .CSRF}}<button class="button button-danger" type="submit">Выйти</button></form>{{end}}
 </section>
 {{end}}
