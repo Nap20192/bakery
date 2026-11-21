@@ -44,10 +44,10 @@ var clearSeeded = []string{"DELETE FROM departments", "DELETE FROM order_categor
 
 var sourceExpressions = map[string]string{
 	"orders.comments":                "comments::text",
-	"orders.fulfillment_date":        "fulfillment_date::text",
+	"orders.fulfillment_date":        "to_char(fulfillment_date, 'YYYY-MM-DD')",
 	"order_drafts.comments":          "comments::text",
 	"order_drafts.items":             "items::text",
-	"order_drafts.fulfillment_date":  "fulfillment_date::text",
+	"order_drafts.fulfillment_date":  "to_char(fulfillment_date, 'YYYY-MM-DD')",
 	"order_categories.monitor_codes": "to_json(monitor_codes)::text",
 	"order_outbox.payload":           "payload::text",
 }
