@@ -246,6 +246,7 @@ type ProductionSheetItem struct {
 
 type ProductionSheet struct {
 	ID                int64                 `json:"id"`
+	CategoryID        *int64                `json:"category_id,omitempty"`
 	CreatedByUsername string                `json:"created_by_username"`
 	CreatedAt         string                `json:"created_at"`
 	UpdatedAt         string                `json:"updated_at"`

@@ -73,7 +73,7 @@ SQL conventions for SQLite:
 | `GetProductionSheet` | one | Header by id. |
 | `TouchProductionSheet` | exec | Bumps `updated_at` when a sheet is replaced. |
 | `DeleteProductionSheet` | exec | Deletes the document; its batch rows and items cascade. |
-| `ListProductionSheets` | many | Journal list: deviation count + the saved batch's order numbers per sheet, newest first. |
+| `ListProductionSheets` | many | Journal list: deviation count, the saved batch's order numbers sorted by order number, and `category_id` of the first order in that same order, computed in this query without per-sheet queries. `category_id` is null for empty batches or an uncategorized first order. Sheets are newest first. |
 | `InsertProductionSheetOrder` | exec | One batch row: the sheet covers this order (saved selection, deviations optional). |
 | `DeleteProductionSheetOrders` | exec | Clears a sheet's batch before re-insert (full replace on update). |
 | `ListProductionSheetOrderNumbers` | many | The batch's order numbers for `GetProductionSheet`. |

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"testing"
 	"time"
 
@@ -273,6 +274,83 @@ func TestProductionSheetMatchesCyrillicNamesCaseInsensitively(t *testing.T) {
 
 	if got := f.outboxTypes(t); len(got) != 2 || got[1] != orderdomain.EventOrderProduced {
 		t.Fatalf("outbox types = %v", got)
+	}
+}
+
+func TestListProductionSheetsCategoryFromFirstOrderByNumber(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	queries := sqlc.New(f.db)
+	categories, err := f.repo.ListOrderCategories(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var otherCategoryID int64
+	for _, category := range categories {
+		if category.ID != f.category.ID {
+			otherCategoryID = category.ID
+			break
+		}
+	}
+	if otherCategoryID == 0 {
+		t.Fatal("second category is not seeded")
+	}
+	tests := []struct {
+		name       string
+		withOrders bool
+		categoryID *int64
+	}{
+		{name: "mixed categories", withOrders: true, categoryID: &otherCategoryID},
+		{name: "uncategorized first order", withOrders: true},
+		{name: "empty batch"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sheet, err := queries.CreateProductionSheet(ctx, "baker")
+			if err != nil {
+				t.Fatal(err)
+			}
+			var wantNumbers []string
+			if tt.withOrders {
+				for _, prefix := range []string{"Z", "A"} {
+					order := f.createOrder(t, day(0), "")
+					row, err := queries.GetOrderByNumber(ctx, order.Number)
+					if err != nil {
+						t.Fatal(err)
+					}
+					categoryID := &f.category.ID
+					if prefix == "A" {
+						categoryID = tt.categoryID
+					}
+					number := fmt.Sprintf("%s-%d", prefix, sheet.ID)
+					if _, err := f.db.ExecContext(ctx, `UPDATE orders SET number = ?, category_id = ? WHERE id = ?`, number, categoryID, row.ID); err != nil {
+						t.Fatal(err)
+					}
+					if err := queries.InsertProductionSheetOrder(ctx, sqlc.InsertProductionSheetOrderParams{SheetID: sheet.ID, OrderID: row.ID}); err != nil {
+						t.Fatal(err)
+					}
+				}
+				wantNumbers = []string{fmt.Sprintf("A-%d", sheet.ID), fmt.Sprintf("Z-%d", sheet.ID)}
+			}
+			sheets, err := f.repo.ListProductionSheets(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(sheets) == 0 || sheets[0].ID != sheet.ID {
+				t.Fatalf("newest sheet missing: %+v", sheets)
+			}
+			got := sheets[0]
+			if !slices.Equal(got.OrderNumbers, wantNumbers) {
+				t.Fatalf("order numbers = %v, want %v", got.OrderNumbers, wantNumbers)
+			}
+			if tt.categoryID == nil {
+				if got.CategoryID != nil {
+					t.Fatalf("category ID = %d, want nil", *got.CategoryID)
+				}
+			} else if got.CategoryID == nil || *got.CategoryID != *tt.categoryID {
+				t.Fatalf("sheet = %+v, want category ID %d", got, *tt.categoryID)
+			}
+		})
 	}
 }
 

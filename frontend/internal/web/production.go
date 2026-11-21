@@ -143,7 +143,7 @@ func (s *server) productionPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data := productionJournalData{Categories: categories}
-	data.Rows = s.buildProductionJournal(r, cred, sheets, data.Categories)
+	data.Rows = buildProductionJournal(sheets, data.Categories)
 	for _, row := range data.Rows {
 		for _, cell := range row.Cells {
 			data.Count += len(cell)
@@ -342,7 +342,7 @@ func (s *server) productionDelete(w http.ResponseWriter, r *http.Request) {
 	s.redirect(w, r, "/production?success="+url.QueryEscape("Отработка удалена."))
 }
 
-func (s *server) buildProductionJournal(r *http.Request, cred application.Credentials, sheets []contract.ProductionSheet, categories []contract.Category) []productionJournalRow {
+func buildProductionJournal(sheets []contract.ProductionSheet, categories []contract.Category) []productionJournalRow {
 	type rowBuilder struct {
 		date  string
 		cells [][]productionSheetView
@@ -353,14 +353,10 @@ func (s *server) buildProductionJournal(r *http.Request, cred application.Creden
 		categoryIndex[category.ID] = index
 	}
 	for _, sheet := range sheets {
-		if len(sheet.OrderNumbers) == 0 {
+		if len(sheet.OrderNumbers) == 0 || sheet.CategoryID == nil {
 			continue
 		}
-		order, err := s.queries.Order(r.Context(), cred, sheet.OrderNumbers[0])
-		if err != nil || order.Category == nil {
-			continue
-		}
-		index, exists := categoryIndex[order.Category.ID]
+		index, exists := categoryIndex[*sheet.CategoryID]
 		if !exists {
 			continue
 		}
@@ -373,7 +369,7 @@ func (s *server) buildProductionJournal(r *http.Request, cred application.Creden
 			row = &rowBuilder{date: date, cells: make([][]productionSheetView, len(categories))}
 			rows[date] = row
 		}
-		row.cells[index] = append(row.cells[index], productionSheetView{Sheet: sheet, Category: order.Category})
+		row.cells[index] = append(row.cells[index], productionSheetView{Sheet: sheet, Category: &categories[index]})
 	}
 	dates := make([]string, 0, len(rows))
 	for date := range rows {

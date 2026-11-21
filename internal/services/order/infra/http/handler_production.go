@@ -35,6 +35,7 @@ func toProductionSheetResponse(sheet orderdomain.ProductionSheet) contract.Produ
 	}
 	return contract.ProductionSheet{
 		ID:                sheet.ID,
+		CategoryID:        sheet.CategoryID,
 		CreatedByUsername: sheet.CreatedByUsername,
 		CreatedAt:         sheet.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:         sheet.UpdatedAt.Format(time.RFC3339),
