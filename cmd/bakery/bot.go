@@ -42,8 +42,10 @@ func (r *botRunner) HandleOrderEvent(ctx context.Context, eventType string, payl
 func (r *botRunner) Run(ctx context.Context) error {
 	for {
 		orderBot, err := r.connect(ctx)
-		if ctx.Err() != nil {
+		select {
+		case <-ctx.Done():
 			return nil
+		default:
 		}
 		if err == nil {
 			r.serve(ctx, orderBot)
