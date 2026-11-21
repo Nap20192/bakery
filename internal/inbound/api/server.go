@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 
 	"bakery/internal/inbound/api/httpx"
@@ -20,7 +21,8 @@ import (
 )
 
 type ServerConfig struct {
-	BotToken string
+	BotToken    string
+	SyncContext context.Context
 }
 
 // routeRegistrar is implemented by each service's HTTP delivery adapter.
@@ -31,6 +33,7 @@ type routeRegistrar interface {
 type Server struct {
 	auth     *httpx.Authenticator
 	handlers []routeRegistrar
+	sync     *synchttp.Handler
 }
 
 func NewServer(
@@ -44,17 +47,23 @@ func NewServer(
 	config ServerConfig,
 ) *Server {
 	presenter := orderhttp.NewPresenter(departmentSvc)
+	syncHandler := synchttp.New(syncSvc, config.SyncContext)
 	return &Server{
 		auth: httpx.NewAuthenticator(authSvc, departmentSvc, config.BotToken),
+		sync: syncHandler,
 		handlers: []routeRegistrar{
 			authhttp.New(authSvc, departmentSvc, config.BotToken),
 			adminhttp.New(adminSvc),
 			departmenthttp.New(departmentSvc),
 			orderhttp.New(orderSvc, departmentSvc, techcardSvc, presenter),
 			monitorhttp.New(monitorSvc, orderSvc, presenter),
-			synchttp.New(syncSvc),
+			syncHandler,
 		},
 	}
+}
+
+func (s *Server) Shutdown() {
+	s.sync.Shutdown()
 }
 
 // Handler returns the API with its middleware. It is mounted only on the

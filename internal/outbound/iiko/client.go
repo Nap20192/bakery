@@ -1,6 +1,7 @@
 package iiko
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,13 +12,13 @@ import (
 )
 
 type IikoClient interface {
-	Auth() error
-	Logout() error
-	ListProducts() ([]Product, error)
-	ListProductsWithCategories() (*NomenclatureResponse, error)
-	AssemblyChartsGetAll(dateFrom, dateTo string, includeDeleted, includePrepared bool) (*ChartResultDto, error)
-	AssemblyChartByID(id string) (*ChartResultDto, error)
-	AssemblyChartsGetPrepared(date, productID, departmentID string) (*ChartResultDto, error)
+	Auth(ctx context.Context) error
+	Logout(ctx context.Context) error
+	ListProducts(ctx context.Context) ([]Product, error)
+	ListProductsWithCategories(ctx context.Context) (*NomenclatureResponse, error)
+	AssemblyChartsGetAll(ctx context.Context, dateFrom, dateTo string, includeDeleted, includePrepared bool) (*ChartResultDto, error)
+	AssemblyChartByID(ctx context.Context, id string) (*ChartResultDto, error)
+	AssemblyChartsGetPrepared(ctx context.Context, date, productID, departmentID string) (*ChartResultDto, error)
 }
 
 type Client struct {
@@ -46,10 +47,14 @@ func NewClient(login, password string, api *Api) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) Auth() error {
+func (c *Client) Auth(ctx context.Context) error {
 	url := c.api.AuthURL(c.login, c.password)
 
-	resp, err := c.client.Get(url)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return fmt.Errorf("iiko: build auth request: %w", err)
+	}
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("iiko: auth request: %w", err)
 	}
@@ -72,12 +77,16 @@ func (c *Client) Auth() error {
 	return nil
 }
 
-func (c *Client) Logout() error {
+func (c *Client) Logout(ctx context.Context) error {
 	if c.key == "" {
 		return fmt.Errorf("iiko: logout: not authenticated")
 	}
 
-	resp, err := c.client.Get(c.api.LogoutByKeyURL(c.key))
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.api.LogoutByKeyURL(c.key), nil)
+	if err != nil {
+		return fmt.Errorf("iiko: build logout request: %w", err)
+	}
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("iiko: logout request: %w", err)
 	}
@@ -93,12 +102,12 @@ func (c *Client) Logout() error {
 
 // get выполняет авторизованный GET и возвращает тело ответа.
 // Требует, чтобы Auth() был вызван ранее (c.key != "").
-func (c *Client) get(url string) ([]byte, error) {
+func (c *Client) get(ctx context.Context, url string) ([]byte, error) {
 	if c.key == "" {
 		return nil, fmt.Errorf("iiko: not authenticated")
 	}
 
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("iiko: build request: %w", err)
 	}
@@ -127,8 +136,8 @@ func closeBody(body io.Closer) {
 	}
 }
 
-func (c *Client) getJSON(url string, out any) error {
-	body, err := c.get(url)
+func (c *Client) getJSON(ctx context.Context, url string, out any) error {
+	body, err := c.get(ctx, url)
 	if err != nil {
 		return err
 	}
@@ -139,9 +148,9 @@ func (c *Client) getJSON(url string, out any) error {
 }
 
 // ListProducts — GET /resto/api/v2/entities/products/list.
-func (c *Client) ListProducts() ([]Product, error) {
+func (c *Client) ListProducts(ctx context.Context) ([]Product, error) {
 	var products []Product
-	if err := c.getJSON(c.api.ProductsListURL(), &products); err != nil {
+	if err := c.getJSON(ctx, c.api.ProductsListURL(), &products); err != nil {
 		return nil, err
 	}
 	return products, nil
@@ -152,8 +161,8 @@ func (c *Client) ListProducts() ([]Product, error) {
 // Поддерживает оба формата ответа iiko:
 // 1) NomenclatureResponse (products + productCategories)
 // 2) []Product (без productCategories)
-func (c *Client) ListProductsWithCategories() (*NomenclatureResponse, error) {
-	body, err := c.get(c.api.ProductsListURL())
+func (c *Client) ListProductsWithCategories(ctx context.Context) (*NomenclatureResponse, error) {
+	body, err := c.get(ctx, c.api.ProductsListURL())
 	if err != nil {
 		return nil, err
 	}
@@ -188,21 +197,21 @@ func (c *Client) ListProductsWithCategories() (*NomenclatureResponse, error) {
 // AssemblyChartsGetAll — GET /resto/api/v2/assemblyCharts/getAll.
 // Возвращает все техкарты, действующие в диапазоне дат.
 // dateFrom/dateTo в формате yyyy-MM-dd.
-func (c *Client) AssemblyChartsGetAll(dateFrom, dateTo string, includeDeleted, includePrepared bool) (*ChartResultDto, error) {
+func (c *Client) AssemblyChartsGetAll(ctx context.Context, dateFrom, dateTo string, includeDeleted, includePrepared bool) (*ChartResultDto, error) {
 	var result ChartResultDto
-	if err := c.getJSON(c.api.AssemblyChartsGetAllURL(dateFrom, dateTo, includeDeleted, includePrepared), &result); err != nil {
+	if err := c.getJSON(ctx, c.api.AssemblyChartsGetAllURL(dateFrom, dateTo, includeDeleted, includePrepared), &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
 }
 
 // AssemblyChartByID — GET /resto/api/v2/assemblyCharts/byId.
-func (c *Client) AssemblyChartByID(id string) (*ChartResultDto, error) {
+func (c *Client) AssemblyChartByID(ctx context.Context, id string) (*ChartResultDto, error) {
 	if id == "" {
 		return nil, fmt.Errorf("iiko: assemblyCharts/byId: empty id")
 	}
 	var result ChartResultDto
-	if err := c.getJSON(c.api.AssemblyChartsByIDURL(id), &result); err != nil {
+	if err := c.getJSON(ctx, c.api.AssemblyChartsByIDURL(id), &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
@@ -210,9 +219,9 @@ func (c *Client) AssemblyChartByID(id string) (*ChartResultDto, error) {
 
 // AssemblyChartsGetAssembled — GET /resto/api/v2/assemblyCharts/getAssembled.
 // Возвращает исходную техкарту блюда на дату.
-func (c *Client) AssemblyChartsGetAssembled(date, productID, departmentID string) (*ChartResultDto, error) {
+func (c *Client) AssemblyChartsGetAssembled(ctx context.Context, date, productID, departmentID string) (*ChartResultDto, error) {
 	var result ChartResultDto
-	if err := c.getJSON(c.api.AssemblyChartsGetAssembledURL(date, productID, departmentID), &result); err != nil {
+	if err := c.getJSON(ctx, c.api.AssemblyChartsGetAssembledURL(date, productID, departmentID), &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
@@ -221,9 +230,9 @@ func (c *Client) AssemblyChartsGetAssembled(date, productID, departmentID string
 // AssemblyChartsGetPrepared — GET /resto/api/v2/assemblyCharts/getPrepared.
 // Возвращает техкарту, разложенную до конечных ингредиентов — это то, что
 // нужно для расчёта теста по заявке.
-func (c *Client) AssemblyChartsGetPrepared(date, productID, departmentID string) (*ChartResultDto, error) {
+func (c *Client) AssemblyChartsGetPrepared(ctx context.Context, date, productID, departmentID string) (*ChartResultDto, error) {
 	var result ChartResultDto
-	if err := c.getJSON(c.api.AssemblyChartsGetPreparedURL(date, productID, departmentID), &result); err != nil {
+	if err := c.getJSON(ctx, c.api.AssemblyChartsGetPreparedURL(date, productID, departmentID), &result); err != nil {
 		return nil, err
 	}
 	return &result, nil

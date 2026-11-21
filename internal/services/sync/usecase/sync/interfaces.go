@@ -16,10 +16,10 @@ type UseCase interface {
 
 // IikoClient is the fetch port (satisfied by *iiko.Client).
 type IikoClient interface {
-	Auth() error
-	Logout() error
-	ListProductsWithCategories() (*iiko.NomenclatureResponse, error)
-	AssemblyChartsGetAll(dateFrom, dateTo string, includeDeleted, includePrepared bool) (*iiko.ChartResultDto, error)
+	Auth(ctx context.Context) error
+	Logout(ctx context.Context) error
+	ListProductsWithCategories(ctx context.Context) (*iiko.NomenclatureResponse, error)
+	AssemblyChartsGetAll(ctx context.Context, dateFrom, dateTo string, includeDeleted, includePrepared bool) (*iiko.ChartResultDto, error)
 }
 
 // Repository persists a fetched snapshot (sync-run lifecycle + transactional

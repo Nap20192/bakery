@@ -2,6 +2,7 @@ package syncuc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -9,6 +10,11 @@ import (
 	"bakery/internal/outbound/iiko"
 
 	"golang.org/x/sync/errgroup"
+)
+
+const (
+	logoutTimeout          = 5 * time.Second
+	cancelledLogoutTimeout = 500 * time.Millisecond
 )
 
 type Service struct {
@@ -47,6 +53,10 @@ func (s *Service) Run(ctx context.Context) error {
 func (s *Service) syncOnce(ctx context.Context) {
 	start := time.Now()
 	if err := s.SyncOnce(ctx); err != nil {
+		if ctx.Err() != nil && errors.Is(err, ctx.Err()) {
+			slog.InfoContext(ctx, "iiko sync stopped", "error", err)
+			return
+		}
 		slog.Error("iiko sync failed", "error", err)
 		return
 	}
@@ -61,11 +71,29 @@ func (s *Service) SyncOnce(ctx context.Context) error {
 	// Окно вперёд: iiko заводит новые ревизии техкарт с будущей датой —
 	// getAll(сегодня, сегодня) их не возвращает, монитор считает нули.
 	syncDateTo := time.Now().AddDate(0, 0, 30).Format("2006-01-02")
-	if err := s.client.Auth(); err != nil {
+	if err := s.client.Auth(ctx); err != nil {
 		return fmt.Errorf("auth: %w", err)
 	}
 	defer func() {
-		if err := s.client.Logout(); err != nil {
+		timeout := logoutTimeout
+		if ctx.Err() != nil {
+			timeout = cancelledLogoutTimeout
+		}
+		logoutCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), timeout)
+		defer cancel()
+		if timeout == logoutTimeout {
+			stop := context.AfterFunc(ctx, func() {
+				timer := time.NewTimer(cancelledLogoutTimeout)
+				defer timer.Stop()
+				select {
+				case <-timer.C:
+					cancel()
+				case <-logoutCtx.Done():
+				}
+			})
+			defer stop()
+		}
+		if err := s.client.Logout(logoutCtx); err != nil {
 			slog.Warn("iiko logout failed", "error", err)
 		}
 	}()
@@ -75,10 +103,10 @@ func (s *Service) SyncOnce(ctx context.Context) error {
 		charts  *iiko.ChartResultDto
 	)
 	fetchStart := time.Now()
-	group, _ := errgroup.WithContext(ctx)
+	group, fetchCtx := errgroup.WithContext(ctx)
 	group.Go(func() error {
 		var err error
-		catalog, err = s.client.ListProductsWithCategories()
+		catalog, err = s.client.ListProductsWithCategories(fetchCtx)
 		if err != nil {
 			return fmt.Errorf("list products: %w", err)
 		}
@@ -86,7 +114,7 @@ func (s *Service) SyncOnce(ctx context.Context) error {
 	})
 	group.Go(func() error {
 		var err error
-		charts, err = s.client.AssemblyChartsGetAll(syncDate, syncDateTo, false, true)
+		charts, err = s.client.AssemblyChartsGetAll(fetchCtx, syncDate, syncDateTo, false, true)
 		if err != nil {
 			return fmt.Errorf("get assembly charts: %w", err)
 		}

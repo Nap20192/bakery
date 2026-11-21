@@ -67,6 +67,7 @@ func run() error {
 		return err
 	}
 
+	group, groupCtx := errgroup.WithContext(ctx)
 	appDeps, err := deps.NewAppDeps(
 		deps.WithAuthService(infra),
 		deps.WithOrderService(infra),
@@ -75,7 +76,7 @@ func run() error {
 		deps.WithTechCardService(infra),
 		deps.WithSyncService(infra),
 		deps.WithAdminService(),
-		deps.WithAPIServerConfig(infra),
+		deps.WithAPIServerConfig(groupCtx, infra),
 	)
 	if err != nil {
 		return err
@@ -115,7 +116,6 @@ func run() error {
 		IdleTimeout:       90 * time.Second,
 	}
 
-	group, groupCtx := errgroup.WithContext(ctx)
 	group.Go(func() error {
 		return appDeps.SyncService.Run(groupCtx)
 	})
@@ -137,6 +137,7 @@ func run() error {
 	})
 	group.Go(func() error {
 		<-groupCtx.Done()
+		defer appDeps.APIServer.Shutdown()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
 		defer cancel()
 		return httpServer.Shutdown(shutdownCtx)

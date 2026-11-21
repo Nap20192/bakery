@@ -4,9 +4,10 @@ package synchttp
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
-	"sync/atomic"
+	"sync"
 	"time"
 
 	"bakery/internal/inbound/api/httpx"
@@ -15,16 +16,18 @@ import (
 
 // Handler triggers a one-off iiko sync.
 type Handler struct {
-	sync syncuc.UseCase
-	// running guards the manual trigger so double-clicks don't stack syncs.
-	// ponytail: guards the manual button only; the background ticker can still
-	// overlap a manual run — harmless (SaveSnapshot is transactional/idempotent).
-	// Share one guard with the ticker if overlap ever matters.
-	running atomic.Bool
+	sync     syncuc.UseCase
+	ctx      context.Context
+	mu       sync.Mutex
+	done     chan struct{}
+	stopping bool
 }
 
-func New(sync syncuc.UseCase) *Handler {
-	return &Handler{sync: sync}
+func New(sync syncuc.UseCase, ctx context.Context) *Handler {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return &Handler{sync: sync, ctx: ctx}
 }
 
 // RegisterRoutes wires the sync trigger behind the admin role.
@@ -32,18 +35,46 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, auth *httpx.Authenticator) 
 	mux.Handle("POST /admin/iiko/sync", auth.RequireAdmin(http.HandlerFunc(h.handleSync)))
 }
 
+func (h *Handler) Shutdown() {
+	h.mu.Lock()
+	h.stopping = true
+	done := h.done
+	h.mu.Unlock()
+	if done != nil {
+		<-done
+	}
+}
+
 // handleSync starts the sync in the background and returns immediately — a full
 // iiko snapshot fetch is too slow to hold an HTTP request open.
 func (h *Handler) handleSync(w http.ResponseWriter, r *http.Request) {
-	if !h.running.CompareAndSwap(false, true) {
+	h.mu.Lock()
+	if h.stopping || h.ctx.Err() != nil {
+		h.mu.Unlock()
+		httpx.WriteError(w, http.StatusServiceUnavailable, "Приложение останавливается.")
+		return
+	}
+	if h.done != nil {
+		h.mu.Unlock()
 		httpx.WriteError(w, http.StatusConflict, "Синхронизация уже идёт.")
 		return
 	}
+	h.done = make(chan struct{})
+	h.mu.Unlock()
 	go func() {
-		defer h.running.Store(false)
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+		defer func() {
+			h.mu.Lock()
+			close(h.done)
+			h.done = nil
+			h.mu.Unlock()
+		}()
+		ctx, cancel := context.WithTimeout(h.ctx, 10*time.Minute)
 		defer cancel()
 		if err := h.sync.SyncOnce(ctx); err != nil {
+			if h.ctx.Err() != nil && errors.Is(err, context.Canceled) {
+				slog.InfoContext(ctx, "manual iiko sync stopped", "error", err)
+				return
+			}
 			slog.ErrorContext(ctx, "manual iiko sync failed", "error", err)
 			return
 		}
