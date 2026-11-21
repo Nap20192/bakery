@@ -10,19 +10,20 @@ that monitoring and tech-card lookup compute is based on this snapshot.
 usecase/sync/   package syncuc — UseCase + ports (IikoClient, Repository)
 infra/repo/     syncrepo — snapshot persistence (sync-run lifecycle +
                 transactional upserts)
+infra/http/     synchttp — admin-only asynchronous manual trigger
 app/app.go      syncapp.New(iikoClient, db, queries, interval)
 ```
 
-No domain and no HTTP: sync is a background capability of the app.
+No domain: sync runs in the background, periodically or on an admin request.
 
 ## Ports
 
 - **`IikoClient`** (satisfied by `internal/outbound/iiko.Client`):
-  `Auth()` / `Logout()` session management,
-  `ListProductsWithCategories()` — nomenclature,
-  `AssemblyChartsGetAll(dateFrom, dateTo, includeDeleted, includePrepared)` —
+  `Auth(ctx)` / `Logout(ctx)` session management,
+  `ListProductsWithCategories(ctx)` — nomenclature,
+  `AssemblyChartsGetAll(ctx, dateFrom, dateTo, includeDeleted, includePrepared)` —
   assembly + prepared charts.
-- **`Repository`**: `SaveSnapshot(catalog, charts, syncDate)` — persists one
+- **`Repository`**: `SaveSnapshot(ctx, catalog, charts, syncDate)` — persists one
   fetched snapshot transactionally.
 
 ## Behavior
@@ -30,6 +31,23 @@ No domain and no HTTP: sync is a background capability of the app.
 - `Run(ctx)` loops on `SYNC_INTERVAL` (background goroutine); `SyncOnce(ctx)`
   performs a single fetch-and-save: authenticate against iiko → fetch
   nomenclature and charts → `SaveSnapshot` → logout.
+- Every iiko request uses its caller's context. Shutdown cancels in-flight
+  authentication, fetches and snapshot persistence; `SyncOnce` returns the
+  wrapped cancellation error and `Run` stops promptly without logging a failed
+  sync at ERROR level. A failed parallel fetch also cancels its sibling.
+- After successful authentication, logout always runs, including on cancellation.
+  Its independent context is derived with `context.WithoutCancel` and bounded
+  by a five-second timeout (`logoutTimeout`) when the sync context is not
+  cancelled, allowing a remote HTTPS round trip. A cancelled sync instead uses
+  a 500 ms timeout (`cancelledLogoutTimeout`) so `SyncOnce`, `Run` and manual-sync
+  shutdown return in under one second even when iiko does not respond. If shutdown
+  starts during logout, its remaining wait is also capped at 500 ms.
+- `POST /admin/iiko/sync` returns immediately with 202 and runs with a ten-minute
+  timeout tied to the app lifecycle, independently of the completed HTTP request.
+  Shutdown cancels manual syncs too and waits for their independent logout to
+  finish before the application exits, even if HTTP server shutdown fails.
+  New triggers receive 503 during shutdown. Lifecycle cancellation is logged at
+  INFO level; reaching the ten-minute manual sync deadline is logged at ERROR.
 - Snapshot tables include `iiko_prepared_chart_items`, which the monitor's
   prepared-chart math reads directly (never `raw_json`).
 - iiko credentials come from `IIKO_HOST`, `IIKO_PORT`, `IIKO_LOGIN`,

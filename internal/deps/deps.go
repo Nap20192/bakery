@@ -1,6 +1,7 @@
 package deps
 
 import (
+	"context"
 	"fmt"
 
 	"bakery/internal/inbound/api"
@@ -121,7 +122,7 @@ func WithSyncService(infra *InfraDeps) appOption {
 	}
 }
 
-func WithAPIServerConfig(infra *InfraDeps) appOption {
+func WithAPIServerConfig(ctx context.Context, infra *InfraDeps) appOption {
 	return func(deps *AppDeps) error {
 		if infra == nil || infra.config == nil {
 			return fmt.Errorf("missing dependencies for APIServer config")
@@ -130,7 +131,8 @@ func WithAPIServerConfig(infra *InfraDeps) appOption {
 			return fmt.Errorf("missing dependencies for APIServer")
 		}
 		deps.APIServer = api.NewServer(deps.OrderService, deps.MonitorService, deps.DepartmentService, deps.AuthService, deps.AdminService, deps.TechCardService, deps.SyncService, api.ServerConfig{
-			BotToken: infra.config.Telegram.BotToken,
+			BotToken:    infra.config.Telegram.BotToken,
+			SyncContext: ctx,
 		})
 		return nil
 	}

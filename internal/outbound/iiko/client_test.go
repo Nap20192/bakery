@@ -43,7 +43,8 @@ func TestClient_AllMethods(t *testing.T) {
 		t.Fatalf("NewClient failed: %v", err)
 	}
 
-	if err := client.Auth(); err != nil {
+	ctx := t.Context()
+	if err := client.Auth(ctx); err != nil {
 		writeJSON(t, resultsDir, "01_auth.json", map[string]string{"error": err.Error()})
 		t.Fatalf("Auth failed: %v", err)
 	}
@@ -51,10 +52,10 @@ func TestClient_AllMethods(t *testing.T) {
 	t.Log("Auth: OK")
 
 	defer func() {
-		_ = client.Logout()
+		_ = client.Logout(ctx)
 	}()
 
-	products, err := client.ListProducts()
+	products, err := client.ListProducts(ctx)
 	if err != nil {
 		writeJSON(t, resultsDir, "02_list_products.json", map[string]string{"error": err.Error()})
 		t.Fatalf("ListProducts failed: %v", err)
@@ -69,7 +70,7 @@ func TestClient_AllMethods(t *testing.T) {
 	testID := products[0].ID.String()
 	today := time.Now().Format("2006-01-02")
 
-	resAll, err := client.AssemblyChartsGetAll(today, today, false, true)
+	resAll, err := client.AssemblyChartsGetAll(ctx, today, today, false, true)
 	if err != nil {
 		writeJSON(t, resultsDir, "03_assembly_charts_get_all.json", map[string]string{"error": err.Error()})
 		t.Errorf("AssemblyChartsGetAll failed: %v", err)
@@ -79,7 +80,7 @@ func TestClient_AllMethods(t *testing.T) {
 	}
 
 	if resAll != nil && len(resAll.AssemblyCharts) > 0 {
-		resByID, err := client.AssemblyChartByID(resAll.AssemblyCharts[0].ID)
+		resByID, err := client.AssemblyChartByID(ctx, resAll.AssemblyCharts[0].ID)
 		if err != nil {
 			writeJSON(t, resultsDir, "05_assembly_chart_by_id.json", map[string]string{"error": err.Error()})
 			t.Errorf("AssemblyChartByID failed: %v", err)
@@ -89,7 +90,7 @@ func TestClient_AllMethods(t *testing.T) {
 		}
 	}
 
-	resAssembled, err := client.AssemblyChartsGetAssembled(today, testID, depID)
+	resAssembled, err := client.AssemblyChartsGetAssembled(ctx, today, testID, depID)
 	if err != nil {
 		writeJSON(t, resultsDir, "07_assembly_charts_get_assembled.json", map[string]string{"error": err.Error()})
 		t.Errorf("AssemblyChartsGetAssembled failed: %v", err)
@@ -98,7 +99,7 @@ func TestClient_AllMethods(t *testing.T) {
 		t.Log("AssemblyChartsGetAssembled: OK")
 	}
 
-	resPrepared, err := client.AssemblyChartsGetPrepared(today, testID, depID)
+	resPrepared, err := client.AssemblyChartsGetPrepared(ctx, today, testID, depID)
 	if err != nil {
 		writeJSON(t, resultsDir, "08_assembly_charts_get_prepared.json", map[string]string{"error": err.Error()})
 		t.Errorf("AssemblyChartsGetPrepared failed: %v", err)

@@ -647,10 +647,12 @@ paths:
     post:
       tags: [admin]
       summary: Trigger a one-off iiko sync (runs in the background)
+      description: Runs independently of the completed request, with a ten-minute timeout. Logout has an independent five-second timeout; application shutdown cancels the sync and caps the remaining logout wait at 500 ms. New triggers receive 503 during shutdown.
       operationId: syncIiko
       responses:
         "202": { description: Sync started }
         "409": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
 
   /admin/dishes/reorder:
     put:
