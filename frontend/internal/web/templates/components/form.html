@@ -2,3 +2,9 @@
 
 {{/* csrf takes the token itself: {{template "csrf" $.CSRF}} */}}
 {{define "csrf"}}<input type="hidden" name="_csrf" value="{{.}}">{{end}}
+
+{{/* stepper: a number input between − and + buttons sized for a thumb.
+     Takes {Name, Value, Label, Placeholder?, Required?}; Label names the value
+     for screen readers (the visible caption sits outside the stepper). The
+     buttons skip the tab order: the input already steps with the arrow keys. */}}
+{{define "stepper"}}<span class="stepper" data-stepper><button class="stepper-btn" type="button" data-step="-1" tabindex="-1" aria-label="Меньше: {{.Label}}">−</button><input class="quantity-input" type="number" name="{{.Name}}" min="0" step="1" inputmode="numeric"{{if .Placeholder}} placeholder="{{.Placeholder}}"{{end}} value="{{.Value}}" aria-label="{{.Label}}"{{if .Required}} required{{end}}><button class="stepper-btn" type="button" data-step="1" tabindex="-1" aria-label="Больше: {{.Label}}">+</button></span>{{end}}

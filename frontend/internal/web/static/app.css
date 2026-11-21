@@ -262,8 +262,8 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .step-number { display: grid; min-width: 32px; height: 32px; place-items: center; border-radius: 50%; color: var(--paper); background: var(--ink); font-family: var(--font-mono); }
 .category-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .category-picker.compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.category-choice { display: flex; min-height: 64px; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--surface); cursor: pointer; }
-.category-choice:has(input:checked), .category-choice.is-selected { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.category-choice { display: flex; min-height: 56px; align-items: center; gap: 10px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); font-weight: 600; cursor: pointer; }
+.category-choice:has(input:checked), .category-choice.is-selected { border-color: var(--ink); color: var(--paper); background: var(--ink); }
 .category-choice:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
 .category-choice input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .choice-letter { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 50%; color: white; background: var(--ink-soft); font-family: var(--font-serif); font-size: 1.1rem; }
@@ -271,32 +271,45 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .catalog-groups { display: grid; gap: 18px; }
 .catalog-group h3 { position: sticky; z-index: 5; top: 0; padding: 8px 0; color: var(--ink-soft); background: var(--paper); font-family: var(--font-mono); text-transform: uppercase; }
 .catalog-list { border-top: 1px solid var(--line); }
-.catalog-row { display: grid; grid-template-columns: minmax(160px, 1fr) 92px 92px; gap: 10px; align-items: center; padding: 8px 10px; margin-bottom: 6px; border-radius: 14px; background: var(--surface); box-shadow: 0 1px 2px rgba(46, 43, 37, 0.14); }
-/* A filled quantity is tinted: green for заявка (полка), amber for заказ
-   (резерв) — matching the mini-app design. Relies on placeholder="0". */
-.catalog-row input[name="quantity"]:not(:placeholder-shown) { border-color: var(--accent-teal); background: var(--success-soft); }
-.catalog-row input[name="reserved_quantity"]:not(:placeholder-shown) { border-color: var(--accent-amber); background: var(--band-tomorrow); }
-.catalog-row > label { display: grid; gap: 3px; }
+.catalog-row { display: grid; grid-template-columns: minmax(160px, 1fr) auto auto; gap: 8px 14px; align-items: center; padding: 10px 12px; margin-bottom: 6px; border: 1px solid var(--line-soft); border-radius: 16px; background: var(--surface); }
+/* A filled quantity tints its stepper: green for заявка (полка), amber for
+   заказ (резерв). Relies on placeholder="0" (an empty input shows it). */
+.catalog-row .stepper:has(input[name="quantity"]:not(:placeholder-shown)) { background: var(--success-soft); }
+.catalog-row .stepper:has(input[name="reserved_quantity"]:not(:placeholder-shown)) { background: var(--warning-soft); }
+.qty-field { display: grid; justify-items: center; gap: 3px; }
+.qty-label { color: var(--ink-muted); font-size: 0.72rem; font-weight: 600; }
+/* − value + : 44px buttons around a borderless number field. */
+.stepper { display: inline-flex; align-items: center; border-radius: 14px; background: var(--surface-inset); }
+.stepper-btn { display: grid; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 14px; color: var(--ink); background: transparent; font-size: 1.35rem; line-height: 1; place-items: center; }
+.stepper-btn:hover { background: var(--line-soft); }
+.stepper-btn:active { background: var(--line); }
+.stepper .quantity-input { width: 52px; min-width: 0; min-height: 44px; padding: 0 2px; border: 0; border-radius: 0; background: transparent; font-size: 1.05rem; font-weight: 600; text-align: center; -moz-appearance: textfield; }
+.stepper .quantity-input::-webkit-outer-spin-button, .stepper .quantity-input::-webkit-inner-spin-button { margin: 0; -webkit-appearance: none; }
+.stepper:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
+.stepper .quantity-input:focus-visible { outline: 0; }
+.sticky-summary { display: none; }
 .catalog-name { min-width: 0; }
 .catalog-name strong { display: block; overflow-wrap: anywhere; }
 .item-comment { grid-column: 1 / -1; }
 .quantity-input { min-width: 72px; padding-inline: 7px; text-align: center; font-family: var(--font-mono); }
 .editor-summary { color: var(--ink-soft); font-family: var(--font-mono); }
-.sticky-submit { position: sticky; z-index: 40; bottom: 12px; display: flex; justify-content: flex-end; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-surface); background: var(--surface-veil); }
+.sticky-submit { position: sticky; z-index: 40; bottom: 12px; display: flex; justify-content: flex-end; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-surface); background: var(--surface); box-shadow: 0 -6px 18px rgba(25, 24, 23, 0.08); }
 
 .production-layout, .calculator-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.7fr); gap: 18px; align-items: start; }
 .production-table { min-width: 0; width: 100%; table-layout: fixed; }
 .production-table th, .production-table td { padding: 8px 4px; }
 .production-table th:not(:first-child), .production-table td:not(:first-child) { text-align: center; }
 .production-table th:not(:first-child) { font-size: 0.62rem; }
-.production-quantity-column { width: 23%; }
+.production-quantity-column { width: 18%; }
+.production-table col:last-child { width: 156px; }
 .production-table td:first-child strong { display: block; overflow-wrap: anywhere; }
 .production-comment-toggle { min-height: 44px; }
 .production-comment-row:has(.item-comment[hidden]) { display: none; }
 .production-comment-row td { padding: 8px 4px 12px; }
 .production-comment-row small { display: block; margin-top: 4px; color: var(--warning); line-height: 1.35; }
 .production-table input { background: var(--surface); }
-.production-table .quantity-input { width: 56px; min-width: 56px; max-width: 56px; padding-inline: 4px; }
+.production-table .stepper .quantity-input { width: 52px; }
+.production-table td.production-loaded { text-align: right; }
 /* Отработка ↔ Обзор: a CSS-only toggle (hidden radios drive both the pill and the
    panels), so switching views needs no script. */
 .sheet-view-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
@@ -367,7 +380,7 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 .matrix-shop { display: block; overflow: hidden; color: var(--ink-soft); text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
 
 .calculator-catalog { max-height: 58vh; overflow-y: auto; }
-.calculator-row { display: grid; grid-template-columns: minmax(0, 1fr) 92px; gap: 10px; align-items: center; min-height: 50px; border-bottom: 1px solid var(--line-soft); }
+.calculator-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; min-height: 56px; padding: 4px 0; border-bottom: 1px solid var(--line-soft); }
 .calculator-row input { background: var(--surface); }
 
 .admin-section { padding: 28px 0; border-top: 1px solid var(--line); }
@@ -480,6 +493,8 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .nav-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .nav-label-full { display: none; }
   .nav-label-short { display: inline; }
+  /* Thumb-sized hit area for the card's «Обзор» button without growing the card. */
+  .order-preview-action { width: 44px; height: 44px; min-height: 44px; margin: -7px; }
   /* Clear the fixed bar. */
   .page { padding-bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom) + 24px); }
   .sticky-submit { bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom) + 8px); }
@@ -584,8 +599,27 @@ input::placeholder, textarea::placeholder { color: var(--ink-muted); }
   .item-table th, .item-table td { padding: 8px 5px; }
   .category-picker, .category-picker.compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .category-choice { min-height: 58px; padding: 8px; }
-  .catalog-row { grid-template-columns: minmax(130px, 1fr) 76px 76px; gap: 6px; }
-  .catalog-row input { padding-inline: 4px; }
+  /* Phone: the dish name gets the full width, its two steppers sit below. */
+  .catalog-row { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "name name" "shelf reserve"; padding: 12px; }
+  .catalog-row .catalog-name { grid-area: name; display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .catalog-row .qty-field-shelf { grid-area: shelf; }
+  .catalog-row .qty-field-reserve { grid-area: reserve; }
+  .catalog-row .qty-field { grid-template-columns: auto auto; justify-content: space-between; align-items: center; justify-items: start; }
+  .catalog-row .stepper .quantity-input { width: 44px; }
+  .catalog-row .stepper-btn { width: 40px; }
+  /* The sticky bar carries the running total while the form scrolls. */
+  .sticky-summary { display: block; flex-basis: 100%; order: -2; color: var(--ink-soft); font-size: 0.9rem; font-weight: 600; text-align: left; }
+  /* Production editor rows become cards: name, «Заявка N», закладка stepper. */
+  .production-table, .production-table tbody, .production-table tr, .production-table td { display: block; }
+  .production-table colgroup, .production-table thead { display: none; }
+  .production-table tbody[data-production-row] { margin-bottom: 8px; padding: 12px 14px; border: 1px solid var(--line-soft); border-radius: var(--radius-surface); background: var(--surface); }
+  .production-table tbody[data-production-row] > tr:first-child { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name name" "ordered loaded"; gap: 8px 12px; align-items: center; }
+  .production-table tbody[data-production-row] > tr:first-child > td { padding: 0; border: 0; text-align: left; }
+  .production-table tbody[data-production-row] > tr:first-child > td:first-child { grid-area: name; display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .production-table td.ordered { grid-area: ordered; color: var(--ink-soft); }
+  .production-table td.ordered::before { content: "Заявка "; color: var(--ink-muted); }
+  .production-table td.production-loaded { grid-area: loaded; }
+  .production-table .production-comment-row td { padding: 8px 0 0; border: 0; }
   .sticky-submit { right: 0; bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom)); left: 0; flex-wrap: wrap; justify-content: stretch; gap: 6px; padding: 8px; }
   .editor-form { padding-bottom: 76px; }
   .editor-form:has(.sticky-submit > :nth-child(3)) { padding-bottom: 132px; }

@@ -561,15 +561,37 @@
   }
 
   function updateSummary(editor) {
-    const output = editor.querySelector('[data-editor-summary]');
-    if (!output) return;
+    const outputs = editor.querySelectorAll('[data-editor-summary]');
+    if (!outputs.length) return;
     let count = 0;
+    let units = 0;
     editor.querySelectorAll('[data-catalog-row]:not([hidden])').forEach((row) => {
       const total = [...row.querySelectorAll('.quantity-input')].reduce((sum, input) => sum + (Number(input.value) || 0), 0);
       if (total > 0) count += 1;
+      units += total;
     });
-    output.textContent = `${count} поз.`;
+    const text = units > 0 ? `${count} поз. · ${formatUnits(units)} шт.` : `${count} поз.`;
+    outputs.forEach((output) => { output.textContent = text; });
   }
+
+  function formatUnits(value) {
+    return String(Math.round(value * 1000) / 1000);
+  }
+
+  // − / + around a quantity input. Delegated once on the document so steppers in
+  // boosted (htmx-swapped) pages work without re-binding; dispatching `input`
+  // keeps the summary, the production dirty flag and its loaded→produced link in
+  // step with typed values.
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-step]');
+    if (!button) return;
+    const input = button.closest('[data-stepper]')?.querySelector('input');
+    if (!input || input.disabled || input.readOnly) return;
+    const min = input.min === '' ? -Infinity : Number(input.min);
+    const next = Math.max(min, (Number(input.value) || 0) + Number(button.dataset.step));
+    input.value = next === 0 && input.placeholder === '0' ? '' : String(Math.round(next * 1000) / 1000);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
 
   function initializeProduction(root) {
     root.querySelectorAll('[data-production-form]:not([data-ready])').forEach((form) => {

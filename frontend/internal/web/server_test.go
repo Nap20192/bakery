@@ -44,8 +44,8 @@ func TestFragmentRequestsOverrideShellSelection(t *testing.T) {
 	}
 }
 
-func TestTemplatesRenderEveryView(t *testing.T) {
-	t.Parallel()
+func viewFixtures(t *testing.T) (*server, []page) {
+	t.Helper()
 	client := backend.New("http://127.0.0.1:1", time.Second)
 	srv, err := newServer(client, client, slog.New(slog.DiscardHandler))
 	if err != nil {
@@ -65,11 +65,13 @@ func TestTemplatesRenderEveryView(t *testing.T) {
 	viewer := &contract.Me{Role: "admin", TelegramUsername: "tester"}
 	shopViewer := &contract.Me{Role: "shop", TelegramUsername: "tester"}
 
+	shops := []contract.Department{{ID: 1, Name: "Магазин Гагарина"}, {ID: 2, Name: "Цех Пекари"}}
 	tests := []page{
 		{View: "login", Data: loginData{Next: "/orders"}},
 		{View: "error", Viewer: viewer, Error: "Ошибка"},
 		{View: "me", Viewer: viewer},
 		{View: "orders", Viewer: shopViewer, Data: ordersData{Page: contract.OrdersPage{Items: []contract.Order{order}, Page: 2, TotalPages: 3}, Categories: []contract.Category{category}}},
+		{View: "orders", Viewer: viewer, Data: ordersData{Categories: []contract.Category{category}, Shops: shops, Matrix: []matrixRow{{Date: "2026-07-22", Label: "Ср", Cells: []matrixCell{{Shop: shops[0], Orders: []contract.Order{order}}, {Shop: shops[1]}}}}}},
 		{View: "order-detail", Viewer: viewer, Data: orderDetailData{Order: order, Groups: []orderItemGroup{{Name: "Хлеб", Items: order.Items}}}},
 		{View: "order-form", Viewer: viewer, Data: orderFormData{Mode: "create", Categories: []contract.Category{category}, Groups: []editorGroup{{Name: "Хлеб", Items: []editorItem{{Dish: dish}}}}}},
 		{View: "drafts", Viewer: shopViewer, Data: draftsData{Drafts: []draftView{{Draft: contract.OrderDraft{Write: contract.OrderWrite{CategoryID: categoryID}, UpdatedAt: time.Now().Format(time.RFC3339)}, Category: &category}}}},
@@ -88,11 +90,19 @@ func TestTemplatesRenderEveryView(t *testing.T) {
 		{View: "admin-dishes", Viewer: viewer, Data: adminDishesData{Dishes: []contract.Dish{dish}, Categories: []contract.Category{category}, Groups: []dishGroup{{Category: category, Themes: groupDishesByTheme([]contract.Dish{dish}), Count: 1}}, ActiveTab: categoryID}},
 	}
 
+	for index := range tests {
+		tests[index].Title = tests[index].View
+		tests[index].CurrentPath = "/" + tests[index].View
+		tests[index].CSRF = "csrf"
+		tests[index].Today = "2026-07-22"
+	}
+	return srv, tests
+}
+
+func TestTemplatesRenderEveryView(t *testing.T) {
+	t.Parallel()
+	srv, tests := viewFixtures(t)
 	for _, value := range tests {
-		value.Title = value.View
-		value.CurrentPath = "/" + value.View
-		value.CSRF = "csrf"
-		value.Today = "2026-07-22"
 		if err := srv.templates.ExecuteTemplate(io.Discard, "layout", value); err != nil {
 			t.Errorf("render %s: %v", value.View, err)
 		}
