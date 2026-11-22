@@ -68,11 +68,9 @@ Rules:
 - Navigation: horizontal where space allows, underline-on-hover, active accent
   underline, no pill backgrounds.
 - Tables: zebra rows on `--surface-inset`; headers are mono, uppercase, tracked.
-  The order matrix keeps its axes on every screen: on desktop and on a phone
-  held sideways it stays a matrix with equal columns; on a portrait phone it
-  becomes a day feed where the date axis turns into day headings and the shop
-  axis into each panel's title. Production and summary tables keep sticky
-  labels and scroll sideways inside their own frame.
+  The order matrix stays a table on every screen, with equal columns; on a
+  phone its date column and shop header stay sticky and it scrolls sideways
+  inside its own frame, like the production and summary tables.
 - Status chips: `Отработан` (success, check icon), `Ждёт` (warning, clock
   icon), `Отменён` (danger, cross icon). In narrow matrix columns the chip
   shows its icon only; the label stays for screen readers.
@@ -119,5 +117,5 @@ Do not:
 - animate hover states with scale or lift;
 - mix more than two non-mono font families per page;
 - use emoji in UI chrome;
-- drop a matrix axis when converting it for a small screen: the portrait day
-  feed keeps both the day and the shop on screen.
+- convert the order matrix into a card stack on small screens: the date × shop
+  axes are the core workflow.
