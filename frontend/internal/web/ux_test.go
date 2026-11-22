@@ -237,6 +237,19 @@ func TestMobileTabBarHasAtMostFiveTabs(t *testing.T) {
 	}
 }
 
+func TestUnboundedTablesPassVerticalSwipesToPage(t *testing.T) {
+	t.Parallel()
+	css, err := frontendFiles.ReadFile("static/app.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, rule := range regexp.MustCompile(`([^{}]*)\{[^{}]*overscroll-behavior[^{}]*\}`).FindAllStringSubmatch(string(css), -1) {
+		if strings.Contains(rule[1], ".item-table-wrap") {
+			t.Errorf("%s: overscroll-behavior on an unbounded table wrapper freezes page scrolling on touch", strings.TrimSpace(rule[1]))
+		}
+	}
+}
+
 func TestStylesheetKeepsTouchTargets(t *testing.T) {
 	t.Parallel()
 	css, err := frontendFiles.ReadFile("static/app.css")
