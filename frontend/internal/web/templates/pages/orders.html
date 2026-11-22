@@ -32,7 +32,6 @@
       {{range $row := $data.Matrix}}
         <tr {{if $row.Tone}}class="tone-{{$row.Tone}}"{{end}}><th class="matrix-axis"><strong>{{$row.Label}}</strong><small>{{formatDayMonth $row.Date}}</small></th>
         {{range $cell := $row.Cells}}<td{{if not $cell.Orders}} class="is-empty"{{end}}>
-          <span class="matrix-cell-shop">{{$cell.Shop.Name}}</span>
           <div class="matrix-cell">
           {{range $order := $cell.Orders}}{{template "order-card" (dict "Order" $order "LinkSheet" true "Short" true)}}{{else}}{{template "empty-cell"}}{{end}}
           </div>

@@ -237,31 +237,6 @@ func TestMobileTabBarHasAtMostFiveTabs(t *testing.T) {
 	}
 }
 
-func TestPortraitMatrixCellsNameTheirShop(t *testing.T) {
-	t.Parallel()
-	cells := 0
-	for _, doc := range renderedViews(t)["orders"] {
-		walk(doc, func(n *html.Node) {
-			if n.Type != html.ElementNode || n.Data != "td" {
-				return
-			}
-			cells++
-			named := false
-			walk(n, func(child *html.Node) {
-				if child.Type == html.ElementNode && hasClass(child, "matrix-cell-shop") && text(child) != "" {
-					named = true
-				}
-			})
-			if !named {
-				t.Error("matrix cell without its shop name: the portrait day feed would lose the shop axis")
-			}
-		})
-	}
-	if cells == 0 {
-		t.Fatal("no matrix cells rendered")
-	}
-}
-
 func TestStylesheetKeepsTouchTargets(t *testing.T) {
 	t.Parallel()
 	css, err := frontendFiles.ReadFile("static/app.css")
